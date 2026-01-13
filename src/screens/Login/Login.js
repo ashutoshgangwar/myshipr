@@ -27,7 +27,7 @@ const Login = () => {
       alert('Invalid OTP');
       return;
     }
-    navigation.replace('MainApp'); // Navigate after OTP verification
+    navigation.replace('MainApp');
   };
 
   const handleGoogleLogin = () => {
