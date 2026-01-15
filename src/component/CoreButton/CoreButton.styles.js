@@ -8,6 +8,7 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(8),
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: verticalScale(15),
   },
   disabled: {
     opacity: 0.6,

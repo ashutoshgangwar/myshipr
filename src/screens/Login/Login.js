@@ -27,11 +27,19 @@ const Login = () => {
       alert('Invalid OTP');
       return;
     }
-    navigation.replace('MainApp');
+  navigation.reset({
+  index: 0,
+  routes: [{ name: 'MainApp' }],
+});
+
   };
 
   const handleGoogleLogin = () => {
-    alert('Google login pressed!');
+  navigation.reset({
+  index: 0,
+  routes: [{ name: 'MainApp' }],
+});
+
   };
 
   return (

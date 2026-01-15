@@ -1,13 +1,11 @@
 import React from 'react';
 import { Text } from 'react-native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
-
 import HomeScreen from '../screens/HomeScreen/HomeScreen';
-import DriverDetails from '../screens/DriverDetails/driverDetails';
-
 import HomeIcon from '../assets/svg_icon/home.svg';
 import ProfileIcon from '../assets/svg_icon/profile.svg';
 import { colors } from '../theme/colors';
+import Profile from '../screens/Profile/Profile';
 
 const Tab = createBottomTabNavigator();
 
@@ -47,7 +45,7 @@ export default function AppBottomTabs() {
 
       <Tab.Screen
         name="DriverProfileTab"
-        component={DriverDetails}
+        component={Profile}
         options={{
           tabBarLabel: ({ focused, color }) => (
             <Text

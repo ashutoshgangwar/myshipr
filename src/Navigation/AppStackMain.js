@@ -3,10 +3,12 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import Login from '../screens/Login/Login';
 import SplashScreen from '../screens/splaceScreen/splaceScreen';
-import ProfileForm from '../screens/ProfileForm/ProfileForm';
 import DriverOnboarding from '../screens/DriverOnboarding/DriverOnboarding';
 import AppBottomTabs from './AppBottomTabs';
-import DriverDetails from '../screens/DriverDetails/driverDetails';
+import Profile from '../screens/Profile/Profile';
+import NavigationScreen from '../screens/NavigationScreen/NavigationScreen';
+import DeliveryConfirmation from '../screens/DeliveryConfirmationScreen/DeliveryConfirmation';
+import AvailableLoadsScreen from '../screens/AvailableLoadsScreen/AvailableLoadsScreen';
 
 const Stack = createNativeStackNavigator();
 
@@ -26,9 +28,11 @@ export default function AppStackMain() {
       <Stack.Screen name="MainApp" component={AppBottomTabs} />
 
       {/* Extra flows (no bottom tab) */}
-      <Stack.Screen name="ProfileForm" component={ProfileForm} />
+      <Stack.Screen name="Profile" component={Profile} />
       <Stack.Screen name="DriverOnboarding" component={DriverOnboarding} />
-      <Stack.Screen name="DriverDetails" component={DriverDetails} />
+      <Stack.Screen name="NavigationScreen" component={NavigationScreen} />
+      <Stack.Screen name="DeliveryConfirmation" component={DeliveryConfirmation} />
+      <Stack.Screen name="AvailableLoadsScreen" component={AvailableLoadsScreen} />
     </Stack.Navigator>
   );
 }
