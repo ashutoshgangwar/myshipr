@@ -103,4 +103,43 @@ export default StyleSheet.create({
     fontWeight: '600',
     color: '#212529',
   },
+  featureCard: {
+  backgroundColor: '#FFFFFF',
+  borderRadius: moderateScale(16),
+  padding: moderateScale(18),
+  marginBottom: verticalScale(20),
+  elevation: 4,
+  alignItems: 'center',
+},
+iconCircle: {
+  width: 48,
+  height: 48,
+  borderRadius: 24,
+  backgroundColor: '#EEF2FF',
+  justifyContent: 'center',
+  alignItems: 'center',
+  marginBottom: verticalScale(10),
+},
+primaryButton: {
+  width: '100%',
+  backgroundColor: '#4C6EF5',
+  paddingVertical: verticalScale(14),
+  borderRadius: 12,
+  alignItems: 'center',
+  marginTop: verticalScale(14),
+},
+
+primaryButtonText: {
+  color: '#FFFFFF',
+  fontSize: moderateScale(15),
+  fontWeight: '700',
+},
+sectionTitle: {
+  fontSize: moderateScale(14),
+  fontWeight: '700',
+  color: '#495057',
+  padding: moderateScale(16),
+  paddingBottom: 8,
+},
+
 });

@@ -52,6 +52,12 @@ yarn-error.log
 **/fastlane/screenshots
 **/fastlane/test_output
 
+# Environment variables
+.env
+.env.local
+.env.development
+.env.production
+
 # Bundle artifact
 *.jsbundle
 

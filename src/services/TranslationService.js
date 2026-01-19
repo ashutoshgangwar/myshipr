@@ -1,9 +1,9 @@
-const API_KEY = 'YOUR_GOOGLE_API_KEY';
+import {GOOGLE_MAPS_API_KEY} from '@env';
 
 export const translateToEnglish = async (text) => {
   try {
     const res = await fetch(
-      `https://translation.googleapis.com/language/translate/v2?key=${API_KEY}`,
+      `https://translation.googleapis.com/language/translate/v2?key=${GOOGLE_MAPS_API_KEY}`,
       {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },

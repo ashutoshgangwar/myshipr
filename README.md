@@ -1,5 +1,45 @@
 This is a new [**React Native**](https://reactnative.dev) project, bootstrapped using [`@react-native-community/cli`](https://github.com/react-native-community/cli).
 
+# Environment Setup
+
+Before running the app, you need to set up environment variables for API keys and configuration.
+
+## Step 1: Environment Variables
+
+1. Copy the appropriate environment file:
+   ```sh
+   # For development
+   cp .env.development .env
+
+   # OR for production
+   cp .env.production .env
+   ```
+
+2. Open `.env` and add your API keys:
+   - Get a Google Maps API key from the [Google Cloud Console](https://console.cloud.google.com/)
+   - Enable the following APIs for your key:
+     - Maps SDK for Android
+     - Maps SDK for iOS
+     - Places API
+     - Geocoding API
+     - Directions API
+
+3. Update the `.env` file with your actual API keys:
+   ```
+   GOOGLE_MAPS_API_KEY=your_google_maps_api_key_here
+   API_KEY_LOCATION=your_location_api_key_here
+   ```
+
+**Important**: Never commit the `.env` file to version control. It's already included in `.gitignore`.
+
+**Note**: The app automatically uses environment-specific configurations based on the build type (development/production).
+
+## Step 2: Install Dependencies
+
+```sh
+npm install
+```
+
 # Getting Started
 
 > **Note**: Make sure you have completed the [Set Up Your Environment](https://reactnative.dev/docs/set-up-your-environment) guide before proceeding.

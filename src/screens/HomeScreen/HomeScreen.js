@@ -187,7 +187,8 @@ const HomeScreen = () => {
               title="Go to Delivery"
               loading={loading}
               // onPress={() => navigation.navigate('DeliveryConfirmation')}
-              onPress={() => navigation.navigate('AvailableLoadsScreen')}
+              // onPress={() => navigation.navigate('AvailableLoadsScreen')}
+              onPress={() => navigation.navigate('NavigationScreen')}
             />
           </View>
         </ScrollView>

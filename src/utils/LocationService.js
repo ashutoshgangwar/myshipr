@@ -155,3 +155,22 @@ export const getCurrentLocation = async () => {
     throw new Error('LOCATION_UNAVAILABLE');
   }
 };
+
+export const watchCurrentLocation = async (successCallback, errorCallback, options = HIGH_ACCURACY_OPTIONS) => {
+  // 1️⃣ GPS check
+  const gpsEnabled = await checkGPS();
+  if (!gpsEnabled) throw new Error('GPS_DISABLED');
+
+  // 2️⃣ Permission check
+  const hasPermission = await checkPermission();
+  if (!hasPermission) {
+    const granted = await requestPermission();
+    if (!granted) throw new Error('PERMISSION_DENIED');
+  }
+
+  return Geolocation.watchPosition(successCallback, errorCallback, options);
+};
+
+export const clearWatchLocation = (watchId) => {
+  Geolocation.clearWatch(watchId);
+};
