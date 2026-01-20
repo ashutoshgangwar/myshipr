@@ -3,10 +3,10 @@ import { View, Text, Image } from 'react-native';
 import styles from './OCRScanCard.styles';
 import ActionButton from '../ActionButton/ActionButton';
 
-const OCRScanCard = ({ title, image, onScan, children }) => {
+const OCRScanCard = ({ title, image, onScan, placeholderImage, children }) => {
   return (
     <View style={styles.card}>
-      {/* Title & Subtitle */}
+      {/* Title */}
       <View style={styles.header}>
         <Text style={styles.cardTitle}>{title}</Text>
       </View>
@@ -20,16 +20,18 @@ const OCRScanCard = ({ title, image, onScan, children }) => {
         />
       ) : onScan ? (
         <View style={styles.cardPlaceholder}>
-          <Image
-            source={require('../../assets/Image/sample_CDL.jpg')}
-            style={styles.placeholderImage}
-            resizeMode="contain"
-          />
-          <Text style={styles.placeholderText}>Scanned your CDL</Text>
+          {placeholderImage && (
+            <Image
+              source={placeholderImage} // now dynamic
+              style={styles.placeholderImage}
+              resizeMode="contain"
+            />
+          )}
+          <Text style={styles.placeholderText}>Scan your document</Text>
         </View>
       ) : null}
 
-      {/* Scan Button only if onScan prop is passed */}
+      {/* Scan Button */}
       {onScan && (
         <ActionButton
           title={image ? 'Rescan Document' : 'Scan Document'}
@@ -39,7 +41,7 @@ const OCRScanCard = ({ title, image, onScan, children }) => {
         />
       )}
 
-      {/* Optional children (InfoRow or other details) */}
+      {/* Optional children */}
       {children && <View style={styles.cardChildren}>{children}</View>}
     </View>
   );

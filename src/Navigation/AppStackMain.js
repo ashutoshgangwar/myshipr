@@ -3,12 +3,18 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import Login from '../screens/Login/Login';
 import SplashScreen from '../screens/splaceScreen/splaceScreen';
-import DriverOnboarding from '../screens/DriverOnboarding/DriverOnboarding';
 import AppBottomTabs from './AppBottomTabs';
 import Profile from '../screens/Profile/Profile';
 import NavigationScreen from '../screens/NavigationScreen/NavigationScreen';
 import DeliveryConfirmation from '../screens/DeliveryConfirmationScreen/DeliveryConfirmation';
 import AvailableLoadsScreen from '../screens/AvailableLoadsScreen/AvailableLoadsScreen';
+import CdlDriverOnboarding from '../screens/DriverOnboarding/CdlDriverOnboarding/CdlDriverOnboarding';
+import MedicalCertificate from '../screens/DriverOnboarding/MedicalCertificate/MedicalCertificate';
+import SocialSecurityItin from '../screens/DriverOnboarding/SocialSecurityItin/SocialSecurityItin';
+import ProofOfAddress from '../screens/DriverOnboarding/ProofOfAddress/ProofOfAddress';
+import BackgroundCheckConsent from '../screens/DriverOnboarding/BackgroundCheckConsent/BackgroundCheckConsent';
+
+
 
 const Stack = createNativeStackNavigator();
 
@@ -29,10 +35,14 @@ export default function AppStackMain() {
 
       {/* Extra flows (no bottom tab) */}
       <Stack.Screen name="Profile" component={Profile} />
-      <Stack.Screen name="DriverOnboarding" component={DriverOnboarding} />
       <Stack.Screen name="NavigationScreen" component={NavigationScreen} />
       <Stack.Screen name="DeliveryConfirmation" component={DeliveryConfirmation} />
       <Stack.Screen name="AvailableLoadsScreen" component={AvailableLoadsScreen} />
+      <Stack.Screen name="CdlDriverOnboarding" component={CdlDriverOnboarding} />
+      <Stack.Screen name="MedicalCertificate" component={MedicalCertificate} />
+      <Stack.Screen name="SocialSecurityItin" component={SocialSecurityItin} />
+      <Stack.Screen name="ProofOfAddress" component={ProofOfAddress} />
+      <Stack.Screen name="BackgroundCheckConsent" component={BackgroundCheckConsent} />
     </Stack.Navigator>
   );
 }

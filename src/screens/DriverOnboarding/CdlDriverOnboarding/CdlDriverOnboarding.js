@@ -1,17 +1,17 @@
 import React, {useState} from 'react';
 import {ScrollView, TouchableOpacity, Text, View} from 'react-native';
 import {moderateScale, verticalScale} from 'react-native-size-matters';
-import styles from './DriverOnboarding.styles';
-import {scanWithCamera} from '../../services/OCRService';
-import {extractDriverData} from '../../services/ocrParser';
-import ScreenHeader from '../../component/ScreenHeader/ScreenHeader';
-import OCRScanCard from '../../component/OCRScanCard/OCRScanCard';
-import EditableInfoRow from '../../component/EditableInfoRow/EditableInfoRow';
-import ActionButton from '../../component/ActionButton/ActionButton';
-import {colors} from '../../theme/colors';
+import styles from './CdlDriverOnboarding.styles';
+import {scanWithCamera} from '../../../services/OCRService';
+import {extractDriverData} from '../../../services/ocrParser';
+import ScreenHeader from '../../../component/ScreenHeader/ScreenHeader';
+import OCRScanCard from '../../../component/OCRScanCard/OCRScanCard';
+import EditableInfoRow from '../../../component/EditableInfoRow/EditableInfoRow';
+import ActionButton from '../../../component/ActionButton/ActionButton';
+import {colors} from '../../../theme/colors';
 import { useNavigation } from '@react-navigation/native';
 
-const DriverOnboarding = () => {
+const CdlDriverOnboarding = () => {
   const navigate = useNavigation();
   const [image, setImage] = useState(null);
   const [driver, setDriver] = useState({
@@ -45,13 +45,12 @@ const DriverOnboarding = () => {
         }}
         showsVerticalScrollIndicator={false}>
         {/* Scan Card */}
-        <OCRScanCard
-          title="Scan Driver ID / CDL"
-          subtitle="Government issued license"
-          image={image}
-          onScan={handleScan}
-        />
-
+         <OCRScanCard
+        title="CDL Certificate"
+        image={image}
+        placeholderImage={require('./../../../assets/Image/sample_CDL.jpg')} // dynamic
+        onScan={handleScan}
+      />
         {/* Editable Info Card */}
         <OCRScanCard title="Extracted Driver Information">
           <EditableInfoRow
@@ -89,11 +88,11 @@ const DriverOnboarding = () => {
           title="Submit for Verification"
           bgColor={colors.primary}
           textColor="#fff"
-          onPress={() => navigate.navigate('DriverDetails')}
+          onPress={() => navigate.navigate('MedicalCertificate')}
         />
       </ScrollView>
     </View>
   );
 };
 
-export default DriverOnboarding;
+export default CdlDriverOnboarding;
