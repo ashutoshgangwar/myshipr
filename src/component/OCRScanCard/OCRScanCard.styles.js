@@ -1,61 +1,99 @@
 import { StyleSheet } from 'react-native';
-import { moderateScale, verticalScale, scale } from 'react-native-size-matters';
+import {
+  moderateScale,
+  verticalScale,
+  scale,
+} from 'react-native-size-matters';
 import { colors } from '../../theme/colors';
 
-const styles = StyleSheet.create({
+export default StyleSheet.create({
   card: {
     backgroundColor: '#fff',
-    borderRadius: moderateScale(14),
+    borderRadius: moderateScale(18),
     padding: moderateScale(16),
-    marginBottom: verticalScale(20),
+    marginBottom: verticalScale(18),
+    borderWidth: scale(1),
+    borderColor: '#E9ECEF',
     shadowColor: '#000',
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.05,
+    shadowRadius: moderateScale(10),
     shadowOffset: { width: 0, height: verticalScale(4) },
-    shadowRadius: moderateScale(12),
-    elevation: 6,
+    elevation: 2,
   },
+
+  cardCompleted: {
+    borderColor: '#28A745',
+    backgroundColor: '#F6FFF9',
+  },
+
   header: {
-    marginBottom: verticalScale(10),
-  },
-  cardTitle: {
-    fontSize: moderateScale(18),
-    fontWeight: '700',
-    color: '#212529',
-    marginBottom: verticalScale(2),
-  },
-  cardSub: {
-    fontSize: moderateScale(14),
-    color: '#6C757D',
-  },
-  cardImage: {
-    width: '100%',
-    height: verticalScale(220),
-    borderRadius: moderateScale(12),
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: verticalScale(12),
   },
-  cardPlaceholder: {
-  alignItems: 'center',
-  justifyContent: 'center',
-  backgroundColor: '#F1F3F5',
-  borderRadius: moderateScale(14),
-  height: verticalScale(200),
-  borderWidth: 1,
-  borderColor: '#DEE2E6',
+
+  cardTitle: {
+    fontSize: moderateScale(16),
+    fontWeight: '700',
+    color: '#212529',
+    flexShrink: 1,
   },
-  placeholderImage: {
+
+  statusBadge: {
+    paddingHorizontal: scale(10),
+    paddingVertical: verticalScale(4),
+    borderRadius: moderateScale(20),
+    minWidth: scale(70),
+    alignItems: 'center',
+  },
+
+  badgePending: {
+    backgroundColor: '#FFF3CD',
+  },
+
+  badgeSuccess: {
+    backgroundColor: '#D4EDDA',
+  },
+
+  badgeText: {
+    fontSize: moderateScale(12),
+    fontWeight: '600',
+    color: '#495057',
+  },
+
+  scanArea: {
+    borderWidth: scale(2),
+    borderStyle: 'dashed',
+    borderColor: '#CED4DA',
+    borderRadius: moderateScale(16),
+    height: verticalScale(200),
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#FAFAFA',
+  },
+
+  cardImage: {
     width: '100%',
-    height: verticalScale(150),
+    height: '100%',
+    borderRadius: moderateScale(14),
+  },
+
+  placeholderImage: {
+    width: scale(150),
+    height: scale(150),
     marginBottom: verticalScale(5),
+    borderRadius: moderateScale(10),
+    opacity: 0.8,
   },
-  placeholderText: {
-    color: '#6C757D',
+
+  scanText: {
     fontSize: moderateScale(14),
-    textAlign: 'center',
+    color: colors.primary,
+    fontWeight: '600',
   },
+
   cardChildren: {
-    marginTop: verticalScale(1),
-    paddingTop: verticalScale(5),
+    marginTop: verticalScale(14),
   },
 });
-
-export default styles;

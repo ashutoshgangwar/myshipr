@@ -29,7 +29,7 @@ const Login = () => {
     }
   navigation.reset({
   index: 0,
-  routes: [{ name: 'MainApp' }],
+  routes: [{ name: 'CdlDriverOnboarding' }],
 });
 
   };
@@ -37,7 +37,7 @@ const Login = () => {
   const handleGoogleLogin = () => {
   navigation.reset({
   index: 0,
-  routes: [{ name: 'MainApp' }],
+  routes: [{ name: 'CdlDriverOnboarding' }],
 });
 
   };

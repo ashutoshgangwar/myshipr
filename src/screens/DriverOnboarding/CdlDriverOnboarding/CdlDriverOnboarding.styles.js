@@ -1,70 +1,56 @@
-import { StyleSheet, Dimensions } from 'react-native';
-
+import { StyleSheet } from 'react-native';
 import { verticalScale, moderateScale } from 'react-native-size-matters';
 import { colors } from '../../../theme/colors';
-
-const { width } = Dimensions.get('window');
 
 export default StyleSheet.create({
   screen: {
     flex: 1,
-    backgroundColor: '#F8F9FA',
+    backgroundColor: '#F4F6F8',
   },
-  container: {
-    flex: 1,
-    paddingHorizontal: moderateScale(16),
-    marginTop: verticalScale(10),
-  },
-  card: {
+
+  /* Progress */
+  progressCard: {
     backgroundColor: '#fff',
+    borderRadius: moderateScale(14),
     padding: moderateScale(16),
-    borderRadius: moderateScale(12),
-    marginBottom: verticalScale(16),
+    marginBottom: verticalScale(10),
+    marginTop: verticalScale(10),
+    elevation: 3,
     shadowColor: '#000',
-    shadowOpacity: 0.08,
-    shadowRadius: moderateScale(8),
-    shadowOffset: { width: 0, height: verticalScale(3) },
-    elevation: 4,
+    shadowOpacity: 0.06,
+    shadowRadius: 8,
+    shadowOffset: { width: 0, height: 3 },
   },
-  cardTitle: {
-    fontSize: moderateScale(18),
+  progressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: verticalScale(10),
+  },
+  progressTitle: {
+    fontSize: moderateScale(16),
     fontWeight: '700',
-    marginBottom: verticalScale(6),
     color: '#212529',
   },
-  cardSub: {
-    fontSize: moderateScale(14),
+  progressSub: {
+    fontSize: moderateScale(13),
     color: colors.muted,
-    marginBottom: verticalScale(12),
+    marginTop: verticalScale(2),
   },
-  cardImage: {
-    width: '100%',
-    height: verticalScale(180),
-    marginVertical: verticalScale(10),
-    borderRadius: moderateScale(12),
-    backgroundColor: '#f2f2f2',
+  progressPercent: {
+    fontSize: moderateScale(16),
+    fontWeight: '700',
+    color: colors.primary,
   },
-  cardPlaceholder: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#f5f5f5',
-    height: verticalScale(180),
-    borderRadius: moderateScale(12),
-    marginBottom: verticalScale(10),
-    padding: verticalScale(20),
+  progressBar: {
+    height: verticalScale(8),
+    backgroundColor: '#E9ECEF',
+    borderRadius: 10,
+    overflow: 'hidden',
   },
-  placeholderImage: {
-    width: '100%',
-    height: verticalScale(140),
-    borderRadius: moderateScale(12),
-  },
-  placeholderText: {
-    color: '#6C757D',
-    marginTop: verticalScale(16),
-    fontSize: moderateScale(14),
-    textAlign: 'center',
-  },
-  cardChildren: {
-    marginTop: verticalScale(12),
+  progressFill: {
+    height: '100%',
+    backgroundColor: colors.primary,
+    borderRadius: moderateScale(10),
   },
 });

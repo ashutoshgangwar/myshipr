@@ -1,48 +1,62 @@
 import React from 'react';
-import { View, Text, Image } from 'react-native';
+import { View, Text, Image, TouchableOpacity } from 'react-native';
 import styles from './OCRScanCard.styles';
-import ActionButton from '../ActionButton/ActionButton';
 
-const OCRScanCard = ({ title, image, onScan, placeholderImage, children }) => {
+const OCRScanCard = ({
+  title,
+  image,
+  placeholderImage,
+  onScan,
+  status = 'pending', // pending | completed
+  children,
+}) => {
+  const isCompleted = status === 'completed';
+
   return (
-    <View style={styles.card}>
-      {/* Title */}
+    <View style={[
+      styles.card,
+      isCompleted && styles.cardCompleted
+    ]}>
+      {/* Header */}
       <View style={styles.header}>
         <Text style={styles.cardTitle}>{title}</Text>
+        <View style={[
+          styles.statusBadge,
+          isCompleted ? styles.badgeSuccess : styles.badgePending
+        ]}>
+          <Text style={styles.badgeText}>
+            {isCompleted ? 'Completed' : 'Pending'}
+          </Text>
+        </View>
       </View>
 
-      {/* Image Preview */}
-      {image ? (
-        <Image
-          source={{ uri: image.uri }}
-          style={styles.cardImage}
-          resizeMode="cover"
-        />
-      ) : onScan ? (
-        <View style={styles.cardPlaceholder}>
-          {placeholderImage && (
+      {/* Scan Area */}
+      <TouchableOpacity
+        activeOpacity={0.8}
+        style={styles.scanArea}
+        onPress={onScan}
+        disabled={!onScan}
+      >
+        {image ? (
+          <Image
+            source={{ uri: image.uri }}
+            style={styles.cardImage}
+          />
+        ) : (
+          <>
             <Image
-              source={placeholderImage} // now dynamic
+              source={placeholderImage}
               style={styles.placeholderImage}
-              resizeMode="contain"
             />
-          )}
-          <Text style={styles.placeholderText}>Scan your document</Text>
-        </View>
-      ) : null}
+            <Text style={styles.scanText}>Tap to scan document</Text>
+          </>
+        )}
+      </TouchableOpacity>
 
-      {/* Scan Button */}
-      {onScan && (
-        <ActionButton
-          title={image ? 'Rescan Document' : 'Scan Document'}
-          onPress={onScan}
-          bgColor="#0B5ED7"
-          textColor="#fff"
-        />
+      {/* Extracted Fields */}
+      {children && (
+        <View style={styles.cardChildren}>{children}</View>
       )}
-
-      {/* Optional children */}
-      {children && <View style={styles.cardChildren}>{children}</View>}
     </View>
   );
 };
