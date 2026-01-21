@@ -1,69 +1,54 @@
-import {StyleSheet, Dimensions, Platform, StatusBar} from 'react-native';
-import {moderateScale, verticalScale, scale} from 'react-native-size-matters';
-import {colors} from '../../theme/colors';
+import { StyleSheet, Dimensions, Platform } from 'react-native';
+import { moderateScale, verticalScale, scale } from 'react-native-size-matters';
+import { colors } from '../../theme/colors';
 
-const {width} = Dimensions.get('window');
+const { width } = Dimensions.get('window');
 
 const CARD_WIDTH = width * 0.65;
 const DOC_WIDTH = width * 0.42;
 
-const styles = StyleSheet.create({
-  container: {
+export default StyleSheet.create({
+  safeArea: {
     flex: 1,
-    backgroundColor: 'white',
-  },
-  greetingContainer: {
-    marginTop: verticalScale(16),
-    marginLeft: moderateScale(16),
-  },
-  greetingText: {
-    fontSize: moderateScale(22),
-    fontWeight: '700',
-    color: '#111827',
-  },
-  searchInput: {
-    width: '90%',
-    marginTop: verticalScale(10),
-    borderWidth: 1,
-    borderRadius: moderateScale(8),
-
-  },
-  topBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: moderateScale(16),
-    paddingVertical: verticalScale(12),
     backgroundColor: colors.primary,
   },
-  logo: {
-    width: width * 0.45,
-    height: verticalScale(40),
-    marginLeft: moderateScale(10),
-    alignSelf: 'center',
-    resizeMode: 'contain',
+  header: {
+    height: Platform.OS === 'ios' ? verticalScale(60) : verticalScale(60),
+    marginTop: Platform.OS === 'ios' ? 0 : verticalScale(1),
+    backgroundColor: colors.white,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
 
-  topIcons: {
-    flexDirection: 'row',
+  logo: {
+    width: width * 0.45,
+    marginTop: Platform.OS === 'ios' ? 0 : verticalScale(1),
+    height: Platform.OS === 'ios' ? verticalScale(80) : verticalScale(80),
+    resizeMode: 'contain',
   },
 
   iconWrapper: {
     width: scale(40),
     height: scale(40),
     borderRadius: scale(20),
-    backgroundColor: '#F3F4F6',
+    marginTop: Platform.OS === 'ios' ? 0 : verticalScale(1),
+    marginRight: moderateScale(20),
+    backgroundColor: colors.primary,
     justifyContent: 'center',
     alignItems: 'center',
-    marginLeft: moderateScale(10),
   },
 
-  /* AVAILABILITY */
+  scrollContent: {
+    paddingBottom: verticalScale(40),
+    backgroundColor: colors.white,
+    paddingHorizontal: scale(5),
+  },
+
   availabilityContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     marginVertical: verticalScale(14),
-    marginHorizontal: moderateScale(16),
+    marginHorizontal: moderateScale(10),
   },
 
   availabilityButton: {
@@ -73,26 +58,24 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(25),
     borderWidth: 1,
     borderColor: '#9CA3AF',
-    backgroundColor: '#fff',
     alignItems: 'center',
   },
 
   availabilitySelected: {
-    backgroundColor: '#2563EB',
-    borderColor: '#2563EB',
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
 
   availabilityText: {
-    color: '#111827',
-    fontWeight: '600',
     fontSize: moderateScale(13),
+    fontWeight: '600',
+    color: '#111827',
   },
 
   availabilityTextSelected: {
     color: '#fff',
   },
 
-  /* SECTION TITLE */
   sectionTitle: {
     fontSize: moderateScale(17),
     fontWeight: '700',
@@ -100,14 +83,7 @@ const styles = StyleSheet.create({
     marginVertical: verticalScale(10),
     color: '#111827',
   },
-  earningTitle: {
-    fontSize: moderateScale(17),
-    fontWeight: '700',
-    marginVertical: verticalScale(5),
-    color: '#111827',
-  },
 
-  /* BOOKING CARD */
   bookingCard: {
     backgroundColor: colors.primary,
     borderRadius: moderateScale(18),
@@ -117,41 +93,49 @@ const styles = StyleSheet.create({
   },
 
   bookingId: {
-    fontWeight: '700',
     fontSize: moderateScale(14),
-    marginBottom: verticalScale(6),
+    fontWeight: '700',
   },
 
-  bookingLocation: {
+  bookingRoute: {
     fontSize: moderateScale(13),
-    marginBottom: verticalScale(4),
+    marginVertical: 4,
   },
 
   bookingDistance: {
     fontSize: moderateScale(12),
-    marginBottom: verticalScale(4),
   },
 
   bookingStatus: {
     fontWeight: '600',
-    fontSize: moderateScale(13),
+    marginTop: 6,
   },
 
-  /* EARNINGS */
+  statusPending: {
+    color: '#FACC15',
+  },
+
+  statusPaid: {
+    color: '#22C55E',
+  },
+
   earningsCard: {
     backgroundColor: colors.primary,
-    marginHorizontal: moderateScale(14),
-    marginTop: verticalScale(18),
+    margin: moderateScale(16),
     borderRadius: moderateScale(16),
     padding: moderateScale(16),
   },
 
-  earningsText: {
-    fontSize: moderateScale(14),
-    marginTop: verticalScale(4),
+  earningTitle: {
+    fontSize: moderateScale(17),
+    fontWeight: '700',
   },
 
-  /* DOCUMENT CARD */
+  earningsText: {
+    fontSize: moderateScale(14),
+    marginTop: 4,
+  },
+
   documentCard: {
     width: DOC_WIDTH,
     height: verticalScale(100),
@@ -159,25 +143,21 @@ const styles = StyleSheet.create({
     marginRight: moderateScale(12),
     justifyContent: 'center',
     alignItems: 'center',
-    padding: moderateScale(10),
-    elevation: 3,
   },
 
   documentText: {
     color: '#fff',
-    fontWeight: '700',
-    textAlign: 'center',
     fontSize: moderateScale(18),
+    fontWeight: '700',
   },
+
   documentExpiry: {
     color: '#fff',
     fontSize: moderateScale(12),
-    marginTop: verticalScale(4),
+    marginTop: 4,
   },
+
   actionContainer: {
-    marginTop: verticalScale(20),
-    marginHorizontal: moderateScale(16),
+    margin: moderateScale(16),
   },
 });
-
-export default styles;

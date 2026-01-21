@@ -1,7 +1,12 @@
 import { StyleSheet } from 'react-native';
 import { moderateScale, verticalScale } from 'react-native-size-matters';
+import { colors } from '../../theme/colors';
 
 export default StyleSheet.create({
+   safeArea: {
+      flex: 1,
+      backgroundColor: colors.primary,
+    },
   screen: {
     flex: 1,
     backgroundColor: '#F8F9FA',

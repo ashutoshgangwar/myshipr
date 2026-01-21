@@ -1,15 +1,17 @@
-import React, { useState } from 'react';
+import React, {useState} from 'react';
 import {
   View,
   Text,
-  SafeAreaView,
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import styles from './DeliveryConfirmation.styles';
 import CoreButton from '../../component/CoreButton/CoreButton';
+import { useNavigation } from '@react-navigation/native';
 
-const DeliveryConfirmation= () => {
+const DeliveryConfirmation = () => {
+   const navigate = useNavigation();
   const [checked, setChecked] = useState({
     cargo: false,
     photos: false,
@@ -19,13 +21,11 @@ const DeliveryConfirmation= () => {
 
   const allChecked = Object.values(checked).every(Boolean);
 
-  const toggleCheck = key =>
-    setChecked(prev => ({ ...prev, [key]: !prev[key] }));
+  const toggleCheck = key => setChecked(prev => ({...prev, [key]: !prev[key]}));
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView contentContainerStyle={styles.scroll}>
-
         {/* Stepper */}
         <View style={styles.stepper}>
           <Text style={styles.stepDone}>Pickup</Text>
@@ -90,44 +90,44 @@ const DeliveryConfirmation= () => {
             onPress={() => toggleCheck('location')}
           />
         </View>
-
       </ScrollView>
 
       {/* Sticky Button */}
-      <View style={styles.footer}>
+      <SafeAreaView edges={['bottom']} style={styles.footer}>
         <CoreButton
           title="Complete Delivery"
-          disabled={!allChecked}
-          onPress={() => {}}
+          // disabled={!allChecked}
+         onPress={() => navigate.navigate('MainApp')}
+          style={{ width: '100%', marginTop: 0 }}
         />
-      </View>
+      </SafeAreaView>
     </SafeAreaView>
   );
 };
 
 /* ---------- Small Components ---------- */
 
-const UploadBox = ({ label }) => (
+const UploadBox = ({label}) => (
   <TouchableOpacity style={styles.uploadBox}>
     <Text style={styles.uploadIcon}>📷</Text>
     <Text style={styles.uploadLabel}>{label}</Text>
   </TouchableOpacity>
 );
 
-const IssueToggle = ({ label, danger }) => (
+const IssueToggle = ({label, danger}) => (
   <View style={[styles.issueBox, danger && styles.issueDanger]}>
     <Text style={styles.issueText}>{label}</Text>
   </View>
 );
 
-const InfoRow = ({ label, value }) => (
+const InfoRow = ({label, value}) => (
   <View style={styles.infoRow}>
     <Text style={styles.infoLabel}>{label}</Text>
     <Text style={styles.infoValue}>{value}</Text>
   </View>
 );
 
-const ChecklistItem = ({ label, checked, onPress }) => (
+const ChecklistItem = ({label, checked, onPress}) => (
   <TouchableOpacity style={styles.checkRow} onPress={onPress}>
     <View style={[styles.checkbox, checked && styles.checkboxChecked]} />
     <Text style={styles.checkText}>{label}</Text>

@@ -90,7 +90,7 @@ const ProofOfAddress = () => {
           title="Submit for Verification"
           bgColor={colors.primary}
           textColor="#fff"
-          onPress={() => navigate.navigate('MainApp')}
+          onPress={() => navigate.navigate('DeliveryConfirmation')}
         />
       </ScrollView>
     </View>

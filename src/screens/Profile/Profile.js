@@ -1,5 +1,5 @@
 import React, {useState} from 'react';
-import {View, Text, ScrollView, Image, TouchableOpacity} from 'react-native';
+import {View, Text, ScrollView, Image, TouchableOpacity, SafeAreaView} from 'react-native';
 import styles from './Profile.styles';
 import {colors} from '../../theme/colors';
 import ScreenHeader from '../../component/ScreenHeader/ScreenHeader';
@@ -65,6 +65,7 @@ const Profile = () => {
   };
 
   return (
+    <SafeAreaView style={styles.safeArea}>
     <View style={styles.screen}>
       <ScreenHeader title="Driver Profile" />
 
@@ -139,6 +140,7 @@ const Profile = () => {
         />
       </ScrollView>
     </View>
+    </SafeAreaView>
   );
 };
 
