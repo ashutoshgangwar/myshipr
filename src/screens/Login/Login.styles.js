@@ -1,47 +1,45 @@
-import { StyleSheet } from 'react-native';
-import { scale, verticalScale, moderateScale } from 'react-native-size-matters';
-import { colors } from '../../theme/colors';
+import {StyleSheet} from 'react-native';
+import {scale, verticalScale, moderateScale} from 'react-native-size-matters';
+import {colors} from '../../theme/colors';
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
+    flexGrow: 1,
     backgroundColor: colors.primary,
-    paddingHorizontal: scale(15),
+    paddingHorizontal: scale(20),
+    paddingVertical: verticalScale(20),
     justifyContent: 'center',
   },
 
   topSection: {
     alignItems: 'center',
-    marginBottom: verticalScale(10),
+    marginBottom: verticalScale(30),
   },
 
   image: {
     width: scale(260),
-    height: scale(120),
+    height: verticalScale(80),
   },
 
   card: {
     backgroundColor: '#fff',
-    borderRadius: moderateScale(18),
-    padding: moderateScale(22),
+    borderRadius: moderateScale(20),
+    padding: moderateScale(14),
     shadowColor: '#000',
-    shadowOpacity: 0.12,
-    shadowRadius: 16,
-    elevation: 8,
   },
 
   title: {
-    fontSize: moderateScale(24),
+    fontSize: moderateScale(28),
     fontWeight: '700',
     textAlign: 'center',
-    marginBottom: verticalScale(6),
-    color: colors.text_dark,
+    marginBottom: verticalScale(8),
+    color: colors.text_dark || '#111827',
   },
 
   subtitle: {
     textAlign: 'center',
     fontSize: moderateScale(14),
-    color: colors.text_light,
+    color: colors.text_light || '#6B7280',
     marginBottom: verticalScale(24),
   },
 
@@ -51,84 +49,114 @@ const styles = StyleSheet.create({
     backgroundColor: colors.input_bg,
     borderRadius: moderateScale(12),
     paddingVertical: verticalScale(14),
-    paddingHorizontal: scale(14),
+    paddingHorizontal: scale(10),
     fontSize: moderateScale(16),
-    marginBottom: verticalScale(16),
+    marginBottom: verticalScale(10),
+    color: colors.text_dark || '#111827',
+  },
+
+  passwordContainer: {
+    position: 'relative',
+    marginBottom: 0,
+  },
+
+  passwordInput: {
+    paddingRight: scale(50),
+    marginBottom: verticalScale(8),
   },
 
   disabledInput: {
     backgroundColor: '#F3F4F6',
+    opacity: 0.7,
+  },
+
+  showHideButton: {
+    position: 'absolute',
+    right: scale(12),
+    top: verticalScale(10),
+    width: moderateScale(40),
+    height: moderateScale(40),
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+
+  forgotPasswordContainer: {
+    alignSelf: 'flex-end',
+    marginBottom: verticalScale(10),
+    paddingVertical: verticalScale(4),
+  },
+
+  forgotPasswordText: {
+    color: colors.button_color,
+    fontWeight: '600',
+    fontSize: moderateScale(14),
   },
 
   button: {
     backgroundColor: colors.button_color,
-    paddingVertical: verticalScale(15),
+    paddingVertical: verticalScale(14),
     borderRadius: moderateScale(12),
-    marginTop: verticalScale(6),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  loadingButton: {
+    opacity: 0.7,
   },
 
   buttonText: {
-    color: colors.text_color_button,
+    color: colors.text_color_button || '#fff',
     textAlign: 'center',
     fontSize: moderateScale(16),
-    fontWeight: 'bold',
+    fontWeight: '700',
     letterSpacing: 0.5,
   },
 
-  resendText: {
-    marginTop: verticalScale(18),
-    textAlign: 'center',
+  orContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: verticalScale(10),
+  },
+
+  line: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#E5E7EB',
+  },
+
+  orText: {
+    marginHorizontal: scale(12),
     fontSize: moderateScale(13),
-    color: colors.text_light,
+    fontWeight: '600',
+    color: colors.text_light || '#6B7280',
   },
 
-  resend: {
-    color: colors.button_color,
-    fontWeight: '700',
+  googleButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: '#E5E7EB',
+    paddingVertical: verticalScale(12),
+    borderRadius: moderateScale(12),
+    backgroundColor: '#fff',
   },
-  // OR divider
-orContainer: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  marginVertical: verticalScale(18),
-},
 
-line: {
-  flex: 1,
-  height: 1,
-  backgroundColor: '#E5E7EB',
-},
+  disabledButton: {
+    opacity: 0.5,
+  },
 
-orText: {
-  marginHorizontal: scale(10),
-  fontSize: moderateScale(12),
-  color: colors.text_light,
-},
+  googleIcon: {
+    width: scale(24),
+    height: scale(24),
+    marginRight: scale(12),
+  },
 
-// Google button
-googleButton: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  justifyContent: 'center',
-  borderWidth: 1,
-  borderColor: '#E5E7EB',
-  paddingVertical: verticalScale(10),
-  borderRadius: moderateScale(12),
-  backgroundColor: '#fff',
-},
-
-googleIcon: {
-  width: scale(30),
-  height: scale(30),
-  marginRight: verticalScale(10),
-},
-
-googleText: {
-  fontSize: moderateScale(16),
-  fontWeight: '600',
-  color: '#111827',
-},
-
+  googleText: {
+    fontSize: moderateScale(16),
+    fontWeight: '600',
+    color: '#111827',
+  },
 });
 
 export default styles;

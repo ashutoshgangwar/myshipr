@@ -39,6 +39,7 @@ const NavigationScreen = () => {
   const [destination, setDestination] = useState(null);
   const [directions, setDirections] = useState([]);
   const [navigationStarted, setNavigationStarted] = useState(false);
+  const [followUser, setFollowUser] = useState(true);
   const [currentStep, setCurrentStep] = useState(0);
   const [mapRegion, setMapRegion] = useState(currentLocation);
   const [remainingDistance, setRemainingDistance] = useState(0);
@@ -126,6 +127,8 @@ const NavigationScreen = () => {
         latitudeDelta: 0.01,
         longitudeDelta: 0.01,
       });
+      // re-enable following when user explicitly centers map
+      setFollowUser(true);
     }
   };
 
@@ -362,7 +365,8 @@ const NavigationScreen = () => {
   }, [currentLocation, navigationStarted, currentStep, directions]);
 
   useEffect(() => {
-    if (navigationStarted) {
+    // Only auto-center the map while navigation if followUser is enabled.
+    if (navigationStarted && followUser) {
       setMapRegion({
         ...currentLocation,
         latitudeDelta: 0.01,
@@ -380,6 +384,8 @@ const NavigationScreen = () => {
     if (destination && directions.length > 0) {
       setSource(startLocation);
       setNavigationStarted(true);
+      // Enable following when navigation starts so map centers on user.
+      setFollowUser(true);
       setCurrentStep(0);
       setMapRegion({
         ...currentLocation,
@@ -415,7 +421,9 @@ const NavigationScreen = () => {
           provider={PROVIDER_GOOGLE}
           mapType="standard"
           showsUserLocation={false}
-          followsUserLocation={navigationStarted}>
+          followsUserLocation={navigationStarted}
+          onPanDrag={() => setFollowUser(false)}
+          onTouchStart={() => setFollowUser(false)}>
           {hasLocation && !navigationStarted && (
             <Marker
               coordinate={currentLocation}

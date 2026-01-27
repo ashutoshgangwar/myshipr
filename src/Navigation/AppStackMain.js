@@ -13,6 +13,8 @@ import MedicalCertificate from '../screens/DriverOnboarding/MedicalCertificate/M
 import SocialSecurityItin from '../screens/DriverOnboarding/SocialSecurityItin/SocialSecurityItin';
 import ProofOfAddress from '../screens/DriverOnboarding/ProofOfAddress/ProofOfAddress';
 import BackgroundCheckConsent from '../screens/DriverOnboarding/BackgroundCheckConsent/BackgroundCheckConsent';
+import ForgotPassword from '../screens/ForgotPassword/ForgotPassword';
+import ResetPassword from '../screens/ResetPassword/ResetPassword';
 
 
 
@@ -29,6 +31,8 @@ export default function AppStackMain() {
 
       {/* Auth */}
       <Stack.Screen name="LoginScreen" component={Login} />
+      <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
+      <Stack.Screen name="ResetPassword" component={ResetPassword} />
 
       {/* Main App with Bottom Tabs */}
       <Stack.Screen name="MainApp" component={AppBottomTabs} />
