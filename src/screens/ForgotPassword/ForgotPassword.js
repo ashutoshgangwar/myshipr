@@ -7,7 +7,7 @@ import {colors} from '../../theme/colors';
 const STATIC_OTP = '123456';
 
 const ForgotPassword = ({navigation}) => {
-  const [method, setMethod] = useState('mobile'); // mobile | email
+  const [method, setMethod] = useState('mobile');
   const [value, setValue] = useState('');
   const [otp, setOtp] = useState('');
   const [isOtpSent, setIsOtpSent] = useState(false);

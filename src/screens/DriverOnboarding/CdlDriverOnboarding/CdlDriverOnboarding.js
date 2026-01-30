@@ -82,14 +82,12 @@ const CdlDriverOnboarding = () => {
     setShowConsentModal(false);
     setDocs(prev => ({ ...prev, backgroundConsent: 'Given' }));
     setSubmitting(true);
-
-    // Simulate API call or submission
     setTimeout(() => {
       setSubmitting(false);
-      navigation.navigate('MainApp'); // Replace 'Profile' with your next screen
-    }, 2000); // 2s delay for demonstration
+      navigation.navigate('MainApp');
+    }, 2000);
   };
-
+  
   return (
     <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
       <View style={styles.screen}>
@@ -192,7 +190,6 @@ const CdlDriverOnboarding = () => {
               title={submitting ? 'Submitting...' : 'Submit for Verification'}
               bgColor={isSubmitEnabled ? colors.primary : '#236fbbff'}
               textColor="#fff"
-              // disabled={!isSubmitEnabled || submitting}
               onPress={() => setShowConsentModal(true)}
             />
           </View>
