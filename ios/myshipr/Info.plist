@@ -40,12 +40,30 @@
     <key>NSLocationWhenInUseUsageDescription</key>
     <string>Your location is required to fetch GPS coordinates</string>
 
+	<!-- Camera permissions for iOS -->
+	<key>NSCameraUsageDescription</key>
+    <string>Camera access required to scan documents</string>
+
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>Photo access required</string>
+
+    <key>NSPhotoLibraryAddUsageDescription</key>
+    <string>Photo access required</string>
+
+
+
     <key>NSMotionUsageDescription</key>
     <string>Motion access is required for device information</string>
 	<key>NSMicrophoneUsageDescription</key>
     <string>This app uses microphone to fill forms using voice</string>
 
-
+	<!-- Camera and Photo Library permissions for react-native-image-picker -->
+	<key>NSCameraUsageDescription</key>
+	<string>We need access to your camera to scan documents like CDL, medical certificates, and other IDs.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>We need access to your photo library to select and scan documents.</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>We need permission to save scanned documents to your photo library.</string>
 
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>

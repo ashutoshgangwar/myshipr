@@ -4,28 +4,57 @@ import {
   requestGalleryPermission,
 } from './PermissionService';
 
-const options = {
+const cameraOptions = {
   mediaType: 'photo',
-  quality: 1,
-  saveToPhotos: true,
+  cameraType: 'back',
+  quality: 0.8,
+  saveToPhotos: false,
+};
+
+const galleryOptions = {
+  mediaType: 'photo',
+  quality: 0.8,
+  selectionLimit: 1,
 };
 
 export const openCamera = async () => {
-  const hasPermission = await requestCameraPermission();
-  if (!hasPermission) return null;
+  try {
+    const hasPermission = await requestCameraPermission();
+    if (!hasPermission) return null;
 
-  const result = await launchCamera(options);
+    const result = await launchCamera(cameraOptions);
 
-  if (result.didCancel || !result.assets?.length) return null;
-  return result.assets[0];
+    if (result?.didCancel) return null;
+
+    if (result?.errorCode) {
+      console.log('Camera Error:', result.errorMessage);
+      return null;
+    }
+
+    return result?.assets?.[0] ?? null;
+  } catch (error) {
+    console.log('openCamera crash:', error);
+    return null;
+  }
 };
 
 export const openGallery = async () => {
-  const hasPermission = await requestGalleryPermission();
-  if (!hasPermission) return null;
+  try {
+    const hasPermission = await requestGalleryPermission();
+    if (!hasPermission) return null;
 
-  const result = await launchImageLibrary(options);
+    const result = await launchImageLibrary(galleryOptions);
 
-  if (result.didCancel || !result.assets?.length) return null;
-  return result.assets[0];
+    if (result?.didCancel) return null;
+
+    if (result?.errorCode) {
+      console.log('Gallery Error:', result.errorMessage);
+      return null;
+    }
+
+    return result?.assets?.[0] ?? null;
+  } catch (error) {
+    console.log('openGallery crash:', error);
+    return null;
+  }
 };
