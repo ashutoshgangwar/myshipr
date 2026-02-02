@@ -1,4 +1,4 @@
-import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
+import {launchCamera, launchImageLibrary} from 'react-native-image-picker';
 import {
   requestCameraPermission,
   requestGalleryPermission,

@@ -8,7 +8,7 @@ const OCRScanCard = ({
   image,
   placeholderImage,
   onScan,
-  status = 'pending', // pending | completed
+  status = 'pending',
   children,
 }) => {
   const isCompleted = status === 'completed';

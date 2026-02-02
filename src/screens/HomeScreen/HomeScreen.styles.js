@@ -1,163 +1,279 @@
-import { StyleSheet, Dimensions, Platform } from 'react-native';
-import { moderateScale, verticalScale, scale } from 'react-native-size-matters';
+import { StyleSheet } from 'react-native';
+import { moderateScale, verticalScale } from 'react-native-size-matters';
 import { colors } from '../../theme/colors';
 
-const { width } = Dimensions.get('window');
-
-const CARD_WIDTH = width * 0.65;
-const DOC_WIDTH = width * 0.42;
-
 export default StyleSheet.create({
-  safeArea: {
+  safe: {
     flex: 1,
-    backgroundColor: colors.primary,
+    backgroundColor: '#F8FAFC',
   },
+
+  /* Header */
   header: {
-    height: Platform.OS === 'ios' ? verticalScale(60) : verticalScale(60),
-    marginTop: Platform.OS === 'ios' ? 0 : verticalScale(1),
-    backgroundColor: colors.white,
+    backgroundColor: colors.primary,
+    padding: moderateScale(20),
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-  },
-
-  logo: {
-    width: width * 0.45,
-    marginTop: Platform.OS === 'ios' ? 0 : verticalScale(1),
-    height: Platform.OS === 'ios' ? verticalScale(80) : verticalScale(80),
-    resizeMode: 'contain',
-  },
-
-  iconWrapper: {
-    width: scale(40),
-    height: scale(40),
-    borderRadius: scale(20),
-    marginTop: Platform.OS === 'ios' ? 0 : verticalScale(1),
-    marginRight: moderateScale(20),
-    backgroundColor: colors.primary,
-    justifyContent: 'center',
     alignItems: 'center',
   },
 
-  scrollContent: {
-    paddingBottom: verticalScale(40),
-    backgroundColor: colors.white,
-    paddingHorizontal: scale(5),
-  },
-
-  availabilityContainer: {
-    flexDirection: 'row',
-    marginVertical: verticalScale(14),
-    marginHorizontal: moderateScale(10),
-  },
-
-  availabilityButton: {
-    flex: 1,
-    marginHorizontal: moderateScale(4),
-    paddingVertical: verticalScale(10),
-    borderRadius: moderateScale(25),
-    borderWidth: 1,
-    borderColor: '#9CA3AF',
-    alignItems: 'center',
-  },
-
-  availabilitySelected: {
-    backgroundColor: colors.primary,
-    borderColor: colors.primary,
-  },
-
-  availabilityText: {
+  welcome: {
+    color: '#DBEAFE',
     fontSize: moderateScale(13),
-    fontWeight: '600',
-    color: '#111827',
   },
 
-  availabilityTextSelected: {
+  username: {
     color: '#fff',
-  },
-
-  sectionTitle: {
-    fontSize: moderateScale(17),
+    fontSize: moderateScale(24),
     fontWeight: '700',
-    marginLeft: moderateScale(16),
-    marginVertical: verticalScale(10),
-    color: '#111827',
   },
 
-  bookingCard: {
+  profileCircle: {
+    width: moderateScale(44),
+    height: moderateScale(44),
+    backgroundColor: '#fff',
+    borderRadius: moderateScale(22),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  profileIcon: {
+    fontSize: moderateScale(18),
+  },
+
+  /* Verification */
+  verifyCard: {
+    margin: moderateScale(16),
     backgroundColor: colors.primary,
-    borderRadius: moderateScale(18),
-    width: CARD_WIDTH,
+    borderRadius: moderateScale(16),
     padding: moderateScale(14),
-    marginRight: moderateScale(12),
   },
 
-  bookingId: {
+  verifyRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+
+  verifyText: {
+    color: '#E0E7FF',
     fontSize: moderateScale(14),
-    fontWeight: '700',
   },
 
-  bookingRoute: {
-    fontSize: moderateScale(13),
-    marginVertical: 4,
+  verifiedBadge: {
+    backgroundColor: '#22C55E',
+    paddingHorizontal: moderateScale(12),
+    paddingVertical: verticalScale(4),
+    borderRadius: moderateScale(12),
   },
 
-  bookingDistance: {
+  badgeText: {
+    color: '#fff',
+    fontWeight: '600',
     fontSize: moderateScale(12),
   },
 
-  bookingStatus: {
-    fontWeight: '600',
-    marginTop: 6,
-  },
-
-  statusPending: {
-    color: '#FACC15',
-  },
-
-  statusPaid: {
-    color: '#22C55E',
-  },
-
-  earningsCard: {
+  progressTrack: {
+    height: verticalScale(6),
     backgroundColor: colors.primary,
+    borderRadius: moderateScale(10),
+    marginTop: verticalScale(10),
+  },
+
+  progressFill: {
+    width: '100%',
+    height: '100%',
+    backgroundColor: '#000',
+    borderRadius: moderateScale(10),
+  },
+
+  /* Stats */
+  statsCard: {
+    backgroundColor: '#fff',
+    marginHorizontal: moderateScale(16),
+    borderRadius: moderateScale(16),
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: verticalScale(16),
+  },
+
+  statItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+
+  statValue: {
+    fontSize: moderateScale(22),
+    fontWeight: '700',
+  },
+
+  statLabel: {
+    fontSize: moderateScale(12),
+    color: '#64748B',
+  },
+
+  divider: {
+    width: 1,
+    backgroundColor: '#E2E8F0',
+  },
+
+  /* Sections */
+  sectionTitle: {
+    fontSize: moderateScale(20),
+    fontWeight: '700',
+    marginHorizontal: moderateScale(16),
+    marginTop: verticalScale(24),
+  },
+
+  sectionRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginHorizontal: moderateScale(16),
+    marginTop: verticalScale(24),
+  },
+
+  seeAll: {
+    color: '#2563EB',
+    fontWeight: '600',
+  },
+
+  /* Cards */
+  loadCard: {
+    backgroundColor: '#fff',
     margin: moderateScale(16),
     borderRadius: moderateScale(16),
     padding: moderateScale(16),
   },
 
-  earningTitle: {
-    fontSize: moderateScale(17),
-    fontWeight: '700',
+  loadHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: verticalScale(12),
   },
 
-  earningsText: {
-    fontSize: moderateScale(14),
-    marginTop: 4,
-  },
-
-  documentCard: {
-    width: DOC_WIDTH,
-    height: verticalScale(100),
-    borderRadius: moderateScale(14),
-    marginRight: moderateScale(12),
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-
-  documentText: {
-    color: '#fff',
+  loadId: {
     fontSize: moderateScale(18),
     fontWeight: '700',
   },
 
-  documentExpiry: {
-    color: '#fff',
-    fontSize: moderateScale(12),
-    marginTop: 4,
+  loadSub: {
+    color: '#64748B',
+    marginTop: verticalScale(4),
   },
 
-  actionContainer: {
-    margin: moderateScale(16),
+  inTransitBadge: {
+    backgroundColor: colors.primary,
+    paddingHorizontal: moderateScale(12),
+    borderRadius: moderateScale(14),
+    justifyContent: 'center',
+  },
+
+  locationRow: {
+    flexDirection: 'row',
+    marginTop: verticalScale(12),
+  },
+
+  locationIcon: {
+    width: moderateScale(34),
+    height: moderateScale(34),
+    borderRadius: moderateScale(17),
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: moderateScale(12),
+  },
+
+  city: {
+    fontWeight: '600',
+  },
+
+  info: {
+    fontSize: moderateScale(12),
+    color: '#64748B',
+  },
+
+  progressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: verticalScale(14),
+  },
+
+  progressLabel: {
+    color: '#475569',
+  },
+
+  progressPercent: {
+    fontWeight: '700',
+  },
+
+  actionRow: {
+    flexDirection: 'row',
+    gap: moderateScale(12),
+    marginTop: verticalScale(16),
+  },
+
+  primaryBtn: {
+    flex: 1,
+    backgroundColor: colors.primary,
+    paddingVertical: verticalScale(12),
+    borderRadius: moderateScale(12),
+    alignItems: 'center',
+    marginLeft: verticalScale(10)
+  },
+  placeBtn: {
+    flex: 1,
+    backgroundColor: colors.primary,
+    paddingVertical: verticalScale(12),
+    borderRadius: moderateScale(12),
+    alignItems: 'center',
+    marginLeft: verticalScale(50)
+  },
+
+  primaryBtnText: {
+    color: '#fff',
+    fontWeight: '700',
+  },
+
+  secondaryBtn: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: '#CBD5E1',
+    borderRadius: moderateScale(12),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  secondaryBtnText: {
+    color: '#334155',
+    fontWeight: '600',
+  },
+
+  route: {
+    marginTop: verticalScale(6),
+  },
+
+  payRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: verticalScale(14),
+    alignItems: 'center',
+  },
+
+  payLabel: {
+    fontSize: moderateScale(12),
+    color: '#64748B',
+  },
+
+  payAmount: {
+    fontSize: moderateScale(22),
+    fontWeight: '700',
+    color: '#16A34A',
+  },
+
+  dateBadge: {
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    paddingHorizontal: moderateScale(10),
+    borderRadius: moderateScale(12),
+    justifyContent: 'center',
   },
 });

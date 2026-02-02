@@ -140,6 +140,7 @@ const styles = StyleSheet.create({
     paddingVertical: verticalScale(12),
     borderRadius: moderateScale(12),
     backgroundColor: '#fff',
+    marginBottom: verticalScale(20),
   },
 
   disabledButton: {

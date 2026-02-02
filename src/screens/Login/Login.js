@@ -88,6 +88,11 @@ const Login = () => {
     navigation.navigate('ForgotPassword');
   };
 
+  const handleCreateAccount= () => {
+    if (loading) return;
+    navigation.navigate('CreateAccount');
+  };
+
   return (
     <KeyboardAvoidingView
       style={{flex: 1}}
@@ -208,6 +213,13 @@ const Login = () => {
               />
               <Text style={styles.googleText}>Continue with Google</Text>
             </TouchableOpacity>
+            
+            <Button
+                title="Create Account"
+                onPress={handleCreateAccount}
+                textColor={colors.whi}
+                backgroundColor={colors.primary}
+              />
           </View>
         </ScrollView>
       </TouchableWithoutFeedback>

@@ -15,6 +15,10 @@ import ProofOfAddress from '../screens/DriverOnboarding/ProofOfAddress/ProofOfAd
 import BackgroundCheckConsent from '../screens/DriverOnboarding/BackgroundCheckConsent/BackgroundCheckConsent';
 import ForgotPassword from '../screens/ForgotPassword/ForgotPassword';
 import ResetPassword from '../screens/ResetPassword/ResetPassword';
+import CreateAccount from '../screens/CreateAccount/CreateAccount';
+import VerifyPhone from '../screens/VarifyPhone/VarifyPhone';
+import WelcomeHome from '../screens/WelcomeHome/WelcomeHome';
+import Onboarding from '../screens/Onboarding/Onboarding';
 
 
 
@@ -33,6 +37,10 @@ export default function AppStackMain() {
       <Stack.Screen name="LoginScreen" component={Login} />
       <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
       <Stack.Screen name="ResetPassword" component={ResetPassword} />
+      <Stack.Screen name="CreateAccount" component={CreateAccount} />
+      <Stack.Screen name="VerifyPhone" component={VerifyPhone} />
+      <Stack.Screen name="WelcomeHome" component={WelcomeHome} />
+      <Stack.Screen name="Onboarding" component={Onboarding} />
 
       {/* Main App with Bottom Tabs */}
       <Stack.Screen name="MainApp" component={AppBottomTabs} />
