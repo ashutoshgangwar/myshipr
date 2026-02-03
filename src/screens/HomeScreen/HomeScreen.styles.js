@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { moderateScale, verticalScale } from 'react-native-size-matters';
+import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
 import { colors } from '../../theme/colors';
 
 export default StyleSheet.create({
@@ -19,7 +19,8 @@ export default StyleSheet.create({
 
   welcome: {
     color: '#DBEAFE',
-    fontSize: moderateScale(13),
+    fontSize: moderateScale(18),
+    fontWeight: '500',
   },
 
   username: {
@@ -41,51 +42,54 @@ export default StyleSheet.create({
     fontSize: moderateScale(18),
   },
 
-  /* Verification */
-  verifyCard: {
-    margin: moderateScale(16),
-    backgroundColor: colors.primary,
-    borderRadius: moderateScale(16),
-    padding: moderateScale(14),
-  },
+/* Verification */
+verifyCard: {
+  margin: moderateScale(16),
+  backgroundColor: colors.primary,
+  borderRadius: moderateScale(16),
+  padding: moderateScale(14),
+},
 
-  verifyRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
+verifyRow: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+},
 
-  verifyText: {
-    color: '#E0E7FF',
-    fontSize: moderateScale(14),
-  },
+verifyText: {
+  color: '#E0E7FF',
+  fontSize: moderateScale(14),
+  fontWeight: '600',
+},
 
-  verifiedBadge: {
-    backgroundColor: '#22C55E',
-    paddingHorizontal: moderateScale(12),
-    paddingVertical: verticalScale(4),
-    borderRadius: moderateScale(12),
-  },
+verifiedBadge: {
+  backgroundColor: '#22C55E',
+  paddingHorizontal: moderateScale(12),
+  paddingVertical: verticalScale(4),
+  borderRadius: moderateScale(12),
+},
 
-  badgeText: {
-    color: '#fff',
-    fontWeight: '600',
-    fontSize: moderateScale(12),
-  },
+badgeText: {
+  color: '#fff',
+  fontWeight: '600',
+  fontSize: moderateScale(12),
+},
 
-  progressTrack: {
-    height: verticalScale(6),
-    backgroundColor: colors.primary,
-    borderRadius: moderateScale(10),
-    marginTop: verticalScale(10),
-  },
+progressTrack: {
+  height: verticalScale(6),
+  backgroundColor: 'rgba(255,255,255,0.25)', // better contrast
+  borderRadius: moderateScale(10),
+  marginTop: verticalScale(10),
+  overflow: 'hidden',
+},
 
-  progressFill: {
-    width: '100%',
-    height: '100%',
-    backgroundColor: '#000',
-    borderRadius: moderateScale(10),
-  },
+progressFill: {
+  width: '100%', // later dynamic (e.g. 72%)
+  height: '100%',
+  backgroundColor: '#FFFFFF',
+  borderRadius: moderateScale(10),
+},
+
 
   /* Stats */
   statsCard: {
@@ -191,19 +195,43 @@ export default StyleSheet.create({
     color: '#64748B',
   },
 
-  progressHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: verticalScale(14),
-  },
+ progressContainer: {
+  marginTop: verticalScale(16),
+},
 
-  progressLabel: {
-    color: '#475569',
-  },
+progressHeader: {
+  flexDirection: 'row',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  marginBottom: verticalScale(8),
+},
 
-  progressPercent: {
-    fontWeight: '700',
-  },
+progressLabel: {
+  fontSize: moderateScale(14),
+  fontWeight: '500',
+  color: '#475569', // slate gray
+},
+
+progressPercent: {
+  fontSize: moderateScale(14),
+  fontWeight: '700',
+  color: '#0F172A', // dark text
+},
+
+progressBarBackground: {
+  height: verticalScale(10),
+  width: '100%',
+  backgroundColor: '#D1D5DB', // light gray
+  borderRadius: moderateScale(10),
+  overflow: 'hidden',
+},
+
+progressBarFill: {
+  height: '100%',
+  backgroundColor: '#020617', // dark navy/black
+  borderRadius: moderateScale(10),
+},
+
 
   actionRow: {
     flexDirection: 'row',

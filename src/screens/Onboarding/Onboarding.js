@@ -9,6 +9,8 @@ import {
 } from 'react-native';
 import styles from './Onboarding.styles';
 import { useNavigation } from '@react-navigation/native';
+import StatusBar from '../../component/StatusBar/StatusBar';
+import { colors } from '../../theme/colors';
 
 const TABS = ['Documents', 'Vehicle Info', 'Review'];
 
@@ -36,6 +38,11 @@ const Onboarding = () => {
   };
   return (
     <SafeAreaView style={{flex: 1, backgroundColor: '#FFFFFF'}}>
+       <StatusBar
+        backgroundColor={colors.primary}
+        barStyle="dark-content"
+        translucent={false}
+      />
       {/* CONTENT */}
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -43,7 +50,6 @@ const Onboarding = () => {
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.headerTitle}>Complete Onboarding</Text>
-          <Text style={styles.skip}>Skip for now</Text>
         </View>
 
         {/* Progress */}
@@ -110,7 +116,7 @@ const Onboarding = () => {
             <Text style={styles.sectionTitle}>Vehicle Information</Text>
 
             <Text style={styles.label}>Vehicle Type *</Text>
-            <TextInput style={styles.input} value="Semi-Truck (18-Wheeler)" />
+            <TextInput style={styles.input} placeholder="Semi-Truck (18-Wheeler)" />
 
             <Text style={styles.label}>VIN Number *</Text>
             <TextInput

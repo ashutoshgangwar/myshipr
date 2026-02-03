@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {
   View,
   Text,
@@ -7,11 +7,32 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import styles from './HomeScreen.styles';
-
+import StatusBar from '../../component/StatusBar/StatusBar';
+import {colors} from '../../theme/colors';
+import {useNavigation} from '@react-navigation/native';
+import Notification_Icon from './../../assets/svg_icon/notification.svg';
 
 const HomeScreen = () => {
+  const navigation = useNavigation();
+  const [loading, setLoading] = useState(false);
+  const [isVerified, setIsVerified] = useState(true);
+
+  const handlePendingVerification = () => {
+    if (loading || isVerified) return;
+
+    navigation.navigate('CreateAccount');
+  };
+
+  const openMap = () => {
+    navigation.navigate('NavigationScreen');
+  };
   return (
     <SafeAreaView style={styles.safe}>
+      <StatusBar
+        backgroundColor={colors.primary}
+        barStyle="dark-content"
+        translucent={false}
+      />
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* HEADER */}
         <View style={styles.header}>
@@ -21,18 +42,29 @@ const HomeScreen = () => {
           </View>
 
           <View style={styles.profileCircle}>
-            <Text style={styles.profileIcon}>👤</Text>
+            <Notification_Icon width={25} height={25} />
           </View>
         </View>
 
         {/* VERIFICATION */}
         <View style={styles.verifyCard}>
-          <View style={styles.verifyRow}>
-            <Text style={styles.verifyText}>Verification Status</Text>
-            <View style={styles.verifiedBadge}>
-              <Text style={styles.badgeText}>Verified</Text>
+          <TouchableOpacity
+            onPress={handlePendingVerification}
+            activeOpacity={0.8}>
+            <View style={styles.verifyRow}>
+              <Text style={styles.verifyText}>Verification Status</Text>
+
+              <View
+                style={[
+                  styles.verifiedBadge,
+                  {backgroundColor: isVerified ? '#22C55E' : '#F59E0B'},
+                ]}>
+                <Text style={styles.badgeText}>
+                  {isVerified ? 'Verified' : 'Pending'}
+                </Text>
+              </View>
             </View>
-          </View>
+          </TouchableOpacity>
 
           <View style={styles.progressTrack}>
             <View style={styles.progressFill} />
@@ -69,23 +101,27 @@ const HomeScreen = () => {
             info="Picked up 4 hours ago"
           />
 
-          <Location
-            color="#EF4444"
-            city="Phoenix, AZ"
-            info="ETA: 2 hours"
-          />
+          <Location color="#EF4444" city="Phoenix, AZ" info="ETA: 2 hours" />
 
-          <View style={styles.progressHeader}>
-            <Text style={styles.progressLabel}>Progress</Text>
-            <Text style={styles.progressPercent}>72%</Text>
+          <View style={styles.progressContainer}>
+            {/* Header */}
+            <View style={styles.progressHeader}>
+              <Text style={styles.progressLabel}>Progress</Text>
+              <Text style={styles.progressPercent}>72%</Text>
+            </View>
+
+            {/* Progress Bar */}
+            <View style={styles.progressBarBackground}>
+              <View style={[styles.progressBarFill, {width: '72%'}]} />
+            </View>
           </View>
 
           <View style={styles.progressTrack}>
-            <View style={[styles.progressFill, { width: '72%' }]} />
+            <View style={[styles.progressFill, {width: '72%'}]} />
           </View>
 
           <View style={styles.actionRow}>
-            <TouchableOpacity style={styles.primaryBtn}>
+            <TouchableOpacity onPress={openMap} style={styles.primaryBtn}>
               <Text style={styles.primaryBtnText}>View Map</Text>
             </TouchableOpacity>
 
@@ -102,7 +138,6 @@ const HomeScreen = () => {
         </View>
 
         <AvailableLoad />
-
       </ScrollView>
     </SafeAreaView>
   );
@@ -112,19 +147,19 @@ export default HomeScreen;
 
 /* ---------- Small Components ---------- */
 
-const StatItem = ({ title, value, color }) => (
+const StatItem = ({title, value, color}) => (
   <View style={styles.statItem}>
-    <Text style={[styles.statValue, { color }]}>{value}</Text>
+    <Text style={[styles.statValue, {color}]}>{value}</Text>
     <Text style={styles.statLabel}>{title}</Text>
   </View>
 );
 
 const Divider = () => <View style={styles.divider} />;
 
-const Location = ({ color, city, info }) => (
+const Location = ({color, city, info}) => (
   <View style={styles.locationRow}>
-    <View style={[styles.locationIcon, { backgroundColor: color + '22' }]}>
-      <Text style={{ color }}>📍</Text>
+    <View style={[styles.locationIcon, {backgroundColor: color + '22'}]}>
+      <Text style={{color}}>📍</Text>
     </View>
     <View>
       <Text style={styles.city}>{city}</Text>

@@ -3,6 +3,10 @@ import {scale, verticalScale, moderateScale} from 'react-native-size-matters';
 import {colors} from '../../theme/colors';
 
 const styles = StyleSheet.create({
+  safe: {
+    flex: 1,
+    backgroundColor: '#F8FAFC',
+  },
   container: {
     flexGrow: 1,
     backgroundColor: colors.primary,
@@ -10,7 +14,6 @@ const styles = StyleSheet.create({
     paddingVertical: verticalScale(20),
     justifyContent: 'center',
   },
-
   topSection: {
     alignItems: 'center',
     marginBottom: verticalScale(30),

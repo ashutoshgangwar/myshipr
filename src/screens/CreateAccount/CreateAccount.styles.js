@@ -1,13 +1,14 @@
-import { StyleSheet } from 'react-native';
-import {
-  scale,
-  verticalScale,
-  moderateScale,
-} from 'react-native-size-matters';
+import {StyleSheet} from 'react-native';
+import {scale, verticalScale, moderateScale} from 'react-native-size-matters';
 
 export default StyleSheet.create({
+  safe: {
+    flex: 1,
+    backgroundColor: '#F8FAFC',
+  },
+
   container: {
-    padding: scale(20),
+    padding: scale(15),
     backgroundColor: '#FFFFFF',
   },
 
@@ -26,7 +27,7 @@ export default StyleSheet.create({
   subtitle: {
     fontSize: moderateScale(14),
     color: '#6B7280',
-    marginBottom: verticalScale(24),
+    marginBottom: verticalScale(1),
   },
 
   label: {
@@ -126,41 +127,40 @@ export default StyleSheet.create({
     fontWeight: '600',
   },
   modalContainer: {
-  flex: 1,
-  backgroundColor: '#FFFFFF',
-  padding: scale(20),
-},
+    flex: 1,
+    backgroundColor: '#FFFFFF',
+    padding: scale(20),
+  },
 
-modalTitle: {
-  fontSize: moderateScale(20),
-  fontWeight: '700',
-  marginBottom: verticalScale(16),
-},
+  modalTitle: {
+    fontSize: moderateScale(20),
+    fontWeight: '700',
+    marginBottom: verticalScale(16),
+  },
 
-stateItem: {
-  paddingVertical: verticalScale(14),
-  borderBottomWidth: 1,
-  borderBottomColor: '#E5E7EB',
-},
+  stateItem: {
+    paddingVertical: verticalScale(14),
+    borderBottomWidth: 1,
+    borderBottomColor: '#E5E7EB',
+  },
 
-stateText: {
-  fontSize: moderateScale(15),
-  color: '#111827',
-},
+  stateText: {
+    fontSize: moderateScale(15),
+    color: '#111827',
+  },
 
-modalClose: {
-  marginTop: verticalScale(20),
-  height: verticalScale(48),
-  backgroundColor: '#2563EB',
-  borderRadius: moderateScale(12),
-  justifyContent: 'center',
-  alignItems: 'center',
-},
+  modalClose: {
+    marginTop: verticalScale(20),
+    height: verticalScale(48),
+    backgroundColor: '#2563EB',
+    borderRadius: moderateScale(12),
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
 
-modalCloseText: {
-  color: '#FFFFFF',
-  fontSize: moderateScale(16),
-  fontWeight: '600',
-},
-
+  modalCloseText: {
+    color: '#FFFFFF',
+    fontSize: moderateScale(16),
+    fontWeight: '600',
+  },
 });

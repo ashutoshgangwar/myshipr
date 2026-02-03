@@ -7,6 +7,10 @@ import {
 import { colors } from '../../theme/colors';
 
 export default StyleSheet.create({
+   safe: {
+    flex: 1,
+    backgroundColor: '#F8FAFC',
+  },
   container: {
     flex: 1,
     backgroundColor: '#F8FAFC',

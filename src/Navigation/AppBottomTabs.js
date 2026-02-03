@@ -1,6 +1,7 @@
 import React from 'react';
-import { Text } from 'react-native';
-import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
+import {Platform, Text} from 'react-native';
+import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
+import {scale, verticalScale, moderateScale} from 'react-native-size-matters';
 
 import HomeScreen from '../screens/HomeScreen/HomeScreen';
 import LoadsTab from '../screens/LoadsTab/LoadsTab';
@@ -12,49 +13,54 @@ import LoadsIcon from '../assets/svg_icon/Loads.svg';
 import HOSIcon from '../assets/svg_icon/HOS.svg';
 import ProfileIcon from '../assets/svg_icon/profile.svg';
 
-import { colors } from '../theme/colors';
+import {colors} from '../theme/colors';
 
 const Tab = createBottomTabNavigator();
 
 /* 🔹 Reusable Label Component */
-const TabLabel = ({ label, focused, color }) => (
+const TabLabel = ({label, focused, color}) => (
   <Text
     style={{
-      fontSize: 12,
-      fontWeight: focused ? '700' : '400',
+      fontSize: moderateScale(12),
+      fontWeight: focused ? '700' : '500',
       color,
-    }}
-  >
+    }}>
     {label}
   </Text>
 );
 
-/* 🔹 Reusable Icon Wrapper */
-const TabIcon = (IconComponent) => ({ color }) => (
-  <IconComponent width={24} height={24} fill={color} />
-);
+const TabIcon =
+  IconComponent =>
+  ({color}) =>
+    <IconComponent width={moderateScale(20)} height={moderateScale(20)} fill={color} />;
 
 export default function AppBottomTabs() {
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
+
         tabBarStyle: {
-          height: 64,
-          paddingBottom: 8,
-          paddingTop: 6,
+          height: Platform.OS === 'ios' ? moderateScale(84) : moderateScale(64),
+          paddingBottom: Platform.OS === 'ios' ? moderateScale(24) : moderateScale(8),
+          paddingTop: moderateScale(6),
+          backgroundColor: '#FFFFFF',
+          borderTopWidth: 0.5,
+          borderTopColor: '#E5E7EB',
         },
+
         tabBarActiveTintColor: colors.primary,
         tabBarInactiveTintColor: '#9CA3AF',
-      }}
-    >
+
+        tabBarLabelStyle: {
+          fontSize: moderateScale(12),
+        },
+      }}>
       <Tab.Screen
         name="HomeTab"
         component={HomeScreen}
         options={{
-          tabBarLabel: (props) => (
-            <TabLabel {...props} label="Home" />
-          ),
+          tabBarLabel: props => <TabLabel {...props} label="Home" />,
           tabBarIcon: TabIcon(HomeIcon),
         }}
       />
@@ -63,9 +69,7 @@ export default function AppBottomTabs() {
         name="LoadsTab"
         component={LoadsTab}
         options={{
-          tabBarLabel: (props) => (
-            <TabLabel {...props} label="Loads" />
-          ),
+          tabBarLabel: props => <TabLabel {...props} label="Loads" />,
           tabBarIcon: TabIcon(LoadsIcon),
         }}
       />
@@ -74,9 +78,7 @@ export default function AppBottomTabs() {
         name="HOSTab"
         component={HOSTab}
         options={{
-          tabBarLabel: (props) => (
-            <TabLabel {...props} label="HOS" />
-          ),
+          tabBarLabel: props => <TabLabel {...props} label="HOS" />,
           tabBarIcon: TabIcon(HOSIcon),
         }}
       />
@@ -85,9 +87,7 @@ export default function AppBottomTabs() {
         name="DriverProfileTab"
         component={Profile}
         options={{
-          tabBarLabel: (props) => (
-            <TabLabel {...props} label="Profile" />
-          ),
+          tabBarLabel: props => <TabLabel {...props} label="Profile" />,
           tabBarIcon: TabIcon(ProfileIcon),
         }}
       />

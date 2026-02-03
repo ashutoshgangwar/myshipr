@@ -1,6 +1,9 @@
 import React, { useState, useMemo } from 'react';
 import { View, Text, TouchableOpacity, FlatList } from 'react-native';
 import styles from './LoadsTab.styles';
+import StatusBar from '../../component/StatusBar/StatusBar';
+import { colors } from '../../theme/colors';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const TABS = [
   { key: 'available', label: 'Available' },
@@ -102,6 +105,12 @@ const LoadsTab = () => {
   );
 
   return (
+      <SafeAreaView style={styles.safe}>
+          <StatusBar
+            backgroundColor={colors.primary}
+            barStyle="dark-content"
+            translucent={false}
+          />
     <View style={styles.container}>
       <Text style={styles.title}>Loads</Text>
 
@@ -143,6 +152,7 @@ const LoadsTab = () => {
         }
       />
     </View>
+    </SafeAreaView>
   );
 };
 

@@ -7,10 +7,17 @@ import {
   ScrollView,
 } from 'react-native';
 import styles from './Profile.styles';
+import StatusBar from '../../component/StatusBar/StatusBar';
+import { colors } from '../../theme/colors';
 
 const Profile = () => {
   return (
     <SafeAreaView style={styles.container}>
+       <StatusBar
+            backgroundColor={colors.primary}
+            barStyle="dark-content"
+            translucent={false}
+          />
       <ScrollView showsVerticalScrollIndicator={false}>
         {/* Header */}
         <View style={styles.header}>

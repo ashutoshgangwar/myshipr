@@ -9,6 +9,7 @@ import styles from './WelcomeHome.styles';
 import Button from '../../component/Button/Button';
 import {colors} from '../../theme/colors';
 import {useNavigation} from '@react-navigation/native';
+import StatusBar from '../../component/StatusBar/StatusBar';
 
 const WelcomeHome = () => {
   const navigation = useNavigation();
@@ -22,6 +23,11 @@ const WelcomeHome = () => {
 
   return (
     <SafeAreaView style={{flex: 1}}>
+       <StatusBar
+        backgroundColor={colors.primary}
+        barStyle="dark-content"
+        translucent={false}
+      />
       <ScrollView
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.scrollContainer}

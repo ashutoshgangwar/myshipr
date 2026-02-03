@@ -7,10 +7,17 @@ import {
   TouchableOpacity,
 } from 'react-native';
 import styles from './HOSTab.styles';
+import StatusBar from '../../component/StatusBar/StatusBar';
+import { colors } from '../../theme/colors';
 
 const HOSTab = () => {
   return (
     <SafeAreaView style={styles.safe}>
+       <StatusBar
+            backgroundColor={colors.primary}
+            barStyle="dark-content"
+            translucent={false}
+          />
       <ScrollView showsVerticalScrollIndicator={false}>
 
         {/* HEADER */}
