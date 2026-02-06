@@ -25,7 +25,7 @@
     "react-native-device-info": "^15.0.1",
     "react-native-dotenv": "^3.4.11",
     "react-native-gesture-handler": "^2.18.0",
-    "react-native-google-places-autocomplete": "^2.6.4",
+    "react-native-google-places-autocomplete": "^2.5.6",
     "react-native-image-picker": "^7.0.3",
     "react-native-maps": "^1.26.0",
     "react-native-maps-directions": "^1.9.0",
