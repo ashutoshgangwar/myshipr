@@ -121,6 +121,14 @@ export default StyleSheet.create({
     borderRadius: moderateScale(12),
     alignItems: 'center',
     paddingVertical: verticalScale(20),
+    paddingHorizontal: scale(12),
+  },
+
+  uploadPreview: {
+    width: '100%',
+    height: verticalScale(160),
+    borderRadius: moderateScale(10),
+    marginBottom: verticalScale(8),
   },
 
   uploadIcon: {

@@ -6,18 +6,31 @@ import {
   TouchableOpacity,
   TextInput,
   SafeAreaView,
+  Image,
+  Alert,
 } from 'react-native';
 import styles from './Onboarding.styles';
 import { useNavigation } from '@react-navigation/native';
 import StatusBar from '../../component/StatusBar/StatusBar';
 import { colors } from '../../theme/colors';
+import { scanWithCamera, scanWithGallery } from '../../services/OCRService';
 
 const TABS = ['Documents', 'Vehicle Info', 'Review'];
+
+const DOCUMENTS = [
+  { id: 'cdl', title: "CDL (Commercial Driver's License)" },
+  { id: 'dotMedical', title: 'DOT Medical Certificate' },
+  { id: 'medical', title: 'Medical certificate' },
+];
 
 const Onboarding = () => {
     const navigation = useNavigation()
    const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('Documents');
+  const [documents, setDocuments] = useState({});
+
+  const completedCount = DOCUMENTS.filter(doc => documents[doc.id]).length;
+  const canContinueFromDocs = completedCount === DOCUMENTS.length;
 
   const goNext = () => {
     if (activeTab === 'Documents') setActiveTab('Vehicle Info');
@@ -35,6 +48,26 @@ const Onboarding = () => {
     if (loading) return;
     setLoading(false)
     navigation.navigate('MainApp');
+  };
+
+  const scanDocument = async (docId, source) => {
+    try {
+      const result =
+        source === 'gallery' ? await scanWithGallery() : await scanWithCamera();
+      if (!result?.image) return;
+
+      setDocuments(prev => ({ ...prev, [docId]: result.image }));
+    } catch (err) {
+      console.log('Scan error:', err);
+    }
+  };
+
+  const handleDocumentPress = docId => {
+    Alert.alert('Upload document', 'Choose an option', [
+      { text: 'Take Photo', onPress: () => scanDocument(docId, 'camera') },
+      { text: 'Upload from Gallery', onPress: () => scanDocument(docId, 'gallery') },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
   };
   return (
     <SafeAreaView style={{flex: 1, backgroundColor: '#FFFFFF'}}>
@@ -85,12 +118,8 @@ const Onboarding = () => {
               </Text>
             </View>
 
-            {[
-              "CDL (Commercial Driver's License)",
-              'DOT Medical Certificate',
-              'Medical certificate'
-            ].map(title => (
-              <View style={styles.card} key={title}>
+            {DOCUMENTS.map(({ id, title }) => (
+              <View style={styles.card} key={id}>
                 <View style={styles.cardHeader}>
                   <Text style={styles.cardTitle}>{title} *</Text>
                   {/* <View style={styles.status}>
@@ -98,13 +127,30 @@ const Onboarding = () => {
                   </View> */}
                 </View>
 
-                <View style={styles.uploadBox}>
-                  <Text style={styles.uploadIcon}>📷</Text>
-                  <Text style={styles.uploadText}>Take Photo or Upload</Text>
-                  <Text style={styles.uploadSub}>
-                    PDF, JPG, PNG · Max 10MB
-                  </Text>
-                </View>
+                <TouchableOpacity
+                  activeOpacity={0.8}
+                  onPress={() => handleDocumentPress(id)}
+                  style={styles.uploadBox}
+                >
+                  {documents[id]?.uri ? (
+                    <>
+                      <Image
+                        source={{ uri: documents[id].uri }}
+                        style={styles.uploadPreview}
+                        resizeMode="cover"
+                      />
+                      <Text style={styles.uploadText}>Retake Photo</Text>
+                    </>
+                  ) : (
+                    <>
+                      <Text style={styles.uploadIcon}>📷</Text>
+                      <Text style={styles.uploadText}>Take Photo or Upload</Text>
+                      <Text style={styles.uploadSub}>
+                        PDF, JPG, PNG · Max 10MB
+                      </Text>
+                    </>
+                  )}
+                </TouchableOpacity>
               </View>
             ))}
           </>
@@ -215,14 +261,14 @@ const Onboarding = () => {
           <TouchableOpacity
             style={[
               styles.primaryBtn,
-              activeTab === 'Documents' && styles.disabledBtn,
+              activeTab === 'Documents' && !canContinueFromDocs && styles.disabledBtn,
             ]}
-            disabled={activeTab === 'Documents'}
+            disabled={activeTab === 'Documents' && !canContinueFromDocs}
             onPress={goNext}>
             <Text
               style={[
                 styles.primaryText,
-                activeTab === 'Documents' && styles.disabledText,
+                activeTab === 'Documents' && !canContinueFromDocs && styles.disabledText,
               ]}>
               {activeTab === 'Documents'
                 ? 'Continue to Vehicle Info'
@@ -232,7 +278,7 @@ const Onboarding = () => {
 
           {activeTab === 'Documents' && (
             <Text style={styles.bottomText}>
-              Upload 5 more required document(s)
+              Upload {Math.max(DOCUMENTS.length - completedCount, 0)} more required document(s)
             </Text>
           )}
         </View>
