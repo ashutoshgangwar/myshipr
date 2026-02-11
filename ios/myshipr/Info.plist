@@ -13,7 +13,7 @@
 	<key>CFBundleInfoDictionaryVersion</key>
 	<string>6.0</string>
 	<key>CFBundleName</key>
-	<string>$(PRODUCT_NAME)</string>
+	<string></string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>
@@ -22,8 +22,10 @@
 	<string>????</string>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>LSApplicationCategoryType</key>
+	<string></string>
 	<key>LSRequiresIPhoneOS</key>
-	<true/>
+	<false/>
 	<key>NSAppTransportSecurity</key>
 	<dict>
 		<key>NSAllowsArbitraryLoads</key>
@@ -31,51 +33,46 @@
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
-
-	<!-- Location permissions for iOS -->
-	<key>NSLocationWhenInUseUsageDescription</key>
-	<string>We need your location to provide location-based OCR and services.</string>
-	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
-	<string>We need your location even when the app is in the background to track services accurately.</string>
-    <key>NSLocationWhenInUseUsageDescription</key>
-    <string>Your location is required to fetch GPS coordinates</string>
-
-	<!-- Camera permissions for iOS -->
-	<key>NSCameraUsageDescription</key>
-    <string>Camera access required to scan documents</string>
-
-    <key>NSPhotoLibraryUsageDescription</key>
-    <string>Photo access required</string>
-
-    <key>NSPhotoLibraryAddUsageDescription</key>
-    <string>Photo access required</string>
-
-
-
-    <key>NSMotionUsageDescription</key>
-    <string>Motion access is required for device information</string>
-	<key>NSMicrophoneUsageDescription</key>
-    <string>This app uses microphone to fill forms using voice</string>
-
-	<!-- Camera and Photo Library permissions for react-native-image-picker -->
 	<key>NSCameraUsageDescription</key>
 	<string>We need access to your camera to scan documents like CDL, medical certificates, and other IDs.</string>
-	<key>NSPhotoLibraryUsageDescription</key>
-	<string>We need access to your photo library to select and scan documents.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>We need your location even when the app is in the background to track services accurately.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Your location is required to fetch GPS coordinates</string>
+	<key>NSMicrophoneUsageDescription</key>
+	<string>This app uses microphone to fill forms using voice</string>
+	<key>NSMotionUsageDescription</key>
+	<string>Motion access is required for device information</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>
 	<string>We need permission to save scanned documents to your photo library.</string>
-
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>We need access to your photo library to select and scan documents.</string>
+	<key>UIDeviceFamily</key>
+	<array>
+		<integer>1</integer>
+		<integer>0</integer>
+		<integer>0</integer>
+	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIRequiredDeviceCapabilities</key>
 	<array>
 		<string>arm64</string>
 	</array>
+	<key>UIStatusBarStyle</key>
+	<string></string>
 	<key>UISupportedInterfaceOrientations</key>
 	<array>
-		<string>UIInterfaceOrientationPortrait</string>
 		<string>UIInterfaceOrientationLandscapeLeft</string>
 		<string>UIInterfaceOrientationLandscapeRight</string>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>

@@ -38,7 +38,7 @@ const HomeScreen = () => {
         <View style={styles.header}>
           <View>
             <Text style={styles.welcome}>Welcome back,</Text>
-            <Text style={styles.username}>John Miller</Text>
+            <Text style={styles.username}>Ashutosh Gangwar</Text>
           </View>
 
           <View style={styles.profileCircle}>

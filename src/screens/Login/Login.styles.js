@@ -46,6 +46,40 @@ const styles = StyleSheet.create({
     marginBottom: verticalScale(24),
   },
 
+  tabContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#F3F4F6',
+    borderRadius: moderateScale(12),
+    padding: moderateScale(4),
+    marginBottom: verticalScale(16),
+  },
+
+  tab: {
+    flex: 1,
+    paddingVertical: verticalScale(10),
+    borderRadius: moderateScale(10),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  tabActive: {
+    backgroundColor: colors.button_color,
+    shadowColor: colors.button_color,
+    shadowOpacity: 0.06,
+    shadowRadius: moderateScale(6),
+    elevation: 2,
+  },
+
+  tabText: {
+    fontSize: moderateScale(14),
+    fontWeight: '600',
+    color: '#6B7280',
+  },
+
+  tabTextActive: {
+    color: '#111827',
+  },
+
   input: {
     borderWidth: 1,
     borderColor: colors.border_Color,
@@ -58,6 +92,38 @@ const styles = StyleSheet.create({
     color: colors.text_dark || '#111827',
   },
 
+  phoneInputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border_Color,
+    backgroundColor: colors.input_bg,
+    borderRadius: moderateScale(12),
+    marginBottom: verticalScale(10),
+    paddingHorizontal: scale(10),
+  },
+
+  countryCode: {
+    fontSize: moderateScale(16),
+    fontWeight: '600',
+    color: colors.text_dark || '#111827',
+    marginRight: scale(8),
+  },
+
+  countryDivider: {
+    width: 1,
+    height: '60%',
+    backgroundColor: colors.border_Color,
+    marginRight: scale(8),
+  },
+
+  phoneInput: {
+    flex: 1,
+    paddingVertical: verticalScale(14),
+    fontSize: moderateScale(16),
+    color: colors.text_dark || '#111827',
+  },
+
   passwordContainer: {
     position: 'relative',
     marginBottom: 0,
@@ -66,6 +132,41 @@ const styles = StyleSheet.create({
   passwordInput: {
     paddingRight: scale(50),
     marginBottom: verticalScale(8),
+  },
+
+  otpRow: {
+    marginBottom: verticalScale(4),
+  },
+
+  otpInput: {
+    textAlign: 'center',
+    letterSpacing: 2,
+  },
+
+  otpBoxContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: verticalScale(8),
+  },
+
+  otpBox: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: colors.border_Color,
+    backgroundColor: colors.input_bg,
+    borderRadius: moderateScale(12),
+    textAlign: 'center',
+    fontSize: moderateScale(18),
+    paddingVertical: verticalScale(12),
+    marginHorizontal: scale(4),
+    color: colors.text_dark || '#111827',
+  },
+
+  otpTimerText: {
+    textAlign: 'right',
+    color: '#9CA3AF',
+    fontSize: moderateScale(13),
+    marginBottom: verticalScale(10),
   },
 
   disabledInput: {

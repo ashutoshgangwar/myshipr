@@ -5,11 +5,9 @@ import {
   TextInput,
   TouchableOpacity,
   ScrollView,
-  Modal,
-  FlatList,
 } from 'react-native';
 import styles from './CreateAccount.styles';
-import {US_STATES} from '../../constants/usStates';
+import {Roles} from '../../constants/Roles';
 import Button from '../../component/Button/Button';
 import {colors} from '../../theme/colors';
 import {useNavigation} from '@react-navigation/native';
@@ -18,9 +16,10 @@ import StatusBar from '../../component/StatusBar/StatusBar';
 
 const CreateAccount = () => {
   const navigation = useNavigation();
-  const [stateModal, setStateModal] = useState(false);
-  const [selectedState, setSelectedState] = useState('');
+  const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
+  const [selectedRole, setSelectedRole] = useState('');
   const [loading, setLoading] = useState(false);
+  const [termsAccepted, setTermsAccepted] = useState(false);
 
   const handleSubmit = () => {
     if (loading) return;
@@ -35,112 +34,149 @@ const CreateAccount = () => {
         barStyle="dark-content"
         translucent={false}
       />
-      <ScrollView contentContainerStyle={styles.container}>
-        {/* Header */}
-        <Text style={styles.title}>Create Account</Text>
-        <Text style={styles.subtitle}>Join as a professional driver</Text>
+      <ScrollView
+        contentContainerStyle={styles.container}
+        keyboardShouldPersistTaps="handled"
+        showsVerticalScrollIndicator={false}>
+          <Text style={styles.title}>Create Account</Text>
+          <Text style={styles.subtitle}>Join as a professional driver</Text>
 
-        {/* Full Name */}
-        <Text style={styles.label}>Full Name *</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Ashutosh Gangwar"
-          placeholderTextColor="#9CA3AF"
-        />
 
-        {/* Email */}
-        <Text style={styles.label}>Email Address *</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="xyz@example.com"
-          placeholderTextColor="#9CA3AF"
-          keyboardType="email-address"
-        />
-
-        {/* Phone */}
-        <Text style={styles.label}>Phone Number *</Text>
-        <View style={styles.phoneRow}>
-          <View style={styles.countryCode}>
-            <Text style={styles.countryText}>+1</Text>
-          </View>
-          <TextInput
-            style={styles.phoneInput}
-            placeholder="(555) 123-4567"
-            placeholderTextColor="#9CA3AF"
-            keyboardType="phone-pad"
-          />
-        </View>
-
-        {/* CDL */}
-        <Text style={styles.label}>CDL Number *</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Enter CDL number"
-          placeholderTextColor="#9CA3AF"
-        />
-
-        {/* State */}
-        <Text style={styles.label}>CDL State *</Text>
-        <TouchableOpacity
-          style={styles.dropdown}
-          onPress={() => setStateModal(true)}>
-          <Text style={styles.dropdownText}>
-            {selectedState || 'Select State'}
-          </Text>
-        </TouchableOpacity>
-
-        {/* Password */}
-        <Text style={styles.label}>Password *</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Create a strong password"
-          placeholderTextColor="#9CA3AF"
-          secureTextEntry
-        />
-
-        {/* Terms */}
-        <View style={styles.termsRow}>
-          <View style={styles.checkbox} />
-          <Text style={styles.termsText}>
-            I agree to the Terms of Service and Privacy Policy
-          </Text>
-        </View>
-
-        {/* Button */}
-        <Button
-          title="Create Account"
-          onPress={handleSubmit}
-          textColor={colors.white}
-          backgroundColor={colors.primary}
-        />
-
-        {/* STATE MODAL */}
-        <Modal visible={stateModal} animationType="slide">
-          <View style={styles.modalContainer}>
-            <Text style={styles.modalTitle}>Select CDL State</Text>
-
-            <FlatList
-              data={US_STATES}
-              keyExtractor={item => item}
-              renderItem={({item}) => (
-                <TouchableOpacity
-                  style={styles.stateItem}
-                  onPress={() => {
-                    setSelectedState(item);
-                    setStateModal(false);
-                  }}>
-                  <Text style={styles.stateText}>{item}</Text>
-                </TouchableOpacity>
-              )}
+        <View style={styles.formCard}>
+          {/* Full Name */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Full Name *</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Ashutosh Gangwar"
+              placeholderTextColor={colors.placeholder}
+              autoCapitalize="words"
+              autoCorrect={false}
+              textContentType="name"
             />
-
-            <TouchableOpacity
-              style={styles.modalClose}
-              onPress={() => setStateModal(false)}>
-              <Text style={styles.modalCloseText}>Close</Text>
-            </TouchableOpacity>
           </View>
-        </Modal>
+
+          {/* Email */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Email Address *</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="xyz@example.com"
+              placeholderTextColor={colors.placeholder}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              autoCorrect={false}
+              textContentType="emailAddress"
+            />
+          </View>
+
+          {/* Phone */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Phone Number *</Text>
+            <View style={styles.phoneRow}>
+              <View style={styles.countryCode}>
+                <Text style={styles.countryText}>+1</Text>
+              </View>
+              <TextInput
+                style={[styles.input, styles.phoneInput]}
+                placeholder="(555) 123-4567"
+                placeholderTextColor={colors.placeholder}
+                keyboardType="phone-pad"
+                textContentType="telephoneNumber"
+              />
+            </View>
+          </View>
+
+          {/* Role */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Role *</Text>
+            <View style={styles.dropdownWrapper}>
+              <TouchableOpacity
+                style={styles.dropdown}
+                onPress={() => setRoleDropdownOpen(prev => !prev)}>
+                <View style={styles.dropdownRow}>
+                  <Text
+                    style={[
+                      styles.dropdownText,
+                      !selectedRole && styles.dropdownPlaceholder,
+                    ]}>
+                    {selectedRole || 'Select Role'}
+                  </Text>
+                  <Text style={styles.dropdownChevron}>
+                    {roleDropdownOpen ? '▲' : '▼'}
+                  </Text>
+                </View>
+              </TouchableOpacity>
+
+              {roleDropdownOpen && (
+                <View style={styles.dropdownMenu}>
+                  {Roles.map(role => (
+                    <TouchableOpacity
+                      key={role.value}
+                      style={styles.dropdownItem}
+                      onPress={() => {
+                        setSelectedRole(role.label);
+                        setRoleDropdownOpen(false);
+                      }}>
+                      <Text style={styles.dropdownItemText}>{role.label}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
+          </View>
+
+          {/* Password */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Password *</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Create a strong password"
+              placeholderTextColor={colors.placeholder}
+              secureTextEntry
+              textContentType="newPassword"
+            />
+          </View>
+
+          {/* Confirm Password */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Confirm Password *</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Confirm your password"
+              placeholderTextColor={colors.placeholder}
+              secureTextEntry
+              textContentType="password"
+            />
+          </View>
+
+          {/* Terms */}
+          <TouchableOpacity
+            style={styles.termsRow}
+            activeOpacity={0.7}
+            onPress={() => setTermsAccepted(prev => !prev)}>
+            <View
+              style={[
+                styles.checkbox,
+                termsAccepted && styles.checkboxChecked,
+              ]}>
+              {termsAccepted && <Text style={styles.checkboxTick}>✓</Text>}
+            </View>
+            <Text style={styles.termsText}>
+              I agree to the Terms of Service and Privacy Policy
+            </Text>
+          </TouchableOpacity>
+
+          {/* Button */}
+          <View style={styles.buttonWrap}>
+            <Button
+              title="Create Account"
+              onPress={handleSubmit}
+              textColor={colors.text_color_button}
+              backgroundColor={colors.button_color}
+            />
+          </View>
+        </View>
       </ScrollView>
     </SafeAreaView>
   );
