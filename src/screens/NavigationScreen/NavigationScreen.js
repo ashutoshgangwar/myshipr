@@ -7,6 +7,7 @@ import {
   ActivityIndicator,
   Keyboard,
   TouchableWithoutFeedback,
+  Platform,
 } from 'react-native';
 import styles from './NavigationScreen.styles';
 import {moderateScale, verticalScale, scale} from 'react-native-size-matters';
@@ -418,7 +419,7 @@ const NavigationScreen = () => {
           style={styles.map}
           region={mapRegion}
           onRegionChangeComplete={setMapRegion}
-          provider={PROVIDER_GOOGLE}
+          provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
           mapType="standard"
           showsUserLocation={false}
           followsUserLocation={navigationStarted}
