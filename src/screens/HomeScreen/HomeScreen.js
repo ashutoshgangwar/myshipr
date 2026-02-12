@@ -26,6 +26,20 @@ const HomeScreen = () => {
   const openMap = () => {
     navigation.navigate('NavigationScreen');
   };
+
+  const openAvailableLoads = () => {
+    navigation.navigate('AvailableLoadsScreen');
+  };
+
+  const openPlaceBid = () => {
+    navigation.navigate('PlaceBidScreen', {
+      load: {
+        id: 'SH-301',
+        route: 'Dallas, TX → Houston, TX',
+        estimatedPay: '$650',
+      },
+    });
+  };
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar
@@ -134,10 +148,12 @@ const HomeScreen = () => {
         {/* AVAILABLE LOADS */}
         <View style={styles.sectionRow}>
           <Text style={styles.sectionTitle}>Available Loads</Text>
-          <Text style={styles.seeAll}>See All</Text>
+          <TouchableOpacity onPress={openAvailableLoads}>
+            <Text style={styles.seeAll}>See All</Text>
+          </TouchableOpacity>
         </View>
 
-        <AvailableLoad />
+        <AvailableLoad onPlaceBid={openPlaceBid} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -168,7 +184,7 @@ const Location = ({color, city, info}) => (
   </View>
 );
 
-const AvailableLoad = () => (
+const AvailableLoad = ({onPlaceBid}) => (
   <View style={styles.loadCard}>
     <View style={styles.loadHeader}>
       <View>
@@ -189,7 +205,7 @@ const AvailableLoad = () => (
         <Text style={styles.payAmount}>$650</Text>
       </View>
 
-      <TouchableOpacity style={styles.placeBtn}>
+      <TouchableOpacity style={styles.placeBtn} onPress={onPlaceBid}>
         <Text style={styles.primaryBtnText}>Place Bid</Text>
       </TouchableOpacity>
     </View>

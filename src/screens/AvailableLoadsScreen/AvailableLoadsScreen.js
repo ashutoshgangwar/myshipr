@@ -17,6 +17,10 @@ const loads = [
     drop: 'Jaipur Hub',
     notes: 'Handle with care',
     rate: '₹42 / km',
+    rateValue: 42,
+    distanceKm: 281,
+    pickupTiming: 'Today, 10:30 AM',
+    pickupTimeValue: 630,
   },
   {
     id: 'LD-1024',
@@ -26,11 +30,27 @@ const loads = [
     drop: 'Agra',
     notes: 'Fragile items',
     rate: '₹38 / km',
+    rateValue: 38,
+    distanceKm: 221,
+    pickupTiming: 'Today, 2:00 PM',
+    pickupTimeValue: 840,
   },
 ];
 
-const AvailableLoadsScreen = () => {
+const AvailableLoadsScreen = ({ navigation }) => {
   const [filter, setFilter] = useState('Distance');
+
+  const handlePlaceBid = load => {
+    navigation.navigate('PlaceBidScreen', { load });
+  };
+
+  const sortedLoads = [...loads].sort((a, b) => {
+    if (filter === 'Rate') return b.rateValue - a.rateValue;
+    if (filter === 'Pickup Timing') {
+      return a.pickupTimeValue - b.pickupTimeValue;
+    }
+    return a.distanceKm - b.distanceKm;
+  });
 
   const renderLoadCard = ({ item }) => (
     <View style={styles.loadCard}>
@@ -49,6 +69,9 @@ const AvailableLoadsScreen = () => {
         📍 Pickup: {item.pickup}
       </Text>
       <Text style={styles.locationText}>
+        ⏱ Pickup Timing: {item.pickupTiming}
+      </Text>
+      <Text style={styles.locationText}>
         🏁 Drop: {item.drop}
       </Text>
 
@@ -57,7 +80,10 @@ const AvailableLoadsScreen = () => {
       </Text>
 
       {/* ACTION */}
-      <TouchableOpacity style={styles.bidButton}>
+      <TouchableOpacity
+        style={styles.bidButton}
+        onPress={() => handlePlaceBid(item)}
+      >
         <Text style={styles.bidText}>Place Bid</Text>
       </TouchableOpacity>
     </View>
@@ -67,7 +93,7 @@ const AvailableLoadsScreen = () => {
     <SafeAreaView style={styles.container}>
       {/* FILTER BAR */}
       <View style={styles.filterBar}>
-        {['Distance', 'Rate', 'Pickup Time'].map(item => (
+        {['Distance', 'Rate', 'Pickup Timing'].map(item => (
           <TouchableOpacity
             key={item}
             style={[
@@ -90,7 +116,7 @@ const AvailableLoadsScreen = () => {
 
       {/* LOAD LIST */}
       <FlatList
-        data={loads}
+        data={sortedLoads}
         renderItem={renderLoadCard}
         keyExtractor={item => item.id}
         contentContainerStyle={styles.listPadding}
