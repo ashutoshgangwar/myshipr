@@ -7,7 +7,6 @@ import {
   ScrollView,
 } from 'react-native';
 import styles from './CreateAccount.styles';
-import {Roles} from '../../constants/Roles';
 import Button from '../../component/Button/Button';
 import {colors} from '../../theme/colors';
 import {useNavigation} from '@react-navigation/native';
@@ -16,8 +15,6 @@ import StatusBar from '../../component/StatusBar/StatusBar';
 
 const CreateAccount = () => {
   const navigation = useNavigation();
-  const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
-  const [selectedRole, setSelectedRole] = useState('');
   const [loading, setLoading] = useState(false);
   const [termsAccepted, setTermsAccepted] = useState(false);
 
@@ -39,20 +36,43 @@ const CreateAccount = () => {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
           <Text style={styles.title}>Create Account</Text>
-          <Text style={styles.subtitle}>Join as a professional driver</Text>
-
-
         <View style={styles.formCard}>
-          {/* Full Name */}
+          {/* First Name */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Full Name *</Text>
+            <Text style={styles.label}>First Name *</Text>
             <TextInput
               style={styles.input}
-              placeholder="Ashutosh Gangwar"
+              placeholder="Ashutosh"
               placeholderTextColor={colors.placeholder}
               autoCapitalize="words"
               autoCorrect={false}
-              textContentType="name"
+              textContentType="givenName"
+            />
+          </View>
+
+          {/* Middle Name */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Middle Name</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Kumar"
+              placeholderTextColor={colors.placeholder}
+              autoCapitalize="words"
+              autoCorrect={false}
+              textContentType="middleName"
+            />
+          </View>
+
+          {/* Last Name */}
+          <View style={styles.inputGroup}>
+            <Text style={styles.label}>Last Name *</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Gangwar"
+              placeholderTextColor={colors.placeholder}
+              autoCapitalize="words"
+              autoCorrect={false}
+              textContentType="familyName"
             />
           </View>
 
@@ -87,44 +107,6 @@ const CreateAccount = () => {
             </View>
           </View>
 
-          {/* Role */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Role *</Text>
-            <View style={styles.dropdownWrapper}>
-              <TouchableOpacity
-                style={styles.dropdown}
-                onPress={() => setRoleDropdownOpen(prev => !prev)}>
-                <View style={styles.dropdownRow}>
-                  <Text
-                    style={[
-                      styles.dropdownText,
-                      !selectedRole && styles.dropdownPlaceholder,
-                    ]}>
-                    {selectedRole || 'Select Role'}
-                  </Text>
-                  <Text style={styles.dropdownChevron}>
-                    {roleDropdownOpen ? '▲' : '▼'}
-                  </Text>
-                </View>
-              </TouchableOpacity>
-
-              {roleDropdownOpen && (
-                <View style={styles.dropdownMenu}>
-                  {Roles.map(role => (
-                    <TouchableOpacity
-                      key={role.value}
-                      style={styles.dropdownItem}
-                      onPress={() => {
-                        setSelectedRole(role.label);
-                        setRoleDropdownOpen(false);
-                      }}>
-                      <Text style={styles.dropdownItemText}>{role.label}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
-            </View>
-          </View>
 
           {/* Password */}
           <View style={styles.inputGroup}>

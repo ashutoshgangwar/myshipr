@@ -36,7 +36,7 @@ scrollContainer: {
     fontWeight: '700',
     color: '#FFFFFF',
     textAlign: 'center',
-    marginBottom: verticalScale(12),
+    marginBottom: verticalScale(1),
   },
 
   subtitle: {
@@ -44,7 +44,7 @@ scrollContainer: {
     color: '#E5EDFF',
     textAlign: 'center',
     lineHeight: moderateScale(24),
-    marginBottom: verticalScale(30),
+    marginBottom: verticalScale(20),
   },
 
   card: {

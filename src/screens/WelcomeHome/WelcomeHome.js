@@ -10,6 +10,7 @@ import Button from '../../component/Button/Button';
 import {colors} from '../../theme/colors';
 import {useNavigation} from '@react-navigation/native';
 import StatusBar from '../../component/StatusBar/StatusBar';
+import Truck_Icon from '../../assets/svg_icon/truck-icon.svg';
 
 const WelcomeHome = () => {
   const navigation = useNavigation();
@@ -35,7 +36,7 @@ const WelcomeHome = () => {
         <View style={styles.container}>
           {/* Icon */}
           <View style={styles.iconWrapper}>
-            <Text style={styles.truckIcon}>🚚</Text>
+            <Truck_Icon width={100} height={100} />
           </View>
 
           {/* Title */}
@@ -43,8 +44,7 @@ const WelcomeHome = () => {
 
           {/* Subtitle */}
           <Text style={styles.subtitle}>
-            Let's get you set up. We'll need some documents and information to
-            verify your account.
+          Let’s create your company profile.
           </Text>
 
           {/* Steps Card */}
@@ -54,7 +54,7 @@ const WelcomeHome = () => {
               <View>
                 <Text style={styles.stepTitle}>Upload Required Documents</Text>
                 <Text style={styles.stepSub}>
-                  CDL, Medical Certificate, Insurance
+                  CDL, Insurance
                 </Text>
               </View>
             </View>

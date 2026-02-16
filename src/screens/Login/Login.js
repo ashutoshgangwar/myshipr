@@ -200,20 +200,6 @@ const Login = () => {
       otpRefs.current[index - 1]?.focus();
     }
   };
-
-  // const handleGoogleLogin = () => {
-  //   if (loading) return;
-
-  //   setLoading(true);
-  //   setTimeout(() => {
-  //     setLoading(false);
-  //     navigation.reset({
-  //       index: 0,
-  //       routes: [{name: 'CdlDriverOnboarding'}],
-  //     });
-  //   }, 1000);
-  // };
-
   const handleForgotPassword = () => {
     if (loading) return;
     navigation.navigate('ForgotPassword');
@@ -232,7 +218,7 @@ const Login = () => {
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <SafeAreaView style={styles.safe}>
           <StatusBar
-            backgroundColor={colors.primary}
+            backgroundColor={colors.white}
             barStyle="dark-content"
             translucent={false}
           />
@@ -336,6 +322,7 @@ const Login = () => {
                       accessibilityLabel="Password input"
                       editable={!loading}
                     />
+                    
 
                     <TouchableOpacity
                       onPress={toggleShowPassword}

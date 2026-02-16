@@ -48,6 +48,7 @@ export default StyleSheet.create({
     shadowRadius: 12,
     shadowOffset: {width: 0, height: 6},
     elevation: 4,
+    marginTop: verticalScale(10),
   },
 
   inputGroup: {

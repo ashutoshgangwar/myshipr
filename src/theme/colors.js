@@ -1,5 +1,5 @@
 export const colors = {
-  primary: '#03376aa1',
+  primary: '#0b0b0b',
   button_color: '#F57C00',
   button_pressed: '#E06D00',
   text_color_button: '#000',
