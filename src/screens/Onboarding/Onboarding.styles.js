@@ -4,6 +4,7 @@ import {
   verticalScale,
   moderateScale,
 } from 'react-native-size-matters';
+import { colors } from '../../theme/colors';
 
 export default StyleSheet.create({
   scrollContainer: {
@@ -151,14 +152,14 @@ export default StyleSheet.create({
   sectionTitle: {
     fontSize: moderateScale(18),
     fontWeight: '700',
-    marginBottom: verticalScale(16),
+    marginBottom: verticalScale(10),
   },
 
   label: {
     fontSize: moderateScale(14),
     fontWeight: '600',
     marginBottom: verticalScale(6),
-    marginTop: verticalScale(12),
+    marginTop: 0,
   },
 
   input: {
@@ -170,13 +171,18 @@ export default StyleSheet.create({
     fontSize: moderateScale(14),
   },
 
+  field: {
+    marginBottom: verticalScale(12),
+  },
+
   row: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    gap: scale(12),
   },
 
-  half: {
-    width: '48%',
+  fieldHalf: {
+    flex: 1,
   },
 
   bottom: {
@@ -327,7 +333,7 @@ primaryBtn: {
   width: '100%',
   height: verticalScale(52),
   borderRadius: moderateScale(14),
-  backgroundColor: '#2563EB',
+  backgroundColor: colors.primary,
   justifyContent: 'center',
   alignItems: 'center',
 },
@@ -335,6 +341,6 @@ primaryBtn: {
 primaryText: {
   fontSize: moderateScale(16),
   fontWeight: '600',
-  color: '#FFFFFF',
+  color: colors.white,
 }
 });

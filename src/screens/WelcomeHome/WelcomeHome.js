@@ -54,7 +54,7 @@ const WelcomeHome = () => {
               <View>
                 <Text style={styles.stepTitle}>Upload Required Documents</Text>
                 <Text style={styles.stepSub}>
-                  CDL, Insurance
+                  Commercial Liability Insurance
                 </Text>
               </View>
             </View>

@@ -35,48 +35,68 @@ const CreateAccount = () => {
         contentContainerStyle={styles.container}
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
+        <View style={styles.headerCard}>
           <Text style={styles.title}>Create Account</Text>
+        </View>
+
         <View style={styles.formCard}>
-          {/* First Name */}
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Personal details</Text>
+            <Text style={styles.sectionSubtitle}>
+              Tell us about you to personalize your account.
+            </Text>
+          </View>
+
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>First Name *</Text>
+            <Text style={styles.label}>Company Name *</Text>
             <TextInput
               style={styles.input}
-              placeholder="Ashutosh"
+              placeholder="XYZ Corp"
               placeholderTextColor={colors.placeholder}
               autoCapitalize="words"
               autoCorrect={false}
-              textContentType="givenName"
+              textContentType="organizationName"
             />
           </View>
+          <View style={styles.row}>
+            <View style={[styles.fieldHalf, styles.fieldLeft]}>
+              <Text style={styles.label}>First Name *</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Ashutosh"
+                placeholderTextColor={colors.placeholder}
+                autoCapitalize="words"
+                autoCorrect={false}
+                textContentType="givenName"
+              />
+            </View>
+            
 
-          {/* Middle Name */}
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Middle Name</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Kumar"
-              placeholderTextColor={colors.placeholder}
-              autoCapitalize="words"
-              autoCorrect={false}
-              textContentType="middleName"
-            />
+            <View style={styles.fieldHalf}>
+              <Text style={styles.label}>Middle Name *</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Kumar"
+                placeholderTextColor={colors.placeholder}
+                autoCapitalize="words"
+                autoCorrect={false}
+                textContentType="familyName"
+              />
+            </View>
           </View>
 
-          {/* Last Name */}
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Last Name *</Text>
+            <Text style={styles.label}>Last Name</Text>
             <TextInput
               style={styles.input}
               placeholder="Gangwar"
               placeholderTextColor={colors.placeholder}
               autoCapitalize="words"
               autoCorrect={false}
-              textContentType="familyName"
+              textContentType="lastName"
             />
           </View>
 
-          {/* Email */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Email Address *</Text>
             <TextInput
@@ -90,7 +110,6 @@ const CreateAccount = () => {
             />
           </View>
 
-          {/* Phone */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Phone Number *</Text>
             <View style={styles.phoneRow}>
@@ -107,8 +126,6 @@ const CreateAccount = () => {
             </View>
           </View>
 
-
-          {/* Password */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Password *</Text>
             <TextInput
@@ -120,7 +137,6 @@ const CreateAccount = () => {
             />
           </View>
 
-          {/* Confirm Password */}
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Confirm Password *</Text>
             <TextInput
@@ -132,7 +148,6 @@ const CreateAccount = () => {
             />
           </View>
 
-          {/* Terms */}
           <TouchableOpacity
             style={styles.termsRow}
             activeOpacity={0.7}
@@ -149,7 +164,6 @@ const CreateAccount = () => {
             </Text>
           </TouchableOpacity>
 
-          {/* Button */}
           <View style={styles.buttonWrap}>
             <Button
               title="Create Account"

@@ -5,12 +5,12 @@ import {colors} from '../../theme/colors';
 export default StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.primary,
   },
 
   container: {
     paddingHorizontal: scale(18),
-    paddingTop: verticalScale(16),
+    paddingTop: verticalScale(18),
     paddingBottom: verticalScale(30),
     backgroundColor: colors.primary,
   },
@@ -21,54 +21,73 @@ export default StyleSheet.create({
     marginBottom: verticalScale(10),
   },
 
+  headerCard: {
+    backgroundColor: colors.primary,
+    borderRadius: moderateScale(18),
+    paddingHorizontal: scale(15),
+    marginBottom: verticalScale(20),
+    paddingVertical: verticalScale(1),
+  },
+
   title: {
-    fontSize: moderateScale(28),
+    fontSize: moderateScale(26),
     fontWeight: '800',
     color: colors.white,
   },
 
   subtitle: {
-    fontSize: moderateScale(15),
+    fontSize: moderateScale(14),
     color: colors.white,
-    marginBottom: verticalScale(16),
-  },
-
-  helperText: {
-    fontSize: moderateScale(13),
-    color: colors.muted,
     marginTop: verticalScale(6),
   },
+
 
   formCard: {
     backgroundColor: colors.white,
     borderRadius: moderateScale(16),
-    padding: scale(15),
+    padding: scale(16),
     shadowColor: '#0F172A',
     shadowOpacity: 0.08,
     shadowRadius: 12,
     shadowOffset: {width: 0, height: 6},
     elevation: 4,
-    marginTop: verticalScale(10),
+    marginBottom: verticalScale(10),
   },
 
   inputGroup: {
-    marginBottom: verticalScale(5),
+    marginBottom: verticalScale(12),
+  },
+
+  sectionHeader: {
+    marginBottom: verticalScale(12),
+  },
+
+  sectionTitle: {
+    fontSize: moderateScale(15),
+    fontWeight: '700',
+    color: colors.text_dark,
+    marginBottom: verticalScale(10),
+  },
+
+  sectionSubtitle: {
+    fontSize: moderateScale(12.5),
+    color: colors.text_light,
   },
 
   label: {
-    fontSize: moderateScale(15),
+    fontSize: moderateScale(13.5),
     color: colors.text_dark,
     marginBottom: verticalScale(6),
     fontWeight: '600',
   },
 
   input: {
-    height: verticalScale(45),
+    height: verticalScale(46),
     borderWidth: 1,
     borderColor: colors.border_Color,
     borderRadius: moderateScale(12),
     paddingHorizontal: scale(12),
-    fontSize: moderateScale(12),
+    fontSize: moderateScale(14),
     color: colors.text_dark,
     backgroundColor: colors.input_bg,
   },
@@ -76,6 +95,20 @@ export default StyleSheet.create({
   phoneRow: {
     flexDirection: 'row',
     alignItems: 'center',
+  },
+
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: verticalScale(12),
+  },
+
+  fieldHalf: {
+    flex: 1,
+  },
+
+  fieldLeft: {
+    marginRight: scale(10),
   },
 
   countryCode: {
@@ -166,8 +199,8 @@ export default StyleSheet.create({
   termsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: verticalScale(8),
-    marginBottom: verticalScale(6),
+    marginTop: verticalScale(4),
+    marginBottom: verticalScale(8),
   },
 
   checkbox: {
@@ -201,7 +234,7 @@ export default StyleSheet.create({
   },
 
   buttonWrap: {
-    marginTop: verticalScale(14),
+    marginTop: verticalScale(12),
   },
 
   button: {
