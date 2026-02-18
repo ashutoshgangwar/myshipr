@@ -17,7 +17,7 @@ import GPS_Icon from '../../assets/svg_icon/gps-svg.svg';
 import Arrow_left_right from '../../assets/svg_icon/arrow-right-lef.svg';
 import Location_Icon from '../../assets/svg_icon/location.svg';
 
-import MapView, {Marker, PROVIDER_GOOGLE} from 'react-native-maps';
+import MapView, {Marker, Polyline, PROVIDER_GOOGLE} from 'react-native-maps';
 import MapViewDirections from 'react-native-maps-directions';
 import {
   getCurrentLocation,
@@ -25,7 +25,11 @@ import {
   clearWatchLocation,
 } from '../../utils/LocationService';
 import {GooglePlacesAutocomplete} from 'react-native-google-places-autocomplete';
-import {GOOGLE_MAPS_API_KEY} from '@env';
+import {
+  GOOGLE_MAPS_API_KEY,
+  OPTIMOROUTE_API_KEY,
+  OPTIMOROUTE_DRIVER_SERIAL,
+} from '@env';
 
 const NavigationScreen = () => {
   const [currentLocation, setCurrentLocation] = useState({
@@ -56,9 +60,170 @@ const NavigationScreen = () => {
   const [pickupAddress, setPickupAddress] = useState('Pickup location');
   const [dropAddress, setDropAddress] = useState('Drop location');
   const [travelMode, setTravelMode] = useState('driving'); 
+  const [useOptimoroute, setUseOptimoroute] = useState(false);
+  const [optimoroutePolyline, setOptimoroutePolyline] = useState([]);
+  const [optimorouteStops, setOptimorouteStops] = useState([]);
+  const [optimorouteLoading, setOptimorouteLoading] = useState(false);
+  const [optimorouteError, setOptimorouteError] = useState('');
 
   const sourceAutocompleteRef = useRef(null);
   const destinationAutocompleteRef = useRef(null);
+
+  const decodePolyline = encoded => {
+    if (!encoded || typeof encoded !== 'string') return [];
+    let index = 0;
+    let lat = 0;
+    let lng = 0;
+    const coordinates = [];
+
+    while (index < encoded.length) {
+      let b;
+      let shift = 0;
+      let result = 0;
+
+      do {
+        b = encoded.charCodeAt(index++) - 63;
+        result |= (b & 0x1f) << shift;
+        shift += 5;
+      } while (b >= 0x20);
+
+      const dlat = result & 1 ? ~(result >> 1) : result >> 1;
+      lat += dlat;
+
+      shift = 0;
+      result = 0;
+
+      do {
+        b = encoded.charCodeAt(index++) - 63;
+        result |= (b & 0x1f) << shift;
+        shift += 5;
+      } while (b >= 0x20);
+
+      const dlng = result & 1 ? ~(result >> 1) : result >> 1;
+      lng += dlng;
+
+      coordinates.push({
+        latitude: lat / 1e5,
+        longitude: lng / 1e5,
+      });
+    }
+
+    return coordinates;
+  };
+
+  const buildStepsFromStops = stops =>
+    stops.map((stop, index) => ({
+      instruction:
+        stop.address || stop.locationName || `Stop ${index + 1}`,
+      distance:
+        typeof stop.distance === 'number' ? `${stop.distance} m` : 'N/A',
+      duration:
+        typeof stop.travelTime === 'number'
+          ? `${Math.max(1, Math.ceil(stop.travelTime / 60))} min`
+          : 'N/A',
+      start_location: {
+        lat: stop.latitude,
+        lng: stop.longitude,
+      },
+      end_location: {
+        lat: stop.latitude,
+        lng: stop.longitude,
+      },
+    }));
+
+  const applyOptimorouteStops = stops => {
+    if (!stops.length) return;
+    const firstStop = stops[0];
+    const lastStop = stops[stops.length - 1];
+    const sourceDescription =
+      firstStop.address || firstStop.locationName || 'OptimoRoute Start';
+    const destinationDescription =
+      lastStop.address || lastStop.locationName || 'OptimoRoute Destination';
+
+    const nextSource = {
+      latitude: firstStop.latitude,
+      longitude: firstStop.longitude,
+      description: sourceDescription,
+    };
+    const nextDestination = {
+      latitude: lastStop.latitude,
+      longitude: lastStop.longitude,
+      description: destinationDescription,
+    };
+
+    setSource(nextSource);
+    setDestination(nextDestination);
+    setPickupAddress(sourceDescription);
+    setDropAddress(destinationDescription);
+    setSourceText(sourceDescription);
+    setDestinationText(destinationDescription);
+
+    if (sourceAutocompleteRef.current) {
+      sourceAutocompleteRef.current.setAddressText(sourceDescription);
+    }
+    if (destinationAutocompleteRef.current) {
+      destinationAutocompleteRef.current.setAddressText(destinationDescription);
+    }
+
+    setDirections(buildStepsFromStops(stops));
+    setCurrentStep(0);
+  };
+
+  const fetchOptimorouteRoute = async () => {
+    if (!OPTIMOROUTE_API_KEY) {
+      setOptimorouteError('OptimoRoute API key is missing.');
+      return;
+    }
+
+    setOptimorouteLoading(true);
+    setOptimorouteError('');
+
+    try {
+      const today = new Date().toISOString().slice(0, 10);
+      const driverSerial = OPTIMOROUTE_DRIVER_SERIAL?.trim();
+      const serialQuery = driverSerial
+        ? `&driverSerial=${encodeURIComponent(driverSerial)}`
+        : '';
+      const url = `https://api.optimoroute.com/v1/get_routes?key=${OPTIMOROUTE_API_KEY}&date=${today}&includeRoutePolyline=true${serialQuery}`;
+
+      const response = await fetch(url);
+      const data = await response.json();
+
+      if (!data?.success || !Array.isArray(data.routes) || !data.routes.length) {
+        setOptimorouteError(data?.message || 'No OptimoRoute routes found.');
+        return;
+      }
+
+      let route = data.routes[0];
+      if (driverSerial) {
+        const match = data.routes.find(
+          item => item.driverSerial === driverSerial,
+        );
+        if (match) route = match;
+      }
+
+      const polyline = decodePolyline(route.routePolyline);
+      const stops = Array.isArray(route.stops) ? route.stops : [];
+
+      setOptimoroutePolyline(polyline);
+      setOptimorouteStops(stops);
+      setUseOptimoroute(true);
+
+      applyOptimorouteStops(stops);
+    } catch (error) {
+      console.log('OptimoRoute error:', error);
+      setOptimorouteError('Failed to fetch OptimoRoute route.');
+    } finally {
+      setOptimorouteLoading(false);
+    }
+  };
+
+  const disableOptimoroute = () => {
+    setUseOptimoroute(false);
+    setOptimoroutePolyline([]);
+    setOptimorouteStops([]);
+    setOptimorouteError('');
+  };
 
   useEffect(() => {
     let watcher;
@@ -315,6 +480,7 @@ const NavigationScreen = () => {
   };
 
   useEffect(() => {
+    if (useOptimoroute) return;
     const startLocation =
       source ||
       (hasLocation
@@ -329,7 +495,7 @@ const NavigationScreen = () => {
     } else {
       setDirections([]);
     }
-  }, [source, destination, currentLocation, hasLocation]);
+  }, [source, destination, currentLocation, hasLocation, useOptimoroute]);
 
   useEffect(() => {
     updateRemaining();
@@ -460,13 +626,21 @@ const NavigationScreen = () => {
             />
           )}
 
-          {source && destination && (
+          {!useOptimoroute && source && destination && (
             <MapViewDirections
               origin={source}
               destination={destination}
               apikey={GOOGLE_MAPS_API_KEY}
               strokeWidth={4}
               strokeColor="#3B82F6"
+            />
+          )}
+
+          {useOptimoroute && optimoroutePolyline.length > 0 && (
+            <Polyline
+              coordinates={optimoroutePolyline}
+              strokeWidth={4}
+              strokeColor="#7C3AED"
             />
           )}
         </MapView>
@@ -524,6 +698,28 @@ const NavigationScreen = () => {
               </View>
             </TouchableOpacity>
           )}
+
+          <TouchableOpacity
+            style={[
+              styles.navigateButton,
+              styles.optimorouteButton,
+              useOptimoroute && styles.optimorouteButtonActive,
+            ]}
+            onPress={useOptimoroute ? disableOptimoroute : fetchOptimorouteRoute}
+            activeOpacity={0.8}
+            disabled={optimorouteLoading}>
+            {optimorouteLoading ? (
+              <ActivityIndicator size="small" color="#FFFFFF" />
+            ) : (
+              <Text style={styles.optimorouteText}>
+                {useOptimoroute ? 'Use Google Route' : 'Optimize with OptimoRoute'}
+              </Text>
+            )}
+          </TouchableOpacity>
+
+          {optimorouteError ? (
+            <Text style={styles.optimorouteError}>{optimorouteError}</Text>
+          ) : null}
         </View>
 
         {/* SEARCH CARD */}

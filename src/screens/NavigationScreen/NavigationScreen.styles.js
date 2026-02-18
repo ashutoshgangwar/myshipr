@@ -176,6 +176,14 @@ navigateButton: {
   elevation: 4,
 },
 
+optimorouteButton: {
+  backgroundColor: '#7C3AED',
+  justifyContent: 'center',
+},
+optimorouteButtonActive: {
+  backgroundColor: '#0F172A',
+},
+
 iconCircle: {
   width: scale(32),
   height: scale(32),
@@ -190,6 +198,18 @@ navigateText: {
   fontSize: moderateScale(15),
   fontWeight: '600',
   lineHeight: verticalScale(18),
+},
+optimorouteText: {
+  color: '#FFFFFF',
+  fontSize: moderateScale(14),
+  fontWeight: '600',
+},
+optimorouteError: {
+  marginTop: verticalScale(6),
+  textAlign: 'center',
+  color: '#DC2626',
+  fontSize: moderateScale(12),
+  fontWeight: '600',
 },
 
   /* ================= FLOATING BUTTONS ================= */
