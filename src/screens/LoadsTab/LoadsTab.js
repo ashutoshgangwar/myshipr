@@ -6,12 +6,33 @@ import { colors } from '../../theme/colors';
 import { SafeAreaView } from 'react-native-safe-area-context';
 
 const TABS = [
-  { key: 'available', label: 'Available' },
-  { key: 'active', label: 'Active' },
+  { key: 'pending', label: 'Pending' },
+  { key: 'available', label: 'Open Bid' },
+  { key: 'active', label: 'In Route' },
   { key: 'completed', label: 'Completed' },
 ];
 
 const LOADS = [
+  {
+    id: 'SH-304',
+    status: 'pending',
+    weight: '12,000 lbs',
+    miles: '450 miles',
+    from: 'Los Angeles, CA',
+    to: 'San Francisco, CA',
+    date: 'Feb 18',
+    pay: '$950',
+  },
+  {
+    id: 'SH-305',
+    status: 'pending',
+    weight: '9,800 lbs',
+    miles: '325 miles',
+    from: 'Chicago, IL',
+    to: 'Detroit, MI',
+    date: 'Feb 18',
+    pay: '$720',
+  },
   {
     id: 'SH-301',
     status: 'available',
@@ -21,6 +42,11 @@ const LOADS = [
     to: 'Houston, TX',
     date: 'Feb 5',
     pay: '$650',
+    bids: [
+      { amount: 620, bidder: 'John D.', time: '2h ago' },
+      { amount: 600, bidder: 'Sarah K.', time: '4h ago' },
+      { amount: 580, bidder: 'Mike P.', time: '5h ago' },
+    ],
   },
   {
     id: 'SH-302',
@@ -44,8 +70,8 @@ const LOADS = [
   },
 ];
 
-const LoadsTab = () => {
-  const [activeTab, setActiveTab] = useState('available');
+const LoadsTab = ({ navigation }) => {
+  const [activeTab, setActiveTab] = useState('pending');
 
   const filteredLoads = useMemo(
     () => LOADS.filter(load => load.status === activeTab),
@@ -53,6 +79,7 @@ const LoadsTab = () => {
   );
 
   const getStatusStyle = status => {
+    if (status === 'pending') return styles.statusPending;
     if (status === 'available') return styles.statusAvailable;
     if (status === 'active') return styles.statusActive;
     return styles.statusCompleted;
@@ -85,8 +112,17 @@ const LoadsTab = () => {
           <Text style={styles.pay}>{item.pay}</Text>
         </View>
 
+        {item.status === 'pending' && (
+          <TouchableOpacity style={styles.acceptButton}>
+            <Text style={styles.acceptText}>Accept Load</Text>
+          </TouchableOpacity>
+        )}
+
         {item.status === 'available' && (
-          <TouchableOpacity style={styles.bidButton}>
+          <TouchableOpacity 
+            style={styles.bidButton}
+            onPress={() => navigation.navigate('PlaceBidScreen', { load: item })}
+          >
             <Text style={styles.bidText}>Place Bid</Text>
           </TouchableOpacity>
         )}
@@ -134,7 +170,7 @@ const LoadsTab = () => {
                   activeTab === tab.key && styles.activeTabText,
                 ]}
               >
-                {tab.label} ({count})
+                {tab.label}
               </Text>
             </TouchableOpacity>
           );

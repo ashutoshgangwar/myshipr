@@ -29,30 +29,38 @@ export default StyleSheet.create({
   tabsContainer: {
     flexDirection: 'row',
     marginBottom: verticalScale(16),
+    gap: scale(6),
   },
 
   tab: {
     flex: 1,
-    height: verticalScale(44),
-    borderRadius: moderateScale(12),
-    backgroundColor: '#EEF2F7',
+    height: verticalScale(42),
+    borderRadius: moderateScale(10),
+    backgroundColor: '#FFFFFF',
     justifyContent: 'center',
     alignItems: 'center',
-    marginHorizontal: scale(4),
+    borderWidth: 1,
   },
 
   activeTab: {
     backgroundColor: colors.primary,
+    borderColor: colors.primary,
+    shadowColor: colors.primary,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
   },
 
   tabText: {
-    fontSize: moderateScale(13),
-    fontWeight: '600',
-    color: '#475569',
+    fontSize: moderateScale(11),
+    fontWeight: '700',
+    color: '#64748B',
   },
 
   activeTabText: {
     color: '#FFFFFF',
+    fontSize: moderateScale(11),
   },
 
   /* Card */
@@ -87,6 +95,10 @@ export default StyleSheet.create({
     fontSize: moderateScale(11),
     fontWeight: '700',
     color: '#FFFFFF',
+  },
+
+  statusPending: {
+    backgroundColor: '#8B5CF6',
   },
 
   statusAvailable: {
@@ -133,6 +145,19 @@ export default StyleSheet.create({
     fontSize: moderateScale(20),
     fontWeight: '700',
     color: '#16A34A',
+  },
+
+  acceptButton: {
+    backgroundColor: '#8B5CF6',
+    paddingHorizontal: scale(18),
+    paddingVertical: verticalScale(10),
+    borderRadius: moderateScale(10),
+  },
+
+  acceptText: {
+    color: '#FFFFFF',
+    fontSize: moderateScale(14),
+    fontWeight: '700',
   },
 
   bidButton: {
