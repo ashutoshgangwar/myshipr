@@ -14,11 +14,13 @@ import {
 } from 'react-native';
 import styles from './PlaceBidScreen.styles';
 import StatusBar from '../../component/StatusBar/StatusBar';
+import CoinsAnimation from '../../component/CoinsAnimation/CoinsAnimation';
 import { colors } from '../../theme/colors';
 
 const PlaceBidScreen = ({ navigation, route }) => {
   const [amount, setAmount] = useState('');
   const [isFocused, setIsFocused] = useState(false);
+  const [showCoinsAnimation, setShowCoinsAnimation] = useState(false);
   const inputRef = useRef(null);
   const load = route?.params?.load || {};
 
@@ -48,8 +50,17 @@ const PlaceBidScreen = ({ navigation, route }) => {
       return;
     }
 
+    // Trigger coins animation
+    setShowCoinsAnimation(true);
+    
+    // Show success alert immediately
     Alert.alert('Bid Submitted', `Your bid of $${bidAmount} has been submitted successfully!`);
-    navigation.goBack();
+    
+    // Wait for animation to complete (6000ms) before resetting and navigating back
+    setTimeout(() => {
+      setShowCoinsAnimation(false);
+      navigation.goBack();
+    }, 6000);
   };
 
   return (
@@ -59,6 +70,7 @@ const PlaceBidScreen = ({ navigation, route }) => {
         barStyle="dark-content"
         translucent={false}
       />
+      <CoinsAnimation isActive={showCoinsAnimation} amount={parseFloat(amount) || 0} />
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Text style={styles.backText}>Back</Text>
