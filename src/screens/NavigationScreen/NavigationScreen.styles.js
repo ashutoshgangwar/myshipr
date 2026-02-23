@@ -441,6 +441,92 @@ optimorouteError: {
     fontWeight: '600',
     textAlign: 'center',
   },
+
+  /* ================= CUSTOM MARKERS ================= */
+  /* ================= CUSTOM MARKERS ================= */
+
+markerBase: {
+  justifyContent: 'center',
+  alignItems: 'center',
+  overflow: 'hidden',
+},
+
+markerSourceStyle: {
+  backgroundColor: '#10B981',
+  borderColor: '#059669',
+  borderWidth: moderateScale(3),
+  width: moderateScale(45),
+  height: moderateScale(45),
+  borderRadius: moderateScale(22.5),
+  justifyContent: 'center',
+  alignItems: 'center',
+  shadowColor: '#000',
+  shadowOpacity: 0.3,
+  shadowRadius: moderateScale(3),
+  elevation: moderateScale(5),
+  overflow: 'hidden',
+},
+
+markerDestinationStyle: {
+  backgroundColor: '#EF4444',
+  borderColor: '#DC2626',
+  borderWidth: moderateScale(3),
+  width: moderateScale(45),
+  height: moderateScale(45),
+  borderRadius: moderateScale(22.5),
+  justifyContent: 'center',
+  alignItems: 'center',
+  shadowColor: '#000',
+  shadowOpacity: 0.3,
+  shadowRadius: moderateScale(3),
+  elevation: moderateScale(5),
+  overflow: 'hidden',
+},
+
+markerWaypointStyle: {
+  backgroundColor: '#F59E0B',
+  borderColor: '#D97706',
+  borderWidth: moderateScale(2),
+  width: moderateScale(40),
+  height: moderateScale(40),
+  borderRadius: moderateScale(20),
+  justifyContent: 'center',
+  alignItems: 'center',
+  shadowColor: '#000',
+  shadowOpacity: 0.2,
+  shadowRadius: moderateScale(2),
+  elevation: moderateScale(4),
+  overflow: 'hidden',
+},
+
+markerDefaultStyle: {
+  backgroundColor: '#3B82F6',
+  borderColor: '#1D4ED8',
+  borderWidth: moderateScale(2),
+  width: moderateScale(40),
+  height: moderateScale(40),
+  borderRadius: moderateScale(20),
+  justifyContent: 'center',
+  alignItems: 'center',
+  shadowColor: '#000',
+  shadowOpacity: 0.25,
+  shadowRadius: moderateScale(2),
+  elevation: moderateScale(4),
+  overflow: 'hidden',
+},
+
+markerLabel: {
+  color: '#fff',
+  fontSize: moderateScale(16),
+  fontWeight: 'bold',
+  textAlign: 'center',
+},
+
+markerImage: {
+  width: scale(60),
+  height: scale(60),
+  resizeMode: 'contain',
+},
 });
 
 export default styles;

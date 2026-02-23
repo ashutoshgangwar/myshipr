@@ -1,21 +1,14 @@
 import React, {useState, useEffect, useRef} from 'react';
 import {
   View,
-  Text,
-  TouchableOpacity,
   SafeAreaView,
-  ActivityIndicator,
   Keyboard,
   TouchableWithoutFeedback,
   Platform,
 } from 'react-native';
 import styles from './NavigationScreen.styles';
-import {moderateScale, verticalScale, scale} from 'react-native-size-matters';
 
-import Navigation_Icon from '../../assets/svg_icon/navigation.svg';
-import GPS_Icon from '../../assets/svg_icon/gps-svg.svg';
-import Arrow_left_right from '../../assets/svg_icon/arrow-right-lef.svg';
-import Location_Icon from '../../assets/svg_icon/location.svg';
+import Truck_Icon from '../../assets/svg_icon/truck-icon.svg';
 
 import MapView, {Marker, Polyline, PROVIDER_GOOGLE} from 'react-native-maps';
 import MapViewDirections from 'react-native-maps-directions';
@@ -24,8 +17,16 @@ import {
   watchCurrentLocation,
   clearWatchLocation,
 } from '../../utils/LocationService';
-import {GooglePlacesAutocomplete} from 'react-native-google-places-autocomplete';
 import {GOOGLE_MAPS_API_KEY} from '@env';
+
+import {
+  CustomMarker,
+  LoadCard,
+  SearchCard,
+  NavigationBanner,
+  GPSButton,
+  LoadingOverlay,
+} from '../../component/Navigation_components';
 
 const NavigationScreen = () => {
   const [currentLocation, setCurrentLocation] = useState({
@@ -47,7 +48,8 @@ const NavigationScreen = () => {
   const [remainingTime, setRemainingTime] = useState(0);
   const [bearing, setBearing] = useState(0);
   const [fetchingSourceAddress, setFetchingSourceAddress] = useState(false);
-  const [fetchingDestinationAddress, setFetchingDestinationAddress] = useState(false);
+  const [fetchingDestinationAddress, setFetchingDestinationAddress] =
+    useState(false);
 
   const [sourceText, setSourceText] = useState('');
   const [destinationText, setDestinationText] = useState('');
@@ -62,7 +64,6 @@ const NavigationScreen = () => {
     let watcher;
     const startWatching = async () => {
       try {
-        // Get initial location quickly
         const initialLocation = await getCurrentLocation();
         setCurrentLocation({
           latitude: initialLocation.latitude,
@@ -72,8 +73,6 @@ const NavigationScreen = () => {
         });
         setHasLocation(true);
         setLoading(false);
-
-        // Then start watching for updates
         watcher = await watchCurrentLocation(
           position => {
             const {latitude, longitude} = position.coords;
@@ -111,22 +110,19 @@ const NavigationScreen = () => {
   }, []);
 
   const centerOnCurrentLocation = async () => {
-    // If an input is active, fill it with current location address
     if (activeInput) {
       if (activeInput === 'source') {
         await setCurrentLocationAsSource();
       } else if (activeInput === 'destination') {
         await setCurrentLocationAsDestination();
       }
-      setActiveInput(null); // Reset active input after filling
+      setActiveInput(null);
     } else {
-      // Otherwise, just center the map
       setMapRegion({
         ...currentLocation,
         latitudeDelta: 0.01,
         longitudeDelta: 0.01,
       });
-      // re-enable following when user explicitly centers map
       setFollowUser(true);
     }
   };
@@ -143,14 +139,11 @@ const NavigationScreen = () => {
     const temp = source;
     setSource(destination);
     setDestination(temp);
-
-    // Swap the text states as well
     const tempText = sourceText;
     setSourceText(destinationText);
     setDestinationText(tempText);
   };
 
-  // Function to get address from coordinates using Google Geocoding API
   const getAddressFromCoordinates = async (latitude, longitude) => {
     try {
       const response = await fetch(
@@ -167,7 +160,6 @@ const NavigationScreen = () => {
     }
   };
 
-  // Enhanced function to set current location as source with address
   const setCurrentLocationAsSource = async () => {
     setFetchingSourceAddress(true);
     try {
@@ -181,19 +173,17 @@ const NavigationScreen = () => {
         description: address,
       });
       setSourceText(address);
-      // Set the text in the autocomplete component
       if (sourceAutocompleteRef.current) {
         sourceAutocompleteRef.current.setAddressText(address);
       }
     } catch (error) {
       console.log('Error setting current location as source:', error);
-      setCurrentAsSource(); // Fallback to basic function
+      setCurrentAsSource();
     } finally {
       setFetchingSourceAddress(false);
     }
   };
 
-  // Enhanced function to set current location as destination with address
   const setCurrentLocationAsDestination = async () => {
     setFetchingDestinationAddress(true);
     try {
@@ -207,13 +197,11 @@ const NavigationScreen = () => {
         description: address,
       });
       setDestinationText(address);
-      // Set the text in the autocomplete component
       if (destinationAutocompleteRef.current) {
         destinationAutocompleteRef.current.setAddressText(address);
       }
     } catch (error) {
       console.log('Error setting current location as destination:', error);
-      // Fallback - set basic destination
       setDestination({
         latitude: currentLocation.latitude,
         longitude: currentLocation.longitude,
@@ -225,7 +213,7 @@ const NavigationScreen = () => {
   };
 
   const calculateDistance = (lat1, lon1, lat2, lon2) => {
-    const R = 6371; // Radius of the Earth in km
+    const R = 6371;
     const dLat = ((lat2 - lat1) * Math.PI) / 180;
     const dLon = ((lon2 - lon1) * Math.PI) / 180;
     const a =
@@ -235,8 +223,8 @@ const NavigationScreen = () => {
         Math.sin(dLon / 2) *
         Math.sin(dLon / 2);
     const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-    const distance = R * c; // Distance in km
-    return distance * 1000; // Convert to meters
+    const distance = R * c;
+    return distance * 1000;
   };
 
   const calculateBearing = (lat1, lon1, lat2, lon2) => {
@@ -257,7 +245,6 @@ const NavigationScreen = () => {
       let totalTime = 0;
       for (let i = currentStep; i < directions.length; i++) {
         const step = directions[i];
-        // Assuming distance is in meters, but text might be '1.2 km', need to parse
         const distText = step.distance;
         let dist = 0;
         if (distText.includes('km')) {
@@ -348,10 +335,8 @@ const NavigationScreen = () => {
           step.end_location.lng,
         );
         if (distance < 50) {
-          // If within 50 meters, advance to next step
           setCurrentStep(prev => Math.min(directions.length - 1, prev + 1));
         }
-        // Update bearing to next point
         const newBearing = calculateBearing(
           currentLocation.latitude,
           currentLocation.longitude,
@@ -364,7 +349,6 @@ const NavigationScreen = () => {
   }, [currentLocation, navigationStarted, currentStep, directions]);
 
   useEffect(() => {
-    // Only auto-center the map while navigation if followUser is enabled.
     if (navigationStarted && followUser) {
       setMapRegion({
         ...currentLocation,
@@ -374,23 +358,24 @@ const NavigationScreen = () => {
     }
   }, [currentLocation, navigationStarted]);
 
-  const navigateToDestination = () => {
+  const navigateToDestination = async () => {
     const startLocation = source || {
       latitude: currentLocation.latitude,
       longitude: currentLocation.longitude,
       description: 'Current Location',
     };
-    if (destination && directions.length > 0) {
-      setSource(startLocation);
-      setNavigationStarted(true);
-      // Enable following when navigation starts so map centers on user.
-      setFollowUser(true);
-      setCurrentStep(0);
-      setMapRegion({
-        ...currentLocation,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
-      });
+    if (!destination) return;
+    setSource(startLocation);
+    setNavigationStarted(true);
+    setFollowUser(true);
+    setCurrentStep(0);
+    setMapRegion({
+      ...currentLocation,
+      latitudeDelta: 0.01,
+      longitudeDelta: 0.01,
+    });
+    if (!directions || directions.length === 0) {
+      fetchDirections(startLocation, destination);
     }
   };
 
@@ -408,264 +393,133 @@ const NavigationScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <TouchableWithoutFeedback onPress={() => {
-        setActiveInput(null);
-        Keyboard.dismiss();
-      }}>
+      <TouchableWithoutFeedback
+        onPress={() => {
+          setActiveInput(null);
+          Keyboard.dismiss();
+        }}>
         <View style={styles.mapWrapper}>
-        <MapView
-          style={styles.map}
-          region={mapRegion}
-          onRegionChangeComplete={setMapRegion}
-          provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
-          mapType="standard"
-          showsUserLocation={false}
-          followsUserLocation={navigationStarted}
-          onPanDrag={() => setFollowUser(false)}
-          onTouchStart={() => setFollowUser(false)}>
-          {hasLocation && !navigationStarted && (
-            <Marker
-              coordinate={currentLocation}
-              pinColor="blue"
-              title="You are here"
-              onPress={setCurrentAsSource}>
-              <View style={styles.markerGlow}>
-                <View style={styles.markerInner} />
-              </View>
-            </Marker>
-          )}
-
-          {navigationStarted && (
-            <Marker
-              coordinate={currentLocation}
-              anchor={{x: 0.5, y: 0.5}}
-              rotation={bearing}>
-              <View style={styles.arrowContainer}>
-                <Navigation_Icon width={30} height={30} />
-              </View>
-            </Marker>
-          )}
-
-          {source && (
-            <Marker coordinate={source} pinColor="green" title="Source" />
-          )}
-
-          {destination && (
-            <Marker
-              coordinate={destination}
-              pinColor="red"
-              title="Destination"
-            />
-          )}
-
-          {source && destination && (
-            <MapViewDirections
-              origin={source}
-              destination={destination}
-              apikey={GOOGLE_MAPS_API_KEY}
-              strokeWidth={4}
-              strokeColor="#3B82F6"
-            />
-          )}
-        </MapView>
-        {/* LOADING STATE */}
-        {loading && (
-          <View style={styles.loadingContainer}>
-            <ActivityIndicator size="large" color="#3B82F6" />
-            <Text style={styles.loadingText}>Getting your location...</Text>
-          </View>
-        )}
-
-        {/* LOAD CARD */}
-        <View style={styles.loadCard}>
-          <View style={styles.loadCardRow}>
-            {/* LEFT CONTENT */}
-            <View style={styles.loadLeft}>
-              <Text style={styles.cardTitle}>Current Load</Text>
-
-              <Text style={styles.cardText}>Pickup: {pickupAddress}</Text>
-
-              <Text style={styles.cardText}>Drop: {dropAddress}</Text>
-
-              <Text style={styles.cardText}>
-                {navigationStarted
-                  ? `Remaining: ${(remainingDistance / 1000).toFixed(
-                      1,
-                    )} km • ETA: ${Math.ceil(remainingTime / 60)} min`
-                  : 'ETA: N/A'}
-              </Text>
-            </View>
-
-            {/* RIGHT CONTENT */}
-            <View style={styles.loadRight}>
-              <Text
-                style={[
-                  styles.status,
-                  navigationStarted && {
-                    backgroundColor: 'rgba(239, 68, 68, 0.1)',
-                    color: '#EF4444',
-                  },
-                ]}>
-                {navigationStarted ? 'Navigating' : 'On Route'}
-              </Text>
-            </View>
-            
-          </View>
-          {destination && (
-            <TouchableOpacity
-              style={styles.navigateButton}
-              onPress={navigateToDestination}
-              activeOpacity={0.8}>
-              <Text style={styles.navigateText}>Start Navigation</Text>
-              <View style={styles.iconCircle}>
-                <Navigation_Icon width={25} height={25} />
-              </View>
-            </TouchableOpacity>
-          )}
-        </View>
-
-        {/* SEARCH CARD */}
-        <View style={styles.searchCard}>
-          <View style={styles.labelRow}>
-            <Location_Icon width={scale(18)} height={scale(18)} />
-            <Text style={styles.labelText}>Source</Text>
-          </View>
-          <View style={styles.searchInputContainer}>
-            <TouchableOpacity
-              style={styles.swapIconLeft}
-              onPress={swapSourceDestination}>
-              <Arrow_left_right width={25} height={25} />
-            </TouchableOpacity>
-            <GooglePlacesAutocomplete
-              ref={sourceAutocompleteRef}
-              placeholder="Enter pickup location"
-              textInputProps={{
-                onFocus: () => setActiveInput('source'),
-              }}
-              fetchDetails
-              onPress={(data, details = null) => {
-                setSource({
-                  latitude: details.geometry.location.lat,
-                  longitude: details.geometry.location.lng,
-                  description: data.description,
-                });
-                const address = data?.description;
-                setPickupAddress(address);
-                setSourceText(data.description);
-                setActiveInput(null);
-                Keyboard.dismiss();
-              }}
-              query={{
-                key: GOOGLE_MAPS_API_KEY,
-                language: 'en',
-              }}
-              styles={{
-                container: {flex: 1},
-                textInput: [
-                  styles.searchInput,
-                  activeInput === 'source' && styles.searchInputActive,
-                ],
-                listView: {
-                  position: 'absolute',
-                  top: verticalScale(48),
-                  left: 0,
-                  right: 0,
-                  backgroundColor: '#fff',
-                  borderRadius: moderateScale(8),
-                  elevation: 6,
-                  shadowColor: '#000',
-                  shadowOpacity: 0.15,
-                  shadowRadius: moderateScale(6),
-                  zIndex: 1000,
-                },
-              }}
-            />
-          </View>
-
-          <View style={styles.labelRow}>
-            <Location_Icon width={scale(18)} height={scale(18)} />
-            <Text style={styles.labelText}>Destination</Text>
-          </View>
-          <View style={styles.searchInputContainer}>
-            <TouchableOpacity
-              style={styles.swapIconLeft}
-              onPress={swapSourceDestination}>
-              <Arrow_left_right width={25} height={25} />
-            </TouchableOpacity>
-            <GooglePlacesAutocomplete
-              ref={destinationAutocompleteRef}
-              placeholder="Enter drop location"
-              textInputProps={{
-                onFocus: () => setActiveInput('destination'),
-              }}
-              fetchDetails
-              onPress={(data, details = null) => {
-                setDestination({
-                  latitude: details.geometry.location.lat,
-                  longitude: details.geometry.location.lng,
-                  description: data.description,
-                });
-                const address = data?.description;
-                setDropAddress(address);
-                setDestinationText(data.description);
-                setActiveInput(null); // Clear active input when selection is made
-                Keyboard.dismiss(); // Dismiss keyboard after selection
-              }}
-              query={{
-                key: GOOGLE_MAPS_API_KEY,
-                language: 'en',
-              }}
-              styles={{
-                container: {flex: 1},
-                textInput: [
-                  styles.searchInput,
-                  activeInput === 'destination' && styles.searchInputActive,
-                ],
-                listView: {
-                  position: 'absolute',
-                  top: verticalScale(48),
-                  left: 0,
-                  right: 0,
-                  backgroundColor: '#fff',
-                  borderRadius: moderateScale(8),
-                  elevation: 6,
-                  shadowColor: '#000',
-                  shadowOpacity: 0.15,
-                  shadowRadius: moderateScale(6),
-                  zIndex: 1000,
-                },
-              }}
-            />
-          </View>
-        </View>
-
-        {/* FLOATING BUTTON */}
-        <View style={styles.fabContainer}>
-          <TouchableOpacity
-            style={styles.fab}
-            onPress={centerOnCurrentLocation}
-            disabled={fetchingSourceAddress || fetchingDestinationAddress}>
-            {fetchingSourceAddress || fetchingDestinationAddress ? (
-              <ActivityIndicator size="small" color="#3B82F6" />
-            ) : (
-              <GPS_Icon width={28} height={28} />
+          <MapView
+            style={styles.map}
+            region={mapRegion}
+            onRegionChangeComplete={setMapRegion}
+            provider={Platform.OS === 'android' ? PROVIDER_GOOGLE : undefined}
+            mapType="standard"
+            showsUserLocation={false}
+            followsUserLocation={navigationStarted}
+            onPanDrag={() => setFollowUser(false)}
+            onTouchStart={() => setFollowUser(false)}>
+            {hasLocation && !navigationStarted && (
+              <Marker
+                coordinate={currentLocation}
+                title="You are here"
+                onPress={setCurrentAsSource}
+                tracksViewChanges={false}>
+                <View style={styles.markerGlow}>
+                  <View style={styles.markerInner} />
+                </View>
+              </Marker>
             )}
-          </TouchableOpacity>
-        </View>
 
-        {/* CURRENT NAVIGATION INSTRUCTION */}
-        {navigationStarted && directions[currentStep] && (
-          <View style={styles.navigationBanner}>
-            <Text style={styles.navigationInstruction}>
-              {directions[currentStep].instruction}
-            </Text>
-            <Text style={styles.navigationDetails}>
-              {directions[currentStep].distance} •{' '}
-              {directions[currentStep].duration}
-            </Text>
-          </View>
-        )}
-      </View>
+            {navigationStarted && (
+              <Marker
+                coordinate={currentLocation}
+                anchor={{x: 0.5, y: 0.5}}
+                rotation={bearing}>
+                <View style={styles.arrowContainer}>
+                  <Truck_Icon width={30} height={30} />
+                </View>
+              </Marker>
+            )}
+
+            {source && (
+              <Marker
+                coordinate={source}
+                title="Source"
+                tracksViewChanges={false}
+                onPress={() => console.log('Source marker pressed')}>
+                <CustomMarker type="source" title="Pickup" showLogo={true} />
+              </Marker>
+            )}
+
+            {destination && (
+              <Marker
+                coordinate={destination}
+                title="Destination"
+                tracksViewChanges={false}
+                onPress={() => console.log('Destination marker pressed')}>
+                <CustomMarker
+                  type="destination"
+                  title="Dropoff"
+                  showLogo={true}
+                />
+              </Marker>
+            )}
+
+            {source && destination && (
+              <MapViewDirections
+                origin={source}
+                destination={destination}
+                apikey={GOOGLE_MAPS_API_KEY}
+                strokeWidth={4}
+                strokeColor="#3B82F6"
+              />
+            )}
+          </MapView>
+
+          <LoadingOverlay loading={loading} />
+
+          <LoadCard
+            navigationStarted={navigationStarted}
+            remainingDistance={remainingDistance}
+            remainingTime={remainingTime}
+            pickupAddress={pickupAddress}
+            dropAddress={dropAddress}
+            destination={destination}
+            onNavigatePress={navigateToDestination}
+          />
+
+          <SearchCard
+            sourceRef={sourceAutocompleteRef}
+            destinationRef={destinationAutocompleteRef}
+            activeInput={activeInput}
+            onActiveInputChange={setActiveInput}
+            onSourceSelect={(data, details) => {
+              setSource({
+                latitude: details.geometry.location.lat,
+                longitude: details.geometry.location.lng,
+                description: data.description,
+              });
+              setPickupAddress(data?.description);
+              setSourceText(data.description);
+            }}
+            onDestinationSelect={(data, details) => {
+              setDestination({
+                latitude: details.geometry.location.lat,
+                longitude: details.geometry.location.lng,
+                description: data.description,
+              });
+              setDropAddress(data?.description);
+              setDestinationText(data.description);
+            }}
+            onSwap={swapSourceDestination}
+            apiKey={GOOGLE_MAPS_API_KEY}
+          />
+
+          <GPSButton
+            onPress={centerOnCurrentLocation}
+            disabled={fetchingSourceAddress || fetchingDestinationAddress}
+            loading={fetchingSourceAddress || fetchingDestinationAddress}
+          />
+
+          {navigationStarted && directions[currentStep] && (
+            <NavigationBanner
+              instruction={directions[currentStep].instruction}
+              distance={directions[currentStep].distance}
+              duration={directions[currentStep].duration}
+            />
+          )}
+        </View>
       </TouchableWithoutFeedback>
     </SafeAreaView>
   );

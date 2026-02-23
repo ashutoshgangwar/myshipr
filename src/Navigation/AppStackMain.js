@@ -10,10 +10,6 @@ import DeliveryConfirmation from '../screens/DeliveryConfirmationScreen/Delivery
 import AvailableLoadsScreen from '../screens/AvailableLoadsScreen/AvailableLoadsScreen';
 import PlaceBidScreen from '../screens/PlaceBidScreen/PlaceBidScreen';
 import CdlDriverOnboarding from '../screens/DriverOnboarding/CdlDriverOnboarding/CdlDriverOnboarding';
-import MedicalCertificate from '../screens/DriverOnboarding/MedicalCertificate/MedicalCertificate';
-import SocialSecurityItin from '../screens/DriverOnboarding/SocialSecurityItin/SocialSecurityItin';
-import ProofOfAddress from '../screens/DriverOnboarding/ProofOfAddress/ProofOfAddress';
-import BackgroundCheckConsent from '../screens/DriverOnboarding/BackgroundCheckConsent/BackgroundCheckConsent';
 import ForgotPassword from '../screens/ForgotPassword/ForgotPassword';
 import ResetPassword from '../screens/ResetPassword/ResetPassword';
 import CreateAccount from '../screens/CreateAccount/CreateAccount';
@@ -53,10 +49,6 @@ export default function AppStackMain() {
       <Stack.Screen name="AvailableLoadsScreen" component={AvailableLoadsScreen} />
       <Stack.Screen name="PlaceBidScreen" component={PlaceBidScreen} />
       <Stack.Screen name="CdlDriverOnboarding" component={CdlDriverOnboarding} />
-      <Stack.Screen name="MedicalCertificate" component={MedicalCertificate} />
-      <Stack.Screen name="SocialSecurityItin" component={SocialSecurityItin} />
-      <Stack.Screen name="ProofOfAddress" component={ProofOfAddress} />
-      <Stack.Screen name="BackgroundCheckConsent" component={BackgroundCheckConsent} />
     </Stack.Navigator>
   );
 }

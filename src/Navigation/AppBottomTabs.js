@@ -1,7 +1,7 @@
 import React from 'react';
 import {Platform, Text} from 'react-native';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
-import {scale, verticalScale, moderateScale} from 'react-native-size-matters';
+import {moderateScale} from 'react-native-size-matters';
 
 import HomeScreen from '../screens/HomeScreen/HomeScreen';
 import LoadsTab from '../screens/LoadsTab/LoadsTab';
