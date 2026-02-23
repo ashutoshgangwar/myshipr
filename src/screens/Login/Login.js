@@ -167,10 +167,12 @@ const Login = () => {
       setLoading(false);
       navigation.reset({
         index: 0,
-        routes: [{name: 'CdlDriverOnboarding'}],
+        routes: [{name: 'MainApp'}],
       });
     }, 800);
   };
+
+
 
   const getMobileButtonConfig = () => {
     if (!otpSent) {
