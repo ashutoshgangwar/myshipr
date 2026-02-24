@@ -5,14 +5,14 @@ const VoiceButton = ({ onPress, listening }) => {
   return (
     <TouchableOpacity
       onPress={onPress}
-      disabled={listening} // 👈 disable button while listening
+      disabled={listening}
       style={{
         padding: 12,
         borderRadius: 50,
-        backgroundColor: listening ? '#ff4d4d' : '#4CAF50', // red while listening
+        backgroundColor: listening ? '#ff4d4d' : '#4CAF50',
         alignItems: 'center',
         marginLeft: 8,
-        opacity: listening ? 0.6 : 1, // visually show it's disabled
+        opacity: listening ? 0.6 : 1,
       }}
     >
       <Text style={{ color: '#fff', fontSize: 18 }}>

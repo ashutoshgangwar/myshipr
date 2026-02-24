@@ -16,7 +16,7 @@ import {
   getCurrentLocation,
   watchCurrentLocation,
   clearWatchLocation,
-} from '../../utils/LocationService';
+} from '../../services/LocationService';
 import {GOOGLE_MAPS_API_KEY} from '@env';
 
 import {
