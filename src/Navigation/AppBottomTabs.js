@@ -14,19 +14,20 @@ import HOSIcon from '../assets/svg_icon/HOS.svg';
 import ProfileIcon from '../assets/svg_icon/profile.svg';
 
 import {colors} from '../theme/colors';
+import AppText from '../theme/AppText';
 
 const Tab = createBottomTabNavigator();
 
 /* 🔹 Reusable Label Component */
 const TabLabel = ({label, focused, color}) => (
-  <Text
+  <AppText
     style={{
       fontSize: moderateScale(12),
       fontWeight: focused ? '700' : '500',
       color,
     }}>
     {label}
-  </Text>
+  </AppText>
 );
 
 const TabIcon =

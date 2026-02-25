@@ -7,6 +7,7 @@ import {
   SafeAreaView,
 } from 'react-native';
 import styles from './AvailableLoadsScreen.styles';
+import AppText from '../../theme/AppText';
 
 const loads = [
   {
@@ -56,28 +57,28 @@ const AvailableLoadsScreen = ({ navigation }) => {
     <View style={styles.loadCard}>
       {/* HEADER */}
       <View style={styles.cardHeader}>
-        <Text style={styles.loadId}>{item.id}</Text>
-        <Text style={styles.rate}>{item.rate}</Text>
+        <AppText style={styles.loadId}>{item.id}</AppText>
+        <AppText style={styles.rate}>{item.rate}</AppText>
       </View>
 
       {/* DETAILS */}
-      <Text style={styles.detailText}>
+      <AppText style={styles.detailText}>
         📦 {item.pallets} Pallets • ⚖ {item.weight}
-      </Text>
+      </AppText>
 
-      <Text style={styles.locationText}>
+      <AppText style={styles.locationText}>
         📍 Pickup: {item.pickup}
-      </Text>
-      <Text style={styles.locationText}>
+      </AppText>
+      <AppText style={styles.locationText}>
         ⏱ Pickup Timing: {item.pickupTiming}
-      </Text>
-      <Text style={styles.locationText}>
+      </AppText>
+      <AppText  Text style={styles.locationText}>
         🏁 Drop: {item.drop}
-      </Text>
+      </AppText>
 
-      <Text style={styles.notes}>
+      <AppText style={styles.notes}>
         📝 {item.notes}
-      </Text>
+      </AppText>
 
       {/* ACTION */}
       <TouchableOpacity
@@ -102,14 +103,14 @@ const AvailableLoadsScreen = ({ navigation }) => {
             ]}
             onPress={() => setFilter(item)}
           >
-            <Text
+            <AppText
               style={[
                 styles.filterText,
                 filter === item && styles.filterTextActive,
               ]}
             >
               {item}
-            </Text>
+            </AppText>
           </TouchableOpacity>
         ))}
       </View>
@@ -125,7 +126,7 @@ const AvailableLoadsScreen = ({ navigation }) => {
 
       {/* MAP BUTTON */}
       <TouchableOpacity style={styles.mapButton}>
-        <Text style={styles.mapButtonText}>View on Map</Text>
+        <AppText style={styles.mapButtonText}>View on Map</AppText>
       </TouchableOpacity>
     </SafeAreaView>
   );

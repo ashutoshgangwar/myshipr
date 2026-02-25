@@ -1,6 +1,7 @@
 import React from 'react';
 import { TouchableOpacity, Text } from 'react-native';
 import styles from './ActionButton.styles';
+import AppText from '../../theme/AppText';
 
 const ActionButton = ({ 
   title, 
@@ -15,7 +16,7 @@ const ActionButton = ({
       style={[styles.button, { backgroundColor: bgColor, opacity: disabled ? 0.6 : 1 }]}
       disabled={disabled}
     >
-      <Text style={[styles.buttonText, { color: textColor }]}>{title}</Text>
+      <AppText style={[styles.buttonText, { color: textColor }]}>{title}</AppText>
     </TouchableOpacity>
   );
 };

@@ -1,5 +1,6 @@
 import React from 'react';
 import { TouchableOpacity, Text, View } from 'react-native';
+import AppText from '../../theme/AppText';
 
 const VoiceButton = ({ onPress, listening }) => {
   return (
@@ -15,9 +16,9 @@ const VoiceButton = ({ onPress, listening }) => {
         opacity: listening ? 0.6 : 1,
       }}
     >
-      <Text style={{ color: '#fff', fontSize: 18 }}>
+      <AppText style={{ color: '#fff', fontSize: 18 }}>
         {listening ? 'Listening...' : '🎤'}
-      </Text>
+      </AppText>
     </TouchableOpacity>
   );
 };

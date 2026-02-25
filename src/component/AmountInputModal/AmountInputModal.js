@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { moderateScale, verticalScale } from 'react-native-size-matters';
 import { colors } from '../../theme/colors';
+import AppText from '../../theme/AppText';
 
 const AmountInputModal = ({ visible, onClose, onSubmit }) => {
   const [amount, setAmount] = useState('');
@@ -25,7 +26,7 @@ const AmountInputModal = ({ visible, onClose, onSubmit }) => {
       <Pressable style={styles.overlay} onPress={onClose} />
 
       <View style={styles.modalContainer}>
-        <Text style={styles.title}>Enter Approximate Amount</Text>
+        <AppText style={styles.title}>Enter Approximate Amount</AppText>
 
         <TextInput
           placeholder="₹ Enter amount"
@@ -35,18 +36,18 @@ const AmountInputModal = ({ visible, onClose, onSubmit }) => {
           style={styles.input}
         />
 
-        <Text style={styles.note}>
+        <AppText style={styles.note}>
           ⚠ This is an approximate amount.  
           Final amount may change after delivery.
-        </Text>
+        </AppText>
 
         <View style={styles.buttonRow}>
           <TouchableOpacity style={styles.cancelBtn} onPress={onClose}>
-            <Text style={styles.cancelText}>Cancel</Text>
+            <AppText style={styles.cancelText}>Cancel</AppText>
           </TouchableOpacity>
 
           <TouchableOpacity style={styles.submitBtn} onPress={handleSubmit}>
-            <Text style={styles.submitText}>Submit</Text>
+            <AppText style={styles.submitText}>Submit</AppText>
           </TouchableOpacity>
         </View>
       </View>

@@ -19,6 +19,7 @@ import { colors } from '../../../theme/colors';
 import styles from './CdlDriverOnboarding.styles';
 import ConsentModal from '../../../component/ConsentModal/ConsentModal';
 import { useNavigation } from '@react-navigation/native';
+import AppText from '../../../theme/AppText';
 
 const CdlDriverOnboarding = () => {
   const navigation = useNavigation();
@@ -104,14 +105,14 @@ const CdlDriverOnboarding = () => {
           <View style={styles.progressCard}>
             <View style={styles.progressHeader}>
               <View>
-                <Text style={styles.progressTitle}>Document Progress</Text>
-                <Text style={styles.progressSub}>
+                <AppText style={styles.progressTitle}>Document Progress</AppText>
+                <AppText style={styles.progressSub}>
                   {completedCount} of 4 documents completed
-                </Text>
+                </AppText>
               </View>
-              <Text style={styles.progressPercent}>
+              <AppText  style={styles.progressPercent}>
                 {Math.round((completedCount / 4) * 100)}%
-              </Text>
+              </AppText>
             </View>
 
             <View style={styles.progressBar}>

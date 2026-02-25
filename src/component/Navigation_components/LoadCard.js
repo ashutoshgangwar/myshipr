@@ -2,6 +2,7 @@ import React from 'react';
 import {View, Text, TouchableOpacity} from 'react-native';
 import Truck_Icon from '../../assets/svg_icon/truck-icon.svg';
 import styles from '../../screens/NavigationScreen/NavigationScreen.styles';
+import AppText from '../../theme/AppText';
 
 const LoadCard = ({
   navigationStarted,
@@ -17,24 +18,23 @@ const LoadCard = ({
       <View style={styles.loadCardRow}>
         {/* LEFT CONTENT */}
         <View style={styles.loadLeft}>
-          <Text style={styles.cardTitle}>Current Load</Text>
+          <AppText style={styles.cardTitle}>Current Load</AppText>
 
-          <Text style={styles.cardText}>Pickup: {pickupAddress}</Text>
+          <AppText style={styles.cardText}>Pickup: {pickupAddress}</AppText>
 
-          <Text style={styles.cardText}>Drop: {dropAddress}</Text>
-
-          <Text style={styles.cardText}>
+          <AppText style={styles.cardText}>Drop: {dropAddress}</AppText>
+          <AppText style={styles.cardText}>
             {navigationStarted
               ? `Remaining: ${(remainingDistance / 1000).toFixed(
                   1,
                 )} km • ETA: ${Math.ceil(remainingTime / 60)} min`
               : 'ETA: N/A'}
-          </Text>
+          </AppText>
         </View>
 
         {/* RIGHT CONTENT */}
         <View style={styles.loadRight}>
-          <Text
+          <AppText
             style={[
               styles.status,
               navigationStarted && {
@@ -43,7 +43,7 @@ const LoadCard = ({
               },
             ]}>
             {navigationStarted ? 'Navigating' : 'On Route'}
-          </Text>
+          </AppText>
         </View>
       </View>
       {destination && (
@@ -51,7 +51,7 @@ const LoadCard = ({
           style={styles.navigateButton}
           onPress={onNavigatePress}
           activeOpacity={0.8}>
-          <Text style={styles.navigateText}>Start Navigation</Text>
+          <AppText style={styles.navigateText}>Start Navigation</AppText>
           <View style={styles.iconCircle}>
             <Truck_Icon width={25} height={25} />
           </View>

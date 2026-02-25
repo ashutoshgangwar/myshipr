@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, TextInput } from 'react-native';
 import styles from './EditableInfoRow.styles';
+import AppText from '../../theme/AppText';
 
 const EditableInfoRow = ({
   label,
@@ -10,7 +11,7 @@ const EditableInfoRow = ({
 }) => {
   return (
     <View style={styles.wrapper}>
-      <Text style={styles.label}>{label}</Text>
+      <AppText style={styles.label}>{label}</AppText>
 
       <View style={styles.inputBox}>
         <TextInput

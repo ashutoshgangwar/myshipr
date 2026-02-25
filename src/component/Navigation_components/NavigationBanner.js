@@ -1,6 +1,7 @@
 import React from 'react';
 import {View, Text} from 'react-native';
 import styles from '../../screens/NavigationScreen/NavigationScreen.styles';
+import AppText from '../../theme/AppText';
 
 const NavigationBanner = ({instruction, distance, duration}) => {
   if (!instruction || !distance || !duration) {
@@ -9,10 +10,10 @@ const NavigationBanner = ({instruction, distance, duration}) => {
 
   return (
     <View style={styles.navigationBanner}>
-      <Text style={styles.navigationInstruction}>{instruction}</Text>
-      <Text style={styles.navigationDetails}>
+      <AppText style={styles.navigationInstruction}>{instruction}</AppText>
+      <AppText style={styles.navigationDetails}>
         {distance} • {duration}
-      </Text>
+      </AppText>
     </View>
   );
 };

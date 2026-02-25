@@ -11,6 +11,7 @@ import StatusBar from '../../component/StatusBar/StatusBar';
 import {colors} from '../../theme/colors';
 import {useNavigation} from '@react-navigation/native';
 import Notification_Icon from './../../assets/svg_icon/notification.svg';
+import AppText from '../../theme/AppText';
 
 const HomeScreen = () => {
   const navigation = useNavigation();
@@ -51,8 +52,8 @@ const HomeScreen = () => {
         {/* HEADER */}
         <View style={styles.header}>
           <View>
-            <Text style={styles.welcome}>Welcome back,</Text>
-            <Text style={styles.username}>Ashutosh Gangwar</Text>
+            <AppText style={styles.welcome}>Welcome back,</AppText>
+            <AppText style={styles.username}>Ashutosh Gangwar</AppText>
           </View>
 
           <View style={styles.profileCircle}>
@@ -66,16 +67,16 @@ const HomeScreen = () => {
             onPress={handlePendingVerification}
             activeOpacity={0.8}>
             <View style={styles.verifyRow}>
-              <Text style={styles.verifyText}>Verification Status</Text>
+              <AppText style={styles.verifyText}>Verification Status</AppText>
 
               <View
                 style={[
                   styles.verifiedBadge,
                   {backgroundColor: isVerified ? '#22C55E' : '#F59E0B'},
                 ]}>
-                <Text style={styles.badgeText}>
+                <AppText style={styles.badgeText}>
                   {isVerified ? 'Verified' : 'Pending'}
-                </Text>
+                </AppText>
               </View>
             </View>
           </TouchableOpacity>
@@ -95,17 +96,17 @@ const HomeScreen = () => {
         </View>
 
         {/* CURRENT LOAD */}
-        <Text style={styles.sectionTitle}>Current Load</Text>
+        <AppText style={styles.sectionTitle}>Current Load</AppText>
 
         <View style={styles.loadCard}>
           <View style={styles.loadHeader}>
             <View>
-              <Text style={styles.loadId}>Load #SH-245</Text>
-              <Text style={styles.loadSub}>Electronics • 12,500 lbs</Text>
+              <AppText style={styles.loadId}>Load #SH-245</AppText>
+              <AppText style={styles.loadSub}>Electronics • 12,500 lbs</AppText>
             </View>
 
             <View style={styles.inTransitBadge}>
-              <Text style={styles.badgeText}>In Transit</Text>
+              <AppText style={styles.badgeText}>In Transit</AppText>
             </View>
           </View>
 
@@ -120,8 +121,8 @@ const HomeScreen = () => {
           <View style={styles.progressContainer}>
             {/* Header */}
             <View style={styles.progressHeader}>
-              <Text style={styles.progressLabel}>Progress</Text>
-              <Text style={styles.progressPercent}>72%</Text>
+              <AppText style={styles.progressLabel}>Progress</AppText>
+              <AppText style={styles.progressPercent}>72%</AppText>
             </View>
 
             {/* Progress Bar */}
@@ -136,20 +137,20 @@ const HomeScreen = () => {
 
           <View style={styles.actionRow}>
             <TouchableOpacity onPress={openMap} style={styles.primaryBtn}>
-              <Text style={styles.primaryBtnText}>View Map</Text>
+              <AppText style={styles.primaryBtnText}>View Map</AppText>
             </TouchableOpacity>
 
             <TouchableOpacity style={styles.secondaryBtn}>
-              <Text style={styles.secondaryBtnText}>Update Status</Text>
+              <AppText style={styles.secondaryBtnText}>Update Status</AppText>
             </TouchableOpacity>
           </View>
         </View>
 
         {/* AVAILABLE LOADS */}
         <View style={styles.sectionRow}>
-          <Text style={styles.sectionTitle}>Available Loads</Text>
+          <AppText style={styles.sectionTitle}>Available Loads</AppText>
           <TouchableOpacity onPress={openAvailableLoads}>
-            <Text style={styles.seeAll}>See All</Text>
+            <AppText style={styles.seeAll}>See All</AppText>
           </TouchableOpacity>
         </View>
 
@@ -165,8 +166,8 @@ export default HomeScreen;
 
 const StatItem = ({title, value, color}) => (
   <View style={styles.statItem}>
-    <Text style={[styles.statValue, {color}]}>{value}</Text>
-    <Text style={styles.statLabel}>{title}</Text>
+    <AppText style={[styles.statValue, {color}]}>{value}</AppText>
+    <AppText style={styles.statLabel}>{title}</AppText>
   </View>
 );
 
@@ -175,11 +176,11 @@ const Divider = () => <View style={styles.divider} />;
 const Location = ({color, city, info}) => (
   <View style={styles.locationRow}>
     <View style={[styles.locationIcon, {backgroundColor: color + '22'}]}>
-      <Text style={{color}}>📍</Text>
+      <AppText style={{color}}>📍</AppText>
     </View>
     <View>
-      <Text style={styles.city}>{city}</Text>
-      <Text style={styles.info}>{info}</Text>
+      <AppText style={styles.city}>{city}</AppText>
+      <AppText style={styles.info}>{info}</AppText>
     </View>
   </View>
 );
@@ -188,25 +189,25 @@ const AvailableLoad = ({onPlaceBid}) => (
   <View style={styles.loadCard}>
     <View style={styles.loadHeader}>
       <View>
-        <Text style={styles.loadId}>Load #SH-301</Text>
-        <Text style={styles.loadSub}>8,500 lbs • 239 miles</Text>
+        <AppText style={styles.loadId}>Load #SH-301</AppText>
+        <AppText style={styles.loadSub}>8,500 lbs • 239 miles</AppText>
       </View>
       <View style={styles.dateBadge}>
-        <Text>Feb 5</Text>
+        <AppText>Feb 5</AppText>
       </View>
     </View>
 
-    <Text style={styles.route}>📍 Dallas, TX</Text>
-    <Text style={styles.route}>📍 Houston, TX</Text>
+    <AppText style={styles.route}>📍 Dallas, TX</AppText>
+    <AppText style={styles.route}>📍 Houston, TX</AppText>
 
     <View style={styles.payRow}>
       <View>
-        <Text style={styles.payLabel}>Estimated Pay</Text>
-        <Text style={styles.payAmount}>$650</Text>
+        <AppText style={styles.payLabel}>Estimated Pay</AppText>
+        <AppText style={styles.payAmount}>$650</AppText>
       </View>
 
       <TouchableOpacity style={styles.placeBtn} onPress={onPlaceBid}>
-        <Text style={styles.primaryBtnText}>Place Bid</Text>
+        <AppText style={styles.primaryBtnText}>Place Bid</AppText>
       </TouchableOpacity>
     </View>
   </View>

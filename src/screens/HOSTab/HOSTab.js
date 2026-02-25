@@ -9,6 +9,7 @@ import {
 import styles from './HOSTab.styles';
 import StatusBar from '../../component/StatusBar/StatusBar';
 import { colors } from '../../theme/colors';
+import AppText from '../../theme/AppText';
 
 const HOSTab = () => {
   return (
@@ -22,13 +23,13 @@ const HOSTab = () => {
 
         {/* HEADER */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Hours of Service</Text>
-          <Text style={styles.headerSubtitle}>Track your driving hours</Text>
+          <AppText style={styles.headerTitle}>Hours of Service</AppText>
+          <AppText style={styles.headerSubtitle}>Track your driving hours</AppText>
         </View>
 
         {/* TIME REMAINING */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Time Remaining</Text>
+          <AppText style={styles.cardTitle}>Time Remaining</AppText>
 
           <ProgressRow
             label="Drive Time"
@@ -55,37 +56,37 @@ const HOSTab = () => {
         {/* CURRENT STATUS */}
         <View style={styles.statusCard}>
           <View style={styles.statusHeader}>
-            <Text style={styles.statusTitle}>Current Status</Text>
+            <AppText style={styles.statusTitle}>Current Status</AppText>
             <View style={styles.statusBadge}>
-              <Text style={styles.statusBadgeText}>On Duty - Driving</Text>
+              <AppText style={styles.statusBadgeText}>On Duty - Driving</AppText>
             </View>
           </View>
 
-          <Text style={styles.statusInfo}>
+          <AppText  style={styles.statusInfo}>
             Started: 6:30 AM • Duration: 4h 25m
-          </Text>
+          </AppText>
         </View>
 
         {/* ELD DATA */}
         <View style={styles.card}>
           <View style={styles.eldRow}>
             <View style={styles.eldIcon}>
-              <Text style={{ fontSize: 18 }}>📄</Text>
+              <AppText style={{ fontSize: 18 }}>📄</AppText>
             </View>
             <View>
-              <Text style={styles.eldTitle}>ELD Data</Text>
-              <Text style={styles.eldSub}>Last synced: 2 hours ago</Text>
+              <AppText style={styles.eldTitle}>ELD Data</AppText>
+              <AppText style={styles.eldSub}>Last synced: 2 hours ago</AppText>
             </View>
           </View>
 
           <TouchableOpacity style={styles.uploadBtn}>
-            <Text style={styles.uploadBtnText}>Upload ELD File</Text>
+            <AppText style={styles.uploadBtnText}>Upload ELD File</AppText>
           </TouchableOpacity>
         </View>
 
         {/* TODAY ACTIVITY */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Today's Activity</Text>
+          <AppText style={styles.cardTitle}>Today's Activity</AppText>
 
           <ActivityRow
             title="On Duty - Driving"
@@ -119,11 +120,11 @@ export default HOSTab;
 const ProgressRow = ({ label, value, percent, color }) => (
   <View style={{ marginTop: 16 }}>
     <View style={styles.progressHeader}>
-      <Text style={styles.progressLabel}>{label}</Text>
-      <Text style={styles.progressValue}>{value}</Text>
+      <AppText style={styles.progressLabel}>{label}</AppText>
+      <AppText style={styles.progressValue}>{value}</AppText>
     </View>
 
-    <View style={styles.progressTrack}>
+    <View style={styles.progressTrack}> 
       <View
         style={[
           styles.progressFill,
@@ -140,11 +141,11 @@ const ActivityRow = ({ title, time, duration, hideDivider }) => (
       <View style={styles.activityLeft}>
         <View style={styles.activityDot} />
         <View>
-          <Text style={styles.activityTitle}>{title}</Text>
-          <Text style={styles.activityTime}>{time}</Text>
+          <AppText style={styles.activityTitle}>{title}</AppText>
+          <AppText style={styles.activityTime}>{time}</AppText>
         </View>
       </View>
-      <Text style={styles.activityDuration}>{duration}</Text>
+      <AppText style={styles.activityDuration}>{duration}</AppText>
     </View>
 
     {!hideDivider && <View style={styles.divider} />}

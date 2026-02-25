@@ -15,6 +15,7 @@ import StatusBar from '../../component/StatusBar/StatusBar';
 import {colors} from '../../theme/colors';
 import {scanWithCamera, scanWithGallery} from '../../services/OCRService';
 import Button from '../../component/Button/Button';
+import AppText from '../../theme/AppText';
 
 const TABS = ['Company Info', 'Documents', 'Review'];
 
@@ -83,12 +84,12 @@ const Onboarding = () => {
         contentContainerStyle={styles.scrollContainer}>
         {/* Header */}
         <View style={styles.header}>
-          <Text style={styles.headerTitle}>Complete Onboarding</Text>
+          <AppText style={styles.headerTitle}>Complete Onboarding</AppText>
         </View>
 
         {/* Progress */}
         <View style={styles.progressBar} />
-        <Text style={styles.progressText}>0% Complete</Text>
+        <AppText style={styles.progressText}>0% Complete</AppText>
 
         {/* Tabs */}
         <View style={styles.tabs}>
@@ -97,13 +98,13 @@ const Onboarding = () => {
               key={tab}
               onPress={() => setActiveTab(tab)}
               style={[styles.tab, activeTab === tab && styles.activeTab]}>
-              <Text
+              <AppText
                 style={[
                   styles.tabText,
                   activeTab === tab && styles.activeTabText,
                 ]}>
                 {tab}
-              </Text>
+              </AppText>
             </TouchableOpacity>
           ))}
         </View>
@@ -111,9 +112,9 @@ const Onboarding = () => {
         {/* ---------------- Company Info ---------------- */}
         {activeTab === 'Company Info' && (
           <View style={styles.card}>
-            <Text style={styles.sectionTitle}>Company Information</Text>
+            <AppText style={styles.sectionTitle}>Company Information</AppText>
             <View style={styles.field}>
-              <Text style={styles.label}>Company Address *</Text>
+              <AppText style={styles.label}>Company Address *</AppText>
               <TextInput
                 style={styles.input}
                 placeholder="123 Main St, City, State"
@@ -122,18 +123,18 @@ const Onboarding = () => {
 
             <View style={styles.row}>
               <View style={[styles.field, styles.fieldHalf]}>
-                <Text style={styles.label}>DOT Number *</Text>
+                <AppText style={styles.label}>DOT Number *</AppText>
                 <TextInput style={styles.input} placeholder="DOT123456" />
               </View>
               <View style={[styles.field, styles.fieldHalf]}>
-                <Text style={styles.label}>MC Number *</Text>
+                <AppText style={styles.label}>MC Number *</AppText>
                 <TextInput style={styles.input} placeholder="MC123456" />
               </View>
             </View>
 
             <View style={styles.row}>
               <View style={[styles.field, styles.fieldHalf]}>
-                <Text style={styles.label}>State *</Text>
+                <AppText style={styles.label}>State *</AppText>
                 <TextInput
                   style={styles.input}
                   placeholder="CA"
@@ -141,7 +142,7 @@ const Onboarding = () => {
                 />
               </View>
               <View style={[styles.field, styles.fieldHalf]}>
-                <Text style={styles.label}>Company Phone *</Text>
+                <AppText style={styles.label}>Company Phone *</AppText>
                 <TextInput
                   style={styles.input}
                   placeholder="(123) 456-7890"
@@ -152,7 +153,7 @@ const Onboarding = () => {
 
             <View style={styles.row}>
               <View style={[styles.field, styles.fieldHalf]}>
-                <Text style={styles.label}>Company Fax</Text>
+                <AppText style={styles.label}>Company Fax</AppText>
                 <TextInput
                   style={styles.input}
                   placeholder="(123) 456-7890"
@@ -160,7 +161,7 @@ const Onboarding = () => {
                 />
               </View>
               <View style={[styles.field, styles.fieldHalf]}>
-                <Text style={styles.label}>Company Email *</Text>
+                <AppText style={styles.label}>Company Email *</AppText>
                 <TextInput
                   style={styles.input}
                   placeholder="example@example.com"
@@ -171,7 +172,7 @@ const Onboarding = () => {
             </View>
 
             <View style={styles.field}>
-              <Text style={styles.label}>Company Website</Text>
+              <AppText style={styles.label}>Company Website</AppText>
               <TextInput
                 style={styles.input}
                 placeholder="https://www.example.com"
@@ -186,17 +187,17 @@ const Onboarding = () => {
         {activeTab === 'Documents' && (
           <>
             <View style={styles.infoBox}>
-              <Text style={styles.infoText}>
-                <Text style={{fontWeight: '700'}}>Required:</Text> Upload all
+              <AppText style={styles.infoText}>
+                <AppText style={{fontWeight: '700'}}>Required:</AppText> Upload all
                 documents marked with * to proceed. Accepted formats: PDF, JPG,
                 PNG (max 10MB)
-              </Text>
+              </AppText>
             </View>
 
             {DOCUMENTS.map(({id, title}) => (
               <View style={styles.card} key={id}>
                 <View style={styles.cardHeader}>
-                  <Text style={styles.cardTitle}>{title} *</Text>
+                  <AppText style={styles.cardTitle}>{title} *</AppText>
                 </View>
 
                 <TouchableOpacity
@@ -210,17 +211,17 @@ const Onboarding = () => {
                         style={styles.uploadPreview}
                         resizeMode="cover"
                       />
-                      <Text style={styles.uploadText}>Retake Photo</Text>
+                      <AppText style={styles.uploadText}>Retake Photo</AppText>
                     </>
                   ) : (
                     <>
-                      <Text style={styles.uploadIcon}>📷</Text>
-                      <Text style={styles.uploadText}>
+                      <AppText style={styles.uploadIcon}>📷</AppText>
+                      <AppText style={styles.uploadText}>
                         Take Photo or Upload
-                      </Text>
-                      <Text style={styles.uploadSub}>
+                      </AppText>
+                      <AppText style={styles.uploadSub}>
                         PDF, JPG, PNG · Max 10MB
-                      </Text>
+                      </AppText>
                     </>
                   )}
                 </TouchableOpacity>
@@ -232,15 +233,15 @@ const Onboarding = () => {
         {activeTab === 'Review' && (
           <>
             <View style={styles.reviewHeader}>
-              <Text style={styles.reviewTitle}>Almost Done!</Text>
-              <Text style={styles.reviewSub}>
+              <AppText style={styles.reviewTitle}>Almost Done!</AppText>
+              <AppText  Text style={styles.reviewSub}>
                 Review your information and submit for verification. Our team
                 will review within 24–48 hours.
-              </Text>
+              </AppText>
             </View>
 
             <View style={styles.card}>
-              <Text style={styles.sectionTitle}>Documents Uploaded</Text>
+              <AppText style={styles.sectionTitle}>Documents Uploaded</AppText>
 
               {[
                 'Commercial Driver’s License (CDL)',
@@ -248,14 +249,14 @@ const Onboarding = () => {
                 'Vehicle Registration & Insurance',
               ].map(item => (
                 <View style={styles.reviewRow} key={item}>
-                  <Text style={styles.checkIcon}>✓</Text>
-                  <Text style={styles.reviewText}>{item}</Text>
+                  <AppText style={styles.checkIcon}>✓</AppText>
+                  <AppText style={styles.reviewText}>{item}</AppText>
                 </View>
               ))}
             </View>
 
             <View style={styles.card}>
-              <Text style={styles.sectionTitle}>What happens next?</Text>
+              <AppText style={styles.sectionTitle}>What happens next?</AppText>
 
               {[
                 [
@@ -276,11 +277,11 @@ const Onboarding = () => {
               ].map(([num, title, desc]) => (
                 <View style={styles.timelineRow} key={num}>
                   <View style={styles.stepCircle}>
-                    <Text style={styles.stepNumber}>{num}</Text>
+                    <AppText style={styles.stepNumber}>{num}</AppText>
                   </View>
                   <View style={styles.stepContent}>
-                    <Text style={styles.stepTitle}>{title}</Text>
-                    <Text style={styles.stepDesc}>{desc}</Text>
+                    <AppText style={styles.stepTitle}>{title}</AppText>
+                    <AppText style={styles.stepDesc}>{desc}</AppText>
                   </View>
                 </View>
               ))}
@@ -308,7 +309,7 @@ const Onboarding = () => {
             ]}
             disabled={activeTab === 'Documents' && !canContinueFromDocs}
             onPress={goNext}>
-            <Text
+            <AppText
               style={[
                 styles.primaryText,
                 activeTab === 'Documents' &&
@@ -318,14 +319,14 @@ const Onboarding = () => {
               {activeTab === 'Company Info'
                 ? 'Continue to Documents'
                 : 'Continue to Review'}
-            </Text>
+            </AppText>
           </TouchableOpacity>
 
           {activeTab === 'Documents' && (
-            <Text style={styles.bottomText}>
+            <AppText style={styles.bottomText}>
               Upload {Math.max(DOCUMENTS.length - completedCount, 0)} more
               required document(s)
-            </Text>
+            </AppText>
           )}
         </View>
       )}

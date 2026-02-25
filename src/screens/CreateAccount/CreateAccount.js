@@ -12,6 +12,7 @@ import {colors} from '../../theme/colors';
 import {useNavigation} from '@react-navigation/native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import StatusBar from '../../component/StatusBar/StatusBar';
+import AppText from '../../theme/AppText';
 
 const CreateAccount = () => {
   const navigation = useNavigation();
@@ -36,19 +37,19 @@ const CreateAccount = () => {
         keyboardShouldPersistTaps="handled"
         showsVerticalScrollIndicator={false}>
         <View style={styles.headerCard}>
-          <Text style={styles.title}>Create Account</Text>
+          <AppText style={styles.title}>Create Account</AppText>
         </View>
 
         <View style={styles.formCard}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Personal details</Text>
-            <Text style={styles.sectionSubtitle}>
+            <AppText style={styles.sectionTitle}>Personal details</AppText>
+            <AppText style={styles.sectionSubtitle}>
               Tell us about you to personalize your account.
-            </Text>
+            </AppText>
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Company Name *</Text>
+            <AppText style={styles.label}>Company Name *</AppText>
             <TextInput
               style={styles.input}
               placeholder="XYZ Corp"
@@ -60,7 +61,7 @@ const CreateAccount = () => {
           </View>
           <View style={styles.row}>
             <View style={[styles.fieldHalf, styles.fieldLeft]}>
-              <Text style={styles.label}>First Name *</Text>
+              <AppText style={styles.label}>First Name *</AppText>
               <TextInput
                 style={styles.input}
                 placeholder="Ashutosh"
@@ -73,7 +74,7 @@ const CreateAccount = () => {
             
 
             <View style={styles.fieldHalf}>
-              <Text style={styles.label}>Middle Name *</Text>
+              <AppText style={styles.label}>Middle Name *</AppText>
               <TextInput
                 style={styles.input}
                 placeholder="Kumar"
@@ -86,7 +87,7 @@ const CreateAccount = () => {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Last Name</Text>
+            <AppText style={styles.label}>Last Name</AppText>
             <TextInput
               style={styles.input}
               placeholder="Gangwar"
@@ -98,7 +99,7 @@ const CreateAccount = () => {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Email Address *</Text>
+            <AppText style={styles.label}>Email Address *</AppText>
             <TextInput
               style={styles.input}
               placeholder="xyz@example.com"
@@ -111,10 +112,10 @@ const CreateAccount = () => {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Phone Number *</Text>
+            <AppText style={styles.label}>Phone Number *</AppText>
             <View style={styles.phoneRow}>
               <View style={styles.countryCode}>
-                <Text style={styles.countryText}>+1</Text>
+                <AppText style={styles.countryText}>+1</AppText>
               </View>
               <TextInput
                 style={[styles.input, styles.phoneInput]}
@@ -127,7 +128,7 @@ const CreateAccount = () => {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Password *</Text>
+            <AppText style={styles.label}>Password *</AppText>
             <TextInput
               style={styles.input}
               placeholder="Create a strong password"
@@ -138,7 +139,7 @@ const CreateAccount = () => {
           </View>
 
           <View style={styles.inputGroup}>
-            <Text style={styles.label}>Confirm Password *</Text>
+            <AppText style={styles.label}>Confirm Password *</AppText>
             <TextInput
               style={styles.input}
               placeholder="Confirm your password"
@@ -157,11 +158,11 @@ const CreateAccount = () => {
                 styles.checkbox,
                 termsAccepted && styles.checkboxChecked,
               ]}>
-              {termsAccepted && <Text style={styles.checkboxTick}>✓</Text>}
+              {termsAccepted && <AppText style={styles.checkboxTick}>✓</AppText>}
             </View>
-            <Text style={styles.termsText}>
+            <AppText style={styles.termsText}>
               I agree to the Terms of Service and Privacy Policy
-            </Text>
+            </AppText>
           </TouchableOpacity>
 
           <View style={styles.buttonWrap}>

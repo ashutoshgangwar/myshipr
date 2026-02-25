@@ -3,6 +3,7 @@ import {View, Text, TextInput, TouchableOpacity, Image} from 'react-native';
 import styles from './ForgotPassword.styles';
 import Button from '../../component/Button/Button';
 import {colors} from '../../theme/colors';
+import AppText from '../../theme/AppText';
 
 const STATIC_OTP = '123456';
 
@@ -44,7 +45,7 @@ const ForgotPassword = ({navigation}) => {
           resizeMode="contain"
         />
       </View>
-      <Text style={styles.title}>Forgot Password</Text>
+      <AppText style={styles.title}>Forgot Password</AppText>
 
       {/* Toggle */}
       <View style={styles.toggle}>
@@ -56,9 +57,9 @@ const ForgotPassword = ({navigation}) => {
               setMethod(item);
               setValue('');
             }}>
-            <Text style={method === item ? styles.activeText : styles.text}>
+            <AppText style={method === item ? styles.activeText : styles.text}>
               {item === 'mobile' ? 'Mobile' : 'Email'}
-            </Text>
+            </AppText>
           </TouchableOpacity>
         ))}
       </View>

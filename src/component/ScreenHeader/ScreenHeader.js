@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, TouchableOpacity, StatusBar } from 'react-native';
 
 import styles from './ScreenHeader.styles';
+import AppText from '../../theme/AppText';
 
 const ScreenHeader = ({ title, subtitle, onBack }) => {
   return (
@@ -15,8 +16,8 @@ const ScreenHeader = ({ title, subtitle, onBack }) => {
       )}
       
       <View style={styles.textContainer}>
-        <Text style={styles.title}>{title}</Text>
-        {subtitle ? <Text style={styles.subtitle}>{subtitle}</Text> : null}
+        <AppText style={styles.title}>{title}</AppText>
+        {subtitle ? <AppText style={styles.subtitle}>{subtitle}</AppText> : null}
       </View>
     </View>
   );

@@ -6,6 +6,7 @@ import {colors} from '../../theme/colors';
 import Eye_outline from '../../assets/svg_icon/eye-outline.svg';
 import Eye_off from '../../assets/svg_icon/eye-off.svg';
 import {useNavigation} from '@react-navigation/native';
+import AppText from '../../theme/AppText';
 
 const ResetPassword = () => {
   const navigation = useNavigation();
@@ -52,8 +53,8 @@ const ResetPassword = () => {
           resizeMode="contain"
         />
       </View>
-      <Text style={styles.title}>Reset Password</Text>
-      <Text style={styles.subtitle}>Create a new password</Text>
+      <AppText style={styles.title}>Reset Password</AppText>
+      <AppText style={styles.subtitle}>Create a new password</AppText>
 
       {/* New Password */}
       <View style={styles.inputWrapper}>

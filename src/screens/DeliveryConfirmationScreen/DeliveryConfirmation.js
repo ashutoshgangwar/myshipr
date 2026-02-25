@@ -9,6 +9,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import styles from './DeliveryConfirmation.styles';
 import CoreButton from '../../component/CoreButton/CoreButton';
 import { useNavigation } from '@react-navigation/native';
+import AppText from '../../theme/AppText';
 
 const DeliveryConfirmation = () => {
    const navigate = useNavigation();
@@ -28,16 +29,16 @@ const DeliveryConfirmation = () => {
       <ScrollView contentContainerStyle={styles.scroll}>
         {/* Stepper */}
         <View style={styles.stepper}>
-          <Text style={styles.stepDone}>Pickup</Text>
+          <AppText style={styles.stepDone}>Pickup</AppText>
           <View style={styles.stepLine} />
-          <Text style={styles.stepDone}>Transit</Text>
+          <AppText style={styles.stepDone}>Transit</AppText>
           <View style={styles.stepLine} />
-          <Text style={styles.stepActive}>Delivery</Text>
+          <AppText style={styles.stepActive}>Delivery</AppText>
         </View>
 
         {/* Delivery Card */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Delivery Details</Text>
+          <AppText style={styles.cardTitle}>Delivery Details</AppText>
 
           {/* Upload Section */}
           <View style={styles.uploadRow}>
@@ -55,7 +56,7 @@ const DeliveryConfirmation = () => {
 
         {/* POD */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Digital Proof of Delivery</Text>
+          <AppText style={styles.cardTitle}>Digital Proof of Delivery</AppText>
 
           <InfoRow label="Timestamp" value="Auto captured" />
           <InfoRow label="Location" value="GPS locked" />
@@ -67,7 +68,7 @@ const DeliveryConfirmation = () => {
 
         {/* Checklist */}
         <View style={styles.card}>
-          <Text style={styles.cardTitle}>Completion Checklist</Text>
+          <AppText style={styles.cardTitle}>Completion Checklist</AppText>
 
           <ChecklistItem
             label="Cargo Verified"
@@ -109,28 +110,28 @@ const DeliveryConfirmation = () => {
 
 const UploadBox = ({label}) => (
   <TouchableOpacity style={styles.uploadBox}>
-    <Text style={styles.uploadIcon}>📷</Text>
-    <Text style={styles.uploadLabel}>{label}</Text>
+    <AppText style={styles.uploadIcon}>📷</AppText>
+    <AppText style={styles.uploadLabel}>{label}</AppText>
   </TouchableOpacity>
 );
 
 const IssueToggle = ({label, danger}) => (
   <View style={[styles.issueBox, danger && styles.issueDanger]}>
-    <Text style={styles.issueText}>{label}</Text>
+    <AppText style={styles.issueText}>{label}</AppText>
   </View>
 );
 
 const InfoRow = ({label, value}) => (
   <View style={styles.infoRow}>
-    <Text style={styles.infoLabel}>{label}</Text>
-    <Text style={styles.infoValue}>{value}</Text>
+    <AppText style={styles.infoLabel}>{label}</AppText>
+    <AppText style={styles.infoValue}>{value}</AppText>
   </View>
 );
 
 const ChecklistItem = ({label, checked, onPress}) => (
   <TouchableOpacity style={styles.checkRow} onPress={onPress}>
     <View style={[styles.checkbox, checked && styles.checkboxChecked]} />
-    <Text style={styles.checkText}>{label}</Text>
+    <AppText style={styles.checkText}>{label}</AppText>
   </TouchableOpacity>
 );
 

@@ -1,6 +1,7 @@
 import React, {useState} from 'react';
 import {Modal, View, Text, TouchableOpacity} from 'react-native';
 import styles from './ConsentModal.styles';
+import AppText from '../../theme/AppText';
 
 const ConsentModal = ({visible, onAgree, onCancel}) => {
   const [checked, setChecked] = useState(false);
@@ -24,12 +25,12 @@ const ConsentModal = ({visible, onAgree, onCancel}) => {
       onRequestClose={handleCancel}>
       <View style={styles.overlay}>
         <View style={styles.modalCard}>
-          <Text style={styles.title}>Background Check Consent</Text>
+          <AppText style={styles.title}>Background Check Consent</AppText>
 
-          <Text style={styles.description}>
+          <AppText  Text style={styles.description}>
             By proceeding, you authorize us to perform a background verification
             as part of the driver onboarding process.
-          </Text>
+          </AppText>
 
           {/* ✅ Custom Checkbox */}
           <TouchableOpacity
@@ -37,12 +38,12 @@ const ConsentModal = ({visible, onAgree, onCancel}) => {
             activeOpacity={0.8}
             onPress={() => setChecked(!checked)}>
             <View style={[styles.checkbox, checked && styles.checkboxChecked]}>
-              {checked && <Text style={styles.tick}>✓</Text>}
+              {checked && <AppText style={styles.tick}>✓</AppText>}
             </View>
 
-            <Text style={styles.checkboxText}>
+            <AppText style={styles.checkboxText}>
               I have read and agree to the background check
-            </Text>
+            </AppText>
           </TouchableOpacity>
 
           {/* Buttons */}
@@ -50,7 +51,7 @@ const ConsentModal = ({visible, onAgree, onCancel}) => {
             <TouchableOpacity
               style={[styles.button, styles.cancelBtn]}
               onPress={handleCancel}>
-              <Text style={styles.cancelText}>Cancel</Text>
+              <AppText style={styles.cancelText}>Cancel</AppText>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -60,7 +61,7 @@ const ConsentModal = ({visible, onAgree, onCancel}) => {
               ]}
               disabled={!checked}
               onPress={handleAgree}>
-              <Text style={styles.agreeText}>I Agree</Text>
+              <AppText style={styles.agreeText}>I Agree</AppText>
             </TouchableOpacity>
           </View>
         </View>

@@ -2,6 +2,7 @@ import React from 'react';
 import {View, Text, Image} from 'react-native';
 import LogoImage from '../../assets/Image/logo.png';
 import styles from '../../screens/NavigationScreen/NavigationScreen.styles';
+import AppText from '../../theme/AppText';
 
 const CustomMarker = ({type = 'default', title, showLogo = false}) => {
   const getMarkerStyle = () => {
@@ -40,7 +41,7 @@ const CustomMarker = ({type = 'default', title, showLogo = false}) => {
 
   return (
     <View style={getMarkerStyle()}>
-      <Text style={styles.markerLabel}>{getMarkerLabel()}</Text>
+      <AppText style={styles.markerLabel}>{getMarkerLabel()}</AppText>
     </View>
   );
 };

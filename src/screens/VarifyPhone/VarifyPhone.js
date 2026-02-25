@@ -9,6 +9,7 @@ import styles from './VarifyPhone.styles';
 import { useNavigation } from '@react-navigation/native';
 import Button from '../../component/Button/Button';
 import { colors } from '../../theme/colors';
+import AppText from '../../theme/AppText';
 
 const VerifyPhone = () => {
     const navigation = useNavigation();
@@ -42,12 +43,11 @@ const VerifyPhone = () => {
         </View>
 
         {/* Title */}
-        <Text style={styles.title}>Verify Phone</Text>
-        <Text style={styles.subtitle}>
+        <AppText style={styles.title}>Verify Phone</AppText>
+        <AppText style={styles.subtitle}>
           Enter the 6-digit code sent to
-        </Text>
-        <Text style={styles.phoneText}>+1 (555) 123-4567</Text>
-
+        </AppText>
+        <AppText style={styles.phoneText}>+1 (555) 123-4567</AppText>
         {/* OTP */}
         <View style={styles.otpRow}>
           {otp.map((item, index) => (
@@ -74,10 +74,10 @@ const VerifyPhone = () => {
         </TouchableOpacity> */}
 
         {/* Resend */}
-        <Text style={styles.resendText}>
+        <AppText style={styles.resendText}>
           Didn’t receive code?{' '}
-          <Text style={styles.resendLink}>Resend</Text>
-        </Text>
+          <AppText style={styles.resendLink}>Resend</AppText>
+        </AppText>
       </View>
     </View>
   );

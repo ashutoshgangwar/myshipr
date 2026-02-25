@@ -21,6 +21,7 @@ import {colors} from '../../theme/colors';
 import Eye_off from '../../assets/svg_icon/eye-off.svg';
 import Eye_outline from '../../assets/svg_icon/eye-outline.svg';
 import StatusBar from '../../component/StatusBar/StatusBar';
+import AppText from '../../theme/AppText';
 
 
 const Login = () => {
@@ -242,12 +243,12 @@ const Login = () => {
               style={styles.card}
               accessible
               accessibilityLabel="Login form">
-              <Text style={styles.title}>Welcome Back</Text>
-              <Text style={styles.subtitle}>
+              <AppText style={styles.title}>Welcome Back</AppText>
+              <AppText style={styles.subtitle}>
                 {loginMethod === 'email'
                   ? 'Login with your email'
                   : 'Login with your mobile number'}
-              </Text>
+              </AppText>
 
               {/* Login Method Tabs */}
               <View style={styles.tabContainer}>
@@ -259,13 +260,13 @@ const Login = () => {
                   onPress={() => switchLoginMethod('email')}
                   activeOpacity={0.8}
                   accessibilityRole="button">
-                  <Text
+                  <AppText
                     style={[
                       styles.tabText,
                       loginMethod === 'email' && styles.tabTextActive,
                     ]}>
                     Email
-                  </Text>
+                  </AppText>
                 </TouchableOpacity>
                 <TouchableOpacity
                   style={[
@@ -275,13 +276,13 @@ const Login = () => {
                   onPress={() => switchLoginMethod('mobile')}
                   activeOpacity={0.8}
                   accessibilityRole="button">
-                  <Text
+                  <AppText
                     style={[
                       styles.tabText,
                       loginMethod === 'mobile' && styles.tabTextActive,
                     ]}>
                     Mobile
-                  </Text>
+                  </AppText>
                 </TouchableOpacity>
               </View>
 
@@ -349,15 +350,15 @@ const Login = () => {
                     style={styles.forgotPasswordContainer}
                     disabled={loading}
                     activeOpacity={0.7}>
-                    <Text style={styles.forgotPasswordText}>
+                    <AppText style={styles.forgotPasswordText}>
                       Forgot Password?
-                    </Text>
+                    </AppText>
                   </TouchableOpacity>
                 </>
               ) : (
                 <>
                   <View style={styles.phoneInputContainer}>
-                    <Text style={styles.countryCode}>+1</Text>
+                    <AppText style={styles.countryCode}>+1</AppText>
                     <View style={styles.countryDivider} />
                     <TextInput
                       placeholder="Mobile Number"
@@ -408,9 +409,9 @@ const Login = () => {
                   )}
 
                   {otpSent && otpTimer > 0 && (
-                    <Text style={styles.otpTimerText}>
+                    <AppText style={styles.otpTimerText}>
                       Resend available in {otpTimer}s
-                    </Text>
+                    </AppText>
                   )}
                 </>
               )}
@@ -442,7 +443,7 @@ const Login = () => {
               {/* OR Divider */}
               <View style={styles.orContainer}>
                 <View style={styles.line} />
-                <Text style={styles.orText}>OR</Text>
+                <AppText style={styles.orText}>OR</AppText>
                 <View style={styles.line} />
               </View>
 

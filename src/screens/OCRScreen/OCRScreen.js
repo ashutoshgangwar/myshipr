@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { View, Text, Button, Image, ScrollView } from 'react-native';
 import { scanWithCamera, scanWithGallery } from '../../services/OCRService';
+import AppText from '../../theme/AppText';
 
 const OCRScreen = () => {
   const [image, setImage] = useState(null);
@@ -39,8 +40,8 @@ const OCRScreen = () => {
         />
       )}
 
-      <Text style={{ fontWeight: 'bold' }}>OCR Result:</Text>
-      <Text>{text || 'No text detected'}</Text>
+      <AppText style={{ fontWeight: 'bold' }}>OCR Result:</AppText>
+      <AppText>{text || 'No text detected'}</AppText>
       </View>
     </ScrollView>
   );

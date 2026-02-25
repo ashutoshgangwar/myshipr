@@ -9,6 +9,7 @@ import {
 import styles from './Profile.styles';
 import StatusBar from '../../component/StatusBar/StatusBar';
 import { colors } from '../../theme/colors';
+import AppText from '../../theme/AppText';
 
 const Profile = () => {
   return (
@@ -22,15 +23,15 @@ const Profile = () => {
         {/* Header */}
         <View style={styles.header}>
           <View style={styles.avatar} />
-          <Text style={styles.name}>Ashutosh Gangwar</Text>
-          <Text style={styles.subTitle}>CDL Class A • ID: DRV-4521</Text>
+          <AppText style={styles.name}>Ashutosh Gangwar</AppText>
+          <AppText style={styles.subTitle}>CDL Class A • ID: DRV-4521</AppText>
 
           <View style={styles.badgeRow}>
             <View style={styles.verifiedBadge}>
-              <Text style={styles.badgeText}>Verified</Text>
+              <AppText style={styles.badgeText}>Verified</AppText>
             </View>
             <View style={styles.ratingBadge}>
-              <Text style={styles.badgeText}>⭐ 4.9</Text>
+              <AppText style={styles.badgeText}>⭐ 4.9</AppText>
             </View>
           </View>
         </View>
@@ -50,7 +51,7 @@ const Profile = () => {
 
         {/* Documents */}
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Documents & Verification</Text>
+          <AppText style={styles.sectionTitle}>Documents & Verification</AppText>
 
           <DocItem
             title="CDL License"
@@ -79,9 +80,9 @@ const Profile = () => {
 
         {/* Vehicle */}
         <View style={styles.card}>
-          <Text style={styles.sectionTitle}>Assigned Vehicle</Text>
-          <Text style={styles.vehicleTitle}>Semi-Truck 18-Wheeler</Text>
-          <Text style={styles.vehicleSub}>CA • ABC1234</Text>
+          <AppText style={styles.sectionTitle}>Assigned Vehicle</AppText>
+          <AppText style={styles.vehicleTitle}>Semi-Truck 18-Wheeler</AppText>
+          <AppText style={styles.vehicleSub}>CA • ABC1234</AppText>
         </View>
       </ScrollView>
     </SafeAreaView>
@@ -92,16 +93,16 @@ const Profile = () => {
 
 const Stat = ({ title, subtitle }) => (
   <View style={styles.statBox}>
-    <Text style={styles.statTitle}>{title}</Text>
-    <Text style={styles.statSub}>{subtitle}</Text>
+    <AppText style={styles.statTitle}>{title}</AppText>
+    <AppText style={styles.statSub}>{subtitle}</AppText>
   </View>
 );
 
 const DocItem = ({ title, subtitle, status, pending }) => (
   <View style={styles.docRow}>
     <View>
-      <Text style={styles.docTitle}>{title}</Text>
-      {subtitle && <Text style={styles.docSub}>{subtitle}</Text>}
+      <AppText style={styles.docTitle}>{title}</AppText>
+      {subtitle && <AppText style={styles.docSub}>{subtitle}</AppText>}
     </View>
     <View
       style={[
@@ -109,7 +110,7 @@ const DocItem = ({ title, subtitle, status, pending }) => (
         pending ? styles.pending : styles.verified,
       ]}
     >
-      <Text style={styles.statusText}>{status}</Text>
+      <AppText style={styles.statusText}>{status}</AppText>
     </View>
   </View>
 );

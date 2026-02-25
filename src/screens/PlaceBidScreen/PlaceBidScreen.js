@@ -16,6 +16,7 @@ import styles from './PlaceBidScreen.styles';
 import StatusBar from '../../component/StatusBar/StatusBar';
 import CoinsAnimation from '../../component/CoinsAnimation/CoinsAnimation';
 import { colors } from '../../theme/colors';
+import AppText from '../../theme/AppText';
 
 const PlaceBidScreen = ({ navigation, route }) => {
   const [amount, setAmount] = useState('');
@@ -73,9 +74,9 @@ const PlaceBidScreen = ({ navigation, route }) => {
       <CoinsAnimation isActive={showCoinsAnimation} amount={parseFloat(amount) || 0} />
       <View style={styles.header}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Text style={styles.backText}>Back</Text>
+          <AppText style={styles.backText}>Back</AppText>
         </TouchableOpacity>
-        <Text style={styles.title}>Place Bid</Text>
+        <AppText style={styles.title}>Place Bid</AppText>
         <View style={styles.headerSpacer} />
       </View>
 
@@ -94,43 +95,43 @@ const PlaceBidScreen = ({ navigation, route }) => {
         <View style={styles.heroCard}>
           <View style={styles.cardHeaderRow}>
             <View style={styles.loadBadge}>
-              <Text style={styles.loadBadgeText}>LOAD</Text>
+              <AppText style={styles.loadBadgeText}>LOAD</AppText>
             </View>
-            <Text style={styles.loadIdHero}>#{load.id || 'N/A'}</Text>
+            <AppText style={styles.loadIdHero}>#{load.id || 'N/A'}</AppText>
           </View>
           
           <View style={styles.routeContainer}>
             <View style={styles.routePoint}>
               <View style={styles.greenDot} />
               <View style={styles.routeTextContainer}>
-                <Text style={styles.routeLabel}>PICKUP</Text>
-                <Text style={styles.routeLocation}>{load.from}</Text>
+                <AppText style={styles.routeLabel}>PICKUP</AppText>
+                <AppText style={styles.routeLocation}>{load.from}</AppText>
               </View>
             </View>
             
             <View style={styles.routePoint}>
               <View style={styles.redDot} />
               <View style={styles.routeTextContainer}>
-                <Text style={styles.routeLabel}>DELIVERY</Text>
-                <Text style={styles.routeLocation}>{load.to}</Text>
+                <AppText style={styles.routeLabel}>DELIVERY</AppText>
+                <AppText style={styles.routeLocation}>{load.to}</AppText>
               </View>
             </View>
           </View>
 
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
-              <Text style={styles.statLabel}>Weight</Text>
-              <Text style={styles.statValue}>{load.weight}</Text>
+              <AppText style={styles.statLabel}>Weight</AppText>
+              <AppText style={styles.statValue}>{load.weight}</AppText>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
-              <Text style={styles.statLabel}>Distance</Text>
-              <Text style={styles.statValue}>{load.miles}</Text>
+              <AppText style={styles.statLabel}>Distance</AppText>
+              <AppText style={styles.statValue}>{load.miles}</AppText>
             </View>
             <View style={styles.statDivider} />
             <View style={styles.statItem}>
-              <Text style={styles.statLabel}>Est. Pay</Text>
-              <Text style={styles.statValueGreen}>{load.pay}</Text>
+              <AppText style={styles.statLabel}>Est. Pay</AppText>
+              <AppText style={styles.statValueGreen}>{load.pay}</AppText>
             </View>
           </View>
         </View>
@@ -139,24 +140,24 @@ const PlaceBidScreen = ({ navigation, route }) => {
         {load.bids && load.bids.length > 0 && (
           <View style={styles.biddingCard}>
             <View style={styles.biddingHeader}>
-              <Text style={styles.liveBadge}>🔴 LIVE</Text>
-              <Text style={styles.biddingTitle}>Active Bidding</Text>
-              <Text style={styles.bidCount}>{load.bids.length} bids</Text>
+              <AppText style={styles.liveBadge}>🔴 LIVE</AppText>
+              <AppText style={styles.biddingTitle}>Active Bidding</AppText>
+              <AppText style={styles.bidCount}>{load.bids.length} bids</AppText>
             </View>
 
             <View style={styles.winningBidCard}>
               <View style={styles.winningBidHeader}>
-                <Text style={styles.winningBidLabel}>🏆 CURRENT LOWEST</Text>
+                <AppText style={styles.winningBidLabel}>🏆 CURRENT LOWEST</AppText>
                 <View style={styles.trendingDown}>
-                  <Text style={styles.trendingText}>↓ Trending Down</Text>
+                  <AppText style={styles.trendingText}>↓ Trending Down</AppText>
                 </View>
               </View>
-              <Text style={styles.winningBidAmount}>${lowestBid}</Text>
-              <Text style={styles.winningBidSubtext}>Beat this to win the load</Text>
+              <AppText style={styles.winningBidAmount}>${lowestBid}</AppText>
+              <AppText style={styles.winningBidSubtext}>Beat this to win the load</AppText>
             </View>
             
             <View style={styles.bidsListContainer}>
-              <Text style={styles.recentBidsTitle}>Recent Bids</Text>
+              <AppText style={styles.recentBidsTitle}>Recent Bids</AppText>
               {load.bids.slice(0, 3).map((bid, index) => (
                 <View key={index} style={[
                   styles.bidItemCard,
@@ -169,8 +170,8 @@ const PlaceBidScreen = ({ navigation, route }) => {
                       </Text>
                     </View>
                     <View>
-                      <Text style={styles.bidderNameNew}>{bid.bidder}</Text>
-                      <Text style={styles.bidTimeNew}>{bid.time}</Text>
+                      <AppText style={styles.bidderNameNew}>{bid.bidder}</AppText>
+                      <AppText style={styles.bidTimeNew}>{bid.time}</AppText>
                     </View>
                   </View>
                   <View style={styles.bidAmountContainer}>
@@ -187,28 +188,28 @@ const PlaceBidScreen = ({ navigation, route }) => {
         {/* Place Your Bid Section */}
         <View style={styles.placeBidCard}>
           <View style={styles.placeBidHeader}>
-            <Text style={styles.placeBidTitle}>💰 Place Your Bid</Text>
-            <Text style={styles.placeBidSubtitle}>Competitive pricing wins</Text>
+            <AppText style={styles.placeBidTitle}>💰 Place Your Bid</AppText>
+            <AppText style={styles.placeBidSubtitle}>Competitive pricing wins</AppText>
           </View>
 
           {/* Quick Bid Suggestions */}
           {suggestedBid && (
             <View style={styles.quickBidsContainer}>
-              <Text style={styles.quickBidsLabel}>Quick Bid</Text>
+              <AppText style={styles.quickBidsLabel}>Quick Bid</AppText>
               <View style={styles.quickBidsRow}>
                 <TouchableOpacity 
                   style={styles.quickBidChip}
                   onPress={() => setAmount(String(suggestedBid))}
                 >
-                  <Text style={styles.quickBidAmount}>${suggestedBid}</Text>
-                  <Text style={styles.quickBidLabel}>Suggested</Text>
+                  <AppText style={styles.quickBidAmount}>${suggestedBid}</AppText>
+                  <AppText style={styles.quickBidLabel}>Suggested</AppText>
                 </TouchableOpacity>
                 <TouchableOpacity 
                   style={styles.quickBidChip}
                   onPress={() => setAmount(String(lowestBid - 25))}
                 >
-                  <Text style={styles.quickBidAmount}>${lowestBid - 25}</Text>
-                  <Text style={styles.quickBidLabel}>Competitive</Text>
+                  <AppText style={styles.quickBidAmount}>${lowestBid - 25}</AppText>
+                  <AppText style={styles.quickBidLabel}>Competitive</AppText>
                 </TouchableOpacity>
               </View>
             </View>
@@ -216,13 +217,13 @@ const PlaceBidScreen = ({ navigation, route }) => {
 
           {/* Bid Input */}
           <View style={styles.bidInputSection}>
-            <Text style={styles.bidInputLabel}>Enter Your Bid</Text>
+            <AppText style={styles.bidInputLabel}>Enter Your Bid</AppText>
             <TouchableWithoutFeedback onPress={() => inputRef.current?.focus()}>
               <View style={[
                 styles.bidInputContainer,
                 isFocused && styles.bidInputFocused
               ]}>
-                <Text style={styles.dollarSign}>$</Text>
+                <AppText style={styles.dollarSign}>$</AppText>
                 <TextInput
                   ref={inputRef}
                   placeholder="0"
@@ -234,7 +235,7 @@ const PlaceBidScreen = ({ navigation, route }) => {
                   onBlur={() => setIsFocused(false)}
                   style={styles.bidInput}
                 />
-                <Text style={styles.usdText}>USD</Text>
+                <AppText style={styles.usdText}>USD</AppText>
               </View>
             </TouchableWithoutFeedback>
           </View>
@@ -242,27 +243,27 @@ const PlaceBidScreen = ({ navigation, route }) => {
           {/* Bid Validation Message */}
           {amount && lowestBid && parseFloat(amount) >= lowestBid && (
             <View style={styles.warningBox}>
-              <Text style={styles.warningIcon}>⚠️</Text>
-              <Text style={styles.warningText}>
+              <AppText style={styles.warningIcon}>⚠️</AppText>
+              <AppText style={styles.warningText}>
                 Bid must be lower than ${lowestBid} to be competitive
-              </Text>
+              </AppText>
             </View>
           )}
           
           {amount && lowestBid && parseFloat(amount) < lowestBid && (
             <View style={styles.successBox}>
-              <Text style={styles.successIcon}>✓</Text>
-              <Text style={styles.successText}>
+              <AppText style={styles.successIcon}>✓</AppText>
+              <AppText style={styles.successText}>
                 Great! Your bid is ${(lowestBid - parseFloat(amount)).toFixed(0)} lower
-              </Text>
+              </AppText>
             </View>
           )}
 
           {/* Disclaimer */}
           <View style={styles.disclaimerBox}>
-            <Text style={styles.disclaimerText}>
+            <AppText  Text style={styles.disclaimerText}>
               📋 Final amount subject to adjustment post-delivery
-            </Text>
+            </AppText>
           </View>
 
           {/* Submit Button */}
@@ -274,7 +275,7 @@ const PlaceBidScreen = ({ navigation, route }) => {
             onPress={handleSubmit}
             activeOpacity={0.8}
           >
-            <Text style={styles.submitButtonText}>🚀 Submit Bid & Win Load</Text>
+            <AppText style={styles.submitButtonText}>🚀 Submit Bid & Win Load</AppText>
           </TouchableOpacity>
         </View>
 

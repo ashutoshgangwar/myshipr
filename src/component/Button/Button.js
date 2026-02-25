@@ -1,6 +1,7 @@
 import { TouchableOpacity, Text, Image, View } from 'react-native';
 import React from 'react';
 import styles from './Button.styles';
+import AppText from '../../theme/AppText';
 
 
 const Button = ({
@@ -24,7 +25,7 @@ const Button = ({
       onPress={onPress}
     >
       {icon && <Image source={icon} style={styles.icon} />}
-      <Text style={[styles.text, { color: textColor }]}>{title}</Text>
+      <AppText style={[styles.text, { color: textColor }]}>{title}</AppText>
     </TouchableOpacity>
   );
 };

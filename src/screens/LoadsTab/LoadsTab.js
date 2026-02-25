@@ -4,6 +4,7 @@ import styles from './LoadsTab.styles';
 import StatusBar from '../../component/StatusBar/StatusBar';
 import { colors } from '../../theme/colors';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import AppText from '../../theme/AppText';
 
 const TABS = [
   { key: 'pending', label: 'Pending' },
@@ -89,32 +90,32 @@ const LoadsTab = ({ navigation }) => {
     <View style={styles.card}>
       {/* Header */}
       <View style={styles.cardHeader}>
-        <Text style={styles.loadId}>Load #{item.id}</Text>
+        <AppText style={styles.loadId}>Load #{item.id}</AppText>
         <View style={[styles.statusBadge, getStatusStyle(item.status)]}>
-          <Text style={styles.statusText}>{item.status.toUpperCase()}</Text>
+          <AppText style={styles.statusText}>{item.status.toUpperCase()}</AppText>
         </View>
       </View>
 
-      <Text style={styles.subText}>
+      <AppText style={styles.subText}>
         {item.weight} • {item.miles}
-      </Text>
+      </AppText>
 
       {/* Locations */}
       <View style={styles.locationRow}>
-        <Text style={styles.location}>🟢 {item.from}</Text>
-        <Text style={styles.location}>🔴 {item.to}</Text>
+        <AppText style={styles.location}>🟢 {item.from}</AppText>
+        <AppText style={styles.location}>🔴 {item.to}</AppText>
       </View>
 
       {/* Footer */}
       <View style={styles.footerRow}>
         <View>
-          <Text style={styles.estimate}>Estimated Pay</Text>
-          <Text style={styles.pay}>{item.pay}</Text>
+          <AppText style={styles.estimate}>Estimated Pay</AppText>
+          <AppText style={styles.pay}>{item.pay}</AppText>
         </View>
 
         {item.status === 'pending' && (
           <TouchableOpacity style={styles.acceptButton}>
-            <Text style={styles.acceptText}>Accept Load</Text>
+            <AppText style={styles.acceptText}>Accept Load</AppText>
           </TouchableOpacity>
         )}
 
@@ -123,18 +124,18 @@ const LoadsTab = ({ navigation }) => {
             style={styles.bidButton}
             onPress={() => navigation.navigate('PlaceBidScreen', { load: item })}
           >
-            <Text style={styles.bidText}>Place Bid</Text>
+            <AppText style={styles.bidText}>Place Bid</AppText>
           </TouchableOpacity>
         )}
 
         {item.status === 'active' && (
           <TouchableOpacity style={styles.trackButton}>
-            <Text style={styles.trackText}>Track</Text>
+            <AppText style={styles.trackText}>Track</AppText>
           </TouchableOpacity>
         )}
 
         {item.status === 'completed' && (
-          <Text style={styles.completedText}>Completed</Text>
+          <AppText style={styles.completedText}>Completed</AppText>
         )}
       </View>
     </View>
@@ -148,7 +149,7 @@ const LoadsTab = ({ navigation }) => {
             translucent={false}
           />
     <View style={styles.container}>
-      <Text style={styles.title}>Loads</Text>
+      <AppText style={styles.title}>Loads</AppText>
 
       {/* Tabs */}
       <View style={styles.tabsContainer}>
@@ -164,14 +165,14 @@ const LoadsTab = ({ navigation }) => {
               ]}
               onPress={() => setActiveTab(tab.key)}
             >
-              <Text
+              <AppText
                 style={[
                   styles.tabText,
                   activeTab === tab.key && styles.activeTabText,
                 ]}
               >
                 {tab.label}
-              </Text>
+              </AppText>
             </TouchableOpacity>
           );
         })}
@@ -184,7 +185,7 @@ const LoadsTab = ({ navigation }) => {
         renderItem={renderLoadCard}
         showsVerticalScrollIndicator={false}
         ListEmptyComponent={
-          <Text style={styles.emptyText}>No loads found</Text>
+          <AppText style={styles.emptyText}>No loads found</AppText>
         }
       />
     </View>

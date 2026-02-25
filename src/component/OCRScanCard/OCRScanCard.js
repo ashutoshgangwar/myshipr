@@ -1,6 +1,7 @@
 import React from 'react';
 import {View, Text, Image, TouchableOpacity} from 'react-native';
 import styles from './OCRScanCard.styles';
+import AppText from '../../theme/AppText';
 
 
 const OCRScanCard = ({
@@ -22,15 +23,15 @@ const OCRScanCard = ({
     <View style={[styles.card, isCompleted && styles.cardCompleted]}>
       {/* Header */}
       <View style={styles.header}>
-        <Text style={styles.cardTitle}>{title}</Text>
+        <AppText style={styles.cardTitle}>{title}</AppText>
         <View
           style={[
             styles.statusBadge,
             isCompleted ? styles.badgeSuccess : styles.badgePending,
           ]}>
-          <Text style={styles.badgeText}>
+          <AppText style={styles.badgeText}>
             {isCompleted ? 'Completed' : 'Pending'}
-          </Text>
+          </AppText>
         </View>
       </View>
 
@@ -45,7 +46,7 @@ const OCRScanCard = ({
         ) : (
           <>
             <Image source={placeholderImage} style={styles.placeholderImage} />
-            <Text style={styles.scanText}>Tap to scan document</Text>
+            <AppText style={styles.scanText}>Tap to scan document</AppText>
           </>
         )}
       </TouchableOpacity>

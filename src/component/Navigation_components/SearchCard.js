@@ -5,6 +5,7 @@ import {GooglePlacesAutocomplete} from 'react-native-google-places-autocomplete'
 import Location_Icon from '../../assets/svg_icon/location.svg';
 import Arrow_left_right from '../../assets/svg_icon/arrow-right-lef.svg';
 import styles from '../../screens/NavigationScreen/NavigationScreen.styles';
+import AppText from '../../theme/AppText';
 
 const SearchCard = ({
   sourceRef,
@@ -20,7 +21,7 @@ const SearchCard = ({
     <View style={styles.searchCard}>
       <View style={styles.labelRow}>
         <Location_Icon width={scale(18)} height={scale(18)} />
-        <Text style={styles.labelText}>Source</Text>
+        <AppText style={styles.labelText}>Source</AppText>
       </View>
       <View style={styles.searchInputContainer}>
         <TouchableOpacity style={styles.swapIconLeft} onPress={onSwap}>
@@ -67,7 +68,7 @@ const SearchCard = ({
 
       <View style={styles.labelRow}>
         <Location_Icon width={scale(18)} height={scale(18)} />
-        <Text style={styles.labelText}>Destination</Text>
+        <AppText style={styles.labelText}>Destination</AppText>
       </View>
       <View style={styles.searchInputContainer}>
         <TouchableOpacity style={styles.swapIconLeft} onPress={onSwap}>

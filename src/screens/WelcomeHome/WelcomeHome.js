@@ -11,6 +11,7 @@ import {colors} from '../../theme/colors';
 import {useNavigation} from '@react-navigation/native';
 import StatusBar from '../../component/StatusBar/StatusBar';
 import Truck_Icon from '../../assets/svg_icon/truck-icon.svg';
+import AppText from '../../theme/AppText';
 
 const WelcomeHome = () => {
   const navigation = useNavigation();
@@ -40,42 +41,42 @@ const WelcomeHome = () => {
           </View>
 
           {/* Title */}
-          <Text style={styles.title}>Welcome Aboard!</Text>
+          <AppText style={styles.title}>Welcome Aboard!</AppText>
 
           {/* Subtitle */}
-          <Text style={styles.subtitle}>
+          <AppText style={styles.subtitle}>
           Let’s create your company profile.
-          </Text>
+          </AppText>
 
           {/* Steps Card */}
           <View style={styles.card}>
             <View style={styles.stepRow}>
-              <Text style={styles.check}>✓</Text>
+              <AppText style={styles.check}>✓</AppText>
               <View>
-                <Text style={styles.stepTitle}>Upload Required Documents</Text>
-                <Text style={styles.stepSub}>
+                <AppText style={styles.stepTitle}>Upload Required Documents</AppText>
+                <AppText style={styles.stepSub}>
                   Commercial Liability Insurance
-                </Text>
+                </AppText>
               </View>
             </View>
 
             <View style={styles.stepRow}>
-              <Text style={styles.check}>✓</Text>
+              <AppText style={styles.check}>✓</AppText>
               <View>
-                <Text style={styles.stepTitle}>Add Vehicle Information</Text>
-                <Text style={styles.stepSub}>
+                <AppText style={styles.stepTitle}>Add Vehicle Information</AppText>
+                <AppText style={styles.stepSub}>
                   Registration, permits, and photos
-                </Text>
+                </AppText>
               </View>
             </View>
 
             <View style={styles.stepRow}>
-              <Text style={styles.check}>✓</Text>
+              <AppText style={styles.check}>✓</AppText>
               <View>
-                <Text style={styles.stepTitle}>Get Verified</Text>
-                <Text style={styles.stepSub}>
+                <AppText style={styles.stepTitle}>Get Verified</AppText>
+                <AppText style={styles.stepSub}>
                   Our team reviews in 24–48 hours
-                </Text>
+                </AppText>
               </View>
             </View>
           </View>
@@ -89,9 +90,9 @@ const WelcomeHome = () => {
           />
 
           {/* Footer */}
-          <Text style={styles.footerText}>
+          <AppText style={styles.footerText}>
             Takes about 10–15 minutes
-          </Text>
+          </AppText>
         </View>
       </ScrollView>
     </SafeAreaView>

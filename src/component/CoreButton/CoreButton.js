@@ -6,6 +6,7 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import styles from './CoreButton.styles';
+import AppText from '../../theme/AppText';
 
 const CoreButton = ({
   title,
@@ -36,9 +37,9 @@ const CoreButton = ({
       ) : (
         <View style={styles.content}>
           {icon && <View style={styles.icon}>{icon}</View>}
-          <Text style={[styles.text, { color: textColor }]}>
+          <AppText style={[styles.text, { color: textColor }]}>
             {title}
-          </Text>
+          </AppText>
         </View>
       )}
     </TouchableOpacity>

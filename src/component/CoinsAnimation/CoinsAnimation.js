@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated, Easing } from 'react-native';
 import { moderateScale, verticalScale } from 'react-native-size-matters';
 import { colors } from '../../theme/colors';
+import AppText from '../../theme/AppText';
 
 const COIN_COUNT = 28;
 const COIN_SIZE = moderateScale(40);
@@ -120,14 +121,14 @@ const CoinsAnimation = ({ isActive, amount = 0 }) => {
           style={[styles.coin, getCoinStyle(coin)]}
         >
           <View style={styles.coinInner}>
-            <Text style={styles.coinText}>💰</Text>
+            <AppText style={styles.coinText}>💰</AppText>
           </View>
         </Animated.View>
       ))}
 
       {amount > 0 && (
         <Animated.View style={[styles.amountText, amountStyle]}>
-          <Text style={styles.amountValue}>+${amount}</Text>
+          <AppText style={styles.amountValue}>+${amount}</AppText>
         </Animated.View>
       )}
     </View>
