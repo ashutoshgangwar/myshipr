@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   View,
   Text,
@@ -12,11 +12,36 @@ import {colors} from '../../theme/colors';
 import {useNavigation} from '@react-navigation/native';
 import Notification_Icon from './../../assets/svg_icon/notification.svg';
 import AppText from '../../theme/AppText';
+import {
+  getBackgroundTrackingDebugEvents,
+  getLastBackgroundLocation,
+} from '../../services/BackgroundLocationService';
 
 const HomeScreen = () => {
   const navigation = useNavigation();
   const [loading, setLoading] = useState(false);
   const [isVerified, setIsVerified] = useState(true);
+
+  useEffect(() => {
+    const logLastLocation = async () => {
+      const location = await getLastBackgroundLocation();
+      const events = await getBackgroundTrackingDebugEvents();
+
+      if (location?.latitude != null && location?.longitude != null) {
+        console.log('[HomeScreen Last BG Location]', location.latitude, location.longitude);
+      } else {
+        console.log('[HomeScreen Last BG Location] No location yet');
+      }
+
+      if (events.length) {
+        console.log('[BG Debug Events]', events.slice(0, 10));
+      } else {
+        console.log('[BG Debug Events] No events yet');
+      }
+    };
+
+    logLastLocation();
+  }, []);
 
   const handlePendingVerification = () => {
     if (loading || isVerified) return;
