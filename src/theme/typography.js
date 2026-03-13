@@ -3,7 +3,7 @@ import { Platform } from 'react-native';
 // 🔤 default font per platform
 const DEFAULT_FONT_FAMILY = Platform.select({
   ios: 'System',
-  android: 'monospace',
+  android: 'Poppins',
   default: 'System',
 });
 

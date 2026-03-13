@@ -144,6 +144,20 @@ const NavigationScreen = () => {
     setDestinationText(tempText);
   };
 
+  const extractZipCodeFromPlaceDetails = details => {
+    const components = details?.address_components || [];
+    const postalCodeComponent = components.find(component =>
+      component?.types?.includes('postal_code'),
+    );
+    return postalCodeComponent?.long_name || null;
+  };
+
+  const extractZipCodeFromDescription = description => {
+    if (!description) return null;
+    const match = description.match(/\b\d{5}(?:-\d{4})?\b|\b\d{6}\b/);
+    return match?.[0] || null;
+  };
+
   const getAddressFromCoordinates = async (latitude, longitude) => {
     try {
       const response = await fetch(
@@ -151,22 +165,30 @@ const NavigationScreen = () => {
       );
       const data = await response.json();
       if (data.results && data.results.length > 0) {
-        return data.results[0].formatted_address;
+        const result = data.results[0];
+        const postalCodeComponent = result.address_components?.find(
+          component => component?.types?.includes('postal_code'),
+        );
+        return {
+          address: result.formatted_address,
+          zipCode: postalCodeComponent?.long_name || null,
+        };
       }
-      return 'Current Location';
+      return {address: 'Current Location', zipCode: null};
     } catch (error) {
       console.log('Error getting address:', error);
-      return 'Current Location';
+      return {address: 'Current Location', zipCode: null};
     }
   };
 
   const setCurrentLocationAsSource = async () => {
     setFetchingSourceAddress(true);
     try {
-      const address = await getAddressFromCoordinates(
+      const {address, zipCode} = await getAddressFromCoordinates(
         currentLocation.latitude,
         currentLocation.longitude,
       );
+      console.log('Source ZIP code:', zipCode);
       setSource({
         latitude: currentLocation.latitude,
         longitude: currentLocation.longitude,
@@ -187,10 +209,11 @@ const NavigationScreen = () => {
   const setCurrentLocationAsDestination = async () => {
     setFetchingDestinationAddress(true);
     try {
-      const address = await getAddressFromCoordinates(
+      const {address, zipCode} = await getAddressFromCoordinates(
         currentLocation.latitude,
         currentLocation.longitude,
       );
+      console.log('Destination ZIP code:', zipCode);
       setDestination({
         latitude: currentLocation.latitude,
         longitude: currentLocation.longitude,
@@ -485,6 +508,11 @@ const NavigationScreen = () => {
             activeInput={activeInput}
             onActiveInputChange={setActiveInput}
             onSourceSelect={(data, details) => {
+              const sourceZipCode =
+                extractZipCodeFromPlaceDetails(details) ||
+                extractZipCodeFromDescription(data?.description);
+              console.log('Source ZIP code:', sourceZipCode);
+
               setSource({
                 latitude: details.geometry.location.lat,
                 longitude: details.geometry.location.lng,
@@ -494,6 +522,11 @@ const NavigationScreen = () => {
               setSourceText(data.description);
             }}
             onDestinationSelect={(data, details) => {
+              const destinationZipCode =
+                extractZipCodeFromPlaceDetails(details) ||
+                extractZipCodeFromDescription(data?.description);
+              console.log('Destination ZIP code:', destinationZipCode);
+
               setDestination({
                 latitude: details.geometry.location.lat,
                 longitude: details.geometry.location.lng,
