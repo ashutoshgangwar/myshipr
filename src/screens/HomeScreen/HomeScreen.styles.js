@@ -76,11 +76,8 @@ badgeText: {
 },
 
 progressTrack: {
-  height: verticalScale(6),
-  backgroundColor: 'rgba(255,255,255,0.25)', // better contrast
-  borderRadius: moderateScale(10),
-  marginTop: verticalScale(10),
-  overflow: 'hidden',
+  height: verticalScale(16),
+  fontWeight: '600',
 },
 
 progressFill: {
@@ -126,25 +123,35 @@ progressFill: {
     fontSize: moderateScale(20),
     fontWeight: '700',
     marginHorizontal: moderateScale(16),
-    marginTop: verticalScale(24),
+    marginTop: verticalScale(10),
   },
 
   sectionRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginHorizontal: moderateScale(16),
-    marginTop: verticalScale(24),
+    marginHorizontal: moderateScale(10),
+    marginTop: verticalScale(1),
   },
 
   seeAll: {
-    color: '#2563EB',
+    color: colors.white,
     fontWeight: '600',
+    justifyContent: 'flex-end', 
+    textAlign:'right',
+    marginRight: moderateScale(10)
+  },
+
+  auctionCard: {   
+    backgroundColor: colors.placeholder,
+    margin: moderateScale(10),
+    borderRadius: moderateScale(10),
+    padding: moderateScale(5)
   },
 
   /* Cards */
   loadCard: {
     backgroundColor: '#fff',
-    margin: moderateScale(16),
+    margin: moderateScale(10),
     borderRadius: moderateScale(16),
     padding: moderateScale(16),
   },
@@ -303,5 +310,72 @@ progressBarFill: {
     paddingHorizontal: moderateScale(10),
     borderRadius: moderateScale(12),
     justifyContent: 'center',
+  },
+
+  /* Auction notification cards */
+  auctionNotifCard: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    marginHorizontal: moderateScale(5),
+    marginBottom: verticalScale(5),
+    marginTop: verticalScale(5),
+    borderRadius: moderateScale(14),
+    paddingHorizontal: moderateScale(10),
+    paddingVertical: verticalScale(12),
+    borderLeftWidth: 4,
+    borderLeftColor: colors.success,
+  },
+
+  auctionNotifLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    gap: moderateScale(10),
+  },
+
+  liveBadge: {
+    backgroundColor: colors.success,
+    paddingHorizontal: moderateScale(8),
+    paddingVertical: verticalScale(4),
+    borderRadius: moderateScale(10),
+  },
+
+  auctionNotifInfo: {
+    flex: 1,
+  },
+
+  auctionNotifId: {
+    fontSize: moderateScale(14),
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+
+  auctionNotifRoute: {
+    fontSize: moderateScale(12),
+    color: '#64748B',
+    marginTop: verticalScale(2),
+  },
+
+  auctionTimerBox: {
+    backgroundColor: '#FEF9C3',
+    borderRadius: moderateScale(10),
+    paddingHorizontal: moderateScale(10),
+    paddingVertical: verticalScale(6),
+    alignItems: 'center',
+  },
+
+  auctionTimerLabel: {
+    fontSize: moderateScale(10),
+    color: '#92400E',
+    fontWeight: '500',
+  },
+
+  auctionTimerValue: {
+    fontSize: moderateScale(14),
+    fontWeight: '700',
+    color: '#B45309',
+    marginTop: verticalScale(2),
   },
 });

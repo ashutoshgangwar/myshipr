@@ -10,12 +10,40 @@ import styles from './HomeScreen.styles';
 import StatusBar from '../../component/StatusBar/StatusBar';
 import {colors} from '../../theme/colors';
 import {useNavigation} from '@react-navigation/native';
-import Notification_Icon from './../../assets/svg_icon/notification.svg';
+import SOS_Icon from './../../assets/svg_icon/sos.svg';
+import Mechanic_call_Icon from './../../assets/svg_icon/mechanic_call.svg';
 import AppText from '../../theme/AppText';
 import {
   getBackgroundTrackingDebugEvents,
   getLastBackgroundLocation,
 } from '../../services/BackgroundLocationService';
+
+const LIVE_AUCTIONS = [
+  {
+    id: 'SH-401',
+    type: 'Auto Parts',
+    weight: '14,200 lbs',
+    from: 'Chicago, IL',
+    to: 'Detroit, MI',
+    currentBid: '$720',
+    endsIn: '1h 42m',
+    totalBids: 5,
+    estimatedPay: '$720',
+    route: 'Chicago, IL → Detroit, MI',
+  },
+  {
+    id: 'SH-402',
+    type: 'Electronics',
+    weight: '9,800 lbs',
+    from: 'Atlanta, GA',
+    to: 'Nashville, TN',
+    currentBid: '$480',
+    endsIn: '2h 15m',
+    totalBids: 3,
+    estimatedPay: '$480',
+    route: 'Atlanta, GA → Nashville, TN',
+  },
+];
 
 const HomeScreen = () => {
   const navigation = useNavigation();
@@ -28,7 +56,11 @@ const HomeScreen = () => {
       const events = await getBackgroundTrackingDebugEvents();
 
       if (location?.latitude != null && location?.longitude != null) {
-        console.log('[HomeScreen Last BG Location]', location.latitude, location.longitude);
+        console.log(
+          '[HomeScreen Last BG Location]',
+          location.latitude,
+          location.longitude,
+        );
       } else {
         console.log('[HomeScreen Last BG Location] No location yet');
       }
@@ -81,34 +113,25 @@ const HomeScreen = () => {
             <AppText style={styles.username}>Ashutosh Gangwar</AppText>
           </View>
 
-          <View style={styles.profileCircle}>
-            <Notification_Icon width={25} height={25} />
-          </View>
+          <TouchableOpacity style={styles.profileCircle}>
+            <Mechanic_call_Icon width={30} height={30} />
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.profileCircle}>
+            <SOS_Icon width={30} height={30} />
+          </TouchableOpacity>
         </View>
 
-        {/* VERIFICATION */}
-        <View style={styles.verifyCard}>
-          <TouchableOpacity
-            onPress={handlePendingVerification}
-            activeOpacity={0.8}>
-            <View style={styles.verifyRow}>
-              <AppText style={styles.verifyText}>Verification Status</AppText>
-
-              <View
-                style={[
-                  styles.verifiedBadge,
-                  {backgroundColor: isVerified ? '#22C55E' : '#F59E0B'},
-                ]}>
-                <AppText style={styles.badgeText}>
-                  {isVerified ? 'Verified' : 'Pending'}
-                </AppText>
-              </View>
-            </View>
+        {/* LIVE AUCTIONS */}
+        <View style={styles.sectionRow}>
+          <AppText style={styles.sectionTitle}>Live Auctions</AppText>
+        </View>
+        <View style={styles.auctionCard}>
+          {LIVE_AUCTIONS.map(auction => (
+            <AuctionNotifCard key={auction.id} auction={auction} />
+          ))}
+          <TouchableOpacity>
+            <AppText style={styles.seeAll}>See All</AppText>
           </TouchableOpacity>
-
-          <View style={styles.progressTrack}>
-            <View style={styles.progressFill} />
-          </View>
         </View>
 
         {/* STATS */}
@@ -170,16 +193,6 @@ const HomeScreen = () => {
             </TouchableOpacity>
           </View>
         </View>
-
-        {/* AVAILABLE LOADS */}
-        <View style={styles.sectionRow}>
-          <AppText style={styles.sectionTitle}>Available Loads</AppText>
-          <TouchableOpacity onPress={openAvailableLoads}>
-            <AppText style={styles.seeAll}>See All</AppText>
-          </TouchableOpacity>
-        </View>
-
-        <AvailableLoad onPlaceBid={openPlaceBid} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -210,30 +223,22 @@ const Location = ({color, city, info}) => (
   </View>
 );
 
-const AvailableLoad = ({onPlaceBid}) => (
-  <View style={styles.loadCard}>
-    <View style={styles.loadHeader}>
-      <View>
-        <AppText style={styles.loadId}>Load #SH-301</AppText>
-        <AppText style={styles.loadSub}>8,500 lbs • 239 miles</AppText>
+const AuctionNotifCard = ({auction}) => (
+  <View style={styles.auctionNotifCard}>
+    <View style={styles.auctionNotifLeft}>
+      <View style={styles.liveBadge}>
+        <AppText style={styles.badgeText}>🟢 LIVE</AppText>
       </View>
-      <View style={styles.dateBadge}>
-        <AppText>Feb 5</AppText>
+      <View style={styles.auctionNotifInfo}>
+        <AppText style={styles.auctionNotifId}>Load #{auction.id}</AppText>
+        <AppText style={styles.auctionNotifRoute}>
+          {auction.from} → {auction.to}
+        </AppText>
       </View>
     </View>
-
-    <AppText style={styles.route}>📍 Dallas, TX</AppText>
-    <AppText style={styles.route}>📍 Houston, TX</AppText>
-
-    <View style={styles.payRow}>
-      <View>
-        <AppText style={styles.payLabel}>Estimated Pay</AppText>
-        <AppText style={styles.payAmount}>$650</AppText>
-      </View>
-
-      <TouchableOpacity style={styles.placeBtn} onPress={onPlaceBid}>
-        <AppText style={styles.primaryBtnText}>Place Bid</AppText>
-      </TouchableOpacity>
+    <View style={styles.auctionTimerBox}>
+      <AppText style={styles.auctionTimerLabel}>⏱ Ends in</AppText>
+      <AppText style={styles.auctionTimerValue}>{auction.endsIn}</AppText>
     </View>
   </View>
 );
