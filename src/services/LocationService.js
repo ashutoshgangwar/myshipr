@@ -1,15 +1,14 @@
-import { Platform, Alert, Linking } from 'react-native';
+import { Alert, Linking } from 'react-native';
 import Geolocation from '@react-native-community/geolocation';
 import DeviceInfo from 'react-native-device-info';
 import {
-  check,
-  request,
-  PERMISSIONS,
-  RESULTS,
   openSettings,
 } from 'react-native-permissions';
-
-const IS_IOS = Platform.OS === 'ios';
+import {
+  APP_PERMISSION_TYPES,
+  checkAppPermission,
+  requestAppPermission,
+} from './PermissionService';
 
 const HIGH_ACCURACY_OPTIONS = {
   enableHighAccuracy: true,
@@ -55,31 +54,20 @@ const showGPSAlert = () => {
 /* -------------------- PERMISSIONS -------------------- */
 
 const checkPermission = async () => {
-  if (IS_IOS) {
-    const status = await check(PERMISSIONS.IOS.LOCATION_WHEN_IN_USE);
-    return status === RESULTS.GRANTED;
-  }
-
-  const fine = await check(PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION);
-  const coarse = await check(PERMISSIONS.ANDROID.ACCESS_COARSE_LOCATION);
-  return fine === RESULTS.GRANTED || coarse === RESULTS.GRANTED;
+  const result = await checkAppPermission(APP_PERMISSION_TYPES.LOCATION);
+  return result.granted;
 };
 
 const requestPermission = async () => {
-  if (IS_IOS) {
-    const status = await request(PERMISSIONS.IOS.LOCATION_WHEN_IN_USE);
-    if (status !== RESULTS.GRANTED) {
-      showPermissionAlert();
-      return false;
-    }
-    return true;
-  }
+  const result = await requestAppPermission(APP_PERMISSION_TYPES.LOCATION, {
+    showBlockedAlert: false,
+  });
 
-  const status = await request(PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION);
-  if (status !== RESULTS.GRANTED) {
+  if (!result.granted) {
     showPermissionAlert();
     return false;
   }
+
   return true;
 };
 

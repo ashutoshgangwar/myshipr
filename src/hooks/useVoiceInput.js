@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import VoiceService from '../services/VoiceService';
-import { requestMicPermission } from '../services/MicPermission';
+import { requestMicPermission } from '../services/PermissionService';
 
 const AUTO_STOP_DELAY = 700;
 

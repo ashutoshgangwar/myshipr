@@ -1,6 +1,10 @@
-import { AppState, PermissionsAndroid, Platform } from 'react-native';
+import { AppState } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import BackgroundGeolocation from 'react-native-background-geolocation';
+import {
+  requestBackgroundLocationPermission,
+  requestNotificationPermission,
+} from './PermissionService';
 
 const LAST_BG_LOCATION_KEY = '@myshipr:lastBackgroundLocation';
 const BG_EVENT_LOG_KEY = '@myshipr:bgEventLog';
@@ -13,74 +17,6 @@ let motionSubscription = null;
 let heartbeatSubscription = null;
 let foregroundPollingTimer = null;
 let locationUpdateCallback = () => {};
-
-const requestAndroidNotificationPermission = async () => {
-  if (Platform.OS !== 'android' || Platform.Version < 33) {
-    return true;
-  }
-
-  try {
-    const result = await PermissionsAndroid.request(
-      PermissionsAndroid.PERMISSIONS.POST_NOTIFICATIONS,
-      {
-        title: 'Notification Permission',
-        message:
-          'myshipr shows a tracking notification while location is active in background.',
-        buttonPositive: 'Allow',
-        buttonNegative: 'Deny',
-      },
-    );
-
-    return result === PermissionsAndroid.RESULTS.GRANTED;
-  } catch (error) {
-    console.warn('Notification permission request failed:', error?.message);
-    return false;
-  }
-};
-
-const requestAndroidLocationPermissions = async () => {
-  if (Platform.OS !== 'android') {
-    return true;
-  }
-
-  try {
-    const fineResult = await PermissionsAndroid.request(
-      PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-      {
-        title: 'Location Permission',
-        message: 'myshipr needs location access to track trips.',
-        buttonPositive: 'Allow',
-        buttonNegative: 'Deny',
-      },
-    );
-
-    if (fineResult !== PermissionsAndroid.RESULTS.GRANTED) {
-      return false;
-    }
-
-    if (Platform.Version >= 29) {
-      const backgroundResult = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.ACCESS_BACKGROUND_LOCATION,
-        {
-          title: 'Background Location Permission',
-          message:
-            'myshipr needs background location to continue tracking when app is closed.',
-          buttonPositive: 'Allow',
-          buttonNegative: 'Deny',
-        },
-      );
-
-      if (backgroundResult !== PermissionsAndroid.RESULTS.GRANTED) {
-        return false;
-      }
-    }
-
-    return true;
-  } catch (error) {
-    console.warn('Location permission request failed:', error?.message);
-    return false;
-  }
-};
 
 const saveLocation = async location => {
   try {
@@ -217,9 +153,9 @@ export const initBackgroundLocationTracking = async (onLocationUpdate = () => {}
     return state?.enabled;
   }
 
-  await requestAndroidNotificationPermission();
+  await requestNotificationPermission();
   locationUpdateCallback = onLocationUpdate;
-  const hasLocationPermissions = await requestAndroidLocationPermissions();
+  const hasLocationPermissions = await requestBackgroundLocationPermission();
   if (!hasLocationPermissions) {
     throw new Error('BACKGROUND_LOCATION_PERMISSION_DENIED');
   }
