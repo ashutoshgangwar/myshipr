@@ -135,7 +135,7 @@ progressFill: {
 
   seeAll: {
     color: colors.white,
-    fontWeight: '600',
+    fontWeight: '800',
     justifyContent: 'flex-end', 
     textAlign:'right',
     marginRight: moderateScale(10)

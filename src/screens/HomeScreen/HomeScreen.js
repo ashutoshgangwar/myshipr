@@ -1,4 +1,4 @@
-import React, {useEffect, useState} from 'react';
+import React, {useState} from 'react';
 import {
   View,
   Text,
@@ -13,10 +13,6 @@ import {useNavigation} from '@react-navigation/native';
 import SOS_Icon from './../../assets/svg_icon/sos.svg';
 import Mechanic_call_Icon from './../../assets/svg_icon/mechanic_call.svg';
 import AppText from '../../theme/AppText';
-import {
-  getBackgroundTrackingDebugEvents,
-  getLastBackgroundLocation,
-} from '../../services/BackgroundLocationService';
 
 const LIVE_AUCTIONS = [
   {
@@ -50,31 +46,6 @@ const HomeScreen = () => {
   const [loading, setLoading] = useState(false);
   const [isVerified, setIsVerified] = useState(true);
 
-  useEffect(() => {
-    const logLastLocation = async () => {
-      const location = await getLastBackgroundLocation();
-      const events = await getBackgroundTrackingDebugEvents();
-
-      if (location?.latitude != null && location?.longitude != null) {
-        console.log(
-          '[HomeScreen Last BG Location]',
-          location.latitude,
-          location.longitude,
-        );
-      } else {
-        console.log('[HomeScreen Last BG Location] No location yet');
-      }
-
-      if (events.length) {
-        console.log('[BG Debug Events]', events.slice(0, 10));
-      } else {
-        console.log('[BG Debug Events] No events yet');
-      }
-    };
-
-    logLastLocation();
-  }, []);
-
   const handlePendingVerification = () => {
     if (loading || isVerified) return;
 
@@ -98,6 +69,11 @@ const HomeScreen = () => {
       },
     });
   };
+
+  const openPendingLoads = () => {
+    navigation.navigate('LoadsTab', {initialTab: 'pending'});
+  };
+
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar
@@ -129,7 +105,7 @@ const HomeScreen = () => {
           {LIVE_AUCTIONS.map(auction => (
             <AuctionNotifCard key={auction.id} auction={auction} />
           ))}
-          <TouchableOpacity>
+          <TouchableOpacity onPress={openPendingLoads}>
             <AppText style={styles.seeAll}>See All</AppText>
           </TouchableOpacity>
         </View>

@@ -13,7 +13,6 @@ export const APP_PERMISSION_TYPES = {
   CAMERA: 'camera',
   GALLERY: 'gallery',
   LOCATION: 'location',
-  BACKGROUND_LOCATION: 'background_location',
   MICROPHONE: 'microphone',
   NOTIFICATIONS: 'notifications',
 };
@@ -49,18 +48,6 @@ const PERMISSION_META = {
       buttonNegative: 'Deny',
     },
   },
-  [APP_PERMISSION_TYPES.BACKGROUND_LOCATION]: {
-    title: 'Background Location Permission Required',
-    message:
-      'Please enable background location from Settings so tracking continues when the app is closed.',
-    androidRationale: {
-      title: 'Background Location Permission',
-      message:
-        'myshipr needs background location to continue tracking when the app is closed.',
-      buttonPositive: 'Allow',
-      buttonNegative: 'Deny',
-    },
-  },
   [APP_PERMISSION_TYPES.MICROPHONE]: {
     title: 'Microphone Permission Required',
     message: 'Please enable microphone access in Settings to use voice input.',
@@ -74,11 +61,10 @@ const PERMISSION_META = {
   [APP_PERMISSION_TYPES.NOTIFICATIONS]: {
     title: 'Notification Permission Required',
     message:
-      'Please enable notifications in Settings so myshipr can show important updates and tracking status.',
+      'Please enable notifications in Settings so myshipr can show important updates.',
     androidRationale: {
       title: 'Notification Permission',
-      message:
-        'myshipr shows a tracking notification while location is active in background.',
+      message: 'myshipr uses notifications for important app updates.',
       buttonPositive: 'Allow',
       buttonNegative: 'Deny',
     },
@@ -122,10 +108,6 @@ const getAndroidPermission = type => {
         : PERMISSIONS.ANDROID.READ_EXTERNAL_STORAGE;
     case APP_PERMISSION_TYPES.LOCATION:
       return PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION;
-    case APP_PERMISSION_TYPES.BACKGROUND_LOCATION:
-      return Platform.Version >= 29
-        ? PERMISSIONS.ANDROID.ACCESS_BACKGROUND_LOCATION
-        : PERMISSIONS.ANDROID.ACCESS_FINE_LOCATION;
     case APP_PERMISSION_TYPES.MICROPHONE:
       return PERMISSIONS.ANDROID.RECORD_AUDIO;
     case APP_PERMISSION_TYPES.NOTIFICATIONS:
@@ -145,8 +127,6 @@ const getIosPermission = type => {
       return PERMISSIONS.IOS.PHOTO_LIBRARY;
     case APP_PERMISSION_TYPES.LOCATION:
       return PERMISSIONS.IOS.LOCATION_WHEN_IN_USE;
-    case APP_PERMISSION_TYPES.BACKGROUND_LOCATION:
-      return PERMISSIONS.IOS.LOCATION_ALWAYS;
     case APP_PERMISSION_TYPES.MICROPHONE:
       return PERMISSIONS.IOS.MICROPHONE;
     default:
@@ -263,19 +243,6 @@ export const requestAppPermission = async (type, options = {}) => {
       return requestResolvedPermission(type, androidNotificationPermission, options);
     }
 
-    if (type === APP_PERMISSION_TYPES.BACKGROUND_LOCATION) {
-      const foregroundLocation = await requestAppPermission(
-        APP_PERMISSION_TYPES.LOCATION,
-        options,
-      );
-
-      if (!foregroundLocation.granted) {
-        return buildPermissionResponse(type, foregroundLocation.status, null, {
-          prerequisite: APP_PERMISSION_TYPES.LOCATION,
-        });
-      }
-    }
-
     const permission = resolvePlatformPermission(type);
 
     if (!permission) {
@@ -308,9 +275,6 @@ export const requestGalleryPermission = async options =>
 
 export const requestLocationPermission = async options =>
   (await requestAppPermission(APP_PERMISSION_TYPES.LOCATION, options)).granted;
-
-export const requestBackgroundLocationPermission = async options =>
-  (await requestAppPermission(APP_PERMISSION_TYPES.BACKGROUND_LOCATION, options)).granted;
 
 export const requestMicrophonePermission = async options =>
   (await requestAppPermission(APP_PERMISSION_TYPES.MICROPHONE, options)).granted;

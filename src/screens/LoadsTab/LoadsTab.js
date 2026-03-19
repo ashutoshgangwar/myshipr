@@ -1,4 +1,4 @@
-import React, { useState, useMemo } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { View, Text, TouchableOpacity, FlatList } from 'react-native';
 import styles from './LoadsTab.styles';
 import StatusBar from '../../component/StatusBar/StatusBar';
@@ -71,8 +71,15 @@ const LOADS = [
   },
 ];
 
-const LoadsTab = ({ navigation }) => {
+const LoadsTab = ({ navigation, route }) => {
   const [activeTab, setActiveTab] = useState('pending');
+
+  useEffect(() => {
+    if (route?.params?.initialTab) {
+      setActiveTab(route.params.initialTab);
+      navigation.setParams({initialTab: undefined});
+    }
+  }, [route?.params?.initialTab, navigation]);
 
   const filteredLoads = useMemo(
     () => LOADS.filter(load => load.status === activeTab),
