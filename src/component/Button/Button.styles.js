@@ -1,5 +1,5 @@
-import { StyleSheet } from 'react-native';
-import { moderateScale, verticalScale } from 'react-native-size-matters';
+import {StyleSheet} from 'react-native';
+import {moderateScale, verticalScale} from 'react-native-size-matters';
 
 const styles = StyleSheet.create({
   button: {
@@ -9,6 +9,21 @@ const styles = StyleSheet.create({
     paddingVertical: verticalScale(12),
     borderRadius: moderateScale(12),
     borderWidth: 1,
+  },
+
+  iosButton: {
+    shadowColor: '#000',
+    shadowOffset: {width: 1, height: 3},
+    shadowOpacity: 0.08,
+    shadowRadius: moderateScale(6),
+  },
+
+  androidButton: {
+    elevation: 2,
+  },
+
+  disabledButton: {
+    opacity: 0.6,
   },
 
   text: {

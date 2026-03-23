@@ -1,6 +1,5 @@
 import {
   View,
-  Text,
   TextInput,
   TouchableOpacity,
   Image,
@@ -21,6 +20,7 @@ import Button from '../../component/Button/Button';
 import {colors} from '../../theme/colors';
 import Eye_off from '../../assets/svg_icon/eye-off.svg';
 import Eye_outline from '../../assets/svg_icon/eye-outline.svg';
+import TruckIcon from '../../assets/svg_icon/truck-icon.svg';
 import StatusBar from '../../component/StatusBar/StatusBar';
 import AppText from '../../theme/AppText';
 import {ms, vs} from '../../theme/scale';
@@ -215,6 +215,11 @@ const Login = () => {
     navigation.navigate('CreateAccount');
   };
 
+  const handleGoogleLogin = () => {
+    if (loading) return;
+    Alert.alert('Coming Soon', 'Google login will be available soon.');
+  };
+
   return (
     <KeyboardAvoidingView
       style={styles.keyboardAvoiding}
@@ -223,42 +228,53 @@ const Login = () => {
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <SafeAreaView style={styles.safe}>
           <StatusBar
-            backgroundColor={colors.white}
-            barStyle="dark-content"
+            backgroundColor={colors.primary}
+            barStyle="light-content"
             translucent={false}
           />
-          {/* <LinearGradient
-            colors={[colors.primary, colors.white]}
-            start={{x: 0, y: 0}}
-            end={{x: 1, y: 1}}
-            style={styles.gradient}> */}
-            <ScrollView
-              contentContainerStyle={styles.container}
-              keyboardShouldPersistTaps="handled"
-              showsVerticalScrollIndicator={false}>
-              {/* Logo Section */}
-              <View style={styles.topSection}>
+          <ScrollView
+            contentContainerStyle={styles.container}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}>
+            <View style={styles.screenShell}>
+              <View style={styles.heroSection}>
                 <Image
-                  source={require('../../assets/Image/logo.png')}
-                  style={styles.image}
-                  resizeMode="contain"
+                  source={require('../../assets/Image/bg_image_login.jpg')}
+                  style={styles.heroBackground}
+                  resizeMode="cover"
                 />
+                <LinearGradient
+                  colors={[
+                    colors.overlayDarkStartTransparent,
+                    colors.overlayDarkMidStrong,
+                    colors.surfaceDarkPrimary,
+                  ]}
+                  start={{x: 0, y: 0}}
+                  end={{x: 0, y: 1}}
+                  style={styles.heroOverlay}>
+                  <View style={styles.heroContent}>
+                    <AppText style={styles.title}>Log In</AppText>
+                    <AppText style={styles.subtitle}>
+                      Login to continue using the app.
+                    </AppText>
+
+                    <TouchableOpacity
+                      style={styles.roleBadge}
+                      activeOpacity={0.85}
+                      accessibilityRole="button"
+                      accessibilityLabel="Carrier role selected">
+                      <AppText style={styles.roleBadgeText}>CARRIER</AppText>
+                      <TruckIcon width={ms(20)} height={ms(20)} />
+                    </TouchableOpacity>
+                  </View>
+                </LinearGradient>
               </View>
 
-              {/* Login Card */}
               <View
                 style={styles.card}
                 accessible
                 accessibilityLabel="Login form">
-                <AppText style={styles.title}>Welcome Back</AppText>
-                <AppText style={styles.subtitle}>
-                  {loginMethod === 'email'
-                    ? 'Login with your email'
-                    : 'Login with your mobile number'}
-                </AppText>
-
-              {/* Login Method Tabs */}
-              <View style={styles.tabContainer}>
+                <View style={styles.tabContainer}>
                 <TouchableOpacity
                   style={[
                     styles.tab,
@@ -288,16 +304,16 @@ const Login = () => {
                       styles.tabText,
                       loginMethod === 'mobile' && styles.tabTextActive,
                     ]}>
-                    Mobile
+                    Phone Number
                   </AppText>
                 </TouchableOpacity>
               </View>
 
-              {/* Email or Mobile Input */}
               {loginMethod === 'email' ? (
                 <>
+                  <AppText style={styles.label}>Email</AppText>
                   <TextInput
-                    placeholder="Email Address"
+                    placeholder="Enter your email"
                     placeholderTextColor={colors.placeholder || '#9CA3AF'}
                     keyboardType="email-address"
                     autoCapitalize="none"
@@ -311,11 +327,28 @@ const Login = () => {
                     editable={!loading}
                   />
 
-                  {/* Password Input with Toggle */}
+                  <AppText style={styles.altLoginText}>Or Login With</AppText>
+
+                  <AppText style={styles.label}>Phone Number</AppText>
+                  <TextInput
+                    placeholder="Enter your phone number"
+                    placeholderTextColor={colors.placeholder || '#9CA3AF'}
+                    keyboardType="phone-pad"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    value={phone}
+                    onChangeText={setPhone}
+                    returnKeyType="next"
+                    style={[styles.input, loading && styles.disabledInput]}
+                    accessibilityLabel="Phone number input"
+                    editable={!loading}
+                  />
+
+                  <AppText style={styles.label}>Password</AppText>
                   <View style={styles.passwordContainer}>
                     <TextInput
                       ref={passwordRef}
-                      placeholder="Password"
+                      placeholder="Enter your password"
                       placeholderTextColor={colors.placeholder || '#9CA3AF'}
                       secureTextEntry={!showPassword}
                       autoCapitalize="none"
@@ -332,7 +365,6 @@ const Login = () => {
                       accessibilityLabel="Password input"
                       editable={!loading}
                     />
-                    
 
                     <TouchableOpacity
                       onPress={toggleShowPassword}
@@ -351,7 +383,6 @@ const Login = () => {
                     </TouchableOpacity>
                   </View>
 
-                  {/* Forgot Password */}
                   <TouchableOpacity
                     onPress={handleForgotPassword}
                     style={styles.forgotPasswordContainer}
@@ -364,27 +395,21 @@ const Login = () => {
                 </>
               ) : (
                 <>
-                  <View style={styles.phoneInputContainer}>
-                    <AppText style={styles.countryCode}>+1</AppText>
-                    <View style={styles.countryDivider} />
-                    <TextInput
-                      placeholder="Mobile Number"
-                      placeholderTextColor={colors.placeholder || '#9CA3AF'}
-                      keyboardType="phone-pad"
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      value={phone}
-                      onChangeText={setPhone}
-                      onSubmitEditing={handleSendOtp}
-                      returnKeyType="done"
-                      style={[
-                        styles.phoneInput,
-                        loading && styles.disabledInput,
-                      ]}
-                      accessibilityLabel="Mobile number input"
-                      editable={!loading}
-                    />
-                  </View>
+                  <AppText style={styles.label}>Phone Number</AppText>
+                  <TextInput
+                    placeholder="Enter your phone number"
+                    placeholderTextColor={colors.placeholder || '#9CA3AF'}
+                    keyboardType="phone-pad"
+                    autoCapitalize="none"
+                    autoCorrect={false}
+                    value={phone}
+                    onChangeText={setPhone}
+                    onSubmitEditing={handleSendOtp}
+                    returnKeyType="done"
+                    style={[styles.input, loading && styles.disabledInput]}
+                    accessibilityLabel="Mobile number input"
+                    editable={!loading}
+                  />
 
                   {otpSent && (
                     <View style={styles.otpBoxContainer}>
@@ -423,7 +448,6 @@ const Login = () => {
                 </>
               )}
 
-              {/* Login Button */}
               {loading ? (
                 <View style={[styles.button, styles.loadingButton]}>
                   <ActivityIndicator
@@ -435,49 +459,52 @@ const Login = () => {
                 <Button
                   title="Login"
                   onPress={handleLogin}
-                  textColor={colors.text_color_button}
-                  backgroundColor={colors.button_color}
+                  backgroundColor={colors.primary}
+                  textColor={colors.white}
+                  style={styles.primaryButton}
+                  textStyle={styles.primaryButtonText}
+                  disabled={loading}
                 />
               ) : (
                 <Button
                   title={getMobileButtonConfig().title}
                   onPress={getMobileButtonConfig().onPress}
-                  textColor={colors.text_color_button}
-                  backgroundColor={colors.button_color}
+                  backgroundColor={colors.primary}
+                  textColor={colors.white}
+                  style={styles.primaryButton}
+                  textStyle={styles.primaryButtonText}
+                  disabled={loading}
                 />
               )}
 
-              {/* OR Divider */}
-              <View style={styles.orContainer}>
-                <View style={styles.line} />
-                <AppText style={styles.orText}>OR</AppText>
-                <View style={styles.line} />
-              </View>
-
-              {/* Google Login Button */}
-              {/* <TouchableOpacity
-                style={[styles.googleButton, loading && styles.disabledButton]}
-                onPress={handleGoogleLogin}
-                disabled={loading}
-                activeOpacity={0.8}
-                accessibilityLabel="Continue with Google"
-                accessibilityRole="button">
-                <Image
-                  source={require('../../assets/Image/google_icon.png')}
-                  style={styles.googleIcon}
-                />
-                <Text style={styles.googleText}>Continue with Google</Text>
-              </TouchableOpacity> */}
+                <AppText style={styles.altLoginText}>Or Login With</AppText>
 
                 <Button
-                  title="Create Account"
-                  onPress={handleCreateAccount}
-                  textColor={colors.white}
-                  backgroundColor={colors.primary}
+                  title="Sign In with Google"
+                  onPress={handleGoogleLogin}
+                  backgroundColor={colors.white}
+                  textColor={colors.textOnLightStrong}
+                  borderColor={colors.primary}
+                  icon={require('../../assets/Image/google_icon.png')}
+                  style={[styles.googleButton, loading && styles.disabledButton]}
+                  textStyle={styles.googleText}
+                  disabled={loading}
                 />
+
+                <View style={styles.signupRow}>
+                  <AppText style={styles.signupText}>
+                    Don’t have an account?
+                  </AppText>
+                  <TouchableOpacity
+                    onPress={handleCreateAccount}
+                    disabled={loading}
+                    activeOpacity={0.7}>
+                    <AppText style={styles.signupAction}> Sign Up</AppText>
+                  </TouchableOpacity>
+                </View>
               </View>
-            </ScrollView>
-          {/* </LinearGradient> */}
+            </View>
+          </ScrollView>
         </SafeAreaView>
       </TouchableWithoutFeedback>
     </KeyboardAvoidingView>

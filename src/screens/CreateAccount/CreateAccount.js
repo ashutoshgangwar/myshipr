@@ -1,10 +1,10 @@
 import React, {useState} from 'react';
 import {
   View,
-  Text,
   TextInput,
   TouchableOpacity,
   ScrollView,
+  Platform
 } from 'react-native';
 import styles from './CreateAccount.styles';
 import Button from '../../component/Button/Button';
@@ -167,10 +167,11 @@ const CreateAccount = () => {
 
           <View style={styles.buttonWrap}>
             <Button
-              title="Create Account"
+              title={loading ? 'Creating...' : 'Create Account'}
               onPress={handleSubmit}
               textColor={colors.text_color_button}
               backgroundColor={colors.button_color}
+              disabled={loading}
             />
           </View>
         </View>

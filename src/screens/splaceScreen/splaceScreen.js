@@ -11,6 +11,7 @@ import styles from './splaceScreen.styles';
 import AppText from '../../theme/AppText';
 import {colors} from '../../theme/colors';
 import StatusBar from '../../component/StatusBar/StatusBar';
+import Button from '../../component/Button/Button';
 
 const HERO_IMAGES = [
   require('../../assets/Image/bg_image_login.jpg'),
@@ -40,6 +41,14 @@ const SplashScreen = ({navigation}) => {
   const onDotPress = index => {
     setActiveSlide(index);
     heroSliderRef.current?.scrollTo({x: index * width, animated: true});
+  };
+
+  const handleLoginPress = () => {
+    navigation.navigate('LoginScreen');
+  };
+
+  const handleSignupPress = () => {
+    navigation.navigate('CreateAccount');
   };
 
   return (
@@ -74,7 +83,7 @@ const SplashScreen = ({navigation}) => {
               </ImageBackground>
             ))}
           </ScrollView>
-
+        <View style={styles.buttonWraper}>
           <LinearGradient
             colors={BLEND_COLORS}
             locations={BLEND_LOCATIONS}
@@ -100,20 +109,27 @@ const SplashScreen = ({navigation}) => {
               Stay updated every step of the way with live shipment tracking.
             </AppText>
 
-            <TouchableOpacity
-              activeOpacity={0.85}
+            <Button
+              title="Login"
+              onPress={handleLoginPress}
+              backgroundColor={colors.splashText}
+              textColor={colors.splashBorder}
+              borderColor={colors.splashBorder}
               style={styles.loginButton}
-              onPress={() => navigation.navigate('LoginScreen')}>
-              <AppText style={styles.loginButtonText}>Login</AppText>
-            </TouchableOpacity>
+              textStyle={styles.loginButtonText}
+            />
 
-            <TouchableOpacity
-              activeOpacity={0.85}
+            <Button
+              title="Sign Up"
+              onPress={handleSignupPress}
+              backgroundColor="transparent"
+              textColor={colors.splashText}
+              borderColor={colors.splashText}
               style={styles.signupButton}
-              onPress={() => navigation.navigate('CreateAccount')}>
-              <AppText style={styles.signupButtonText}>Sign Up</AppText>
-            </TouchableOpacity>
+              textStyle={styles.signupButtonText}
+            />
           </LinearGradient>
+          </View>
         </View>
       </View>
     </ScrollView>

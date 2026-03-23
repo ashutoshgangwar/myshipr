@@ -1,7 +1,6 @@
-import { StyleSheet } from 'react-native';
-import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
+import {StyleSheet, Platform} from 'react-native';
+import {moderateScale, scale, verticalScale} from 'react-native-size-matters';
 import {colors} from '../../theme/colors';
-import typography from '../../theme/typography';
 
 export default StyleSheet.create({
   screen: {
@@ -49,68 +48,82 @@ export default StyleSheet.create({
     bottom: 0,
     height: verticalScale(120),
   },
+  buttonWraper: {
+    padding: moderateScale(1),
+  },
 
   contentWrapper: {
     flex: 1,
-    marginTop: -verticalScale(20),
-    paddingHorizontal: scale(22),
-    paddingTop: verticalScale(10),
-    paddingBottom: verticalScale(16),
+    justifyContent: 'flex-end',
+    marginTop: verticalScale(15),
+    paddingHorizontal: Platform.OS === 'ios' ? scale(3) : scale(16),
+    paddingTop: verticalScale(-100),
+    paddingBottom: Platform.OS === 'ios' ? verticalScale(25) : verticalScale(20),
+    marginBottom: Platform.OS === 'ios' ? verticalScale(20) : verticalScale(20),
   },
-  
 
   dotsRow: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
     alignSelf: 'center',
-    marginBottom: verticalScale(16),
+    marginBottom: verticalScale(18),
   },
 
   dot: {
     width: scale(8),
     height: scale(8),
-    borderRadius: 99,
+    borderRadius: moderateScale(99),
     backgroundColor: colors.onDarkLow,
-    alignContent: 'center',
   },
 
   dotTapArea: {
-    marginHorizontal: scale(4),
-    paddingVertical: verticalScale(4),
+    paddingHorizontal: scale(5),
+    paddingVertical: verticalScale(6),
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 
   activeDot: {
     width: scale(24),
+    height: scale(8),
+    borderRadius: moderateScale(99),
     backgroundColor: colors.white,
   },
+
   contentText: {
     minHeight: verticalScale(96),
-    width: scale(272),
+    width: Platform.OS === 'ios' ? '92%' : '100%',
+    alignSelf: 'center',
   },
   title: {
-    fontSize: moderateScale(typography.heading1),
-    color: colors.splashTitle,
+    fontSize: moderateScale(36),
+    color: colors.white,
     fontWeight: '400',
-        lineHeight: moderateScale(48),
+    lineHeight: moderateScale(48),
+    textAlign: 'left',
   },
 
   subtitle: {
     marginTop: verticalScale(1),
     color: colors.splashSubtitle,
-    fontSize: moderateScale(typography.paragraph),
+    fontSize: moderateScale(14),
     fontWeight: '400',
     lineHeight: moderateScale(20),
-    maxWidth: '94%',
-    marginBottom: verticalScale(30),
+    width: Platform.OS === 'ios' ? '92%' : '100%',
+    alignSelf: 'center',
+    textAlign: 'left',
+    marginBottom: Platform.OS === 'ios' ? verticalScale(10) : verticalScale(20),
   },
 
   loginButton: {
     height: verticalScale(48),
+    width: Platform.OS === 'ios' ? '92%' : '100%',
+    alignSelf: 'center',
     borderRadius: moderateScale(12),
     borderWidth: moderateScale(1),
     borderColor: colors.splashBorder,
-    backgroundColor: colors.splashText,
+    backgroundColor: colors.white,
     justifyContent: 'center',
     alignItems: 'center',
     marginBottom: verticalScale(14),
@@ -124,15 +137,17 @@ export default StyleSheet.create({
 
   signupButton: {
     height: verticalScale(48),
+    width: Platform.OS === 'ios' ? '92%' : '100%',
+    alignSelf: 'center',
     borderRadius: moderateScale(12),
     borderWidth: moderateScale(1),
-    borderColor: colors.splashText,
+    borderColor: colors.white,
     justifyContent: 'center',
     alignItems: 'center', 
   },
 
   signupButtonText: {
-    color: colors.splashText,
+    color: colors.white,
     fontSize: moderateScale(24 / 2),
     fontWeight: '700',
   },

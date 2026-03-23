@@ -1,4 +1,4 @@
-import { TouchableOpacity, Text, Image, View } from 'react-native';
+import {TouchableOpacity, Image, Platform} from 'react-native';
 import React from 'react';
 import styles from './Button.styles';
 import AppText from '../../theme/AppText';
@@ -11,21 +11,35 @@ const Button = ({
   textColor = '#fff',
   icon,
   borderColor,
+  disabled = false,
+  style,
+  textStyle,
+  activeOpacity,
+  platformType,
 }) => {
+  const resolvedPlatform = platformType || Platform.OS;
+  const isIOS = resolvedPlatform === 'ios';
+  const resolvedActiveOpacity = activeOpacity ?? (isIOS ? 0.75 : 0.85);
+
   return (
     <TouchableOpacity
       style={[
         styles.button,
+        isIOS ? styles.iosButton : styles.androidButton,
+        disabled && styles.disabledButton,
         {
           backgroundColor,
           borderColor: borderColor || backgroundColor,
         },
+        style,
       ]}
-      activeOpacity={0.8}
+      activeOpacity={resolvedActiveOpacity}
       onPress={onPress}
+      disabled={disabled}
+      accessibilityRole="button"
     >
       {icon && <Image source={icon} style={styles.icon} />}
-      <AppText style={[styles.text, { color: textColor }]}>{title}</AppText>
+      <AppText style={[styles.text, {color: textColor}, textStyle]}>{title}</AppText>
     </TouchableOpacity>
   );
 };
