@@ -23,6 +23,7 @@ import Eye_off from '../../assets/svg_icon/eye-off.svg';
 import Eye_outline from '../../assets/svg_icon/eye-outline.svg';
 import StatusBar from '../../component/StatusBar/StatusBar';
 import AppText from '../../theme/AppText';
+import {ms, vs} from '../../theme/scale';
 
 
 const Login = () => {
@@ -216,9 +217,9 @@ const Login = () => {
 
   return (
     <KeyboardAvoidingView
-      style={{flex: 1}}
+      style={styles.keyboardAvoiding}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 20}>
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : vs(20)}>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <SafeAreaView style={styles.safe}>
           <StatusBar
@@ -343,9 +344,9 @@ const Login = () => {
                       }
                       accessibilityRole="button">
                       {showPassword ? (
-                        <Eye_off width={25} height={25} />
+                        <Eye_off width={ms(24)} height={ms(24)} />
                       ) : (
-                        <Eye_outline width={25} height={25} />
+                        <Eye_outline width={ms(24)} height={ms(24)} />
                       )}
                     </TouchableOpacity>
                   </View>
@@ -471,7 +472,7 @@ const Login = () => {
                 <Button
                   title="Create Account"
                   onPress={handleCreateAccount}
-                  textColor={colors.whi}
+                  textColor={colors.white}
                   backgroundColor={colors.primary}
                 />
               </View>

@@ -3,6 +3,10 @@ import {scale, verticalScale, moderateScale} from 'react-native-size-matters';
 import {colors} from '../../theme/colors';
 
 const styles = StyleSheet.create({
+  keyboardAvoiding: {
+    flex: 1,
+  },
+
   safe: {
     flex: 1,
     backgroundColor: colors.white,
