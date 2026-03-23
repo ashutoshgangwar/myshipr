@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import React, {useState, useRef, useEffect} from 'react';
 import {SafeAreaView} from 'react-native-safe-area-context';
+import LinearGradient from 'react-native-linear-gradient';
 import styles from './Login.styles';
 import {useNavigation} from '@react-navigation/native';
 import Button from '../../component/Button/Button';
@@ -225,30 +226,35 @@ const Login = () => {
             barStyle="dark-content"
             translucent={false}
           />
-          <ScrollView
-            contentContainerStyle={styles.container}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}>
-            {/* Logo Section */}
-            <View style={styles.topSection}>
-              <Image
-                source={require('../../assets/Image/logo.png')}
-                style={styles.image}
-                resizeMode="contain"
-              />
-            </View>
+          {/* <LinearGradient
+            colors={[colors.primary, colors.white]}
+            start={{x: 0, y: 0}}
+            end={{x: 1, y: 1}}
+            style={styles.gradient}> */}
+            <ScrollView
+              contentContainerStyle={styles.container}
+              keyboardShouldPersistTaps="handled"
+              showsVerticalScrollIndicator={false}>
+              {/* Logo Section */}
+              <View style={styles.topSection}>
+                <Image
+                  source={require('../../assets/Image/logo.png')}
+                  style={styles.image}
+                  resizeMode="contain"
+                />
+              </View>
 
-            {/* Login Card */}
-            <View
-              style={styles.card}
-              accessible
-              accessibilityLabel="Login form">
-              <AppText style={styles.title}>Welcome Back</AppText>
-              <AppText style={styles.subtitle}>
-                {loginMethod === 'email'
-                  ? 'Login with your email'
-                  : 'Login with your mobile number'}
-              </AppText>
+              {/* Login Card */}
+              <View
+                style={styles.card}
+                accessible
+                accessibilityLabel="Login form">
+                <AppText style={styles.title}>Welcome Back</AppText>
+                <AppText style={styles.subtitle}>
+                  {loginMethod === 'email'
+                    ? 'Login with your email'
+                    : 'Login with your mobile number'}
+                </AppText>
 
               {/* Login Method Tabs */}
               <View style={styles.tabContainer}>
@@ -462,14 +468,15 @@ const Login = () => {
                 <Text style={styles.googleText}>Continue with Google</Text>
               </TouchableOpacity> */}
 
-              <Button
-                title="Create Account"
-                onPress={handleCreateAccount}
-                textColor={colors.whi}
-                backgroundColor={colors.primary}
-              />
-            </View>
-          </ScrollView>
+                <Button
+                  title="Create Account"
+                  onPress={handleCreateAccount}
+                  textColor={colors.whi}
+                  backgroundColor={colors.primary}
+                />
+              </View>
+            </ScrollView>
+          {/* </LinearGradient> */}
         </SafeAreaView>
       </TouchableWithoutFeedback>
     </KeyboardAvoidingView>

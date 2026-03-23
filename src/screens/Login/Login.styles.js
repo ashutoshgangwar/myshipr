@@ -5,18 +5,22 @@ import {colors} from '../../theme/colors';
 const styles = StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.white,
   },
+  // gradient: {
+  //   flex: 1,
+  // },
   container: {
     flexGrow: 1,
-    backgroundColor: colors.white,
     paddingHorizontal: scale(20),
     paddingVertical: verticalScale(20),
     justifyContent: 'center',
   },
   topSection: {
+    backgroundColor: colors.white,
     alignItems: 'center',
     marginBottom: verticalScale(30),
+    borderRadius: moderateScale(20),
   },
 
   image: {
