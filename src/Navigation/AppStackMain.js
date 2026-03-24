@@ -16,6 +16,7 @@ import CreateAccount from '../screens/CreateAccount/CreateAccount';
 import VerifyPhone from '../screens/VarifyPhone/VarifyPhone';
 import WelcomeHome from '../screens/WelcomeHome/WelcomeHome';
 import Onboarding from '../screens/Onboarding/Onboarding';
+import Signup from '../screens/Signup/Signup';
 
 
 
@@ -32,6 +33,7 @@ export default function AppStackMain() {
 
       {/* Auth */}
       <Stack.Screen name="LoginScreen" component={Login} />
+      <Stack.Screen name="SignupScreen" component={Signup} />
       <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
       <Stack.Screen name="ResetPassword" component={ResetPassword} />
       <Stack.Screen name="CreateAccount" component={CreateAccount} />

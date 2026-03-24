@@ -88,7 +88,7 @@ const Login = () => {
 
   const handleCreateAccount = () => {
     if (loading) return;
-    navigation.navigate('CreateAccount');
+    navigation.navigate('SignupScreen');
   };
 
   const handleGoogleLogin = () => {

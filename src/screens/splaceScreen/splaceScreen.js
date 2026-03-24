@@ -49,7 +49,7 @@ const SplashScreen = ({navigation}) => {
   };
 
   const handleSignupPress = () => {
-    navigation.navigate('CreateAccount');
+    navigation.navigate('SignupScreen');
   };
 
   return (
