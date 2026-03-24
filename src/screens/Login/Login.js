@@ -83,7 +83,7 @@ const Login = () => {
   };
   const handleForgotPassword = () => {
     if (loading) return;
-    navigation.navigate('ForgotPassword');
+    navigation.navigate('ResetPassword');
   };
 
   const handleCreateAccount = () => {
