@@ -1,4 +1,4 @@
-import {StyleSheet} from 'react-native';
+import {StyleSheet, Platform} from 'react-native';
 import {scale, verticalScale, moderateScale} from 'react-native-size-matters';
 import {colors} from '../../theme/colors';
 
@@ -9,24 +9,25 @@ const styles = StyleSheet.create({
 
   safe: {
     flex: 1,
-    backgroundColor: '#7D7D7D',
+    backgroundColor: colors.primary,
   },
   container: {
     flexGrow: 1,
-    justifyContent: 'center',
-    // paddingVertical: verticalScale(18),
+    justifyContent: 'flex-start',
+    // paddingBottom: Platform.OS === 'ios' ? verticalScale(20) : verticalScale(14),
   },
 
   screenShell: {
-    // marginHorizontal: scale(28)
-    borderRadius: moderateScale(34),
-    overflow: 'hidden',
-    backgroundColor: colors.white,
+    width: '100%',
+    marginTop: 0,
+    backgroundColor: colors.primary,
   },
 
   heroSection: {
-    height: verticalScale(210),
+    width: '100%',
+    height: Platform.OS === 'ios' ? verticalScale(260) : verticalScale(215),
     backgroundColor: colors.primary,
+    overflow: 'hidden',
   },
 
   heroBackground: {
@@ -38,30 +39,35 @@ const styles = StyleSheet.create({
   heroOverlay: {
     flex: 1,
     justifyContent: 'flex-end',
-    paddingHorizontal: scale(20),
-    paddingBottom: verticalScale(26),
+    paddingHorizontal: -scale(10),
+    paddingBottom: Platform.OS === 'ios' ? verticalScale(20) : verticalScale(15),
   },
 
   heroContent: {
     justifyContent: 'flex-end',
+    marginLeft: scale(20),
+    marginBottom: Platform.OS === 'ios' ? verticalScale(20) : verticalScale(15),
   },
 
   card: {
     backgroundColor: colors.white,
-    marginTop: verticalScale(-16),
-    borderTopLeftRadius: moderateScale(28),
-    borderTopRightRadius: moderateScale(28),
-    borderBottomLeftRadius: moderateScale(34),
-    borderBottomRightRadius: moderateScale(34),
-    paddingHorizontal: scale(18),
-    paddingTop: verticalScale(22),
-    paddingBottom: verticalScale(14),
+    marginTop: Platform.OS === 'ios' ? -verticalScale(40) : -verticalScale(24),
+    marginBottom: Platform.OS === 'ios' ? verticalScale(12) : verticalScale(10),
+    borderRadius: Platform.OS === 'ios' ? moderateScale(15) : moderateScale(20),
+    paddingHorizontal: Platform.OS === 'ios' ? scale(20) : scale(24),
+    paddingTop: Platform.OS === 'ios' ? verticalScale(26) : verticalScale(28),
+    paddingBottom: Platform.OS === 'ios' ? verticalScale(28) : verticalScale(24),
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: Platform.OS === 'ios' ? 6 : 4},
+    shadowOpacity: Platform.OS === 'ios' ? 0.1 : 0.08,
+    shadowRadius: Platform.OS === 'ios' ? moderateScale(14) : moderateScale(12),
+    elevation: Platform.OS === 'ios' ? 0 : 5,
   },
 
   title: {
     fontSize: moderateScale(26),
     fontWeight: '700',
-    marginBottom: verticalScale(6),
+    marginBottom: verticalScale(10),
     color: colors.white,
   },
 
@@ -69,7 +75,7 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(14),
     lineHeight: moderateScale(20),
     color: colors.onDarkHigh,
-    marginBottom: verticalScale(16),
+    marginBottom: verticalScale(10),
   },
 
   roleBadge: {
@@ -77,9 +83,12 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: scale(8),
+    marginBottom: verticalScale(30),
     backgroundColor: 'rgba(255,255,255,0.22)',
-    borderRadius: moderateScale(18),
+    borderTopRightRadius: moderateScale(18),
+    borderBottomRightRadius: moderateScale(18),
     paddingHorizontal: scale(16),
+    borderBottomLeftRadius: moderateScale(18),
     paddingVertical: verticalScale(8),
   },
 
@@ -126,32 +135,37 @@ const styles = StyleSheet.create({
   },
 
   label: {
-    fontSize: moderateScale(13),
-    fontWeight: '600',
+    fontSize: moderateScale(16),
+    fontWeight: '500',
     color: colors.text_dark,
-    marginBottom: verticalScale(8),
+    marginBottom: verticalScale(10),
+    textAlign: 'left',
+    alignSelf: 'flex-start',
+    width: '100%',
   },
 
   input: {
-    borderWidth: 1,
+    borderWidth: scale(1),
     borderColor: colors.border_Color,
-    backgroundColor: '#F3F3F3',
-    borderRadius: moderateScale(13),
-    paddingVertical: verticalScale(13),
-    paddingHorizontal: scale(14),
+    backgroundColor: colors.gray400,
+    borderRadius: moderateScale(12),
+    paddingVertical: Platform.OS === 'ios' ? verticalScale(15) : verticalScale(12),
+    paddingHorizontal: scale(16),
     fontSize: moderateScale(15),
-    marginBottom: verticalScale(12),
+    marginBottom: verticalScale(16),
     color: colors.text_dark || '#111827',
+    textAlign: 'left',
+    width: '100%',
   },
 
   passwordContainer: {
     position: 'relative',
-    marginBottom: 0,
+    marginBottom: verticalScale(4),
   },
 
   passwordInput: {
     paddingRight: scale(50),
-    marginBottom: verticalScale(8),
+    marginBottom: verticalScale(12),
   },
 
   otpRow: {
@@ -197,7 +211,7 @@ const styles = StyleSheet.create({
   showHideButton: {
     position: 'absolute',
     right: scale(12),
-    top: verticalScale(8),
+    top: Platform.OS === 'ios' ? verticalScale(8) : verticalScale(5),
     width: moderateScale(40),
     height: moderateScale(40),
     justifyContent: 'center',
@@ -206,14 +220,14 @@ const styles = StyleSheet.create({
 
   forgotPasswordContainer: {
     alignSelf: 'flex-end',
-    marginBottom: verticalScale(18),
+    marginBottom: verticalScale(5),
     paddingVertical: verticalScale(2),
   },
 
   forgotPasswordText: {
     color: colors.text_dark,
-    fontWeight: '500',
-    fontSize: moderateScale(13),
+    fontWeight: '400',
+    fontSize: moderateScale(12),
   },
 
   button: {
@@ -238,11 +252,16 @@ const styles = StyleSheet.create({
 
   primaryButton: {
     backgroundColor: colors.primary,
-    borderRadius: moderateScale(13),
+    borderRadius: moderateScale(14),
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: verticalScale(14),
-    marginTop: verticalScale(8),
+    paddingVertical: Platform.OS === 'ios' ? verticalScale(16) : verticalScale(14),
+    marginTop: verticalScale(12),
+    shadowColor: colors.primary,
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.3,
+    shadowRadius: moderateScale(8),
+    elevation: 5,
   },
 
   primaryButtonText: {
@@ -254,21 +273,31 @@ const styles = StyleSheet.create({
   altLoginText: {
     textAlign: 'center',
     color: colors.text_dark,
-    fontSize: moderateScale(13),
-    marginVertical: verticalScale(8),
+    fontSize: moderateScale(12),
+    marginVertical: verticalScale(5),
+    fontWeight: '400',
+    // marginTop: verticalScale(15)
+  },
+   altLogin: {
+    textAlign: 'center',
+    color: colors.text_dark,
+    fontSize: moderateScale(12),
+    marginVertical: verticalScale(1),
+    fontWeight: '400',
+    marginTop: verticalScale(15)
   },
 
   googleButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
+    borderWidth: 1.5,
     borderColor: colors.primary,
-    paddingVertical: verticalScale(12),
-    borderRadius: moderateScale(13),
+    paddingVertical: verticalScale(14),
+    borderRadius: moderateScale(14),
     backgroundColor: '#fff',
-    marginTop: verticalScale(4),
-    marginBottom: verticalScale(14),
+    marginTop: verticalScale(12),
+    marginBottom: verticalScale(18),
   },
 
   disabledButton: {
@@ -291,7 +320,8 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: verticalScale(2),
+    marginBottom: verticalScale(8),
+    marginTop: verticalScale(4),
   },
 
   signupText: {

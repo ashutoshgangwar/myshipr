@@ -34,6 +34,9 @@ export default StyleSheet.create({
 
   heroImage: {
     height: verticalScale(350),
+    borderTopLeftRadius: moderateScale(34),
+    borderTopRightRadius: moderateScale(34),
+    overflow: 'hidden',
   },
 
   heroImageStyle: {

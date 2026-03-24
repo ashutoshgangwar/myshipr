@@ -1,8 +1,9 @@
 export const colors = {
   navy: '#00033E',
   nearBlack: '#171717',
-  gray400: '#B4B4B4',
+  gray400: '#f2efef',
   white: '#FFFFFF',
+  placeholder: '#00000099',
 
   splashBackground: '#00033E',
   splashText: '#FFFFFF',
@@ -23,7 +24,6 @@ export const colors = {
   success: '#198754',
   muted: '#000000eb',
   background: '#F8F9FA',
-  placeholder: '#9CA3AF',
 
 
   surfaceDarkPrimary: '#00033E',
