@@ -77,7 +77,7 @@ const Login = () => {
       // TODO: Replace with real authentication logic
       navigation.reset({
         index: 0,
-        routes: [{name: 'CdlDriverOnboarding'}],
+        routes: [{name: 'Onboarding'}],
       });
     }, 1000);
   };

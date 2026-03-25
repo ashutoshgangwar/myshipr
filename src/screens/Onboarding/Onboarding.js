@@ -1,336 +1,355 @@
-import React, {useEffect, useState} from 'react';
 import {
   View,
-  Text,
-  ScrollView,
-  TouchableOpacity,
   TextInput,
-  SafeAreaView,
-  Image,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  ActivityIndicator,
   Alert,
+  Keyboard,
+  TouchableWithoutFeedback,
 } from 'react-native';
+import React, {useState} from 'react';
+import {SafeAreaView} from 'react-native-safe-area-context';
+import LinearGradient from 'react-native-linear-gradient';
 import styles from './Onboarding.styles';
 import {useNavigation} from '@react-navigation/native';
-import StatusBar from '../../component/StatusBar/StatusBar';
-import {colors} from '../../theme/colors';
-import {scanWithCamera, scanWithGallery} from '../../services/OCRService';
 import Button from '../../component/Button/Button';
+import {colors} from '../../theme/colors';
+import StatusBar from '../../component/StatusBar/StatusBar';
 import AppText from '../../theme/AppText';
+import {vs} from '../../theme/scale';
 
-const TABS = ['Company Info', 'Documents', 'Review'];
-
-const DOCUMENTS = [
-  {id: 'insurance', title: 'Insurance Image'},
-  {id: 'commercial_liability', title: 'Commercial Liability Insurance'},
-];
-
-const Onboarding = () => {
+const Onboarding= () => {
   const navigation = useNavigation();
+  const [companyName, setCompanyName] = useState('');
+  const [companyAddress, setCompanyAddress] = useState('');
+  const [dotNumber, setDotNumber] = useState('');
+  const [mcNumber, setMcNumber] = useState('');
+  const [companyWebsite, setCompanyWebsite] = useState('');
+  const [phone, setPhone] = useState('');
+  const [alternatePhone, setAlternatePhone] = useState('');
+  const [faxNumber, setFaxNumber] = useState('');
+  const [companyEmail, setCompanyEmail] = useState('');
+  const [insuranceDetails, setInsuranceDetails] = useState('');
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('Company Info');
-  const [documents, setDocuments] = useState({});
 
-  const completedCount = DOCUMENTS.filter(doc => documents[doc.id]).length;
-  const canContinueFromDocs = completedCount === DOCUMENTS.length;
+  const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+  const phoneRegex = /^\d{10,15}$/;
+  const websiteRegex = /^(https?:\/\/)?([\w-]+\.)+[\w-]{2,}(\/[^\s]*)?$/i;
+  const onlyDigits = value => value.replace(/\D/g, '');
 
-  const goNext = () => {
-    if (activeTab === 'Company Info') setActiveTab('Documents');
-    else if (activeTab === 'Documents') setActiveTab('Review');
-  };
-
-  const goBack = () => {
-    if (activeTab === 'Review') setActiveTab('Documents');
-    else if (activeTab === 'Documents') setActiveTab('Company Info');
-  };
-
-  const handleReviewDoc = () => {
-    if (loading) return;
-    setLoading(false);
-    navigation.navigate('MainApp');
-  };
-
-  const scanDocument = async (docId, source) => {
-    try {
-      const result =
-        source === 'gallery' ? await scanWithGallery() : await scanWithCamera();
-      if (!result?.image) return;
-
-      setDocuments(prev => ({...prev, [docId]: result.image}));
-    } catch (err) {
-      console.log('Scan error:', err);
+  const handleLogin = () => {
+    if (loading) {
+      return;
     }
+
+    const companyNameValue = companyName.trim();
+    const companyAddressValue = companyAddress.trim();
+    const dotNumberValue = dotNumber.trim();
+    const mcNumberValue = mcNumber.trim();
+    const companyWebsiteValue = companyWebsite.trim();
+    const phoneValue = phone.trim();
+    const alternatePhoneValue = alternatePhone.trim();
+    const faxNumberValue = faxNumber.trim();
+    const companyEmailValue = companyEmail.trim();
+    const insuranceDetailsValue = insuranceDetails.trim();
+
+    if (!companyNameValue) {
+      Alert.alert('Required Field', 'Please enter company name');
+      return;
+    }
+
+    if (!companyAddressValue) {
+      Alert.alert('Required Field', 'Please enter company address');
+      return;
+    }
+
+    if (!dotNumberValue || dotNumberValue.length < 5) {
+      Alert.alert('Invalid DOT Number', 'Please enter a valid DOT number');
+      return;
+    }
+
+    if (!mcNumberValue || mcNumberValue.length < 5) {
+      Alert.alert('Invalid MC Number', 'Please enter a valid MC number');
+      return;
+    }
+
+    if (!companyWebsiteValue) {
+      Alert.alert('Required Field', 'Please enter company website');
+      return;
+    }
+
+    if (!websiteRegex.test(companyWebsiteValue)) {
+      Alert.alert('Invalid Website', 'Please enter a valid company website');
+      return;
+    }
+
+    if (!phoneValue || !phoneRegex.test(phoneValue)) {
+      Alert.alert('Invalid Phone Number', 'Please enter a valid phone number');
+      return;
+    }
+
+    if (alternatePhoneValue && !phoneRegex.test(alternatePhoneValue)) {
+      Alert.alert(
+        'Invalid Alternate Phone Number',
+        'Please enter a valid alternate phone number',
+      );
+      return;
+    }
+
+    if (alternatePhoneValue && alternatePhoneValue === phoneValue) {
+      Alert.alert(
+        'Invalid Alternate Phone Number',
+        'Alternate phone number must be different from phone number',
+      );
+      return;
+    }
+
+    if (faxNumberValue && !phoneRegex.test(faxNumberValue)) {
+      Alert.alert('Invalid Fax Number', 'Please enter a valid fax number');
+      return;
+    }
+
+    if (!companyEmailValue || !emailRegex.test(companyEmailValue)) {
+      Alert.alert('Invalid Company Email', 'Please enter a valid company email');
+      return;
+    }
+
+    if (!insuranceDetailsValue) {
+      Alert.alert('Required Field', 'Please enter insurance details');
+      return;
+    }
+
+    Keyboard.dismiss();
+    setLoading(true);
+
+    // Simulate API call
+    setTimeout(() => {
+      setLoading(false);
+      // TODO: Replace with real authentication logic
+      navigation.reset({
+        index: 0,
+        routes: [{name: 'CdlDriverOnboarding'}],
+      });
+    }, 1000);
   };
 
-  const handleDocumentPress = docId => {
-    Alert.alert('Upload document', 'Choose an option', [
-      {text: 'Take Photo', onPress: () => scanDocument(docId, 'camera')},
-      {
-        text: 'Upload from Gallery',
-        onPress: () => scanDocument(docId, 'gallery'),
-      },
-      {text: 'Cancel', style: 'cancel'},
-    ]);
-  };
   return (
-    <SafeAreaView style={{flex: 1, backgroundColor: '#FFFFFF'}}>
-      <StatusBar
-        backgroundColor={colors.primary}
-        barStyle="dark-content"
-        translucent={false}
-      />
-      {/* CONTENT */}
-      <ScrollView
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContainer}>
-        {/* Header */}
-        <View style={styles.header}>
-          <AppText style={styles.headerTitle}>Complete Onboarding</AppText>
-        </View>
-
-        {/* Progress */}
-        <View style={styles.progressBar} />
-        <AppText style={styles.progressText}>0% Complete</AppText>
-
-        {/* Tabs */}
-        <View style={styles.tabs}>
-          {TABS.map(tab => (
-            <TouchableOpacity
-              key={tab}
-              onPress={() => setActiveTab(tab)}
-              style={[styles.tab, activeTab === tab && styles.activeTab]}>
-              <AppText
-                style={[
-                  styles.tabText,
-                  activeTab === tab && styles.activeTabText,
-                ]}>
-                {tab}
-              </AppText>
-            </TouchableOpacity>
-          ))}
-        </View>
-
-        {/* ---------------- Company Info ---------------- */}
-        {activeTab === 'Company Info' && (
-          <View style={styles.card}>
-            <AppText style={styles.sectionTitle}>Company Information</AppText>
-            <View style={styles.field}>
-              <AppText style={styles.label}>Company Address *</AppText>
-              <TextInput
-                style={styles.input}
-                placeholder="123 Main St, City, State"
-              />
-            </View>
-
-            <View style={styles.row}>
-              <View style={[styles.field, styles.fieldHalf]}>
-                <AppText style={styles.label}>DOT Number *</AppText>
-                <TextInput style={styles.input} placeholder="DOT123456" />
+    <KeyboardAvoidingView
+      style={styles.keyboardAvoiding}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      keyboardVerticalOffset={Platform.OS === 'ios' ? vs(6) : 0}>
+      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+        <SafeAreaView
+          style={styles.safe}
+          edges={Platform.OS === 'ios' ? ['bottom'] : ['top', 'bottom']}>
+          <StatusBar
+            backgroundColor={
+              Platform.OS === 'ios' ? 'transparent' : colors.primary
+            }
+            barStyle="light-content"
+            translucent={true}
+            hidden={Platform.OS === 'ios'}
+          />
+          <ScrollView
+            contentContainerStyle={styles.container}
+            keyboardShouldPersistTaps="handled"
+            showsVerticalScrollIndicator={false}>
+            <View style={styles.screenShell}>
+              <View style={styles.heroSection}>
+                <LinearGradient
+                  colors={[
+                    colors.overlayDarkStartTransparent,
+                    colors.overlayDarkMidStrong,
+                    colors.surfaceDarkPrimary,
+                  ]}
+                  start={{x: 0, y: 0}}
+                  end={{x: 0, y: 1}}
+                  style={styles.heroOverlay}>
+                  <View style={styles.heroContent}>
+                    <AppText style={styles.title}>You’re Almost Done!</AppText>
+                    <AppText style={styles.subtitle}>
+                      Complete your carrier profile to access services.
+                    </AppText>
+                  </View>
+                </LinearGradient>
               </View>
-              <View style={[styles.field, styles.fieldHalf]}>
-                <AppText style={styles.label}>MC Number *</AppText>
-                <TextInput style={styles.input} placeholder="MC123456" />
-              </View>
-            </View>
 
-            <View style={styles.row}>
-              <View style={[styles.field, styles.fieldHalf]}>
-                <AppText style={styles.label}>State *</AppText>
+              <View style={styles.card} accessibilityLabel="Signup form">
+                <AppText style={styles.label}>Company Name</AppText>
                 <TextInput
-                  style={styles.input}
-                  placeholder="CA"
-                  autoCapitalize="characters"
+                  placeholder="Enter your company name"
+                  placeholderTextColor={colors.placeholder || '#9CA3AF'}
+                  keyboardType="default"
+                  autoCapitalize="words"
+                  autoCorrect={false}
+                  value={companyName}
+                  onChangeText={setCompanyName}
+                  returnKeyType="next"
+                  style={[styles.input, loading && styles.disabledInput]}
+                  accessibilityLabel="Company name input"
+                  editable={!loading}
                 />
-              </View>
-              <View style={[styles.field, styles.fieldHalf]}>
-                <AppText style={styles.label}>Company Phone *</AppText>
+                <AppText style={styles.label}>Company Address</AppText>
                 <TextInput
-                  style={styles.input}
-                  placeholder="(123) 456-7890"
+                  placeholder="Enter company address"
+                  placeholderTextColor={colors.placeholder || '#9CA3AF'}
+                  keyboardType="default"
+                  autoCapitalize="words"
+                  autoCorrect={false}
+                  value={companyAddress}
+                  onChangeText={setCompanyAddress}
+                  returnKeyType="next"
+                  style={[styles.input, loading && styles.disabledInput]}
+                  accessibilityLabel="company address input"
+                  editable={!loading}
+                />
+              
+               <AppText style={styles.label}>DOT Number</AppText>
+                <TextInput
+                  placeholder="Enter dot number"
+                  placeholderTextColor={colors.placeholder || '#9CA3AF'}
+                  keyboardType="default"
+                  autoCapitalize="words"
+                  autoCorrect={false}
+                  value={dotNumber}
+                  onChangeText={text => setDotNumber(onlyDigits(text))}
+                  returnKeyType="next"
+                  style={[styles.input, loading && styles.disabledInput]}
+                  accessibilityLabel="dot number input"
+                  editable={!loading}
+                />
+              
+                <AppText style={styles.label}>MC Number</AppText>
+                <TextInput
+                  placeholder="Enter mc number"
+                  placeholderTextColor={colors.placeholder || '#9CA3AF'}
+                  keyboardType="default"
+                  autoCapitalize="words"
+                  autoCorrect={false}
+                  value={mcNumber}
+                  onChangeText={text => setMcNumber(onlyDigits(text))}
+                  returnKeyType="next"
+                  style={[styles.input, loading && styles.disabledInput]}
+                  accessibilityLabel="mc number input"
+                  editable={!loading}
+                />
+
+                  <AppText style={styles.label}>Company Website</AppText>
+                <TextInput
+                  placeholder="Enter company website"
+                  placeholderTextColor={colors.placeholder || '#9CA3AF'}
+                  keyboardType="default"
+                  autoCapitalize="words"
+                  autoCorrect={false}
+                  value={companyWebsite}
+                  onChangeText={setCompanyWebsite}
+                  returnKeyType="next"
+                  style={[styles.input, loading && styles.disabledInput]}
+                  accessibilityLabel="company website input"
+                  editable={!loading}
+                />
+
+                 <AppText style={styles.label}>Phone Number</AppText>
+                <TextInput
+                  placeholder="Enter phone number"
+                  placeholderTextColor={colors.placeholder || '#9CA3AF'}
                   keyboardType="phone-pad"
+                  autoCapitalize="words"
+                  autoCorrect={false}
+                  value={phone}
+                  onChangeText={text => setPhone(onlyDigits(text))}
+                  returnKeyType="next"
+                  style={[styles.input, loading && styles.disabledInput]}
+                  accessibilityLabel="phone number input"
+                  editable={!loading}
                 />
-              </View>
-            </View>
 
-            <View style={styles.row}>
-              <View style={[styles.field, styles.fieldHalf]}>
-                <AppText style={styles.label}>Company Fax</AppText>
+               <AppText style={styles.label}>Alternate Phone Number</AppText>
                 <TextInput
-                  style={styles.input}
-                  placeholder="(123) 456-7890"
+                  placeholder="Enter alternate phone number"
+                  placeholderTextColor={colors.placeholder || '#9CA3AF'}
                   keyboardType="phone-pad"
+                  autoCapitalize="words"
+                  autoCorrect={false}
+                  value={alternatePhone}
+                  onChangeText={text => setAlternatePhone(onlyDigits(text))}
+                  returnKeyType="next"
+                  style={[styles.input, loading && styles.disabledInput]}
+                  accessibilityLabel="alternate phone number input"
+                  editable={!loading}
                 />
-              </View>
-              <View style={[styles.field, styles.fieldHalf]}>
-                <AppText style={styles.label}>Company Email *</AppText>
+
+                 <AppText style={styles.label}>Company Fax Number</AppText>
                 <TextInput
-                  style={styles.input}
-                  placeholder="example@example.com"
+                  placeholder="Enter fax number"
+                  placeholderTextColor={colors.placeholder || '#9CA3AF'}
+                  keyboardType="phone-pad"
+                  autoCapitalize="words"
+                  autoCorrect={false}
+                  value={faxNumber}
+                  onChangeText={text => setFaxNumber(onlyDigits(text))}
+                  returnKeyType="next"
+                  style={[styles.input, loading && styles.disabledInput]}
+                  accessibilityLabel="fax number input"
+                  editable={!loading}
+                />
+
+                  <AppText style={styles.label}>Company Email</AppText>
+                <TextInput
+                  placeholder="Enter company email id"
+                  placeholderTextColor={colors.placeholder || '#9CA3AF'}
                   keyboardType="email-address"
                   autoCapitalize="none"
+                  autoCorrect={false}
+                  value={companyEmail}
+                  onChangeText={setCompanyEmail}
+                  returnKeyType="next"
+                  style={[styles.input, loading && styles.disabledInput]}
+                  accessibilityLabel="company email input"
+                  editable={!loading}
                 />
+
+
+                  <AppText style={styles.label}>Insurance Details</AppText>
+                <TextInput
+                  placeholder="Enter insurance details"
+                  placeholderTextColor={colors.placeholder || '#9CA3AF'}
+                  keyboardType="default"
+                  autoCapitalize="words"
+                  autoCorrect={false}
+                  value={insuranceDetails}
+                  onChangeText={setInsuranceDetails}
+                  returnKeyType="next"
+                  style={[styles.input, loading && styles.disabledInput]}
+                  accessibilityLabel="insurance details input"
+                  editable={!loading}
+                />
+                {loading ? (
+                  <View style={[styles.button, styles.loadingButton]}>
+                    <ActivityIndicator
+                      color={colors.text_color_button || '#fff'}
+                      size="small"
+                    />
+                  </View>
+                ) : (
+                  <Button
+                    title="Complete Profile"
+                    onPress={handleLogin}
+                    backgroundColor={colors.primary}
+                    textColor={colors.white}
+                    style={styles.primaryButton}
+                    textStyle={styles.primaryButtonText}
+                    disabled={loading}
+                  />
+                )}
               </View>
             </View>
-
-            <View style={styles.field}>
-              <AppText style={styles.label}>Company Website</AppText>
-              <TextInput
-                style={styles.input}
-                placeholder="https://www.example.com"
-                keyboardType="url"
-                autoCapitalize="none"
-              />
-            </View>
-          </View>
-        )}
-
-        {/* ---------------- DOCUMENTS ---------------- */}
-        {activeTab === 'Documents' && (
-          <>
-            <View style={styles.infoBox}>
-              <AppText style={styles.infoText}>
-                <AppText style={{fontWeight: '700'}}>Required:</AppText> Upload all
-                documents marked with * to proceed. Accepted formats: PDF, JPG,
-                PNG (max 10MB)
-              </AppText>
-            </View>
-
-            {DOCUMENTS.map(({id, title}) => (
-              <View style={styles.card} key={id}>
-                <View style={styles.cardHeader}>
-                  <AppText style={styles.cardTitle}>{title} *</AppText>
-                </View>
-
-                <TouchableOpacity
-                  activeOpacity={0.8}
-                  onPress={() => handleDocumentPress(id)}
-                  style={styles.uploadBox}>
-                  {documents[id]?.uri ? (
-                    <>
-                      <Image
-                        source={{uri: documents[id].uri}}
-                        style={styles.uploadPreview}
-                        resizeMode="cover"
-                      />
-                      <AppText style={styles.uploadText}>Retake Photo</AppText>
-                    </>
-                  ) : (
-                    <>
-                      <AppText style={styles.uploadIcon}>📷</AppText>
-                      <AppText style={styles.uploadText}>
-                        Take Photo or Upload
-                      </AppText>
-                      <AppText style={styles.uploadSub}>
-                        PDF, JPG, PNG · Max 10MB
-                      </AppText>
-                    </>
-                  )}
-                </TouchableOpacity>
-              </View>
-            ))}
-          </>
-        )}
-        {/* ---------------- REVIEW ---------------- */}
-        {activeTab === 'Review' && (
-          <>
-            <View style={styles.reviewHeader}>
-              <AppText style={styles.reviewTitle}>Almost Done!</AppText>
-              <AppText  Text style={styles.reviewSub}>
-                Review your information and submit for verification. Our team
-                will review within 24–48 hours.
-              </AppText>
-            </View>
-
-            <View style={styles.card}>
-              <AppText style={styles.sectionTitle}>Documents Uploaded</AppText>
-
-              {[
-                'Commercial Driver’s License (CDL)',
-                'DOT Medical Certificate',
-                'Vehicle Registration & Insurance',
-              ].map(item => (
-                <View style={styles.reviewRow} key={item}>
-                  <AppText style={styles.checkIcon}>✓</AppText>
-                  <AppText style={styles.reviewText}>{item}</AppText>
-                </View>
-              ))}
-            </View>
-
-            <View style={styles.card}>
-              <AppText style={styles.sectionTitle}>What happens next?</AppText>
-
-              {[
-                [
-                  '1',
-                  'Document Verification',
-                  'Our compliance team reviews all documents',
-                ],
-                [
-                  '2',
-                  'DMV & Background Check',
-                  'Automated verification of license and registration',
-                ],
-                [
-                  '3',
-                  'Account Activation',
-                  'You’ll receive a notification when approved',
-                ],
-              ].map(([num, title, desc]) => (
-                <View style={styles.timelineRow} key={num}>
-                  <View style={styles.stepCircle}>
-                    <AppText style={styles.stepNumber}>{num}</AppText>
-                  </View>
-                  <View style={styles.stepContent}>
-                    <AppText style={styles.stepTitle}>{title}</AppText>
-                    <AppText style={styles.stepDesc}>{desc}</AppText>
-                  </View>
-                </View>
-              ))}
-            </View>
-
-            <Button
-              title="Submit for Review"
-              onPress={handleReviewDoc}
-              textColor={colors.white}
-              backgroundColor={colors.primary}
-            />
-          </>
-        )}
-      </ScrollView>
-
-      {/* -------- FIXED BOTTOM CTA (NOT FOR REVIEW) -------- */}
-      {activeTab !== 'Review' && (
-        <View style={styles.bottomFixed}>
-          <TouchableOpacity
-            style={[
-              styles.primaryBtn,
-              activeTab === 'Documents' &&
-                !canContinueFromDocs &&
-                styles.disabledBtn,
-            ]}
-            disabled={activeTab === 'Documents' && !canContinueFromDocs}
-            onPress={goNext}>
-            <AppText
-              style={[
-                styles.primaryText,
-                activeTab === 'Documents' &&
-                  !canContinueFromDocs &&
-                  styles.disabledText,
-              ]}>
-              {activeTab === 'Company Info'
-                ? 'Continue to Documents'
-                : 'Continue to Review'}
-            </AppText>
-          </TouchableOpacity>
-
-          {activeTab === 'Documents' && (
-            <AppText style={styles.bottomText}>
-              Upload {Math.max(DOCUMENTS.length - completedCount, 0)} more
-              required document(s)
-            </AppText>
-          )}
-        </View>
-      )}
-    </SafeAreaView>
+          </ScrollView>
+        </SafeAreaView>
+      </TouchableWithoutFeedback>
+    </KeyboardAvoidingView>
   );
 };
 

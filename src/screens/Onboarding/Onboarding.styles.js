@@ -1,346 +1,149 @@
-import {StyleSheet} from 'react-native';
-import {
-  scale,
-  verticalScale,
-  moderateScale,
-} from 'react-native-size-matters';
-import { colors } from '../../theme/colors';
+import {StyleSheet, Platform} from 'react-native';
+import {scale, verticalScale, moderateScale} from 'react-native-size-matters';
+import {colors} from '../../theme/colors';
 
-export default StyleSheet.create({
-  scrollContainer: {
-    padding: scale(16),
-    paddingBottom: verticalScale(40),
-  },
-
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: verticalScale(12),
-  },
-
-  headerTitle: {
-    fontSize: moderateScale(20),
-    fontWeight: '700',
-    color: '#111827',
-  },
-
-  skip: {
-    fontSize: moderateScale(14),
-    color: '#6B7280',
-  },
-
-  progressBar: {
-    height: verticalScale(6),
-    borderRadius: 10,
-    backgroundColor: '#E5E7EB',
-    marginBottom: verticalScale(8),
-  },
-
-  progressText: {
-    fontSize: moderateScale(13),
-    color: '#6B7280',
-    marginBottom: verticalScale(16),
-  },
-
-  tabs: {
-    flexDirection: 'row',
-    marginBottom: verticalScale(16),
-  },
-
-  tab: {
+const styles = StyleSheet.create({
+  keyboardAvoiding: {
     flex: 1,
-    paddingVertical: verticalScale(12),
-    borderBottomWidth: 2,
-    borderBottomColor: '#E5E7EB',
   },
 
-  activeTab: {
-    borderBottomColor: '#2563EB',
+  safe: {
+    flex: 1,
+    backgroundColor: colors.primary,
+  },
+  container: {
+    flexGrow: 1,
+    justifyContent: 'flex-start',
+    // paddingBottom: Platform.OS === 'ios' ? verticalScale(20) : verticalScale(14),
   },
 
-  tabText: {
-    textAlign: 'center',
-    fontSize: moderateScale(14),
-    color: '#6B7280',
-    fontWeight: '600',
+  screenShell: {
+    width: '100%',
+    marginTop: 0,
+    backgroundColor: colors.primary,
   },
 
-  activeTabText: {
-    color: '#2563EB',
+  heroSection: {
+    width: '100%',
+    height: Platform.OS === 'ios' ? verticalScale(260) : verticalScale(215),
+    backgroundColor: colors.primary,
+    overflow: 'hidden',
   },
 
-  infoBox: {
-    backgroundColor: '#EFF6FF',
-    padding: scale(14),
-    borderRadius: moderateScale(12),
-    marginBottom: verticalScale(16),
+  heroOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    paddingHorizontal: -scale(10),
+    paddingBottom:
+      Platform.OS === 'ios' ? verticalScale(20) : verticalScale(15),
   },
 
-  infoText: {
-    fontSize: moderateScale(14),
-    color: '#1E3A8A',
-    lineHeight: 20,
+  heroContent: {
+    justifyContent: 'flex-end',
+    marginLeft: scale(20),
+    marginBottom: Platform.OS === 'ios' ? verticalScale(20) : verticalScale(15),
   },
 
   card: {
-    backgroundColor: '#FFFFFF',
-    borderRadius: moderateScale(16),
-    padding: scale(16),
-    marginBottom: verticalScale(16),
-    borderWidth: 1,
-    borderColor: '#E5E7EB',
+    backgroundColor: colors.white,
+    marginTop: Platform.OS === 'ios' ? -verticalScale(40) : -verticalScale(24),
+    marginBottom: Platform.OS === 'ios' ? verticalScale(12) : verticalScale(10),
+    borderRadius: Platform.OS === 'ios' ? moderateScale(15) : moderateScale(20),
+    paddingHorizontal: Platform.OS === 'ios' ? scale(20) : scale(24),
+    paddingTop: Platform.OS === 'ios' ? verticalScale(26) : verticalScale(28),
+    paddingBottom:
+      Platform.OS === 'ios' ? verticalScale(28) : verticalScale(24),
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: Platform.OS === 'ios' ? 6 : 4},
+    shadowOpacity: Platform.OS === 'ios' ? 0.1 : 0.08,
+    shadowRadius: Platform.OS === 'ios' ? moderateScale(14) : moderateScale(12),
+    elevation: Platform.OS === 'ios' ? 0 : 5,
   },
 
-  cardHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: verticalScale(12),
-  },
-
-  cardTitle: {
-    fontSize: moderateScale(16),
-    fontWeight: '600',
-    color: '#111827',
-  },
-
-  status: {
-    paddingHorizontal: scale(10),
-    paddingVertical: verticalScale(4),
-    borderRadius: 20,
-    backgroundColor: '#F3F4F6',
-  },
-
-  statusText: {
-    fontSize: moderateScale(12),
-    color: '#374151',
-  },
-
-  uploadBox: {
-    borderWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: '#CBD5E1',
-    borderRadius: moderateScale(12),
-    alignItems: 'center',
-    paddingVertical: verticalScale(20),
-    paddingHorizontal: scale(12),
-  },
-
-  uploadPreview: {
-    width: '100%',
-    height: verticalScale(160),
-    borderRadius: moderateScale(10),
-    marginBottom: verticalScale(8),
-  },
-
-  uploadIcon: {
+  title: {
     fontSize: moderateScale(26),
-    marginBottom: verticalScale(8),
-  },
-
-  uploadText: {
-    fontSize: moderateScale(15),
-    fontWeight: '600',
-    color: '#111827',
-  },
-
-  uploadSub: {
-    fontSize: moderateScale(13),
-    color: '#6B7280',
-    marginTop: verticalScale(4),
-  },
-
-  sectionTitle: {
-    fontSize: moderateScale(18),
     fontWeight: '700',
     marginBottom: verticalScale(10),
+    color: colors.white,
+  },
+
+  subtitle: {
+    fontSize: moderateScale(14),
+    lineHeight: moderateScale(20),
+    color: colors.onDarkHigh,
+    marginBottom: verticalScale(50),
   },
 
   label: {
-    fontSize: moderateScale(14),
-    fontWeight: '600',
-    marginBottom: verticalScale(6),
-    marginTop: 0,
+    fontSize: moderateScale(16),
+    fontWeight: '500',
+    color: colors.text_dark,
+    marginBottom: verticalScale(10),
+    textAlign: 'left',
+    alignSelf: 'flex-start',
+    width: '100%',
   },
 
   input: {
-    height: verticalScale(48),
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
+    borderWidth: scale(1),
+    borderColor: colors.border_Color,
+    backgroundColor: colors.gray400,
     borderRadius: moderateScale(12),
-    paddingHorizontal: scale(12),
-    fontSize: moderateScale(14),
-  },
-
-  field: {
-    marginBottom: verticalScale(12),
-  },
-
-  row: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    gap: scale(12),
-  },
-
-  fieldHalf: {
-    flex: 1,
-  },
-
-  bottom: {
-    marginTop: verticalScale(20),
-    alignItems: 'center',
-  },
-
-  disabledBtn: {
+    paddingVertical:
+      Platform.OS === 'ios' ? verticalScale(15) : verticalScale(12),
+    paddingHorizontal: scale(16),
+    fontSize: moderateScale(15),
+    marginBottom: verticalScale(16),
+    color: colors.text_dark || '#111827',
+    textAlign: 'left',
     width: '100%',
-    height: verticalScale(52),
-    borderRadius: moderateScale(14),
-    backgroundColor: '#E5E7EB',
-    justifyContent: 'center',
+  },
+
+  disabledInput: {
+    backgroundColor: '#F3F4F6',
+    opacity: 0.7,
+  },
+
+  button: {
+    backgroundColor: colors.button_color,
+    paddingVertical: verticalScale(14),
+    borderRadius: moderateScale(12),
     alignItems: 'center',
-    marginBottom: verticalScale(10),
+    justifyContent: 'center',
   },
 
-  disabledText: {
-    fontSize: moderateScale(16),
-    color: '#9CA3AF',
-    fontWeight: '600',
+  loadingButton: {
+    opacity: 0.7,
   },
 
-  bottomText: {
-    fontSize: moderateScale(13),
-    color: '#6B7280',
+  buttonText: {
+    color: colors.text_color_button || '#fff',
     textAlign: 'center',
+    fontSize: moderateScale(16),
+    fontWeight: '700',
+    letterSpacing: 0.5,
   },
-  reviewHeader: {
-  marginBottom: verticalScale(16),
-},
 
-reviewTitle: {
-  fontSize: moderateScale(22),
-  fontWeight: '700',
-  color: '#111827',
-  marginBottom: verticalScale(6),
-},
+  primaryButton: {
+    backgroundColor: colors.primary,
+    borderRadius: moderateScale(14),
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical:
+      Platform.OS === 'ios' ? verticalScale(16) : verticalScale(14),
+    marginTop: verticalScale(12),
+    shadowColor: colors.primary,
+    shadowOffset: {width: 0, height: 4},
+    shadowOpacity: 0.3,
+    shadowRadius: moderateScale(8),
+    elevation: 5,
+  },
 
-reviewSub: {
-  fontSize: moderateScale(14),
-  color: '#6B7280',
-  lineHeight: 20,
-},
-
-reviewRow: {
-  flexDirection: 'row',
-  alignItems: 'center',
-  marginTop: verticalScale(12),
-},
-
-checkIcon: {
-  fontSize: moderateScale(16),
-  color: '#16A34A',
-  marginRight: scale(10),
-},
-
-reviewText: {
-  fontSize: moderateScale(14),
-  color: '#111827',
-  fontWeight: '500',
-},
-
-timelineRow: {
-  flexDirection: 'row',
-  marginTop: verticalScale(16),
-},
-
-stepCircle: {
-  width: scale(32),
-  height: scale(32),
-  borderRadius: 16,
-  backgroundColor: '#EFF6FF',
-  justifyContent: 'center',
-  alignItems: 'center',
-  marginRight: scale(12),
-},
-
-stepNumber: {
-  fontSize: moderateScale(14),
-  fontWeight: '700',
-  color: '#2563EB',
-},
-
-stepContent: {
-  flex: 1,
-},
-
-stepTitle: {
-  fontSize: moderateScale(15),
-  fontWeight: '600',
-  color: '#111827',
-},
-
-stepDesc: {
-  fontSize: moderateScale(13),
-  color: '#6B7280',
-  marginTop: verticalScale(4),
-},
-
-reviewFooter: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  marginTop: verticalScale(24),
-},
-
-backBtn: {
-  flex: 1,
-  height: verticalScale(52),
-  borderRadius: moderateScale(14),
-  borderWidth: 1,
-  borderColor: '#CBD5E1',
-  justifyContent: 'center',
-  alignItems: 'center',
-  marginRight: scale(10),
-},
-
-backText: {
-  fontSize: moderateScale(15),
-  fontWeight: '600',
-  color: '#374151',
-},
-
-submitBtn: {
-  flex: 1,
-  height: verticalScale(52),
-  borderRadius: moderateScale(14),
-  backgroundColor: '#2563EB',
-  justifyContent: 'center',
-  alignItems: 'center',
-  marginLeft: scale(10),
-},
-
-submitText: {
-  fontSize: moderateScale(15),
-  fontWeight: '600',
-  color: '#FFFFFF',
-},
-
-bottomFixed: {
-  padding: scale(16),
-  borderTopWidth: 1,
-  borderTopColor: '#E5E7EB',
-  backgroundColor: '#FFFFFF',
-},
-
-primaryBtn: {
-  width: '100%',
-  height: verticalScale(52),
-  borderRadius: moderateScale(14),
-  backgroundColor: colors.primary,
-  justifyContent: 'center',
-  alignItems: 'center',
-},
-
-primaryText: {
-  fontSize: moderateScale(16),
-  fontWeight: '600',
-  color: colors.white,
-}
+  primaryButtonText: {
+    color: colors.white,
+    fontSize: moderateScale(16),
+    fontWeight: '700',
+  },
 });
+
+export default styles;
