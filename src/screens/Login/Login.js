@@ -112,7 +112,7 @@ const Login = () => {
               Platform.OS === 'ios' ? 'transparent' : colors.primary
             }
             barStyle="light-content"
-            translucent={true}
+            translucent={Platform.OS === 'ios'}
             hidden={Platform.OS === 'ios'}
           />
           <ScrollView

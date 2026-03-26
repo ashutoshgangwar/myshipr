@@ -36,6 +36,7 @@ const ResetPassword = () => {
   const [email, setEmail] = useState('');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
+  const [otpVerified, setOtpVerified] = useState(false);
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -45,12 +46,15 @@ const ResetPassword = () => {
   const otpRefs = useRef([]);
   const confirmPasswordRef = useRef(null);
   const isSendOtpDisabled = loading || (!email.trim() && !phoneNumber.trim());
-  const isVerifyOtpDisabled = loading || otp.join('').length !== 6;
+  const isVerifyOtpDisabled = loading || otpVerified || otp.join('').length !== 6;
   const isResetPasswordDisabled =
     loading || !newPassword.trim() || !confirmPassword.trim();
 
   const handleOtpChange = (value, index) => {
     if (!/^\d?$/.test(value)) return;
+    if (otpVerified) {
+      setOtpVerified(false);
+    }
     const updated = [...otp];
     updated[index] = value;
     setOtp(updated);
@@ -86,12 +90,14 @@ const ResetPassword = () => {
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
+      setOtpVerified(false);
       setOtp(['', '', '', '', '', '']);
       setStep(2);
     }, 800);
   };
 
   const handleResendOtp = () => {
+    setOtpVerified(false);
     setOtp(['', '', '', '', '', '']);
     Alert.alert('OTP Sent', 'A new OTP has been sent.');
   };
@@ -105,7 +111,11 @@ const ResetPassword = () => {
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
-      setStep(3);
+      setOtpVerified(true);
+      setTimeout(() => {
+        setOtpVerified(false);
+        setStep(3);
+      }, 3000);
     }, 800);
   };
 
@@ -276,23 +286,33 @@ const ResetPassword = () => {
                           keyboardType="number-pad"
                           maxLength={1}
                           style={[styles.otpBox, loading && styles.disabledInput]}
-                          editable={!loading}
+                          editable={!loading && !otpVerified}
                           returnKeyType={index === 5 ? 'done' : 'next'}
                         />
                       ))}
                     </View>
 
-                    <View style={styles.resendRow}>
-                      <AppText style={styles.resendText}>
-                        Didn't receive the verification code?{' '}
-                      </AppText>
-                      <TouchableOpacity
-                        onPress={handleResendOtp}
-                        disabled={loading}
-                        activeOpacity={0.7}>
-                        <AppText style={styles.resendLink}>Resend</AppText>
-                      </TouchableOpacity>
-                    </View>
+                      {otpVerified && (
+                        <View style={styles.otpSuccessContainer}>
+                          <AppText style={styles.otpSuccessText}>
+                            OTP verified successfully
+                          </AppText>
+                        </View>
+                      )}
+
+                    {!otpVerified && (
+                      <View style={styles.resendRow}>
+                        <AppText style={styles.resendText}>
+                          Didn't receive the verification code?{' '}
+                        </AppText>
+                        <TouchableOpacity
+                          onPress={handleResendOtp}
+                          disabled={loading || otpVerified}
+                          activeOpacity={0.7}>
+                          <AppText style={styles.resendLink}>Resend</AppText>
+                        </TouchableOpacity>
+                      </View>
+                    )}
 
                     {loading ? (
                       <View style={[styles.button, styles.loadingButton]}>

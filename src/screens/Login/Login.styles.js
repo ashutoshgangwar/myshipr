@@ -9,7 +9,7 @@ const styles = StyleSheet.create({
 
   safe: {
     flex: 1,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.white,
   },
   container: {
     flexGrow: 1,
@@ -20,7 +20,7 @@ const styles = StyleSheet.create({
   screenShell: {
     width: '100%',
     marginTop: 0,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.white,
   },
 
   heroSection: {
@@ -53,10 +53,11 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     marginTop: Platform.OS === 'ios' ? -verticalScale(40) : -verticalScale(24),
     marginBottom: Platform.OS === 'ios' ? verticalScale(12) : verticalScale(10),
-    borderRadius: Platform.OS === 'ios' ? moderateScale(15) : moderateScale(20),
+    borderTopLeftRadius: Platform.OS === 'ios' ? moderateScale(15) : moderateScale(20),
+    borderTopRightRadius: Platform.OS === 'ios' ? moderateScale(15) : moderateScale(20),
     paddingHorizontal: Platform.OS === 'ios' ? scale(20) : scale(24),
     paddingTop: Platform.OS === 'ios' ? verticalScale(26) : verticalScale(28),
-    paddingBottom: Platform.OS === 'ios' ? verticalScale(28) : verticalScale(24),
+    paddingBottom: Platform.OS === 'ios' ? verticalScale(30) : verticalScale(30),
     shadowColor: '#000',
     shadowOffset: {width: 0, height: Platform.OS === 'ios' ? 6 : 4},
     shadowOpacity: Platform.OS === 'ios' ? 0.1 : 0.08,

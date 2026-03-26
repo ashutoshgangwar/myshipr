@@ -9,7 +9,7 @@ const styles = StyleSheet.create({
 
   safe: {
     flex: 1,
-    backgroundColor: colors.primary,
+    backgroundColor: Platform.OS === 'android' ? colors.primary : colors.white,
   },
   container: {
     flexGrow: 1,
@@ -21,7 +21,7 @@ const styles = StyleSheet.create({
     width: '100%',
     flex: 1,
     marginTop: 0,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.white,
   },
 
   heroSection: {
@@ -56,7 +56,9 @@ const styles = StyleSheet.create({
     flex: 1,
     marginTop: Platform.OS === 'ios' ? -verticalScale(40) : -verticalScale(24),
     marginBottom: Platform.OS === 'ios' ? verticalScale(10) : verticalScale(1),
-    borderRadius: Platform.OS === 'ios' ? moderateScale(15) : moderateScale(20),
+    borderTopLeftRadius: Platform.OS === 'ios' ? moderateScale(15) : moderateScale(20),
+    borderTopRightRadius: Platform.OS === 'ios' ? moderateScale(15) : moderateScale(20),
+    // borderRadius: Platform.OS === 'ios' ? moderateScale(15) : moderateScale(20),
     paddingHorizontal: Platform.OS === 'ios' ? scale(20) : scale(24),
     paddingTop: Platform.OS === 'ios' ? verticalScale(26) : verticalScale(28),
     paddingBottom:
@@ -226,6 +228,23 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: verticalScale(10),
+  },
+
+  otpSuccessContainer: {
+    backgroundColor: colors.success_bg,
+    // borderWidth: 1,
+    // borderColor: colors.success_text,
+    borderRadius: moderateScale(10),
+    paddingVertical: verticalScale(10),
+    paddingHorizontal: scale(12),
+    marginBottom: verticalScale(18),
+  },
+
+  otpSuccessText: {
+    color: colors.success_text,
+    fontSize: moderateScale(13),
+    fontWeight: '600',
+    textAlign: 'center',
   },
 
   otpBox: {
