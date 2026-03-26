@@ -38,6 +38,16 @@ const Onboarding = () => {
   const phoneRegex = /^\d{10,15}$/;
   const websiteRegex = /^(https?:\/\/)?([\w-]+\.)+[\w-]{2,}(\/[^\s]*)?$/i;
   const onlyDigits = value => value.replace(/\D/g, '');
+  const isCompleteProfileDisabled =
+    loading ||
+    !companyName.trim() ||
+    !companyAddress.trim() ||
+    !dotNumber.trim() ||
+    !mcNumber.trim() ||
+    !companyWebsite.trim() ||
+    !phone.trim() ||
+    !companyEmail.trim() ||
+    !insuranceDetails.trim();
 
   const handleLogin = () => {
     if (loading) {
@@ -348,7 +358,7 @@ const Onboarding = () => {
                 textColor={colors.white}
                 style={[styles.primaryButton, styles.footerButton]}
                 textStyle={styles.primaryButtonText}
-                disabled={loading}
+                disabled={isCompleteProfileDisabled}
               />
             )}
           </View>

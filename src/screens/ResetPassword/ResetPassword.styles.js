@@ -330,7 +330,7 @@ const styles = StyleSheet.create({
   },
 
   button: {
-    backgroundColor: colors.button_color,
+    backgroundColor: colors.primary,
     paddingVertical: verticalScale(14),
     borderRadius: moderateScale(12),
     alignItems: 'center',
@@ -342,7 +342,7 @@ const styles = StyleSheet.create({
   },
 
   buttonText: {
-    color: colors.text_color_button || '#fff',
+    color: colors.white,
     textAlign: 'center',
     fontSize: moderateScale(16),
     fontWeight: '700',

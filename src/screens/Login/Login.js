@@ -34,6 +34,8 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const passwordRef = useRef(null);
   const phoneRef = useRef(null);
+  const isLoginDisabled =
+    loading || (!email.trim() && !phone.trim()) || !password.trim();
 
   const toggleShowPassword = () => {
     setShowPassword(prev => !prev);
@@ -243,7 +245,7 @@ const Login = () => {
                 {loading ? (
                   <View style={[styles.button, styles.loadingButton]}>
                     <ActivityIndicator
-                      color={colors.text_color_button || '#fff'}
+                      color={colors.button_color}
                       size="small"
                     />
                   </View>
@@ -253,9 +255,12 @@ const Login = () => {
                     onPress={handleLogin}
                     backgroundColor={colors.primary}
                     textColor={colors.white}
-                    style={styles.primaryButton}
+                    style={[
+                      styles.primaryButton,
+                      isLoginDisabled && styles.disabledButton,
+                    ]}
                     textStyle={styles.primaryButtonText}
-                    disabled={loading}
+                    disabled={isLoginDisabled}
                   />
                 )}
 

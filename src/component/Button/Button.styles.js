@@ -12,6 +12,7 @@ const styles = StyleSheet.create({
   },
 
   iosButton: {
+    paddingVertical: verticalScale(6),
     shadowColor: '#000',
     shadowOffset: {width: 1, height: 3},
     shadowOpacity: 0.08,

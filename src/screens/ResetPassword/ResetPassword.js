@@ -44,6 +44,10 @@ const ResetPassword = () => {
 
   const otpRefs = useRef([]);
   const confirmPasswordRef = useRef(null);
+  const isSendOtpDisabled = loading || (!email.trim() && !phoneNumber.trim());
+  const isVerifyOtpDisabled = loading || otp.join('').length !== 6;
+  const isResetPasswordDisabled =
+    loading || !newPassword.trim() || !confirmPassword.trim();
 
   const handleOtpChange = (value, index) => {
     if (!/^\d?$/.test(value)) return;
@@ -246,8 +250,12 @@ const ResetPassword = () => {
                         onPress={handleSendOtp}
                         backgroundColor={colors.primary}
                         textColor={colors.white}
-                        style={styles.primaryButton}
+                        style={[
+                          styles.primaryButton,
+                          isSendOtpDisabled && styles.disabledButton,
+                        ]}
                         textStyle={styles.primaryButtonText}
+                        disabled={isSendOtpDisabled}
                       />
                     )}
                   </>
@@ -296,8 +304,12 @@ const ResetPassword = () => {
                         onPress={handleVerifyOtp}
                         backgroundColor={colors.primary}
                         textColor={colors.white}
-                        style={styles.primaryButton}
+                        style={[
+                          styles.primaryButton,
+                          isVerifyOtpDisabled && styles.disabledButton,
+                        ]}
                         textStyle={styles.primaryButtonText}
+                        disabled={isVerifyOtpDisabled}
                       />
                     )}
                   </>
@@ -377,8 +389,12 @@ const ResetPassword = () => {
                         onPress={handleResetPassword}
                         backgroundColor={colors.primary}
                         textColor={colors.white}
-                        style={styles.primaryButton}
+                        style={[
+                          styles.primaryButton,
+                          isResetPasswordDisabled && styles.disabledButton,
+                        ]}
                         textStyle={styles.primaryButtonText}
+                        disabled={isResetPasswordDisabled}
                       />
                     )}
                   </>
