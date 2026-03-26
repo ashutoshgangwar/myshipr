@@ -20,7 +20,7 @@ import StatusBar from '../../component/StatusBar/StatusBar';
 import AppText from '../../theme/AppText';
 import {vs} from '../../theme/scale';
 
-const Onboarding= () => {
+const Onboarding = () => {
   const navigation = useNavigation();
   const [companyName, setCompanyName] = useState('');
   const [companyAddress, setCompanyAddress] = useState('');
@@ -112,7 +112,10 @@ const Onboarding= () => {
     }
 
     if (!companyEmailValue || !emailRegex.test(companyEmailValue)) {
-      Alert.alert('Invalid Company Email', 'Please enter a valid company email');
+      Alert.alert(
+        'Invalid Company Email',
+        'Please enter a valid company email',
+      );
       return;
     }
 
@@ -143,7 +146,7 @@ const Onboarding= () => {
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <SafeAreaView
           style={styles.safe}
-          edges={Platform.OS === 'ios' ? ['bottom'] : ['top', 'bottom']}>
+          edges={Platform.OS === 'ios' ? ['bottom'] : ['bottom']}>
           <StatusBar
             backgroundColor={
               Platform.OS === 'ios' ? 'transparent' : colors.primary
@@ -205,8 +208,8 @@ const Onboarding= () => {
                   accessibilityLabel="company address input"
                   editable={!loading}
                 />
-              
-               <AppText style={styles.label}>DOT Number</AppText>
+
+                <AppText style={styles.label}>DOT Number</AppText>
                 <TextInput
                   placeholder="Enter dot number"
                   placeholderTextColor={colors.placeholder || '#9CA3AF'}
@@ -220,7 +223,7 @@ const Onboarding= () => {
                   accessibilityLabel="dot number input"
                   editable={!loading}
                 />
-              
+
                 <AppText style={styles.label}>MC Number</AppText>
                 <TextInput
                   placeholder="Enter mc number"
@@ -236,7 +239,7 @@ const Onboarding= () => {
                   editable={!loading}
                 />
 
-                  <AppText style={styles.label}>Company Website</AppText>
+                <AppText style={styles.label}>Company Website</AppText>
                 <TextInput
                   placeholder="Enter company website"
                   placeholderTextColor={colors.placeholder || '#9CA3AF'}
@@ -251,7 +254,7 @@ const Onboarding= () => {
                   editable={!loading}
                 />
 
-                 <AppText style={styles.label}>Phone Number</AppText>
+                <AppText style={styles.label}>Phone Number</AppText>
                 <TextInput
                   placeholder="Enter phone number"
                   placeholderTextColor={colors.placeholder || '#9CA3AF'}
@@ -266,7 +269,7 @@ const Onboarding= () => {
                   editable={!loading}
                 />
 
-               <AppText style={styles.label}>Alternate Phone Number</AppText>
+                <AppText style={styles.label}>Alternate Phone Number</AppText>
                 <TextInput
                   placeholder="Enter alternate phone number"
                   placeholderTextColor={colors.placeholder || '#9CA3AF'}
@@ -281,7 +284,7 @@ const Onboarding= () => {
                   editable={!loading}
                 />
 
-                 <AppText style={styles.label}>Company Fax Number</AppText>
+                <AppText style={styles.label}>Company Fax Number</AppText>
                 <TextInput
                   placeholder="Enter fax number"
                   placeholderTextColor={colors.placeholder || '#9CA3AF'}
@@ -296,7 +299,7 @@ const Onboarding= () => {
                   editable={!loading}
                 />
 
-                  <AppText style={styles.label}>Company Email</AppText>
+                <AppText style={styles.label}>Company Email</AppText>
                 <TextInput
                   placeholder="Enter company email id"
                   placeholderTextColor={colors.placeholder || '#9CA3AF'}
@@ -311,8 +314,7 @@ const Onboarding= () => {
                   editable={!loading}
                 />
 
-
-                  <AppText style={styles.label}>Insurance Details</AppText>
+                <AppText style={styles.label}>Insurance Details</AppText>
                 <TextInput
                   placeholder="Enter insurance details"
                   placeholderTextColor={colors.placeholder || '#9CA3AF'}
@@ -326,27 +328,30 @@ const Onboarding= () => {
                   accessibilityLabel="insurance details input"
                   editable={!loading}
                 />
-                {loading ? (
-                  <View style={[styles.button, styles.loadingButton]}>
-                    <ActivityIndicator
-                      color={colors.text_color_button || '#fff'}
-                      size="small"
-                    />
-                  </View>
-                ) : (
-                  <Button
-                    title="Complete Profile"
-                    onPress={handleLogin}
-                    backgroundColor={colors.primary}
-                    textColor={colors.white}
-                    style={styles.primaryButton}
-                    textStyle={styles.primaryButtonText}
-                    disabled={loading}
-                  />
-                )}
               </View>
             </View>
           </ScrollView>
+
+          <View style={styles.bottomActionContainer}>
+            {loading ? (
+              <View style={[styles.button, styles.loadingButton]}>
+                <ActivityIndicator
+                  color={colors.text_color_button || '#fff'}
+                  size="small"
+                />
+              </View>
+            ) : (
+              <Button
+                title="Complete Profile"
+                onPress={handleLogin}
+                backgroundColor={colors.primary}
+                textColor={colors.white}
+                style={[styles.primaryButton, styles.footerButton]}
+                textStyle={styles.primaryButtonText}
+                disabled={loading}
+              />
+            )}
+          </View>
         </SafeAreaView>
       </TouchableWithoutFeedback>
     </KeyboardAvoidingView>

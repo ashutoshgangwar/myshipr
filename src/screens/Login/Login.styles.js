@@ -149,7 +149,7 @@ const styles = StyleSheet.create({
     borderColor: colors.border_Color,
     backgroundColor: colors.gray400,
     borderRadius: moderateScale(12),
-    paddingVertical: Platform.OS === 'ios' ? verticalScale(15) : verticalScale(12),
+    paddingVertical: verticalScale(12),
     paddingHorizontal: scale(16),
     fontSize: moderateScale(15),
     marginBottom: verticalScale(16),

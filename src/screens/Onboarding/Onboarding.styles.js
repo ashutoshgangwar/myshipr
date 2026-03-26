@@ -9,18 +9,36 @@ const styles = StyleSheet.create({
 
   safe: {
     flex: 1,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.white,
+  },
+
+  bottomActionContainer: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: colors.white,
+    paddingHorizontal: scale(24),
+    paddingTop: verticalScale(10),
+    paddingBottom:
+      Platform.OS === 'ios' ? verticalScale(18) : verticalScale(14),
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: -2},
+    shadowOpacity: 0.08,
+    shadowRadius: moderateScale(8),
+    elevation: 12,
   },
   container: {
     flexGrow: 1,
     justifyContent: 'flex-start',
-    // paddingBottom: Platform.OS === 'ios' ? verticalScale(20) : verticalScale(14),
+    paddingBottom:
+      Platform.OS === 'ios' ? verticalScale(120) : verticalScale(112),
   },
 
   screenShell: {
     width: '100%',
     marginTop: 0,
-    backgroundColor: colors.primary,
+    backgroundColor: colors.white,
   },
 
   heroSection: {
@@ -48,7 +66,9 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     marginTop: Platform.OS === 'ios' ? -verticalScale(40) : -verticalScale(24),
     marginBottom: Platform.OS === 'ios' ? verticalScale(12) : verticalScale(10),
-    borderRadius: Platform.OS === 'ios' ? moderateScale(15) : moderateScale(20),
+    // borderRadius: Platform.OS === 'ios' ? moderateScale(15) : moderateScale(20),
+    borderTopLeftRadius: 'ios' ? moderateScale(15) : moderateScale(20),
+    borderTopRightRadius: Platform.OS === 'ios' ? moderateScale(15) : moderateScale(20),
     paddingHorizontal: Platform.OS === 'ios' ? scale(20) : scale(24),
     paddingTop: Platform.OS === 'ios' ? verticalScale(26) : verticalScale(28),
     paddingBottom:
@@ -63,7 +83,7 @@ const styles = StyleSheet.create({
   title: {
     fontSize: moderateScale(26),
     fontWeight: '700',
-    marginBottom: verticalScale(10),
+    marginBottom: verticalScale(5),
     color: colors.white,
   },
 
@@ -71,7 +91,7 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(14),
     lineHeight: moderateScale(20),
     color: colors.onDarkHigh,
-    marginBottom: verticalScale(50),
+    marginBottom: verticalScale(60),
   },
 
   label: {
@@ -89,12 +109,11 @@ const styles = StyleSheet.create({
     borderColor: colors.border_Color,
     backgroundColor: colors.gray400,
     borderRadius: moderateScale(12),
-    paddingVertical:
-      Platform.OS === 'ios' ? verticalScale(15) : verticalScale(12),
+    paddingVertical: verticalScale(12),
     paddingHorizontal: scale(16),
     fontSize: moderateScale(15),
     marginBottom: verticalScale(16),
-    color: colors.text_dark || '#111827',
+    color: colors.text_dark,
     textAlign: 'left',
     width: '100%',
   },
@@ -137,6 +156,10 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: moderateScale(8),
     elevation: 5,
+  },
+
+  footerButton: {
+    marginTop: 0,
   },
 
   primaryButtonText: {
