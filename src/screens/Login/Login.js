@@ -79,7 +79,7 @@ const Login = () => {
       // TODO: Replace with real authentication logic
       navigation.reset({
         index: 0,
-        routes: [{name: 'Onboarding'}],
+        routes: [{name: 'MainApp'}],
       });
     }, 1000);
   };
