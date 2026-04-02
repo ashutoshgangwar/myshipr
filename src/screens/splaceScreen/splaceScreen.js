@@ -5,7 +5,6 @@ import {
   TouchableOpacity,
   ScrollView,
   useWindowDimensions,
-  Platform,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import styles from './splaceScreen.styles';
@@ -53,12 +52,21 @@ const SplashScreen = ({navigation}) => {
   };
 
   return (
-    <ScrollView style={{flex: 1}} nestedScrollEnabled>
+    <ScrollView
+      style={{flex: 1, backgroundColor: colors.splashBackground}}
+      contentContainerStyle={{flexGrow: 1, backgroundColor: colors.splashBackground}}
+      nestedScrollEnabled
+      showsVerticalScrollIndicator={false}
+      bounces={false}
+      alwaysBounceVertical={false}
+      overScrollMode="never"
+      contentInsetAdjustmentBehavior="never"
+      endFillColor={colors.splashBackground}>
       <View style={styles.screen}>
         <StatusBar
-          backgroundColor={Platform.OS === 'ios' ? 'transparent' : colors.splashBackground}
+          backgroundColor="transparent"
           barStyle="light-content"
-          translucent={Platform.OS === 'ios'}
+          translucent={true}
         />
 
         <View style={styles.container}>

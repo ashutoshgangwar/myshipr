@@ -5,31 +5,36 @@ import {colors} from '../../theme/colors';
 const styles = StyleSheet.create({
   keyboardAvoiding: {
     flex: 1,
+    backgroundColor: colors.white,
   },
 
   safe: {
     flex: 1,
-    backgroundColor: colors.white,
+    backgroundColor: 'transparent',
   },
   container: {
     flexGrow: 1,
     justifyContent: 'flex-start',
+    minHeight: '100%',
+    backgroundColor: colors.white,
     // paddingBottom: Platform.OS === 'ios' ? verticalScale(20) : verticalScale(14),
   },
 
   screenShell: {
     width: '100%',
+    minHeight: '100%',
+    flexGrow: 1,
     marginTop: 0,
     backgroundColor: colors.white,
   },
 
   heroSection: {
     width: '100%',
-    height: Platform.OS === 'ios' ? verticalScale(260) : verticalScale(215),
+    height: verticalScale(260),
     backgroundColor: colors.primary,
     overflow: 'hidden',
   },
-
+  
   heroBackground: {
     ...StyleSheet.absoluteFillObject,
     width: '100%',
@@ -52,7 +57,7 @@ const styles = StyleSheet.create({
   card: {
     backgroundColor: colors.white,
     marginTop: Platform.OS === 'ios' ? -verticalScale(40) : -verticalScale(24),
-    marginBottom: Platform.OS === 'ios' ? verticalScale(12) : verticalScale(10),
+    marginBottom: 0,
     borderTopLeftRadius: Platform.OS === 'ios' ? moderateScale(15) : moderateScale(20),
     borderTopRightRadius: Platform.OS === 'ios' ? moderateScale(15) : moderateScale(20),
     paddingHorizontal: Platform.OS === 'ios' ? scale(20) : scale(24),
@@ -60,9 +65,9 @@ const styles = StyleSheet.create({
     paddingBottom: Platform.OS === 'ios' ? verticalScale(30) : verticalScale(30),
     shadowColor: '#000',
     shadowOffset: {width: 0, height: Platform.OS === 'ios' ? 6 : 4},
-    shadowOpacity: Platform.OS === 'ios' ? 0.1 : 0.08,
-    shadowRadius: Platform.OS === 'ios' ? moderateScale(14) : moderateScale(12),
-    elevation: Platform.OS === 'ios' ? 0 : 5,
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
   },
 
   title: {
@@ -166,7 +171,7 @@ const styles = StyleSheet.create({
 
   passwordInput: {
     paddingRight: scale(50),
-    marginBottom: verticalScale(12),
+    marginBottom: verticalScale(8),
   },
 
   otpRow: {
@@ -221,7 +226,7 @@ const styles = StyleSheet.create({
 
   forgotPasswordContainer: {
     alignSelf: 'flex-end',
-    marginBottom: verticalScale(5),
+    marginBottom: verticalScale(2),
     paddingVertical: verticalScale(2),
   },
 
@@ -257,7 +262,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: Platform.OS === 'ios' ? verticalScale(16) : verticalScale(14),
-    marginTop: verticalScale(12),
+    marginTop: verticalScale(6),
     shadowColor: colors.primary,
     shadowOffset: {width: 0, height: 4},
     shadowOpacity: 0.3,

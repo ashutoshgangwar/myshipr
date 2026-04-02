@@ -105,20 +105,23 @@ const Login = () => {
       keyboardVerticalOffset={Platform.OS === 'ios' ? vs(6) : 0}>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <SafeAreaView
-          style={styles.safe}
-          edges={Platform.OS === 'ios' ? ['bottom'] : ['top', 'bottom']}>
+          style={[styles.safe, {backgroundColor: colors.white}]}
+          edges={['bottom']}>
           <StatusBar
-            backgroundColor={
-              Platform.OS === 'ios' ? 'transparent' : colors.primary
-            }
+            backgroundColor="transparent"
             barStyle="light-content"
-            translucent={Platform.OS === 'ios'}
-            hidden={Platform.OS === 'ios'}
+            translucent={true}
           />
           <ScrollView
-            contentContainerStyle={styles.container}
+            style={{backgroundColor: colors.white}}
+            contentContainerStyle={[styles.container, {backgroundColor: colors.white}]}
             keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}>
+            showsVerticalScrollIndicator={false}
+            bounces={false}
+            alwaysBounceVertical={false}
+            overScrollMode="never"
+            contentInsetAdjustmentBehavior="never"
+            endFillColor={colors.white}>
             <View style={styles.screenShell}>
               <View style={styles.heroSection}>
                 <Image

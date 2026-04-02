@@ -5,28 +5,32 @@ import {colors} from '../../theme/colors';
 const styles = StyleSheet.create({
   keyboardAvoiding: {
     flex: 1,
+    backgroundColor: colors.white,
   },
 
   safe: {
     flex: 1,
-    backgroundColor: Platform.OS === 'android' ? colors.primary : colors.white,
+    backgroundColor: 'transparent',
   },
   container: {
     flexGrow: 1,
     justifyContent: 'flex-start',
+    minHeight: '100%',
+    backgroundColor: colors.white,
     // paddingBottom: Platform.OS === 'ios' ? verticalScale(20) : verticalScale(14),
   },
 
   screenShell: {
     width: '100%',
-    flex: 1,
+    minHeight: '100%',
+    flexGrow: 1,
     marginTop: 0,
     backgroundColor: colors.white,
   },
 
   heroSection: {
     width: '100%',
-    height: Platform.OS === 'ios' ? verticalScale(260) : verticalScale(215),
+    height: verticalScale(260),
     backgroundColor: colors.primary,
     overflow: 'hidden',
   },
@@ -55,7 +59,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.white,
     flex: 1,
     marginTop: Platform.OS === 'ios' ? -verticalScale(40) : -verticalScale(24),
-    marginBottom: Platform.OS === 'ios' ? verticalScale(10) : verticalScale(1),
+    marginBottom: 0,
     borderTopLeftRadius: Platform.OS === 'ios' ? moderateScale(15) : moderateScale(20),
     borderTopRightRadius: Platform.OS === 'ios' ? moderateScale(15) : moderateScale(20),
     // borderRadius: Platform.OS === 'ios' ? moderateScale(15) : moderateScale(20),
@@ -65,9 +69,9 @@ const styles = StyleSheet.create({
       Platform.OS === 'ios' ? verticalScale(28) : verticalScale(24),
     shadowColor: '#000',
     shadowOffset: {width: 0, height: Platform.OS === 'ios' ? 6 : 4},
-    shadowOpacity: Platform.OS === 'ios' ? 0.1 : 0.08,
-    shadowRadius: Platform.OS === 'ios' ? moderateScale(14) : moderateScale(12),
-    elevation: Platform.OS === 'ios' ? 0 : 5,
+    shadowOpacity: 0,
+    shadowRadius: 0,
+    elevation: 0,
   },
 
   title: {

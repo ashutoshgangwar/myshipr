@@ -12,7 +12,7 @@ import {
   TouchableWithoutFeedback,
 } from 'react-native';
 import React, {useState, useRef} from 'react';
-import {scale, verticalScale, moderateScale} from 'react-native-size-matters';
+import {moderateScale} from 'react-native-size-matters';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import styles from './Signup.styles';
@@ -199,20 +199,23 @@ const Signup = () => {
       keyboardVerticalOffset={Platform.OS === 'ios' ? vs(6) : 0}>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <SafeAreaView
-          style={styles.safe}
-          edges={Platform.OS === 'ios' ? ['bottom'] : ['top', 'bottom']}>
+          style={[styles.safe, {backgroundColor: colors.white}]}
+          edges={['bottom']}>
           <StatusBar
-            backgroundColor={
-              Platform.OS === 'ios' ? 'transparent' : colors.primary
-            }
+            backgroundColor="transparent"
             barStyle="light-content"
             translucent={true}
-            hidden={Platform.OS === 'ios'}
           />
           <ScrollView
-            contentContainerStyle={styles.container}
+            style={{backgroundColor: colors.white}}
+            contentContainerStyle={[styles.container, {backgroundColor: colors.white}]}
             keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}>
+            showsVerticalScrollIndicator={false}
+            bounces={false}
+            alwaysBounceVertical={false}
+            overScrollMode="never"
+            contentInsetAdjustmentBehavior="never"
+            endFillColor={colors.white}>
             <View style={styles.screenShell}>
               <View style={styles.heroSection}>
                 <Image

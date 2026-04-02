@@ -159,20 +159,24 @@ const ResetPassword = () => {
       keyboardVerticalOffset={Platform.OS === 'ios' ? vs(6) : 0}>
       <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
         <SafeAreaView
-          style={styles.safe}
-          edges={Platform.OS === 'ios' ? ['bottom'] : ['top', 'bottom']}>
+          style={[styles.safe, {backgroundColor: colors.white}]}
+          edges={['bottom']}>
           <StatusBar
-            backgroundColor={
-              Platform.OS === 'ios' ? 'transparent' : colors.primary
-            }
+            backgroundColor="transparent"
             barStyle="light-content"
             translucent={true}
-            hidden={Platform.OS === 'ios'}
           />
           <ScrollView
-            contentContainerStyle={styles.container}
+            style={{backgroundColor: colors.white}}
+            contentContainerStyle={[styles.container, {backgroundColor: colors.white}]}
             keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}>
+            showsVerticalScrollIndicator={false}
+            bounces={Platform.OS === 'ios'}
+            alwaysBounceVertical={Platform.OS === 'ios'}
+            overScrollMode={Platform.OS === 'android' ? 'never' : 'auto'}
+            contentInsetAdjustmentBehavior="never"
+            endFillColor={colors.white}
+            decelerationRate={Platform.OS === 'ios' ? 'normal' : 'fast'}>
             <View style={styles.screenShell}>
               <View style={styles.heroSection}>
                 <Image
