@@ -7,6 +7,7 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import publicIP from 'react-native-public-ip';
 import styles from './splaceScreen.styles';
 import AppText from '../../theme/AppText';
 import {colors} from '../../theme/colors';
@@ -50,6 +51,16 @@ const SplashScreen = ({navigation}) => {
   const handleSignupPress = () => {
     navigation.navigate('SignupScreen');
   };
+  
+  // To fetch the public IP address
+(async () => {
+  try {
+    const ip = await publicIP();
+    console.log('ip:', ip);
+  } catch (error) {
+    console.log(error);
+  }
+})();
 
   return (
     <ScrollView
