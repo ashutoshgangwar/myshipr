@@ -128,7 +128,6 @@ const SplashScreen = ({navigation}) => {
             <AppText style={styles.subtitle}>
               Stay updated every step of the way with live shipment tracking.
             </AppText>
-
             <Button
               title="Login"
               onPress={handleLoginPress}
