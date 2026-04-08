@@ -158,14 +158,14 @@ progressFill: {
 
   mapFullscreenOverlay: {
     ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(15, 23, 42, 0.35)',
+    backgroundColor: '#fff',
     zIndex: 50,
-    padding: moderateScale(10),
+    padding: 0,
   },
 
   mapFullscreenCard: {
     flex: 1,
-    borderRadius: moderateScale(16),
+    borderRadius: 0,
     overflow: 'hidden',
     backgroundColor: '#fff',
   },

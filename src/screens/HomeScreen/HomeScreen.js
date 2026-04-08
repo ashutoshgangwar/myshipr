@@ -300,14 +300,7 @@ const HomeScreen = () => {
       </ScrollView>
 
       {isMapExpanded && (
-        <View
-          style={[
-            styles.mapFullscreenOverlay,
-            {
-              paddingTop: fullscreenTopPadding,
-              paddingBottom: fullscreenBottomPadding,
-            },
-          ]}>
+        <View style={styles.mapFullscreenOverlay}>
           {renderMapSection(styles.mapFullscreenCard, true)}
         </View>
       )}
