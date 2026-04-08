@@ -9,12 +9,7 @@ import NavigationScreen from '../screens/NavigationScreen/NavigationScreen';
 import DeliveryConfirmation from '../screens/DeliveryConfirmationScreen/DeliveryConfirmation';
 import AvailableLoadsScreen from '../screens/AvailableLoadsScreen/AvailableLoadsScreen';
 import PlaceBidScreen from '../screens/PlaceBidScreen/PlaceBidScreen';
-import CdlDriverOnboarding from '../screens/DriverOnboarding/CdlDriverOnboarding/CdlDriverOnboarding';
-import ForgotPassword from '../screens/ForgotPassword/ForgotPassword';
 import ResetPassword from '../screens/ResetPassword/ResetPassword';
-import CreateAccount from '../screens/CreateAccount/CreateAccount';
-import VerifyPhone from '../screens/VarifyPhone/VarifyPhone';
-import WelcomeHome from '../screens/WelcomeHome/WelcomeHome';
 import Onboarding from '../screens/Onboarding/Onboarding';
 import Signup from '../screens/Signup/Signup';
 
@@ -34,11 +29,7 @@ export default function AppStackMain() {
       {/* Auth */}
       <Stack.Screen name="LoginScreen" component={Login} />
       <Stack.Screen name="SignupScreen" component={Signup} />
-      <Stack.Screen name="ForgotPassword" component={ForgotPassword} />
       <Stack.Screen name="ResetPassword" component={ResetPassword} />
-      <Stack.Screen name="CreateAccount" component={CreateAccount} />
-      <Stack.Screen name="VerifyPhone" component={VerifyPhone} />
-      <Stack.Screen name="WelcomeHome" component={WelcomeHome} />
       <Stack.Screen name="Onboarding" component={Onboarding} />
 
       {/* Main App with Bottom Tabs */}
@@ -50,7 +41,6 @@ export default function AppStackMain() {
       <Stack.Screen name="DeliveryConfirmation" component={DeliveryConfirmation} />
       <Stack.Screen name="AvailableLoadsScreen" component={AvailableLoadsScreen} />
       <Stack.Screen name="PlaceBidScreen" component={PlaceBidScreen} />
-      <Stack.Screen name="CdlDriverOnboarding" component={CdlDriverOnboarding} />
     </Stack.Navigator>
   );
 }

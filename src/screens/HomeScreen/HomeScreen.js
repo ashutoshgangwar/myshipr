@@ -114,24 +114,6 @@ const HomeScreen = () => {
     navigation.navigate('NavigationScreen');
   };
 
-  const openAvailableLoads = () => {
-    navigation.navigate('AvailableLoadsScreen');
-  };
-
-  const openPlaceBid = () => {
-    navigation.navigate('PlaceBidScreen', {
-      load: {
-        id: 'SH-301',
-        route: 'Dallas, TX → Houston, TX',
-        estimatedPay: '$650',
-      },
-    });
-  };
-
-  const openPendingLoads = () => {
-    navigation.navigate('LoadsTab', {initialTab: 'pending'});
-  };
-
   useEffect(() => {
     let mounted = true;
 
