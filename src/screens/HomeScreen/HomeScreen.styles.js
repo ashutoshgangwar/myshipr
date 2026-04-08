@@ -148,6 +148,132 @@ progressFill: {
     padding: moderateScale(5)
   },
 
+  mapCard: {
+    margin: moderateScale(10),
+    borderRadius: moderateScale(16),
+    overflow: 'hidden',
+    height: verticalScale(220),
+    backgroundColor: '#fff',
+  },
+
+  mapFullscreenOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(15, 23, 42, 0.35)',
+    zIndex: 50,
+    padding: moderateScale(10),
+  },
+
+  mapFullscreenCard: {
+    flex: 1,
+    borderRadius: moderateScale(16),
+    overflow: 'hidden',
+    backgroundColor: '#fff',
+  },
+
+  mainMap: {
+    ...StyleSheet.absoluteFillObject,
+  },
+
+  mapToggleBtn: {
+    position: 'absolute',
+    top: moderateScale(10),
+    right: moderateScale(10),
+    width: moderateScale(34),
+    height: moderateScale(34),
+    borderRadius: moderateScale(17),
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    shadowOffset: {width: 0, height: 2},
+  },
+
+  mapLocationBtn: {
+    position: 'absolute',
+    right: moderateScale(10),
+    bottom: moderateScale(14),
+    width: moderateScale(36),
+    height: moderateScale(36),
+    borderRadius: moderateScale(18),
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#FFFFFF',
+    elevation: 4,
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    shadowOffset: {width: 0, height: 2},
+  },
+
+  mapExpandedHeader: {
+    position: 'absolute',
+    top: moderateScale(12),
+    left: moderateScale(12),
+    right: moderateScale(56),
+    backgroundColor: 'rgba(15, 23, 42, 0.72)',
+    borderRadius: moderateScale(12),
+    paddingHorizontal: moderateScale(12),
+    paddingVertical: verticalScale(8),
+  },
+
+  mapExpandedTitle: {
+    color: '#fff',
+    fontSize: moderateScale(14),
+    fontWeight: '700',
+  },
+
+  mapExpandedHint: {
+    color: '#E2E8F0',
+    fontSize: moderateScale(11),
+    marginTop: verticalScale(2),
+  },
+
+  miniMapContainer: {
+    position: 'absolute',
+    width: moderateScale(110),
+    height: moderateScale(110),
+    borderRadius: moderateScale(12),
+    overflow: 'hidden',
+    borderWidth: 2,
+    borderColor: '#fff',
+    elevation: 8,
+    shadowColor: '#000',
+    shadowOpacity: 0.26,
+    shadowRadius: 8,
+    shadowOffset: {width: 0, height: 3},
+  },
+
+  miniMap: {
+    flex: 1,
+  },
+
+  currentMarkerContainer: {
+    width: moderateScale(28),
+    height: moderateScale(28),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  currentMarkerOuter: {
+    position: 'absolute',
+    width: moderateScale(28),
+    height: moderateScale(28),
+    borderRadius: moderateScale(14),
+    backgroundColor: 'rgba(37, 99, 235, 0.28)',
+  },
+
+  currentMarkerInner: {
+    width: moderateScale(15),
+    height: moderateScale(15),
+    borderRadius: moderateScale(7.5),
+    backgroundColor: '#2563EB',
+    borderWidth: 1.5,
+    borderColor: '#FFFFFF',
+  },
+
   /* Cards */
   loadCard: {
     backgroundColor: '#fff',

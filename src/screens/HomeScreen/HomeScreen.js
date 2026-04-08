@@ -1,50 +1,79 @@
-import React, {useState} from 'react';
+import React, {useEffect, useRef, useState} from 'react';
 import {
+  Animated,
+  PanResponder,
+  Platform,
   View,
   Text,
   SafeAreaView,
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import MapView, {Marker} from 'react-native-maps';
 import styles from './HomeScreen.styles';
 import StatusBar from '../../component/StatusBar/StatusBar';
 import {colors} from '../../theme/colors';
 import {useNavigation} from '@react-navigation/native';
 import SOS_Icon from './../../assets/svg_icon/sos.svg';
+import Double_Arrow_Icon from './../../assets/svg_icon/arrow-double.svg';
+import Gps_Icon from './../../assets/svg_icon/gps-svg.svg';
 import Mechanic_call_Icon from './../../assets/svg_icon/mechanic_call.svg';
 import AppText from '../../theme/AppText';
+import {getCurrentLocation} from '../../services/LocationService';
 
-const LIVE_AUCTIONS = [
-  {
-    id: 'SH-401',
-    type: 'Auto Parts',
-    weight: '14,200 lbs',
-    from: 'Chicago, IL',
-    to: 'Detroit, MI',
-    currentBid: '$720',
-    endsIn: '1h 42m',
-    totalBids: 5,
-    estimatedPay: '$720',
-    route: 'Chicago, IL → Detroit, MI',
-  },
-  {
-    id: 'SH-402',
-    type: 'Electronics',
-    weight: '9,800 lbs',
-    from: 'Atlanta, GA',
-    to: 'Nashville, TN',
-    currentBid: '$480',
-    endsIn: '2h 15m',
-    totalBids: 3,
-    estimatedPay: '$480',
-    route: 'Atlanta, GA → Nashville, TN',
-  },
-];
+const INITIAL_REGION = {
+  latitude: 28.6139,
+  longitude: 77.209,
+  latitudeDelta: 0.08,
+  longitudeDelta: 0.08,
+};
+
+const MINI_REGION = {
+  latitude: 28.6139,
+  longitude: 77.209,
+  latitudeDelta: 0.02,
+  longitudeDelta: 0.02,
+};
+
+const FULLSCREEN_REGION = {
+  latitude: 28.6139,
+  longitude: 77.209,
+  latitudeDelta: 0.045,
+  longitudeDelta: 0.045,
+};
 
 const HomeScreen = () => {
+  const isAndroid = Platform.OS === 'android';
+  const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const [loading, setLoading] = useState(false);
   const [isVerified, setIsVerified] = useState(true);
+  const [isMapExpanded, setIsMapExpanded] = useState(false);
+  const [currentLocation, setCurrentLocation] = useState(null);
+  const mapCardRef = useRef(null);
+  const mapFullRef = useRef(null);
+  const miniMapPan = React.useRef(new Animated.ValueXY({x: 12, y: 12})).current;
+
+  const miniMapResponder = React.useRef(
+    PanResponder.create({
+      onMoveShouldSetPanResponder: () => true,
+      onPanResponderGrant: () => {
+        miniMapPan.setOffset({
+          x: miniMapPan.x.__getValue(),
+          y: miniMapPan.y.__getValue(),
+        });
+        miniMapPan.setValue({x: 0, y: 0});
+      },
+      onPanResponderMove: Animated.event(
+        [null, {dx: miniMapPan.x, dy: miniMapPan.y}],
+        {useNativeDriver: false},
+      ),
+      onPanResponderRelease: () => {
+        miniMapPan.flattenOffset();
+      },
+    }),
+  ).current;
 
   const handlePendingVerification = () => {
     if (loading || isVerified) return;
@@ -74,6 +103,112 @@ const HomeScreen = () => {
     navigation.navigate('LoadsTab', {initialTab: 'pending'});
   };
 
+  useEffect(() => {
+    let mounted = true;
+
+    const fetchDeviceLocation = async () => {
+      try {
+        const position = await getCurrentLocation();
+        if (!mounted) return;
+        setCurrentLocation({
+          latitude: position.latitude,
+          longitude: position.longitude,
+          latitudeDelta: 0.01,
+          longitudeDelta: 0.01,
+        });
+      } catch (error) {
+        console.log('Unable to fetch current location:', error?.message || error);
+      }
+    };
+
+    fetchDeviceLocation();
+
+    return () => {
+      mounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!currentLocation) return;
+    mapCardRef.current?.animateToRegion(currentLocation, 800);
+    if (isMapExpanded) {
+      mapFullRef.current?.animateToRegion(currentLocation, 800);
+    }
+  }, [currentLocation, isMapExpanded]);
+
+  const fullscreenTopPadding = Math.max(
+    insets.top + 8,
+    Platform.OS === 'android' ? 16 : 10,
+  );
+
+  const fullscreenBottomPadding = Math.max(insets.bottom + 10, 12);
+
+  const centerOnCurrentLocation = async isExpandedView => {
+    try {
+      const position = await getCurrentLocation();
+      const nextRegion = {
+        latitude: position.latitude,
+        longitude: position.longitude,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      };
+      setCurrentLocation(nextRegion);
+      const activeMapRef = isExpandedView ? mapFullRef.current : mapCardRef.current;
+      activeMapRef?.animateToRegion(nextRegion, 700);
+    } catch (error) {
+      console.log('Unable to center on current location:', error?.message || error);
+    }
+  };
+
+  const renderMapSection = (containerStyle, isExpandedView = false) => (
+    <View style={containerStyle}>
+      <MapView
+        ref={isExpandedView ? mapFullRef : mapCardRef}
+        style={styles.mainMap}
+        initialRegion={isExpandedView ? FULLSCREEN_REGION : INITIAL_REGION}>
+        {currentLocation && (
+          <Marker
+            coordinate={currentLocation}
+            title="Current Location"
+            anchor={{x: 0.5, y: 0.5}}
+            tracksViewChanges={isAndroid}>
+            <View style={styles.currentMarkerContainer} collapsable={false}>
+              <View style={styles.currentMarkerOuter} />
+              <View style={styles.currentMarkerInner} />
+            </View>
+          </Marker>
+        )}
+      </MapView>
+
+      {isExpandedView && (
+        <View style={[styles.mapExpandedHeader, {top: fullscreenTopPadding}]}>
+          <AppText style={styles.mapExpandedTitle}>Live Tracking Map</AppText>
+          <AppText style={styles.mapExpandedHint}>
+            Tap the icon again to return normal size
+          </AppText>
+        </View>
+      )}
+
+      <TouchableOpacity
+        style={[
+          styles.mapToggleBtn,
+          isExpandedView && {top: fullscreenTopPadding},
+        ]}
+        onPress={() => setIsMapExpanded(!isExpandedView)}>
+        <Double_Arrow_Icon width={18} height={18} />
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[
+          styles.mapLocationBtn,
+          isExpandedView && {bottom: fullscreenBottomPadding + 18},
+        ]}
+        onPress={() => centerOnCurrentLocation(isExpandedView)}>
+        <Gps_Icon width={20} height={20} />
+      </TouchableOpacity>
+    </View>
+  );
+
   return (
     <SafeAreaView style={styles.safe}>
       <StatusBar
@@ -97,18 +232,11 @@ const HomeScreen = () => {
           </TouchableOpacity>
         </View>
 
-        {/* LIVE AUCTIONS */}
+        {/* LIVE MAP */}
         <View style={styles.sectionRow}>
-          <AppText style={styles.sectionTitle}>Live Auctions</AppText>
+          <AppText style={styles.sectionTitle}>Live Map</AppText>
         </View>
-        <View style={styles.auctionCard}>
-          {LIVE_AUCTIONS.map(auction => (
-            <AuctionNotifCard key={auction.id} auction={auction} />
-          ))}
-          <TouchableOpacity onPress={openPendingLoads}>
-            <AppText style={styles.seeAll}>See All</AppText>
-          </TouchableOpacity>
-        </View>
+        {renderMapSection(styles.mapCard, false)}
 
         {/* STATS */}
         <View style={styles.statsCard}>
@@ -170,6 +298,19 @@ const HomeScreen = () => {
           </View>
         </View>
       </ScrollView>
+
+      {isMapExpanded && (
+        <View
+          style={[
+            styles.mapFullscreenOverlay,
+            {
+              paddingTop: fullscreenTopPadding,
+              paddingBottom: fullscreenBottomPadding,
+            },
+          ]}>
+          {renderMapSection(styles.mapFullscreenCard, true)}
+        </View>
+      )}
     </SafeAreaView>
   );
 };
@@ -195,26 +336,6 @@ const Location = ({color, city, info}) => (
     <View>
       <AppText style={styles.city}>{city}</AppText>
       <AppText style={styles.info}>{info}</AppText>
-    </View>
-  </View>
-);
-
-const AuctionNotifCard = ({auction}) => (
-  <View style={styles.auctionNotifCard}>
-    <View style={styles.auctionNotifLeft}>
-      <View style={styles.liveBadge}>
-        <AppText style={styles.badgeText}>🟢 LIVE</AppText>
-      </View>
-      <View style={styles.auctionNotifInfo}>
-        <AppText style={styles.auctionNotifId}>Load #{auction.id}</AppText>
-        <AppText style={styles.auctionNotifRoute}>
-          {auction.from} → {auction.to}
-        </AppText>
-      </View>
-    </View>
-    <View style={styles.auctionTimerBox}>
-      <AppText style={styles.auctionTimerLabel}>⏱ Ends in</AppText>
-      <AppText style={styles.auctionTimerValue}>{auction.endsIn}</AppText>
     </View>
   </View>
 );

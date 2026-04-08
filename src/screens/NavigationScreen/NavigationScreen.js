@@ -1,5 +1,7 @@
 import React, {useState, useEffect, useRef} from 'react';
 import {
+  Animated,
+  Easing,
   View,
   SafeAreaView,
   Keyboard,
@@ -29,6 +31,7 @@ import {
 } from '../../component/Navigation_components';
 
 const NavigationScreen = () => {
+  const isAndroid = Platform.OS === 'android';
   const [currentLocation, setCurrentLocation] = useState({
     latitude: 37.78825,
     longitude: -122.4324,
@@ -59,6 +62,53 @@ const NavigationScreen = () => {
 
   const sourceAutocompleteRef = useRef(null);
   const destinationAutocompleteRef = useRef(null);
+  const markerPulse = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (isAndroid) {
+      markerPulse.setValue(0);
+      return;
+    }
+
+    const useNativeDriver = false;
+    const pulseDuration = 1200;
+
+    const markerPulseLoop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(markerPulse, {
+          toValue: 1,
+          duration: pulseDuration,
+          easing: Easing.out(Easing.quad),
+          useNativeDriver,
+        }),
+        Animated.timing(markerPulse, {
+          toValue: 0,
+          duration: pulseDuration,
+          easing: Easing.in(Easing.quad),
+          useNativeDriver,
+        }),
+      ]),
+    );
+
+    markerPulseLoop.start();
+
+    return () => markerPulseLoop.stop();
+  }, [isAndroid, markerPulse]);
+
+  const pulseScale = markerPulse.interpolate({
+    inputRange: [0, 1],
+    outputRange: [28, 44],
+  });
+
+  const pulseRadius = markerPulse.interpolate({
+    inputRange: [0, 1],
+    outputRange: [14, 22],
+  });
+
+  const pulseOpacity = markerPulse.interpolate({
+    inputRange: [0, 1],
+    outputRange: [0.45, 0.1],
+  });
 
   useEffect(() => {
     let watcher;
@@ -436,10 +486,28 @@ const NavigationScreen = () => {
               <Marker
                 coordinate={currentLocation}
                 title="You are here"
+                anchor={{x: 0.5, y: 0.5}}
                 onPress={setCurrentAsSource}
-                tracksViewChanges={false}>
-                <View style={styles.markerGlow}>
-                  <View style={styles.markerInner} />
+                tracksViewChanges={!isAndroid}>
+                <View style={styles.currentLocationMarker}>
+                  {isAndroid ? (
+                    <View
+                      style={[styles.currentLocationMarkerPulse, {opacity: 0.28}]}
+                    />
+                  ) : (
+                    <Animated.View
+                      style={[
+                        styles.currentLocationMarkerPulse,
+                        {
+                          width: pulseScale,
+                          height: pulseScale,
+                          borderRadius: pulseRadius,
+                          opacity: pulseOpacity,
+                        },
+                      ]}
+                    />
+                  )}
+                  <View style={styles.currentLocationMarkerInner} />
                 </View>
               </Marker>
             )}
