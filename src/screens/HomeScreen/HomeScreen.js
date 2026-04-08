@@ -23,10 +23,10 @@ import AppText from '../../theme/AppText';
 import {getCurrentLocation} from '../../services/LocationService';
 
 const INITIAL_REGION = {
-  latitude: 28.6139,
-  longitude: 77.209,
-  latitudeDelta: 0.08,
-  longitudeDelta: 0.08,
+  latitude: 27.55,
+  longitude: 78.35,
+  latitudeDelta: 6,
+  longitudeDelta: 6,
 };
 
 const MINI_REGION = {
@@ -42,6 +42,33 @@ const FULLSCREEN_REGION = {
   latitudeDelta: 0.045,
   longitudeDelta: 0.045,
 };
+
+const UPCOMING_STOPS = [
+  {
+    id: 'pickup',
+    type: 'pickup',
+    label: 'Pickup',
+    place: 'Delhi, IN',
+    coordinate: {latitude: 28.6139, longitude: 77.209},
+    dateTime: '08 Apr • 10:30 AM IST',
+  },
+  {
+    id: 'service',
+    type: 'service',
+    label: 'Service',
+    place: 'Jaipur, IN',
+    coordinate: {latitude: 26.9124, longitude: 75.7873},
+    dateTime: '08 Apr • 01:45 PM IST',
+  },
+  {
+    id: 'delivery',
+    type: 'delivery',
+    label: 'Delivery',
+    place: 'Lucknow, IN',
+    coordinate: {latitude: 26.8467, longitude: 80.9462},
+    dateTime: '08 Apr • 06:15 PM IST',
+  },
+];
 
 const HomeScreen = () => {
   const isAndroid = Platform.OS === 'android';
@@ -130,7 +157,22 @@ const HomeScreen = () => {
 
   useEffect(() => {
     if (!currentLocation) return;
-    mapCardRef.current?.animateToRegion(currentLocation, 800);
+
+    if (!isMapExpanded) {
+      const overviewCoordinates = [
+        ...UPCOMING_STOPS.map(stop => stop.coordinate),
+        {latitude: currentLocation.latitude, longitude: currentLocation.longitude},
+      ];
+
+      requestAnimationFrame(() => {
+        mapCardRef.current?.fitToCoordinates(overviewCoordinates, {
+          edgePadding: {top: 50, right: 50, bottom: 50, left: 50},
+          animated: true,
+        });
+      });
+      return;
+    }
+
     if (isMapExpanded) {
       mapFullRef.current?.animateToRegion(currentLocation, 800);
     }
@@ -166,6 +208,37 @@ const HomeScreen = () => {
         ref={isExpandedView ? mapFullRef : mapCardRef}
         style={styles.mainMap}
         initialRegion={isExpandedView ? FULLSCREEN_REGION : INITIAL_REGION}>
+        {UPCOMING_STOPS.map(stop => (
+          <Marker
+            key={stop.id}
+            coordinate={stop.coordinate}
+            title={`${stop.label} • ${stop.place}`}
+            description={stop.dateTime}
+            anchor={{x: 0.5, y: 1}}
+            tracksViewChanges={false}>
+            <View style={styles.stopMarkerWrap} collapsable={false}>
+              <View
+                style={[
+                  styles.stopMarkerBadge,
+                  stop.type === 'pickup' && styles.stopMarkerPickup,
+                  stop.type === 'service' && styles.stopMarkerService,
+                  stop.type === 'delivery' && styles.stopMarkerDelivery,
+                ]}>
+                <AppText style={styles.stopMarkerLabel}>{stop.label}</AppText>
+                <AppText style={styles.stopMarkerDate}>{stop.dateTime}</AppText>
+              </View>
+              <View
+                style={[
+                  styles.stopMarkerPin,
+                  stop.type === 'pickup' && styles.stopMarkerPinPickup,
+                  stop.type === 'service' && styles.stopMarkerPinService,
+                  stop.type === 'delivery' && styles.stopMarkerPinDelivery,
+                ]}
+              />
+            </View>
+          </Marker>
+        ))}
+
         {currentLocation && (
           <Marker
             coordinate={currentLocation}
@@ -264,11 +337,11 @@ const HomeScreen = () => {
 
           <Location
             color="#22C55E"
-            city="Los Angeles, CA"
+            city="Delhi, IN"
             info="Picked up 4 hours ago"
           />
 
-          <Location color="#EF4444" city="Phoenix, AZ" info="ETA: 2 hours" />
+          <Location color="#EF4444" city="Lucknow, IN" info="ETA: 2 hours" />
 
           <View style={styles.progressContainer}>
             {/* Header */}

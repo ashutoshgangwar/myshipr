@@ -274,6 +274,72 @@ progressFill: {
     borderColor: '#FFFFFF',
   },
 
+  stopMarkerWrap: {
+    alignItems: 'center',
+  },
+
+  stopMarkerBadge: {
+    minWidth: moderateScale(118),
+    paddingHorizontal: moderateScale(8),
+    paddingVertical: verticalScale(5),
+    borderRadius: moderateScale(10),
+    backgroundColor: '#111827',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    shadowOffset: {width: 0, height: 2},
+    elevation: 3,
+  },
+
+  stopMarkerPickup: {
+    backgroundColor: '#16A34A',
+  },
+
+  stopMarkerService: {
+    backgroundColor: '#F59E0B',
+  },
+
+  stopMarkerDelivery: {
+    backgroundColor: '#DC2626',
+  },
+
+  stopMarkerLabel: {
+    color: '#FFFFFF',
+    fontSize: moderateScale(11),
+    fontWeight: '700',
+  },
+
+  stopMarkerDate: {
+    color: '#FFFFFF',
+    fontSize: moderateScale(10),
+    marginTop: verticalScale(1),
+    opacity: 0.95,
+    fontWeight: '600',
+  },
+
+  stopMarkerPin: {
+    width: moderateScale(10),
+    height: moderateScale(10),
+    borderRadius: moderateScale(5),
+    marginTop: verticalScale(3),
+    backgroundColor: '#111827',
+    borderWidth: 1,
+    borderColor: '#FFFFFF',
+  },
+
+  stopMarkerPinPickup: {
+    backgroundColor: '#16A34A',
+  },
+
+  stopMarkerPinService: {
+    backgroundColor: '#F59E0B',
+  },
+
+  stopMarkerPinDelivery: {
+    backgroundColor: '#DC2626',
+  },
+
   /* Cards */
   loadCard: {
     backgroundColor: '#fff',
