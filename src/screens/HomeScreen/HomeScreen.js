@@ -80,6 +80,7 @@ const HomeScreen = () => {
   const [currentLocation, setCurrentLocation] = useState(null);
   const mapCardRef = useRef(null);
   const mapFullRef = useRef(null);
+  const skipNextOverviewFitRef = useRef(false);
   const miniMapPan = React.useRef(new Animated.ValueXY({x: 12, y: 12})).current;
 
   const miniMapResponder = React.useRef(
@@ -159,6 +160,11 @@ const HomeScreen = () => {
     if (!currentLocation) return;
 
     if (!isMapExpanded) {
+      if (skipNextOverviewFitRef.current) {
+        skipNextOverviewFitRef.current = false;
+        return;
+      }
+
       const overviewCoordinates = [
         ...UPCOMING_STOPS.map(stop => stop.coordinate),
         {latitude: currentLocation.latitude, longitude: currentLocation.longitude},
@@ -191,9 +197,14 @@ const HomeScreen = () => {
       const nextRegion = {
         latitude: position.latitude,
         longitude: position.longitude,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
+        latitudeDelta: 0.004,
+        longitudeDelta: 0.004,
       };
+
+      if (!isExpandedView) {
+        skipNextOverviewFitRef.current = true;
+      }
+
       setCurrentLocation(nextRegion);
       const activeMapRef = isExpandedView ? mapFullRef.current : mapCardRef.current;
       activeMapRef?.animateToRegion(nextRegion, 700);
