@@ -77,6 +77,7 @@ const HomeScreen = () => {
   const [loading, setLoading] = useState(false);
   const [isVerified, setIsVerified] = useState(true);
   const [isMapExpanded, setIsMapExpanded] = useState(false);
+  const [isJobStarted, setIsJobStarted] = useState(false);
   const [currentLocation, setCurrentLocation] = useState(null);
   const mapCardRef = useRef(null);
   const mapFullRef = useRef(null);
@@ -213,6 +214,10 @@ const HomeScreen = () => {
     }
   };
 
+  const toggleJobStatus = () => {
+    setIsJobStarted(prev => !prev);
+  };
+
   const renderMapSection = (containerStyle, isExpandedView = false) => (
     <View style={containerStyle}>
       <MapView
@@ -315,14 +320,7 @@ const HomeScreen = () => {
             <SOS_Icon width={30} height={30} />
           </TouchableOpacity>
         </View>
-
-        {/* LIVE MAP */}
-        <View style={styles.sectionRow}>
-          <AppText style={styles.sectionTitle}>Live Map</AppText>
-        </View>
-        {renderMapSection(styles.mapCard, false)}
-
-        {/* STATS */}
+    {/* STATS */}
         <View style={styles.statsCard}>
           <StatItem title="Active Loads" value="12" color="#2563EB" />
           <Divider />
@@ -330,9 +328,29 @@ const HomeScreen = () => {
           <Divider />
           <StatItem title="HOS Left" value="42h" color="#EA580C" />
         </View>
+        {/* LIVE MAP */}
+        <View style={styles.sectionRow}>
+          <AppText style={styles.sectionTitle}>Live Map</AppText>
+        </View>
+        {renderMapSection(styles.mapCard, false)}
+        <View style={styles.mapHintRow}>
+         <TouchableOpacity
+            style={[
+              styles.currentLoadJobBtn,
+              isJobStarted && styles.currentLoadJobBtnStop,
+            ]}
+            onPress={toggleJobStatus}
+            activeOpacity={0.9}>
+            <AppText style={styles.currentLoadJobBtnText}>
+              {isJobStarted ? 'Stop Job' : 'Start Job'}
+            </AppText>
+          </TouchableOpacity>
+        </View>
 
         {/* CURRENT LOAD */}
-        <AppText style={styles.sectionTitle}>Current Load</AppText>
+        <View style={styles.currentLoadHeaderRow}>
+          <AppText style={styles.currentLoadTitle}>Current Load</AppText>
+        </View>
 
         <View style={styles.loadCard}>
           <View style={styles.loadHeader}>
@@ -373,11 +391,7 @@ const HomeScreen = () => {
 
           <View style={styles.actionRow}>
             <TouchableOpacity onPress={openMap} style={styles.primaryBtn}>
-              <AppText style={styles.primaryBtnText}>View Map</AppText>
-            </TouchableOpacity>
-
-            <TouchableOpacity style={styles.secondaryBtn}>
-              <AppText style={styles.secondaryBtnText}>Update Status</AppText>
+              <AppText style={styles.primaryBtnText}>Navigation</AppText>
             </TouchableOpacity>
           </View>
         </View>

@@ -1,5 +1,5 @@
 import { StyleSheet } from 'react-native';
-import { moderateScale, scale, verticalScale } from 'react-native-size-matters';
+import { moderateScale, verticalScale } from 'react-native-size-matters';
 import { colors } from '../../theme/colors';
 
 export default StyleSheet.create({
@@ -206,6 +206,50 @@ progressFill: {
     shadowOpacity: 0.2,
     shadowRadius: 4,
     shadowOffset: {width: 0, height: 2},
+  },
+
+  mapHintRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginHorizontal: moderateScale(16),
+    marginTop: verticalScale(8),
+    marginBottom: verticalScale(2),
+  },
+
+  currentLoadHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginHorizontal: moderateScale(16),
+    marginTop: verticalScale(10),
+  },
+
+  currentLoadTitle: {
+    fontSize: moderateScale(20),
+    fontWeight: '700',
+  },
+
+  currentLoadJobBtn: {
+    backgroundColor: '#16A34A',
+    borderRadius: moderateScale(999),
+    paddingHorizontal: moderateScale(18),
+    paddingVertical: verticalScale(18),
+    marginBottom: verticalScale(10),
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOpacity: 0.18,
+    shadowRadius: 4,
+    shadowOffset: {width: 0, height: 2},
+  },
+
+  currentLoadJobBtnStop: {
+    backgroundColor: '#DC2626',
+  },
+
+  currentLoadJobBtnText: {
+    color: '#fff',
+    fontSize: moderateScale(20),
+    fontWeight: '700',
   },
 
   mapExpandedHeader: {
@@ -460,23 +504,6 @@ progressBarFill: {
     fontWeight: '700',
   },
 
-  secondaryBtn: {
-    flex: 1,
-    borderWidth: 1,
-    borderColor: '#CBD5E1',
-    borderRadius: moderateScale(12),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  secondaryBtnText: {
-    color: '#334155',
-    fontWeight: '600',
-  },
-
-  route: {
-    marginTop: verticalScale(6),
-  },
 
   payRow: {
     flexDirection: 'row',
