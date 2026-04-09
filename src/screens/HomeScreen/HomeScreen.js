@@ -1,6 +1,7 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {
   Animated,
+  Image,
   PanResponder,
   Platform,
   View,
@@ -8,19 +9,24 @@ import {
   SafeAreaView,
   ScrollView,
   TouchableOpacity,
+  
 } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
+import {useFocusEffect, useNavigation} from '@react-navigation/native';
 import MapView, {Marker} from 'react-native-maps';
 import styles from './HomeScreen.styles';
 import StatusBar from '../../component/StatusBar/StatusBar';
 import {colors} from '../../theme/colors';
-import {useNavigation} from '@react-navigation/native';
 import SOS_Icon from './../../assets/svg_icon/sos.svg';
 import Double_Arrow_Icon from './../../assets/svg_icon/arrow-double.svg';
 import Gps_Icon from './../../assets/svg_icon/gps-svg.svg';
 import Mechanic_call_Icon from './../../assets/svg_icon/mechanic_call.svg';
 import AppText from '../../theme/AppText';
 import {getCurrentLocation} from '../../services/LocationService';
+import ReceiverSignaturePad, {
+  SIGNATURE_STORAGE_KEY,
+} from '../../component/ReceiverSignaturePad/ReceiverSignaturePad';
 
 const INITIAL_REGION = {
   latitude: 27.55,
@@ -78,7 +84,9 @@ const HomeScreen = () => {
   const [isVerified, setIsVerified] = useState(true);
   const [isMapExpanded, setIsMapExpanded] = useState(false);
   const [isJobStarted, setIsJobStarted] = useState(false);
+  const [isSignaturePadVisible, setIsSignaturePadVisible] = useState(false);
   const [currentLocation, setCurrentLocation] = useState(null);
+  const [receiverSignature, setReceiverSignature] = useState(null);
   const mapCardRef = useRef(null);
   const mapFullRef = useRef(null);
   const skipNextOverviewFitRef = useRef(false);
@@ -114,6 +122,27 @@ const HomeScreen = () => {
     navigation.navigate('NavigationScreen');
   };
 
+  const openSignatureCapture = () => {
+    setIsSignaturePadVisible(true);
+  };
+
+  const closeSignatureCapture = () => {
+    setIsSignaturePadVisible(false);
+  };
+
+  const loadSavedSignature = async () => {
+    try {
+      const storedSignature = await AsyncStorage.getItem(SIGNATURE_STORAGE_KEY);
+      setReceiverSignature(storedSignature ? JSON.parse(storedSignature) : null);
+    } catch (error) {
+      console.log('Unable to load saved signature:', error?.message || error);
+    }
+  };
+
+  const handleSignatureSaved = signaturePayload => {
+    setReceiverSignature(signaturePayload);
+  };
+
   useEffect(() => {
     let mounted = true;
 
@@ -138,6 +167,12 @@ const HomeScreen = () => {
       mounted = false;
     };
   }, []);
+
+  useFocusEffect(
+    React.useCallback(() => {
+      loadSavedSignature();
+    }, []),
+  );
 
   useEffect(() => {
     if (!currentLocation) return;
@@ -329,6 +364,39 @@ const HomeScreen = () => {
           </TouchableOpacity>
         </View>
 
+        <View style={styles.signatureSectionHeader}>
+          <AppText style={styles.currentLoadTitle}>Receiver Signature</AppText>
+        </View>
+
+        <View style={styles.signatureCard}>
+          <View style={styles.signatureInfoRow}>
+            <View style={styles.signatureTextWrap}>
+              <AppText style={styles.signatureStatusTitle}>
+                {receiverSignature ? 'Signature captured' : 'Signature pending'}
+              </AppText>
+              <AppText style={styles.signatureStatusSubtitle}>
+                {receiverSignature
+                  ? `${receiverSignature.receiverName} • ${new Date(receiverSignature.capturedAt).toLocaleString()}`
+                  : 'Collect the receiving person’s signature before delivery handoff.'}
+              </AppText>
+            </View>
+
+            <TouchableOpacity style={styles.signatureActionBtn} onPress={openSignatureCapture}>
+              <AppText style={styles.signatureActionBtnText}>
+                {receiverSignature ? 'Retake' : 'Take Signature'}
+              </AppText>
+            </TouchableOpacity>
+          </View>
+
+          {receiverSignature?.signature ? (
+            <Image
+              source={{uri: receiverSignature.signature}}
+              style={styles.signaturePreview}
+              resizeMode="contain"
+            />
+          ) : null}
+        </View>
+
         {/* CURRENT LOAD */}
         <View style={styles.currentLoadHeaderRow}>
           <AppText style={styles.currentLoadTitle}>Current Load</AppText>
@@ -384,6 +452,14 @@ const HomeScreen = () => {
           {renderMapSection(styles.mapFullscreenCard, true)}
         </View>
       )}
+
+      <ReceiverSignaturePad
+        visible={isSignaturePadVisible}
+        useModal
+        onClose={closeSignatureCapture}
+        onSaved={handleSignatureSaved}
+        initialValue={receiverSignature}
+      />
     </SafeAreaView>
   );
 };

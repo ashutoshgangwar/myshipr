@@ -224,9 +224,67 @@ progressFill: {
     marginTop: verticalScale(10),
   },
 
+  signatureSectionHeader: {
+    marginHorizontal: moderateScale(16),
+    marginTop: verticalScale(12),
+  },
+
   currentLoadTitle: {
     fontSize: moderateScale(20),
     fontWeight: '700',
+  },
+
+  signatureCard: {
+    backgroundColor: '#FFFFFF',
+    marginHorizontal: moderateScale(10),
+    marginTop: verticalScale(10),
+    borderRadius: moderateScale(16),
+    padding: moderateScale(16),
+  },
+
+  signatureInfoRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  signatureTextWrap: {
+    flex: 1,
+    paddingRight: moderateScale(12),
+  },
+
+  signatureStatusTitle: {
+    fontSize: moderateScale(16),
+    fontWeight: '700',
+    color: '#0F172A',
+  },
+
+  signatureStatusSubtitle: {
+    marginTop: verticalScale(4),
+    color: '#64748B',
+    fontSize: moderateScale(13),
+    lineHeight: moderateScale(18),
+  },
+
+  signatureActionBtn: {
+    backgroundColor: colors.primary,
+    borderRadius: moderateScale(12),
+    paddingHorizontal: moderateScale(14),
+    paddingVertical: verticalScale(12),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  signatureActionBtnText: {
+    color: '#FFFFFF',
+    fontWeight: '700',
+  },
+
+  signaturePreview: {
+    width: '100%',
+    height: verticalScale(120),
+    marginTop: verticalScale(14),
+    borderRadius: moderateScale(12),
+    backgroundColor: '#F8FAFC',
   },
 
   currentLoadJobBtn: {

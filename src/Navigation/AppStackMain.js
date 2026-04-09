@@ -12,6 +12,7 @@ import PlaceBidScreen from '../screens/PlaceBidScreen/PlaceBidScreen';
 import ResetPassword from '../screens/ResetPassword/ResetPassword';
 import Onboarding from '../screens/Onboarding/Onboarding';
 import Signup from '../screens/Signup/Signup';
+import SignatureCaptureScreen from '../screens/SignatureCaptureScreen/SignatureCaptureScreen';
 
 
 
@@ -41,6 +42,7 @@ export default function AppStackMain() {
       <Stack.Screen name="DeliveryConfirmation" component={DeliveryConfirmation} />
       <Stack.Screen name="AvailableLoadsScreen" component={AvailableLoadsScreen} />
       <Stack.Screen name="PlaceBidScreen" component={PlaceBidScreen} />
+      <Stack.Screen name="SignatureCaptureScreen" component={SignatureCaptureScreen} />
     </Stack.Navigator>
   );
 }
