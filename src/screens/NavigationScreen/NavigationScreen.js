@@ -19,6 +19,8 @@ import {
   watchCurrentLocation,
   clearWatchLocation,
 } from '../../services/LocationService';
+import {useDispatch, useSelector} from 'react-redux';
+import {selectLocation, setLocation} from '../../redux/slices/locationSlice';
 import {GOOGLE_MAPS_API_KEY} from '@env';
 
 import {
@@ -32,14 +34,31 @@ import {
 
 const NavigationScreen = () => {
   const isAndroid = Platform.OS === 'android';
+  const dispatch = useDispatch();
+  const cachedLocation = useSelector(selectLocation);
+  const hasCachedLocation =
+    Number.isFinite(cachedLocation?.latitude) &&
+    Number.isFinite(cachedLocation?.longitude);
+
+  const initialCurrentLocation = hasCachedLocation
+    ? {
+        latitude: cachedLocation.latitude,
+        longitude: cachedLocation.longitude,
+        latitudeDelta: 0.05,
+        longitudeDelta: 0.05,
+      }
+    : {
+        latitude: 37.78825,
+        longitude: -122.4324,
+        latitudeDelta: 0.0922,
+        longitudeDelta: 0.0421,
+      };
+
   const [currentLocation, setCurrentLocation] = useState({
-    latitude: 37.78825,
-    longitude: -122.4324,
-    latitudeDelta: 0.0922,
-    longitudeDelta: 0.0421,
+    ...initialCurrentLocation,
   });
-  const [loading, setLoading] = useState(true);
-  const [hasLocation, setHasLocation] = useState(false);
+  const [loading, setLoading] = useState(!hasCachedLocation);
+  const [hasLocation, setHasLocation] = useState(hasCachedLocation);
   const [source, setSource] = useState(null);
   const [destination, setDestination] = useState(null);
   const [directions, setDirections] = useState([]);
@@ -114,15 +133,33 @@ const NavigationScreen = () => {
     let watcher;
     const startWatching = async () => {
       try {
-        const initialLocation = await getCurrentLocation();
-        setCurrentLocation({
-          latitude: initialLocation.latitude,
-          longitude: initialLocation.longitude,
-          latitudeDelta: 0.05,
-          longitudeDelta: 0.05,
-        });
-        setHasLocation(true);
-        setLoading(false);
+        if (hasCachedLocation) {
+          setCurrentLocation({
+            latitude: cachedLocation.latitude,
+            longitude: cachedLocation.longitude,
+            latitudeDelta: 0.05,
+            longitudeDelta: 0.05,
+          });
+          setHasLocation(true);
+          setLoading(false);
+        } else {
+          const initialLocation = await getCurrentLocation();
+          setCurrentLocation({
+            latitude: initialLocation.latitude,
+            longitude: initialLocation.longitude,
+            latitudeDelta: 0.05,
+            longitudeDelta: 0.05,
+          });
+          dispatch(
+            setLocation({
+              latitude: initialLocation.latitude,
+              longitude: initialLocation.longitude,
+            }),
+          );
+          setHasLocation(true);
+          setLoading(false);
+        }
+
         watcher = await watchCurrentLocation(
           position => {
             const {latitude, longitude} = position.coords;
@@ -132,6 +169,7 @@ const NavigationScreen = () => {
               latitudeDelta: 0.05,
               longitudeDelta: 0.05,
             });
+            dispatch(setLocation({latitude, longitude}));
             setHasLocation(true);
           },
           error => {
@@ -429,7 +467,18 @@ const NavigationScreen = () => {
         longitudeDelta: 0.01,
       });
     }
-  }, [currentLocation, navigationStarted]);
+  }, [currentLocation, navigationStarted, followUser]);
+
+  useEffect(() => {
+    if (!hasLocation || navigationStarted || !followUser) return;
+
+    setMapRegion({
+      latitude: currentLocation.latitude,
+      longitude: currentLocation.longitude,
+      latitudeDelta: 0.01,
+      longitudeDelta: 0.01,
+    });
+  }, [currentLocation, hasLocation, navigationStarted, followUser]);
 
   const navigateToDestination = async () => {
     const startLocation = source || {
@@ -484,32 +533,16 @@ const NavigationScreen = () => {
             onTouchStart={() => setFollowUser(false)}>
             {hasLocation && !navigationStarted && (
               <Marker
-                coordinate={currentLocation}
+                coordinate={{
+                  latitude: currentLocation.latitude,
+                  longitude: currentLocation.longitude,
+                }}
                 title="You are here"
-                anchor={{x: 0.5, y: 0.5}}
+                description="Current Location"
+                pinColor="#2563EB"
                 onPress={setCurrentAsSource}
-                tracksViewChanges={!isAndroid}>
-                <View style={styles.currentLocationMarker}>
-                  {isAndroid ? (
-                    <View
-                      style={[styles.currentLocationMarkerPulse, {opacity: 0.28}]}
-                    />
-                  ) : (
-                    <Animated.View
-                      style={[
-                        styles.currentLocationMarkerPulse,
-                        {
-                          width: pulseScale,
-                          height: pulseScale,
-                          borderRadius: pulseRadius,
-                          opacity: pulseOpacity,
-                        },
-                      ]}
-                    />
-                  )}
-                  <View style={styles.currentLocationMarkerInner} />
-                </View>
-              </Marker>
+                tracksViewChanges={false}
+              />
             )}
 
             {navigationStarted && (

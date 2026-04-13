@@ -14,6 +14,7 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
+import {useDispatch} from 'react-redux';
 import MapView, {Marker} from 'react-native-maps';
 import styles from './HomeScreen.styles';
 import StatusBar from '../../component/StatusBar/StatusBar';
@@ -24,6 +25,7 @@ import Gps_Icon from './../../assets/svg_icon/gps-svg.svg';
 import Mechanic_call_Icon from './../../assets/svg_icon/mechanic_call.svg';
 import AppText from '../../theme/AppText';
 import {getCurrentLocation} from '../../services/LocationService';
+import {setLocation} from '../../redux/slices/locationSlice';
 import ReceiverSignaturePad, {
   SIGNATURE_STORAGE_KEY,
 } from '../../component/ReceiverSignaturePad/ReceiverSignaturePad';
@@ -80,6 +82,7 @@ const HomeScreen = () => {
   const isAndroid = Platform.OS === 'android';
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
+  const dispatch = useDispatch();
   const [loading, setLoading] = useState(false);
   const [isVerified, setIsVerified] = useState(true);
   const [isMapExpanded, setIsMapExpanded] = useState(false);
@@ -150,12 +153,19 @@ const HomeScreen = () => {
       try {
         const position = await getCurrentLocation();
         if (!mounted) return;
-        setCurrentLocation({
+        const nextLocation = {
           latitude: position.latitude,
           longitude: position.longitude,
           latitudeDelta: 0.01,
           longitudeDelta: 0.01,
-        });
+        };
+        setCurrentLocation(nextLocation);
+        dispatch(
+          setLocation({
+            latitude: nextLocation.latitude,
+            longitude: nextLocation.longitude,
+          }),
+        );
       } catch (error) {
         console.log('Unable to fetch current location:', error?.message || error);
       }
@@ -224,6 +234,12 @@ const HomeScreen = () => {
       }
 
       setCurrentLocation(nextRegion);
+      dispatch(
+        setLocation({
+          latitude: nextRegion.latitude,
+          longitude: nextRegion.longitude,
+        }),
+      );
       const activeMapRef = isExpandedView ? mapFullRef.current : mapCardRef.current;
       activeMapRef?.animateToRegion(nextRegion, 700);
     } catch (error) {
