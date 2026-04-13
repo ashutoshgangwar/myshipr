@@ -107,19 +107,12 @@ export default StyleSheet.create({
     backgroundColor: '#FFFFFF',
   },
 
-  helperRow: {
-    marginTop: verticalScale(10),
-  },
-
-  helperText: {
-    color: '#64748B',
-    fontSize: moderateScale(12),
-  },
 
   buttonRow: {
     flexDirection: 'row',
     gap: moderateScale(12),
-    marginTop: verticalScale(18),
+    marginTop: verticalScale(10),
+
   },
 
   secondaryButton: {

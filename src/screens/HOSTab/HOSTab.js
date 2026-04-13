@@ -16,7 +16,7 @@ const HOSTab = () => {
     <SafeAreaView style={styles.safe}>
        <StatusBar
             backgroundColor={colors.primary}
-            barStyle="dark-content"
+            barStyle="light-content"
             translucent={false}
           />
       <ScrollView showsVerticalScrollIndicator={false}>

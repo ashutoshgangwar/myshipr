@@ -160,14 +160,10 @@ const ReceiverSignaturePad = ({
           />
         </View>
 
-        <View style={styles.helperRow}>
-          <AppText style={styles.helperText}>
-            Use clear if the signature needs to be redrawn.
-          </AppText>
-        </View>
-
         <View style={styles.buttonRow}>
-          <TouchableOpacity style={styles.secondaryButton} onPress={handleClear}>
+          <TouchableOpacity
+            style={[styles.secondaryButton, styles.buttonSpacingRight]}
+            onPress={handleClear}>
             <AppText style={styles.secondaryButtonText}>Clear Pad</AppText>
           </TouchableOpacity>
           <TouchableOpacity

@@ -31,6 +31,8 @@ import {
   GPSButton,
   LoadingOverlay,
 } from '../../component/Navigation_components';
+import StatusBar from '../../component/StatusBar/StatusBar';
+import { colors } from '../../theme/colors';
 
 const NavigationScreen = () => {
   const isAndroid = Platform.OS === 'android';
@@ -515,6 +517,11 @@ const NavigationScreen = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+       <StatusBar
+        backgroundColor={colors.primary}
+        barStyle="light-content"
+        translucent={false}
+      />
       <TouchableWithoutFeedback
         onPress={() => {
           setActiveInput(null);

@@ -68,7 +68,7 @@ const PlaceBidScreen = ({ navigation, route }) => {
     <SafeAreaView style={styles.container}>
        <StatusBar
         backgroundColor={colors.primary}
-        barStyle="dark-content"
+        barStyle="light-content"
         translucent={false}
       />
       <CoinsAnimation isActive={showCoinsAnimation} amount={parseFloat(amount) || 0} />

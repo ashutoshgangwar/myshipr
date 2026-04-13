@@ -152,7 +152,7 @@ const LoadsTab = ({ navigation, route }) => {
       <SafeAreaView style={styles.safe}>
           <StatusBar
             backgroundColor={colors.primary}
-            barStyle="dark-content"
+            barStyle="light-content"
             translucent={false}
           />
     <View style={styles.container}>
