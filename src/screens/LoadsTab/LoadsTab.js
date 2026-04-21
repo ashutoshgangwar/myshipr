@@ -141,6 +141,15 @@ const LoadsTab = ({ navigation, route }) => {
           </TouchableOpacity>
         )}
 
+        {item.status === 'active' && (
+          <TouchableOpacity
+            style={styles.trackButton}
+            onPress={() => navigation.navigate('DeliveryConfirmation', { load: item })}
+          >
+            <AppText style={styles.trackText}>Confirm</AppText>
+          </TouchableOpacity>
+        )}
+
         {item.status === 'completed' && (
           <AppText style={styles.completedText}>Completed</AppText>
         )}
