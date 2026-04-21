@@ -129,16 +129,22 @@ export default StyleSheet.create({
   infoRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'flex-start',
     marginBottom: verticalScale(10),
   },
   infoLabel: {
     fontSize: moderateScale(12),
     color: '#64748B',
+    marginRight: scale(8),
   },
   infoValue: {
     fontSize: moderateScale(12),
     fontWeight: '700',
     color: '#0F172A',
+    flex: 1,
+    flexWrap: 'wrap',
+    includeFontPadding: false,
+    textAlign: 'right',
   },
   podUpload: {
     marginTop: verticalScale(16),

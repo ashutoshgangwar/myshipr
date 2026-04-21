@@ -18,6 +18,7 @@ import { openCamera, openGallery } from '../../services/MediaService';
 // Use the shared ReceiverSignaturePad used on HomeScreen
 import ReceiverSignaturePad, { SIGNATURE_STORAGE_KEY } from '../../component/ReceiverSignaturePad/ReceiverSignaturePad';
 import { getCurrentLocation } from '../../services/LocationService';
+import { GOOGLE_MAPS_API_KEY } from '@env';
 import DeliveryService from '../../services/DeliveryService';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import StatusBar from '../../component/StatusBar/StatusBar';
@@ -39,6 +40,10 @@ const DeliveryConfirmation = () => {
   const [photo, setPhoto] = useState(null);
   const [signatureData, setSignatureData] = useState(null);
   const [isReceiverPadVisible, setIsReceiverPadVisible] = useState(false);
+  const [capturedAt, setCapturedAt] = useState(null);
+  const [locationCoords, setLocationCoords] = useState(null);
+  const [locationAddress, setLocationAddress] = useState(null);
+  const [locationLoading, setLocationLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   // sigRef removed: using ReceiverSignaturePad component
 
@@ -63,6 +68,39 @@ const DeliveryConfirmation = () => {
     return () => { mounted = false; };
   }, []);
 
+  // Auto-capture timestamp and GPS on mount
+  React.useEffect(() => {
+    let mounted = true;
+    const capture = async () => {
+      setLocationLoading(true);
+      try {
+        const pos = await getCurrentLocation();
+        if (!mounted) return;
+        setLocationCoords({ latitude: pos.latitude, longitude: pos.longitude, accuracy: pos.accuracy });
+        setCapturedAt(new Date().toISOString());
+        setChecked(c => ({ ...c, location: true }));
+        // reverse geocode
+        try {
+          const geoRes = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${pos.latitude},${pos.longitude}&key=${GOOGLE_MAPS_API_KEY}`);
+          const geoJson = await geoRes.json();
+          if (geoJson?.results && geoJson.results.length) {
+            setLocationAddress(geoJson.results[0].formatted_address);
+          }
+        } catch (e) {
+          console.warn('Reverse geocode failed', e?.message || e);
+        }
+      } catch (e) {
+        console.warn('Auto-capture location failed', e?.message || e);
+        setCapturedAt(new Date().toISOString());
+      } finally {
+        if (mounted) setLocationLoading(false);
+      }
+    };
+
+    capture();
+    return () => { mounted = false; };
+  }, []);
+
   const allChecked = Object.values(checked).every(Boolean);
 
   const toggleCheck = key => setChecked(prev => ({...prev, [key]: !prev[key]}));
@@ -72,21 +110,48 @@ const DeliveryConfirmation = () => {
       { text: 'Camera', onPress: async () => {
           const asset = await openCamera();
           if (asset?.uri) {
-            setPhoto(asset.uri);
-            setChecked(c => ({...c, photos: true}));
+            await handlePhotoChosen(asset.uri);
           }
         }
       },
       { text: 'Gallery', onPress: async () => {
           const asset = await openGallery();
           if (asset?.uri) {
-            setPhoto(asset.uri);
-            setChecked(c => ({...c, photos: true}));
+            await handlePhotoChosen(asset.uri);
           }
         }
       },
       { text: 'Cancel', style: 'cancel' },
     ]);
+  };
+
+  // handle actions that should occur immediately after a photo is chosen/taken
+  const handlePhotoChosen = async (uri) => {
+    setPhoto(uri);
+    setChecked(c => ({...c, photos: true}));
+
+    setLocationLoading(true);
+    try {
+      const pos = await getCurrentLocation();
+      setLocationCoords({ latitude: pos.latitude, longitude: pos.longitude, accuracy: pos.accuracy });
+      setCapturedAt(new Date().toISOString());
+      setChecked(c => ({ ...c, location: true }));
+
+      // reverse geocode
+      try {
+        const geoRes = await fetch(`https://maps.googleapis.com/maps/api/geocode/json?latlng=${pos.latitude},${pos.longitude}&key=${GOOGLE_MAPS_API_KEY}`);
+        const geoJson = await geoRes.json();
+        if (geoJson?.results && geoJson.results.length) {
+          setLocationAddress(geoJson.results[0].formatted_address);
+        }
+      } catch (e) {
+        console.warn('Reverse geocode after photo failed', e?.message || e);
+      }
+    } catch (e) {
+      console.warn('Location capture after photo failed', e?.message || e);
+    } finally {
+      setLocationLoading(false);
+    }
   };
 
 
@@ -154,18 +219,18 @@ const DeliveryConfirmation = () => {
             </View>
 
           {/* Issues */}
-          <View style={styles.issueRow}>
+          {/* <View style={styles.issueRow}>
             <IssueToggle label="Partial Delivery" />
             <IssueToggle label="Damaged Cargo" danger />
-          </View>
+          </View> */}
         </View>
 
         {/* POD */}
         <View style={styles.card}>
           <AppText style={styles.cardTitle}>Digital Proof of Delivery</AppText>
 
-          <InfoRow label="Timestamp" value="Auto captured" />
-          <InfoRow label="Location" value="GPS locked" />
+          <InfoRow label="Timestamp" value={capturedAt ? new Date(capturedAt).toLocaleString() : (locationLoading ? 'Capturing...' : 'Not captured')} />
+          <InfoRow label="Location" value={locationAddress ? locationAddress : (locationCoords ? `${locationCoords.latitude.toFixed(5)}, ${locationCoords.longitude.toFixed(5)}` : (locationLoading ? 'Capturing...' : 'Unavailable'))} />
 
           <TouchableOpacity
             style={[styles.podUpload, signatureData && styles.podUploadAttached]}
@@ -257,16 +322,16 @@ const UploadBox = ({label, value, onPress}) => (
   </TouchableOpacity>
 );
 
-const IssueToggle = ({label, danger, onPress}) => (
-  <TouchableOpacity style={[styles.issueBox, danger && styles.issueDanger]} onPress={onPress}>
-    <AppText style={styles.issueText}>{label}</AppText>
-  </TouchableOpacity>
-);
+// const IssueToggle = ({label, danger, onPress}) => (
+//   <TouchableOpacity style={[styles.issueBox, danger && styles.issueDanger]} onPress={onPress}>
+//     <AppText style={styles.issueText}>{label}</AppText>
+//   </TouchableOpacity>
+// );
 
 const InfoRow = ({label, value}) => (
   <View style={styles.infoRow}>
     <AppText style={styles.infoLabel}>{label}</AppText>
-    <AppText style={styles.infoValue}>{value}</AppText>
+    <AppText style={styles.infoValue} numberOfLines={2} ellipsizeMode={'tail'}>{value}</AppText>
   </View>
 );
 
