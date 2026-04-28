@@ -217,12 +217,6 @@ const DeliveryConfirmation = () => {
             <View style={styles.uploadRow}>
               <UploadBox  value={photo} onPress={choosePhoto} />
             </View>
-
-          {/* Issues */}
-          {/* <View style={styles.issueRow}>
-            <IssueToggle label="Partial Delivery" />
-            <IssueToggle label="Damaged Cargo" danger />
-          </View> */}
         </View>
 
         {/* POD */}

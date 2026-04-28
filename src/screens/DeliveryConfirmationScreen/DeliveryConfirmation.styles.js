@@ -1,5 +1,6 @@
 import { Platform, StyleSheet } from 'react-native';
 import { moderateScale, verticalScale, scale } from 'react-native-size-matters';
+import { colors } from '../../theme/colors';
 
 export default StyleSheet.create({
   container: {

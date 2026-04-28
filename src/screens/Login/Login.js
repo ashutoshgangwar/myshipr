@@ -11,7 +11,8 @@ import {
   Keyboard,
   TouchableWithoutFeedback,
 } from 'react-native';
-import React, {useState, useRef} from 'react';
+
+import DeviceInfo from 'react-native-device-info';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import styles from './Login.styles';
@@ -24,8 +25,11 @@ import TruckIcon from '../../assets/svg_icon/Frame.svg';
 import StatusBar from '../../component/StatusBar/StatusBar';
 import AppText from '../../theme/AppText';
 import {ms, vs} from '../../theme/scale';
+import React, { useState, useRef } from 'react';
 
 const Login = () => {
+  const [deviceId, setDeviceId] = useState('');
+  const [deviceName, setDeviceName] = useState('');
   const navigation = useNavigation();
   const [email, setEmail] = useState('');
   const [phone, setPhone] = useState('');
@@ -36,6 +40,36 @@ const Login = () => {
   const phoneRef = useRef(null);
   const isLoginDisabled =
     loading || (!email.trim() && !phone.trim()) || !password.trim();
+
+
+    console.log('device name', deviceName);
+    console.log('device id', deviceId);
+
+
+    
+    
+  
+  // Fetch device info only once on mount
+  React.useEffect(() => {
+    let mounted = true;
+    const fetchDeviceInfo = async () => {
+      try {
+        const id = await DeviceInfo.getBrand();
+        const name = await DeviceInfo.getDeviceName();
+        if (mounted) {
+          setDeviceId(id);
+          setDeviceName(name);
+        }
+      } catch (e) {
+        if (mounted) {
+          setDeviceId('Unavailable');
+          setDeviceName('Unavailable');
+        }
+      }
+    };
+    fetchDeviceInfo();
+    return () => { mounted = false; };
+  }, []);
 
   const toggleShowPassword = () => {
     setShowPassword(prev => !prev);

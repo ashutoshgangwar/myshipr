@@ -25,7 +25,7 @@
     "react": "18.3.1",
     "react-native": "0.77.0",
     "react-native-compressor": "^1.16.0",
-    "react-native-device-info": "^15.0.1",
+    "react-native-device-info": "^15.0.2",
     "react-native-dotenv": "^3.4.11",
     "react-native-gesture-handler": "^2.18.0",
     "react-native-google-places-autocomplete": "^2.6.4",
