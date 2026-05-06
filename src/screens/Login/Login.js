@@ -26,8 +26,26 @@ import StatusBar from '../../component/StatusBar/StatusBar';
 import AppText from '../../theme/AppText';
 import {ms, vs} from '../../theme/scale';
 import React, { useState, useRef } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import BiometricLoginButton from '../../components/BiometricLoginButton';
+import useBiometricAutoLogin from '../../hooks/useBiometricAutoLogin';
 
 const Login = () => {
+    // Biometric auto-login
+    const [biometricPrompted, setBiometricPrompted] = useState(false);
+    const [biometricLoading, setBiometricLoading] = useState(false);
+    const [biometricError, setBiometricError] = useState(null);
+
+    // Auto biometric login on app open
+    useBiometricAutoLogin(
+      () => {
+        navigation.reset({ index: 0, routes: [{ name: 'MainApp' }] });
+      },
+      (err) => {
+        setBiometricPrompted(true);
+        if (err && err !== 'Biometric not available') setBiometricError(err);
+      }
+    );
   const [deviceId, setDeviceId] = useState('');
   const [deviceName, setDeviceName] = useState('');
   const navigation = useNavigation();
@@ -75,7 +93,7 @@ const Login = () => {
     setShowPassword(prev => !prev);
   };
 
-  const handleLogin = () => {
+  const handleLogin = async () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const phoneRegex = /^\+?\d{10,15}$/;
 
@@ -108,13 +126,34 @@ const Login = () => {
     setLoading(true);
 
     // Simulate API call
-    setTimeout(() => {
+    setTimeout(async () => {
       setLoading(false);
       // TODO: Replace with real authentication logic
       navigation.reset({
         index: 0,
-        routes: [{name: 'MainApp'}],
+        routes: [{ name: 'MainApp' }],
       });
+      // Ask to enable biometrics after successful login
+      const biometricPref = await AsyncStorage.getItem('biometric_enabled');
+      if (biometricPref !== 'true') {
+        setTimeout(() => {
+          Alert.alert(
+            'Enable biometric login?',
+            'Enable biometric login for future sign-ins?',
+            [
+              {
+                text: 'No',
+                style: 'cancel',
+                onPress: () => AsyncStorage.setItem('biometric_enabled', 'false'),
+              },
+              {
+                text: 'Yes',
+                onPress: () => AsyncStorage.setItem('biometric_enabled', 'true'),
+              },
+            ]
+          );
+        }, 500);
+      }
     }, 1000);
   };
   const handleForgotPassword = () => {
@@ -279,6 +318,7 @@ const Login = () => {
                   </AppText>
                 </TouchableOpacity>
 
+
                 {loading ? (
                   <View style={[styles.button, styles.loadingButton]}>
                     <ActivityIndicator
@@ -300,6 +340,16 @@ const Login = () => {
                     disabled={isLoginDisabled}
                   />
                 )}
+
+                {/* Biometric Login Button */}
+                <BiometricLoginButton
+                  onSuccess={() => {
+                    navigation.reset({ index: 0, routes: [{ name: 'MainApp' }] });
+                  }}
+                  onError={(err) => {
+                    if (err) Alert.alert('Biometric Login Failed', err);
+                  }}
+                />
 
                 <AppText style={styles.altLogin}>Or Login With</AppText>
 

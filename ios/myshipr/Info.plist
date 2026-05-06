@@ -35,6 +35,8 @@
 	</dict>
 	<key>NSCameraUsageDescription</key>
 	<string>We need access to your camera to scan documents like CDL, medical certificates, and other IDs.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>This app uses Face ID for secure biometric authentication.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Your location is required to fetch GPS coordinates</string>
 	<key>NSMicrophoneUsageDescription</key>
