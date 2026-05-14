@@ -225,29 +225,6 @@ const NavigationScreen = () => {
     });
   };
 
-  const swapSourceDestination = () => {
-    const temp = source;
-    setSource(destination);
-    setDestination(temp);
-    const tempText = sourceText;
-    setSourceText(destinationText);
-    setDestinationText(tempText);
-  };
-
-  const extractZipCodeFromPlaceDetails = details => {
-    const components = details?.address_components || [];
-    const postalCodeComponent = components.find(component =>
-      component?.types?.includes('postal_code'),
-    );
-    return postalCodeComponent?.long_name || null;
-  };
-
-  const extractZipCodeFromDescription = description => {
-    if (!description) return null;
-    const match = description.match(/\b\d{5}(?:-\d{4})?\b|\b\d{6}\b/);
-    return match?.[0] || null;
-  };
-
   const getAddressFromCoordinates = async (latitude, longitude) => {
     try {
       const response = await fetch(
@@ -615,35 +592,23 @@ const NavigationScreen = () => {
             destinationRef={destinationAutocompleteRef}
             activeInput={activeInput}
             onActiveInputChange={setActiveInput}
-            onSourceSelect={(data, details) => {
-              const sourceZipCode =
-                extractZipCodeFromPlaceDetails(details) ||
-                extractZipCodeFromDescription(data?.description);
-              console.log('Source ZIP code:', sourceZipCode);
-
-              setSource({
-                latitude: details.geometry.location.lat,
-                longitude: details.geometry.location.lng,
-                description: data.description,
+            sourceLocation={source}
+            destinationLocation={destination}
+            sourceText={sourceText}
+            destinationText={destinationText}
+            setSourceLocation={setSource}
+            setDestinationLocation={setDestination}
+            setSourceText={setSourceText}
+            setDestinationText={setDestinationText}
+            onCoordinateSelect={(latitude, longitude) => {
+              setMapRegion({
+                latitude,
+                longitude,
+                latitudeDelta: 0.01,
+                longitudeDelta: 0.01,
               });
-              setPickupAddress(data?.description);
-              setSourceText(data.description);
+              setFollowUser(false);
             }}
-            onDestinationSelect={(data, details) => {
-              const destinationZipCode =
-                extractZipCodeFromPlaceDetails(details) ||
-                extractZipCodeFromDescription(data?.description);
-              console.log('Destination ZIP code:', destinationZipCode);
-
-              setDestination({
-                latitude: details.geometry.location.lat,
-                longitude: details.geometry.location.lng,
-                description: data.description,
-              });
-              setDropAddress(data?.description);
-              setDestinationText(data.description);
-            }}
-            onSwap={swapSourceDestination}
             apiKey={GOOGLE_MAPS_API_KEY}
           />
 

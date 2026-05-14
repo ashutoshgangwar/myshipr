@@ -1,12 +1,12 @@
 // src/components/BiometricLoginButton.js
 import React, { useState, useEffect } from 'react';
 import { TouchableOpacity, Text, ActivityIndicator, StyleSheet, View, Image } from 'react-native';
-import { checkBiometricAvailability, authenticateWithBiometric } from '../utils/biometricAuth';
+import { checkBiometricAvailability, authenticateWithBiometric } from '../../utils/biometricAuth';
 import {scale, verticalScale, moderateScale} from 'react-native-size-matters';
-import ReactNativeBiometrics, { BiometryTypes } from 'react-native-biometrics';
-import FaceIdIcon from '../assets/svg_icon/faceid.svg';
-import FingerprintIcon from '../assets/svg_icon/fingerprint.svg';
-import BiometricsIcon from '../assets/svg_icon/fingerprint.svg';
+import { BiometryTypes } from 'react-native-biometrics';
+import FaceIdIcon from '../../assets/svg_icon/faceid.svg';
+import FingerprintIcon from '../../assets/svg_icon/fingerprint.svg';
+import BiometricsIcon from '../../assets/svg_icon/fingerprint.svg';
 
 const getButtonText = (biometryType) => {
   switch (biometryType) {

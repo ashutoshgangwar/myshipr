@@ -12,11 +12,120 @@ const SearchCard = ({
   destinationRef,
   activeInput,
   onActiveInputChange,
+  sourceLocation,
+  destinationLocation,
+  sourceText,
+  destinationText,
+  setSourceLocation,
+  setDestinationLocation,
+  setSourceText,
+  setDestinationText,
+  onCoordinateSelect,
   onSourceSelect,
   onDestinationSelect,
   onSwap,
   apiKey,
 }) => {
+  const getLatLngFromPlaceDetails = details => {
+    const rawLat = details?.geometry?.location?.lat;
+    const rawLng = details?.geometry?.location?.lng;
+
+    const latitudeValue = typeof rawLat === 'function' ? rawLat() : rawLat;
+    const longitudeValue = typeof rawLng === 'function' ? rawLng() : rawLng;
+
+    if (!Number.isFinite(latitudeValue) || !Number.isFinite(longitudeValue)) {
+      return null;
+    }
+
+    return {
+      latitude: latitudeValue,
+      longitude: longitudeValue,
+    };
+  };
+
+  const handleSourcePress = (data, details) => {
+    const canHandleInternally =
+      typeof setSourceLocation === 'function' &&
+      typeof setSourceText === 'function' &&
+      typeof onCoordinateSelect === 'function';
+
+    if (!canHandleInternally) {
+      onSourceSelect?.(data, details);
+      return;
+    }
+
+    const latLng = getLatLngFromPlaceDetails(details);
+    if (!latLng) return;
+
+    const location = {
+      ...latLng,
+      description: data?.description ?? 'Source',
+    };
+
+    setSourceLocation(location);
+    setSourceText(location.description);
+    onCoordinateSelect(latLng.latitude, latLng.longitude);
+  };
+
+  const handleDestinationPress = (data, details) => {
+    const canHandleInternally =
+      typeof setDestinationLocation === 'function' &&
+      typeof setDestinationText === 'function' &&
+      typeof onCoordinateSelect === 'function';
+
+    if (!canHandleInternally) {
+      onDestinationSelect?.(data, details);
+      return;
+    }
+
+    const latLng = getLatLngFromPlaceDetails(details);
+    if (!latLng) return;
+
+    const location = {
+      ...latLng,
+      description: data?.description ?? 'Destination',
+    };
+
+    setDestinationLocation(location);
+    setDestinationText(location.description);
+    onCoordinateSelect(latLng.latitude, latLng.longitude);
+  };
+
+  const handleSwapPress = () => {
+    const canHandleInternally =
+      typeof setSourceLocation === 'function' &&
+      typeof setDestinationLocation === 'function' &&
+      typeof setSourceText === 'function' &&
+      typeof setDestinationText === 'function';
+
+    if (!canHandleInternally) {
+      onSwap?.();
+      return;
+    }
+
+    const nextSourceLocation = destinationLocation ?? null;
+    const nextDestinationLocation = sourceLocation ?? null;
+
+    setSourceLocation(nextSourceLocation);
+    setDestinationLocation(nextDestinationLocation);
+    setSourceText(destinationText || '');
+    setDestinationText(sourceText || '');
+
+    sourceRef?.current?.setAddressText(destinationText || '');
+    destinationRef?.current?.setAddressText(sourceText || '');
+
+    if (
+      typeof onCoordinateSelect === 'function' &&
+      Number.isFinite(nextDestinationLocation?.latitude) &&
+      Number.isFinite(nextDestinationLocation?.longitude)
+    ) {
+      onCoordinateSelect(
+        nextDestinationLocation.latitude,
+        nextDestinationLocation.longitude,
+      );
+    }
+  };
+
   return (
     <View style={styles.searchCard}>
       <View style={styles.labelRow}>
@@ -24,7 +133,7 @@ const SearchCard = ({
         <AppText style={styles.labelText}>Source</AppText>
       </View>
       <View style={styles.searchInputContainer}>
-        <TouchableOpacity style={styles.swapIconLeft} onPress={onSwap}>
+        <TouchableOpacity style={styles.swapIconLeft} onPress={handleSwapPress}>
           <Arrow_left_right width={25} height={25} />
         </TouchableOpacity>
         <GooglePlacesAutocomplete
@@ -35,7 +144,7 @@ const SearchCard = ({
           }}
           fetchDetails
           onPress={(data, details = null) => {
-            onSourceSelect(data, details);
+            handleSourcePress(data, details);
             onActiveInputChange(null);
             Keyboard.dismiss();
           }}
@@ -71,7 +180,7 @@ const SearchCard = ({
         <AppText style={styles.labelText}>Destination</AppText>
       </View>
       <View style={styles.searchInputContainer}>
-        <TouchableOpacity style={styles.swapIconLeft} onPress={onSwap}>
+        <TouchableOpacity style={styles.swapIconLeft} onPress={handleSwapPress}>
           <Arrow_left_right width={25} height={25} />
         </TouchableOpacity>
         <GooglePlacesAutocomplete
@@ -82,7 +191,7 @@ const SearchCard = ({
           }}
           fetchDetails
           onPress={(data, details = null) => {
-            onDestinationSelect(data, details);
+            handleDestinationPress(data, details);
             onActiveInputChange(null);
             Keyboard.dismiss();
           }}

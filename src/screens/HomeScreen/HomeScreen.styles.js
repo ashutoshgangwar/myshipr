@@ -216,6 +216,25 @@ progressFill: {
     marginBottom: verticalScale(2),
   },
 
+  mapNavigatorRow: {
+    marginHorizontal: moderateScale(16),
+    marginBottom: verticalScale(8),
+  },
+
+  mapNavigatorBtn: {
+    backgroundColor: colors.primary,
+    borderRadius: moderateScale(12),
+    paddingVertical: verticalScale(12),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  mapNavigatorBtnText: {
+    color: '#FFFFFF',
+    fontSize: moderateScale(14),
+    fontWeight: '700',
+  },
+
   currentLoadHeaderRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -440,6 +459,34 @@ progressFill: {
 
   stopMarkerPinDelivery: {
     backgroundColor: '#DC2626',
+  },
+
+  selectedMarkerContainer: {
+    alignItems: 'center',
+  },
+
+  selectedMarkerInner: {
+    minWidth: moderateScale(100),
+    paddingHorizontal: moderateScale(8),
+    paddingVertical: verticalScale(5),
+    borderRadius: moderateScale(10),
+    backgroundColor: '#8B5CF6',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    shadowOffset: {width: 0, height: 2},
+    elevation: 3,
+  },
+
+  selectedMarkerPin: {
+    width: moderateScale(12),
+    height: moderateScale(12),
+    borderRadius: moderateScale(6),
+    marginTop: verticalScale(3),
+    backgroundColor: '#8B5CF6',
+    borderWidth: 2,
+    borderColor: '#FFFFFF',
   },
 
   /* Cards */

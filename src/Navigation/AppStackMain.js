@@ -13,6 +13,7 @@ import ResetPassword from '../screens/ResetPassword/ResetPassword';
 import Onboarding from '../screens/Onboarding/Onboarding';
 import Signup from '../screens/Signup/Signup';
 import SignatureCaptureScreen from '../screens/SignatureCaptureScreen/SignatureCaptureScreen';
+import { VectorMap } from '../screens/VectorMap/VectorMap';
 
 
 
@@ -38,6 +39,8 @@ export default function AppStackMain() {
 
       {/* Extra flows (no bottom tab) */}
       <Stack.Screen name="Profile" component={Profile} />
+      <Stack.Screen name="PTVNavigatorMap" component={NavigationScreen} />
+      <Stack.Screen name="VectorMap" component={VectorMap} />
       <Stack.Screen name="NavigationScreen" component={NavigationScreen} />
       <Stack.Screen name="DeliveryConfirmation" component={DeliveryConfirmation} />
       <Stack.Screen name="AvailableLoadsScreen" component={AvailableLoadsScreen} />

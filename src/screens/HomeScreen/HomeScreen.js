@@ -5,11 +5,9 @@ import {
   PanResponder,
   Platform,
   View,
-  Text,
   SafeAreaView,
   ScrollView,
   TouchableOpacity,
-  
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
@@ -24,24 +22,18 @@ import Double_Arrow_Icon from './../../assets/svg_icon/arrow-double.svg';
 import Gps_Icon from './../../assets/svg_icon/gps-svg.svg';
 import Mechanic_call_Icon from './../../assets/svg_icon/mechanic_call.svg';
 import AppText from '../../theme/AppText';
-import {getCurrentLocation} from '../../services/LocationService';
 import {setLocation} from '../../redux/slices/locationSlice';
 import ReceiverSignaturePad, {
   SIGNATURE_STORAGE_KEY,
 } from '../../component/ReceiverSignaturePad/ReceiverSignaturePad';
+import {useCurrentLocation, LOCATION_ERRORS} from '../../services/Uselocation';
+
 
 const INITIAL_REGION = {
   latitude: 27.55,
   longitude: 78.35,
   latitudeDelta: 6,
   longitudeDelta: 6,
-};
-
-const MINI_REGION = {
-  latitude: 28.6139,
-  longitude: 77.209,
-  latitudeDelta: 0.02,
-  longitudeDelta: 0.02,
 };
 
 const FULLSCREEN_REGION = {
@@ -78,24 +70,81 @@ const UPCOMING_STOPS = [
   },
 ];
 
+
 const HomeScreen = () => {
   const isAndroid = Platform.OS === 'android';
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
   const dispatch = useDispatch();
-  const [loading, setLoading] = useState(false);
+
   const [isVerified, setIsVerified] = useState(true);
   const [isMapExpanded, setIsMapExpanded] = useState(false);
   const [isJobStarted, setIsJobStarted] = useState(false);
   const [isSignaturePadVisible, setIsSignaturePadVisible] = useState(false);
-  const [currentLocation, setCurrentLocation] = useState(null);
   const [receiverSignature, setReceiverSignature] = useState(null);
+
   const mapCardRef = useRef(null);
   const mapFullRef = useRef(null);
   const skipNextOverviewFitRef = useRef(false);
-  const miniMapPan = React.useRef(new Animated.ValueXY({x: 12, y: 12})).current;
 
-  const miniMapResponder = React.useRef(
+  const miniMapPan = useRef(new Animated.ValueXY({x: 12, y: 12})).current;
+
+  const {
+    location, 
+    loading,   
+    error,     
+    refresh,   
+  } = useCurrentLocation({
+    fetchOnMount: true,  
+  });
+
+
+  const currentLocation = location
+    ? {
+        latitude:      location.latitude,
+        longitude:     location.longitude,
+        latitudeDelta: 0.01,
+        longitudeDelta: 0.01,
+      }
+    : null;
+
+  useEffect(() => {
+    if (!location) return;
+    dispatch(
+      setLocation({
+        latitude:  location.latitude,
+        longitude: location.longitude,
+      }),
+    );
+  }, [location, dispatch]);
+
+  useEffect(() => {
+    if (!currentLocation) return;
+
+    if (!isMapExpanded) {
+      if (skipNextOverviewFitRef.current) {
+        skipNextOverviewFitRef.current = false;
+        return;
+      }
+
+      const overviewCoordinates = [
+        ...UPCOMING_STOPS.map(s => s.coordinate),
+        {latitude: currentLocation.latitude, longitude: currentLocation.longitude},
+      ];
+
+      requestAnimationFrame(() => {
+        mapCardRef.current?.fitToCoordinates(overviewCoordinates, {
+          edgePadding: {top: 50, right: 50, bottom: 50, left: 50},
+          animated: true,
+        });
+      });
+      return;
+    }
+
+    mapFullRef.current?.animateToRegion(currentLocation, 800);
+  }, [currentLocation, isMapExpanded]);
+
+  const miniMapResponder = useRef(
     PanResponder.create({
       onMoveShouldSetPanResponder: () => true,
       onPanResponderGrant: () => {
@@ -115,68 +164,14 @@ const HomeScreen = () => {
     }),
   ).current;
 
-  const handlePendingVerification = () => {
-    if (loading || isVerified) return;
-
-    navigation.navigate('CreateAccount');
-  };
-
-  const openMap = () => {
-    navigation.navigate('NavigationScreen');
-  };
-
-  const openSignatureCapture = () => {
-    setIsSignaturePadVisible(true);
-  };
-
-  const closeSignatureCapture = () => {
-    setIsSignaturePadVisible(false);
-  };
-
   const loadSavedSignature = async () => {
     try {
-      const storedSignature = await AsyncStorage.getItem(SIGNATURE_STORAGE_KEY);
-      setReceiverSignature(storedSignature ? JSON.parse(storedSignature) : null);
-    } catch (error) {
-      console.log('Unable to load saved signature:', error?.message || error);
+      const stored = await AsyncStorage.getItem(SIGNATURE_STORAGE_KEY);
+      setReceiverSignature(stored ? JSON.parse(stored) : null);
+    } catch (err) {
+      console.log('Unable to load saved signature:', err?.message || err);
     }
   };
-
-  const handleSignatureSaved = signaturePayload => {
-    setReceiverSignature(signaturePayload);
-  };
-
-  useEffect(() => {
-    let mounted = true;
-
-    const fetchDeviceLocation = async () => {
-      try {
-        const position = await getCurrentLocation();
-        if (!mounted) return;
-        const nextLocation = {
-          latitude: position.latitude,
-          longitude: position.longitude,
-          latitudeDelta: 0.01,
-          longitudeDelta: 0.01,
-        };
-        setCurrentLocation(nextLocation);
-        dispatch(
-          setLocation({
-            latitude: nextLocation.latitude,
-            longitude: nextLocation.longitude,
-          }),
-        );
-      } catch (error) {
-        console.log('Unable to fetch current location:', error?.message || error);
-      }
-    };
-
-    fetchDeviceLocation();
-
-    return () => {
-      mounted = false;
-    };
-  }, []);
 
   useFocusEffect(
     React.useCallback(() => {
@@ -184,72 +179,45 @@ const HomeScreen = () => {
     }, []),
   );
 
-  useEffect(() => {
-    if (!currentLocation) return;
+  const handleSignatureSaved = signaturePayload => {
+    setReceiverSignature(signaturePayload);
+  };
 
-    if (!isMapExpanded) {
-      if (skipNextOverviewFitRef.current) {
-        skipNextOverviewFitRef.current = false;
-        return;
-      }
 
-      const overviewCoordinates = [
-        ...UPCOMING_STOPS.map(stop => stop.coordinate),
-        {latitude: currentLocation.latitude, longitude: currentLocation.longitude},
-      ];
-
-      requestAnimationFrame(() => {
-        mapCardRef.current?.fitToCoordinates(overviewCoordinates, {
-          edgePadding: {top: 50, right: 50, bottom: 50, left: 50},
-          animated: true,
-        });
-      });
-      return;
+  const centerOnCurrentLocation = async isExpandedView => {
+    if (!isExpandedView) {
+      skipNextOverviewFitRef.current = true;
     }
 
-    if (isMapExpanded) {
-      mapFullRef.current?.animateToRegion(currentLocation, 800);
+    if (currentLocation) {
+      const activeMapRef = isExpandedView ? mapFullRef.current : mapCardRef.current;
+      activeMapRef?.animateToRegion(
+        {...currentLocation, latitudeDelta: 0.004, longitudeDelta: 0.004},
+        700,
+      );
     }
-  }, [currentLocation, isMapExpanded]);
+
+    await refresh();
+  };
+
+  const handlePendingVerification = () => {
+    if (loading || isVerified) return;
+    navigation.navigate('CreateAccount');
+  };
+
+  const openMap_navigation = () => navigation.navigate('NavigationScreen');
+  const openMap            = () => navigation.navigate('VectorMap');
+
+  const openSignatureCapture  = () => setIsSignaturePadVisible(true);
+  const closeSignatureCapture = () => setIsSignaturePadVisible(false);
+
+  const toggleJobStatus = () => setIsJobStarted(prev => !prev);
 
   const fullscreenTopPadding = Math.max(
     insets.top + 8,
     Platform.OS === 'android' ? 16 : 10,
   );
-
   const fullscreenBottomPadding = Math.max(insets.bottom + 10, 12);
-
-  const centerOnCurrentLocation = async isExpandedView => {
-    try {
-      const position = await getCurrentLocation();
-      const nextRegion = {
-        latitude: position.latitude,
-        longitude: position.longitude,
-        latitudeDelta: 0.004,
-        longitudeDelta: 0.004,
-      };
-
-      if (!isExpandedView) {
-        skipNextOverviewFitRef.current = true;
-      }
-
-      setCurrentLocation(nextRegion);
-      dispatch(
-        setLocation({
-          latitude: nextRegion.latitude,
-          longitude: nextRegion.longitude,
-        }),
-      );
-      const activeMapRef = isExpandedView ? mapFullRef.current : mapCardRef.current;
-      activeMapRef?.animateToRegion(nextRegion, 700);
-    } catch (error) {
-      console.log('Unable to center on current location:', error?.message || error);
-    }
-  };
-
-  const toggleJobStatus = () => {
-    setIsJobStarted(prev => !prev);
-  };
 
   const renderMapSection = (containerStyle, isExpandedView = false) => (
     <View style={containerStyle}>
@@ -257,6 +225,7 @@ const HomeScreen = () => {
         ref={isExpandedView ? mapFullRef : mapCardRef}
         style={styles.mainMap}
         initialRegion={isExpandedView ? FULLSCREEN_REGION : INITIAL_REGION}>
+
         {UPCOMING_STOPS.map(stop => (
           <Marker
             key={stop.id}
@@ -269,8 +238,8 @@ const HomeScreen = () => {
               <View
                 style={[
                   styles.stopMarkerBadge,
-                  stop.type === 'pickup' && styles.stopMarkerPickup,
-                  stop.type === 'service' && styles.stopMarkerService,
+                  stop.type === 'pickup'   && styles.stopMarkerPickup,
+                  stop.type === 'service'  && styles.stopMarkerService,
                   stop.type === 'delivery' && styles.stopMarkerDelivery,
                 ]}>
                 <AppText style={styles.stopMarkerLabel}>{stop.label}</AppText>
@@ -279,8 +248,8 @@ const HomeScreen = () => {
               <View
                 style={[
                   styles.stopMarkerPin,
-                  stop.type === 'pickup' && styles.stopMarkerPinPickup,
-                  stop.type === 'service' && styles.stopMarkerPinService,
+                  stop.type === 'pickup'   && styles.stopMarkerPinPickup,
+                  stop.type === 'service'  && styles.stopMarkerPinService,
                   stop.type === 'delivery' && styles.stopMarkerPinDelivery,
                 ]}
               />
@@ -338,14 +307,15 @@ const HomeScreen = () => {
         barStyle="light-content"
         translucent={false}
       />
+
       <ScrollView showsVerticalScrollIndicator={false}>
+
         {/* HEADER */}
         <View style={styles.header}>
           <View>
             <AppText style={styles.welcome}>Welcome back,</AppText>
             <AppText style={styles.username}>Ashutosh Gangwar</AppText>
           </View>
-
           <TouchableOpacity style={styles.profileCircle}>
             <Mechanic_call_Icon width={30} height={30} />
           </TouchableOpacity>
@@ -353,21 +323,25 @@ const HomeScreen = () => {
             <SOS_Icon width={30} height={30} />
           </TouchableOpacity>
         </View>
-    {/* STATS */}
+
+        {/* STATS */}
         <View style={styles.statsCard}>
-          <StatItem title="Active Loads" value="12" color="#2563EB" />
+          <StatItem title="Active Loads" value="12"     color="#2563EB" />
           <Divider />
-          <StatItem title="This Week" value="$8,450" color="#16A34A" />
+          <StatItem title="This Week"    value="$8,450" color="#16A34A" />
           <Divider />
-          <StatItem title="HOS Left" value="42h" color="#EA580C" />
+          <StatItem title="HOS Left"     value="42h"    color="#EA580C" />
         </View>
+
         {/* LIVE MAP */}
         <View style={styles.sectionRow}>
           <AppText style={styles.sectionTitle}>Live Map</AppText>
         </View>
+
         {renderMapSection(styles.mapCard, false)}
+
         <View style={styles.mapHintRow}>
-         <TouchableOpacity
+          <TouchableOpacity
             style={[
               styles.currentLoadJobBtn,
               isJobStarted && styles.currentLoadJobBtnStop,
@@ -380,6 +354,16 @@ const HomeScreen = () => {
           </TouchableOpacity>
         </View>
 
+        <View style={styles.mapNavigatorRow}>
+          <TouchableOpacity
+            style={styles.mapNavigatorBtn}
+            onPress={openMap}
+            activeOpacity={0.9}>
+            <AppText style={styles.mapNavigatorBtnText}>Open PTV Navigator Map</AppText>
+          </TouchableOpacity>
+        </View>
+
+        {/* RECEIVER SIGNATURE */}
         <View style={styles.signatureSectionHeader}>
           <AppText style={styles.currentLoadTitle}>Receiver Signature</AppText>
         </View>
@@ -392,12 +376,15 @@ const HomeScreen = () => {
               </AppText>
               <AppText style={styles.signatureStatusSubtitle}>
                 {receiverSignature
-                  ? `${receiverSignature.receiverName} • ${new Date(receiverSignature.capturedAt).toLocaleString()}`
-                  : 'Collect the receiving person’s signature before delivery handoff.'}
+                  ? `${receiverSignature.receiverName} • ${new Date(
+                      receiverSignature.capturedAt,
+                    ).toLocaleString()}`
+                  : "Collect the receiving person's signature before delivery handoff."}
               </AppText>
             </View>
-
-            <TouchableOpacity style={styles.signatureActionBtn} onPress={openSignatureCapture}>
+            <TouchableOpacity
+              style={styles.signatureActionBtn}
+              onPress={openSignatureCapture}>
               <AppText style={styles.signatureActionBtnText}>
                 {receiverSignature ? 'Retake' : 'Take Signature'}
               </AppText>
@@ -424,28 +411,19 @@ const HomeScreen = () => {
               <AppText style={styles.loadId}>Load #SH-245</AppText>
               <AppText style={styles.loadSub}>Electronics • 12,500 lbs</AppText>
             </View>
-
             <View style={styles.inTransitBadge}>
               <AppText style={styles.badgeText}>In Transit</AppText>
             </View>
           </View>
 
-          <Location
-            color="#22C55E"
-            city="Delhi, IN"
-            info="Picked up 4 hours ago"
-          />
-
+          <Location color="#22C55E" city="Delhi, IN"   info="Picked up 4 hours ago" />
           <Location color="#EF4444" city="Lucknow, IN" info="ETA: 2 hours" />
 
           <View style={styles.progressContainer}>
-            {/* Header */}
             <View style={styles.progressHeader}>
               <AppText style={styles.progressLabel}>Progress</AppText>
               <AppText style={styles.progressPercent}>72%</AppText>
             </View>
-
-            {/* Progress Bar */}
             <View style={styles.progressBarBackground}>
               <View style={[styles.progressBarFill, {width: '72%'}]} />
             </View>
@@ -456,19 +434,22 @@ const HomeScreen = () => {
           </View>
 
           <View style={styles.actionRow}>
-            <TouchableOpacity onPress={openMap} style={styles.primaryBtn}>
+            <TouchableOpacity onPress={openMap_navigation} style={styles.primaryBtn}>
               <AppText style={styles.primaryBtnText}>Navigation</AppText>
             </TouchableOpacity>
           </View>
         </View>
+
       </ScrollView>
 
+      {/* FULLSCREEN MAP OVERLAY */}
       {isMapExpanded && (
         <View style={styles.mapFullscreenOverlay}>
           {renderMapSection(styles.mapFullscreenCard, true)}
         </View>
       )}
 
+      {/* SIGNATURE PAD */}
       <ReceiverSignaturePad
         visible={isSignaturePadVisible}
         useModal
@@ -482,7 +463,6 @@ const HomeScreen = () => {
 
 export default HomeScreen;
 
-/* ---------- Small Components ---------- */
 
 const StatItem = ({title, value, color}) => (
   <View style={styles.statItem}>

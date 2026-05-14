@@ -27,7 +27,7 @@ import AppText from '../../theme/AppText';
 import {ms, vs} from '../../theme/scale';
 import React, { useState, useRef } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import BiometricLoginButton from '../../components/BiometricLoginButton';
+import BiometricLoginButton from '../../component/BiometricLoginButton/BiometricLoginButton';
 import useBiometricAutoLogin from '../../hooks/useBiometricAutoLogin';
 
 const Login = () => {
