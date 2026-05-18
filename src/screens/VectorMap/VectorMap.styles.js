@@ -25,6 +25,22 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
 
+  truckMarkerWrap: {
+    width: moderateScale(34),
+    height: moderateScale(34),
+    borderRadius: moderateScale(17),
+    backgroundColor: "#ffffff",
+    borderWidth: 1,
+    borderColor: "#dbeafe",
+    alignItems: "center",
+    justifyContent: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: verticalScale(2) },
+    shadowOpacity: 0.2,
+    shadowRadius: moderateScale(3),
+    elevation: 6,
+  },
+
   zoomControls: {
     position: "absolute",
     right: scale(16),
@@ -78,7 +94,8 @@ const styles = StyleSheet.create({
   gpsButtonWrap: {
     position: "absolute",
     right: scale(16),
-    bottom: verticalScale(26),
+    top: "50%",
+    marginTop: moderateScale(-25),
   },
 
   gpsButton: {
@@ -122,10 +139,10 @@ const styles = StyleSheet.create({
   // Route Information Card Styles
   routeInfoCard: {
     position: "absolute",
-    bottom: verticalScale(16),
+    top: verticalScale(250),
     left: scale(16),
     right: scale(16),
-    maxHeight: verticalScale(240),
+    maxHeight: verticalScale(190),
     backgroundColor: "#ffffff",
     borderRadius: moderateScale(14),
     shadowColor: "#000",
@@ -168,7 +185,7 @@ const styles = StyleSheet.create({
 
   routeDataContainer: {
     padding: scale(8),
-    height: verticalScale(220),
+    height: verticalScale(165),
   },
 
   routeHeader: {
@@ -306,6 +323,7 @@ const styles = StyleSheet.create({
     fontWeight: "500",
     marginTop: verticalScale(2),
   },
+  
 
   statusHint: {
     fontSize: moderateScale(10),
@@ -476,6 +494,35 @@ const styles = StyleSheet.create({
   actionSecondaryText: {
     color: "#111827",
     fontWeight: "700",
+  },
+
+  // Map style switcher pill
+  mapStylePill: {
+    paddingVertical: moderateScale(6),
+    paddingHorizontal: moderateScale(14),
+    borderRadius: moderateScale(20),
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: verticalScale(1) },
+    shadowOpacity: 0.12,
+    shadowRadius: moderateScale(3),
+    elevation: 3,
+  },
+
+  mapStylePillActive: {
+    backgroundColor: colors.primary || '#2563EB',
+  },
+
+  mapStylePillText: {
+    color: '#333',
+    fontSize: moderateScale(12),
+    fontWeight: '400',
+    textTransform: 'capitalize',
+  },
+
+  mapStylePillTextActive: {
+    color: '#fff',
+    fontWeight: '600',
   },
 });
 
