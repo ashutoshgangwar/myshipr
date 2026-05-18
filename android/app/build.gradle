@@ -121,7 +121,9 @@ android {
             enable true
             reset()
             include 'armeabi-v7a', 'arm64-v8a'
-            universalApk false
+            // Produce a universal APK so emulator architectures (x86/x86_64)
+            // can install the debug build. Set to true for local debugging.
+            universalApk true
         }
     }
 }

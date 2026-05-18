@@ -432,7 +432,7 @@ export const VectorMap = props => {
       } finally {
         setIsLoadingRoute(false);
       }
-    }, 50000000000); // 5-second debounce
+    }, 500000000); // 5-second debounce
 
     return () => clearTimeout(debounceTimer);
   }, [sourceLocation, destinationLocation]);
@@ -673,6 +673,73 @@ export const VectorMap = props => {
     [effectivePtvApiKey],
   );
 
+  const [isNavigating, setIsNavigating] = useState(false);
+
+  const fetchRouteNow = useCallback(async () => {
+    if (!sourceLocation || !destinationLocation) return null;
+    try {
+      setIsLoadingRoute(true);
+      setRouteError(null);
+      const response = await getRouteBetweenPoints(
+        sourceLocation.latitude,
+        sourceLocation.longitude,
+        destinationLocation.latitude,
+        destinationLocation.longitude,
+      );
+      setRouteData(response);
+      return response;
+    } catch (err) {
+      console.warn('Immediate route fetch failed:', err);
+      setRouteError('Failed to fetch route');
+      return null;
+    } finally {
+      setIsLoadingRoute(false);
+    }
+  }, [sourceLocation, destinationLocation]);
+
+  const handleNavigateStart = useCallback(() => {
+    (async () => {
+      setIsRouteExpanded(true);
+      setIsNavigating(true);
+      let data = routeData;
+      if (!data || !data.polylineCoordinates) {
+        data = await fetchRouteNow();
+      }
+      const first = data?.polylineCoordinates?.[0];
+      if (first) {
+        cameraRef.current?.flyTo(first, 700);
+        cameraRef.current?.zoomTo(NAVIGATE_ZOOM, 700);
+        // ensure truck marker is placed at route start immediately
+        setTruckCoordinate(first);
+        const next = data?.polylineCoordinates?.[1];
+        if (next) setTruckBearing(getBearing(first, next));
+      }
+    })();
+  }, [routeData]);
+
+  const handleRecenter = useCallback(() => {
+    const coord = truckCoordinate || (sourceLocation && [sourceLocation.longitude, sourceLocation.latitude]) || centerCoordinate;
+    if (!coord) return;
+    cameraRef.current?.flyTo(coord, 700);
+    cameraRef.current?.zoomTo(NAVIGATE_ZOOM, 700);
+    // Stop 'navigate' mode and restore the custom source marker
+    setIsNavigating(false);
+  }, [truckCoordinate, sourceLocation, centerCoordinate]);
+
+  const handleMapPress = useCallback(event => {
+    try {
+      const coords = event?.geometry?.coordinates;
+      if (!coords || !Array.isArray(coords) || coords.length < 2) return;
+      const [lng, lat] = coords;
+      // Set destination as user-selected and trigger route fetch
+      setDestinationLocationWithOrigin({latitude: lat, longitude: lng, description: 'Selected Location'}, 'user');
+      setDestinationText('Selected Location');
+      setSelectedCoordinate([lng, lat]);
+    } catch (err) {
+      console.warn('Map press handler error:', err);
+    }
+  }, [setDestinationLocationWithOrigin]);
+
   const handleZoomIn = useCallback(() => {
     const next = CITY_ZOOM_LEVELS.find(z => z > currentZoom);
     const newZoom =
@@ -724,7 +791,8 @@ export const VectorMap = props => {
         transformRequest={transformRequest}
         onDidFinishLoadingStyle={closeStyleLoader}
         onDidFinishRenderingMapFully={closeStyleLoader}
-        onDidFailLoadingMap={closeStyleLoader}>
+        onDidFailLoadingMap={closeStyleLoader}
+        onPress={handleMapPress}>
         <MapLibreGL.Camera
           ref={cameraRef}
           zoomLevel={INITIAL_ZOOM}
@@ -755,8 +823,8 @@ export const VectorMap = props => {
           </MapLibreGL.ShapeSource>
         )}
 
-        {/* Moving truck marker */}
-        {truckCoordinate && routePolylineCoordinates && (
+        {/* Moving truck marker (visible only while navigating) */}
+        {isNavigating && truckCoordinate && routePolylineCoordinates && (
           <MapLibreGL.PointAnnotation
             key={`truck-marker-${annotationRefreshToken}`}
             id={`truck-marker-${annotationRefreshToken}`}
@@ -774,8 +842,8 @@ export const VectorMap = props => {
           </MapLibreGL.PointAnnotation>
         )}
 
-        {/* Source marker */}
-        {sourceLocation && (
+        {/* Source marker (hidden while navigating) */}
+        {sourceLocation && !isNavigating && (
           <MapLibreGL.PointAnnotation
             key={`source-marker-${annotationRefreshToken}`}
             id={`source-marker-${annotationRefreshToken}`}
@@ -904,6 +972,24 @@ export const VectorMap = props => {
         onCoordinateSelect={flyToCoordinate}
         apiKey={GOOGLE_MAPS_API_KEY}
       />
+      {/* Bottom navigation bar: Navigate / Recenter */}
+      <View style={styles.bottomBar} pointerEvents="box-none">
+        <TouchableOpacity
+          activeOpacity={0.9}
+          onPress={handleNavigateStart}
+          style={[styles.bottomButton, styles.bottomButtonPrimary]}
+        >
+          <Text style={[styles.bottomButtonText, styles.bottomButtonTextPrimary]}>Navigate</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          activeOpacity={0.9}
+          onPress={handleRecenter}
+          style={styles.bottomButton}
+        >
+          <Text style={styles.bottomButtonText}>Recenter</Text>
+        </TouchableOpacity>
+      </View>
 
       {/* ── Route info pill strip ────────────────────────────────────────── */}
       {(isLoadingRoute || routeData || routeError) &&

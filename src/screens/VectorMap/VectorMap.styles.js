@@ -524,6 +524,46 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontWeight: '600',
   },
+
+  // Bottom navigation bar
+  bottomBar: {
+    position: 'absolute',
+    left: 16,
+    right: 16,
+    bottom: 20,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+    zIndex: 50,
+  },
+
+  bottomButton: {
+    flex: 1,
+    paddingVertical: moderateScale(12),
+    borderRadius: moderateScale(10),
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#fff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: verticalScale(2) },
+    shadowOpacity: 0.12,
+    shadowRadius: moderateScale(4),
+    elevation: 6,
+  },
+
+  bottomButtonPrimary: {
+    backgroundColor: colors.primary || '#2563EB',
+  },
+
+  bottomButtonText: {
+    fontSize: moderateScale(14),
+    fontWeight: '700',
+    color: '#111827',
+  },
+
+  bottomButtonTextPrimary: {
+    color: '#fff',
+  },
 });
 
 export default styles;
