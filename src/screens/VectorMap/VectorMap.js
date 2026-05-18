@@ -18,12 +18,14 @@ import {
   getCurrentLocation,
   watchCurrentLocation,
 } from '../../services/LocationService';
-import SearchCard from '../../component/Navigation_components/SearchCard';
+import PtvSearchCard from '../../apiservices/ptvSearchCard';
+// import SearchCard from '../../component/Navigation_components/SearchCard';
 import CustomMarker from '../../component/Navigation_components/CustomMarker';
 import {GOOGLE_MAPS_API_KEY, PTV_API_KEY} from '@env';
 import {getRouteBetweenPoints} from '../../apiservices/ptvRoutingService';
 import AppText from '../../theme/AppText';
 import {colors} from '../../theme/colors';
+// import PtvSearchCard from '../../apiservices/ptvSearchCard';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
 
@@ -110,11 +112,15 @@ export const VectorMap = props => {
   const styleSwitchInProgressRef = useRef(false);
   const lastRouteApiCallAtRef = useRef(null);
   const prevRouteApiCallAtRef = useRef(null);
+  const lastRouteSourceCoordRef = useRef(null);
+  const lastRouteDestCoordRef = useRef(null);
 
   const [mapStyle, setMapStyle] = useState(
     MAP_STYLES.silica ?? Object.values(MAP_STYLES)[0] ?? 'silica',
   );
   const [currentZoom, setCurrentZoom] = useState(INITIAL_ZOOM);
+  const [cameraPitch, setCameraPitch] = useState(0);
+  const [cameraHeading, setCameraHeading] = useState(0);
   const [selectedCoordinate, setSelectedCoordinate] = useState(null);
   const [isGpsLoading, setIsGpsLoading] = useState(false);
   const [activeInput, setActiveInput] = useState(null);
@@ -375,6 +381,35 @@ export const VectorMap = props => {
     if (!sourceIsUser && !destIsUser) return;
 
     const debounceTimer = setTimeout(async () => {
+      // Only call if coords moved sufficiently from last routed coords
+      const currentSourceCoord = [
+        sourceLocation.longitude,
+        sourceLocation.latitude,
+      ];
+      const currentDestCoord = [
+        destinationLocation.longitude,
+        destinationLocation.latitude,
+      ];
+
+      let shouldCall = true;
+      const lastSrc = lastRouteSourceCoordRef.current;
+      const lastDst = lastRouteDestCoordRef.current;
+      if (lastSrc && lastDst) {
+        try {
+          const movedSrc = getSegmentDistanceMeters(lastSrc, currentSourceCoord);
+          const movedDst = getSegmentDistanceMeters(lastDst, currentDestCoord);
+          // require at least 20 meters movement on either endpoint to re-query
+          if (movedSrc < 20 && movedDst < 20) {
+            shouldCall = false;
+          }
+        } catch (err) {
+          // fall back to calling
+          shouldCall = true;
+        }
+      }
+
+      if (!shouldCall) return;
+
       const callStartedAt = Date.now();
       prevRouteApiCallAtRef.current = lastRouteApiCallAtRef.current;
       lastRouteApiCallAtRef.current = callStartedAt;
@@ -384,58 +419,21 @@ export const VectorMap = props => {
         setRouteApiIntervalSeconds(
           Math.max(
             0,
-            Math.round(
-              (callStartedAt - prevRouteApiCallAtRef.current) / 1000,
-            ),
+            Math.round((callStartedAt - prevRouteApiCallAtRef.current) / 1000),
           ),
         );
       }
 
-      setIsLoadingRoute(true);
-      setRouteError(null);
-      setRouteData(null);
-
-      try {
-        const response = await getRouteBetweenPoints(
-          sourceLocation.latitude,
-          sourceLocation.longitude,
-          destinationLocation.latitude,
-          destinationLocation.longitude,
-        );
-        setRouteData(response);
-        console.log('Route Data:', {
-          distance: response.distance,
-          travelTime: response.travelTime,
-          violated: response.violated,
-          trafficDelay: response.trafficDelay,
-        });
-      } catch (error) {
-        console.log('Route Fetch Error:', error);
-        let errorMessage = 'Failed to fetch route';
-        if (error?.message) {
-          if (error.message.includes('ROUTING_ROUTE_NOT_FOUND')) {
-            errorMessage =
-              'No route found between these locations. Try selecting closer destinations.';
-          } else if (error.message.includes('HTTP 400')) {
-            errorMessage = 'Invalid route. Please check your locations.';
-          } else if (
-            error.message.includes('HTTP 401') ||
-            error.message.includes('HTTP 403')
-          ) {
-            errorMessage =
-              'API authentication failed. Please check configuration.';
-          } else {
-            errorMessage = error.message;
-          }
-        }
-        setRouteError(errorMessage);
-      } finally {
-        setIsLoadingRoute(false);
+      // perform background fetch without showing UI loader
+      const response = await fetchRouteNow(false);
+      if (response) {
+        lastRouteSourceCoordRef.current = currentSourceCoord;
+        lastRouteDestCoordRef.current = currentDestCoord;
       }
-    }, 500000000); // 5-second debounce
+    }, 5000); // 5-second debounce
 
     return () => clearTimeout(debounceTimer);
-  }, [sourceLocation, destinationLocation]);
+  }, [sourceLocation, destinationLocation, fetchRouteNow, getSegmentDistanceMeters]);
 
   useEffect(() => {
     if (!lastRouteApiCallAtRef.current) return;
@@ -493,26 +491,10 @@ export const VectorMap = props => {
   }, []);
 
   // Live truck tracking along route polyline
-  useEffect(() => {
-    if (!routePolylineCoordinates || routePolylineCoordinates.length < 2) {
-      if (locationWatchIdRef.current != null) {
-        clearWatchLocation(locationWatchIdRef.current);
-        locationWatchIdRef.current = null;
-      }
-      lastTrackedCoordinateRef.current = null;
-      setTruckCoordinate(null);
-      setTruckBearing(0);
-      setRouteProgress(0);
-      return;
-    }
-
-    const [firstPoint, secondPoint] = routePolylineCoordinates;
-    setTruckCoordinate(firstPoint);
-    setTruckBearing(getBearing(firstPoint, secondPoint));
-    setRouteProgress(0);
-    lastTrackedCoordinateRef.current = null;
-
-    const applyLocationUpdate = location => {
+  // Apply a single location update (reusable by multiple starters)
+  const applyLocationUpdate = useCallback(
+    location => {
+      if (!location) return;
       const currentCoordinate = [location.longitude, location.latitude];
 
       if (lastTrackedCoordinateRef.current) {
@@ -552,7 +534,27 @@ export const VectorMap = props => {
         accuracy: location.accuracy,
         timestamp: location.timestamp,
       });
-    };
+    },
+    [
+      getRoutePositionFromCurrentLocation,
+      getSegmentDistanceMeters,
+      routePolylineCoordinates,
+      setSourceLocationWithOrigin,
+      setSourceText,
+      props,
+    ],
+  );
+
+  const ensureLiveTrackingStarted = useCallback(() => {
+    if (!routePolylineCoordinates || routePolylineCoordinates.length < 2)
+      return;
+    if (locationWatchIdRef.current != null) return;
+
+    const [firstPoint, secondPoint] = routePolylineCoordinates;
+    setTruckCoordinate(firstPoint);
+    setTruckBearing(getBearing(firstPoint, secondPoint));
+    setRouteProgress(0);
+    lastTrackedCoordinateRef.current = null;
 
     getCurrentLocation()
       .then(applyLocationUpdate)
@@ -567,6 +569,23 @@ export const VectorMap = props => {
         locationWatchIdRef.current = watchId;
       })
       .catch(err => console.warn('Unable to start live location watch:', err));
+  }, [applyLocationUpdate, getBearing, routePolylineCoordinates]);
+
+  useEffect(() => {
+    if (!routePolylineCoordinates || routePolylineCoordinates.length < 2) {
+      if (locationWatchIdRef.current != null) {
+        clearWatchLocation(locationWatchIdRef.current);
+        locationWatchIdRef.current = null;
+      }
+      lastTrackedCoordinateRef.current = null;
+      setTruckCoordinate(null);
+      setTruckBearing(0);
+      setRouteProgress(0);
+      return;
+    }
+
+    // Start live tracking if not already started
+    ensureLiveTrackingStarted();
 
     return () => {
       if (locationWatchIdRef.current != null) {
@@ -574,13 +593,7 @@ export const VectorMap = props => {
         locationWatchIdRef.current = null;
       }
     };
-  }, [
-    getBearing,
-    getRoutePositionFromCurrentLocation,
-    getSegmentDistanceMeters,
-    props,
-    routePolylineCoordinates,
-  ]);
+  }, [routePolylineCoordinates, ensureLiveTrackingStarted]);
 
   // Fly camera when parent passes new lat/lon props
   useEffect(() => {
@@ -675,10 +688,10 @@ export const VectorMap = props => {
 
   const [isNavigating, setIsNavigating] = useState(false);
 
-  const fetchRouteNow = useCallback(async () => {
+  const fetchRouteNow = useCallback(async (showLoader = true) => {
     if (!sourceLocation || !destinationLocation) return null;
     try {
-      setIsLoadingRoute(true);
+      if (showLoader) setIsLoadingRoute(true);
       setRouteError(null);
       const response = await getRouteBetweenPoints(
         sourceLocation.latitude,
@@ -693,7 +706,7 @@ export const VectorMap = props => {
       setRouteError('Failed to fetch route');
       return null;
     } finally {
-      setIsLoadingRoute(false);
+      if (showLoader) setIsLoadingRoute(false);
     }
   }, [sourceLocation, destinationLocation]);
 
@@ -704,18 +717,39 @@ export const VectorMap = props => {
       let data = routeData;
       if (!data || !data.polylineCoordinates) {
         data = await fetchRouteNow();
+        if (data) {
+          // remember coords used for this route so background refresh can compare
+          if (sourceLocation && destinationLocation) {
+            lastRouteSourceCoordRef.current = [
+              sourceLocation.longitude,
+              sourceLocation.latitude,
+            ];
+            lastRouteDestCoordRef.current = [
+              destinationLocation.longitude,
+              destinationLocation.latitude,
+            ];
+          }
+        }
       }
       const first = data?.polylineCoordinates?.[0];
       if (first) {
+        // center camera on route start and orient for navigation
+        setSelectedCoordinate(first);
+        setCurrentZoom(NAVIGATE_ZOOM);
+        setCameraHeading(getBearing(first, data?.polylineCoordinates?.[1] ?? first));
+        setCameraPitch(45);
+        // smooth fly
         cameraRef.current?.flyTo(first, 700);
         cameraRef.current?.zoomTo(NAVIGATE_ZOOM, 700);
         // ensure truck marker is placed at route start immediately
         setTruckCoordinate(first);
         const next = data?.polylineCoordinates?.[1];
         if (next) setTruckBearing(getBearing(first, next));
+            // start live tracking (GPS updates -> truck progress)
+            ensureLiveTrackingStarted();
       }
     })();
-  }, [routeData]);
+  }, [routeData, fetchRouteNow, getBearing, ensureLiveTrackingStarted, sourceLocation, destinationLocation]);
 
   const handleRecenter = useCallback(() => {
     const coord = truckCoordinate || (sourceLocation && [sourceLocation.longitude, sourceLocation.latitude]) || centerCoordinate;
@@ -724,6 +758,9 @@ export const VectorMap = props => {
     cameraRef.current?.zoomTo(NAVIGATE_ZOOM, 700);
     // Stop 'navigate' mode and restore the custom source marker
     setIsNavigating(false);
+    // reset camera orientation back to overview
+    setCameraPitch(0);
+    setCameraHeading(0);
   }, [truckCoordinate, sourceLocation, centerCoordinate]);
 
   const handleMapPress = useCallback(event => {
@@ -795,10 +832,10 @@ export const VectorMap = props => {
         onPress={handleMapPress}>
         <MapLibreGL.Camera
           ref={cameraRef}
-          zoomLevel={INITIAL_ZOOM}
+          zoomLevel={currentZoom}
           centerCoordinate={centerCoordinate}
-          pitch={0}
-          heading={0}
+          pitch={cameraPitch}
+          heading={cameraHeading}
         />
 
         {/* Route polyline */}
@@ -816,8 +853,8 @@ export const VectorMap = props => {
               id="route-line"
               style={{
                 lineColor: '#2563EB',
-                lineWidth: 4,
-                lineOpacity: 0.8,
+                lineWidth: isNavigating ? 8 : 4,
+                lineOpacity: 0.9,
               }}
             />
           </MapLibreGL.ShapeSource>
@@ -956,7 +993,7 @@ export const VectorMap = props => {
       </View>
 
       {/* ── Search card ──────────────────────────────────────────────────── */}
-      <SearchCard
+      <PtvSearchCard
         sourceRef={sourceAutocompleteRef}
         destinationRef={destinationAutocompleteRef}
         activeInput={activeInput}
@@ -971,6 +1008,7 @@ export const VectorMap = props => {
         setDestinationText={setDestinationText}
         onCoordinateSelect={flyToCoordinate}
         apiKey={GOOGLE_MAPS_API_KEY}
+        ptvApiKey={effectivePtvApiKey}
       />
       {/* Bottom navigation bar: Navigate / Recenter */}
       <View style={styles.bottomBar} pointerEvents="box-none">
