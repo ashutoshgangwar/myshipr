@@ -207,6 +207,7 @@ const HomeScreen = () => {
 
   const openMap_navigation = () => navigation.navigate('NavigationScreen');
   const openMap            = () => navigation.navigate('VectorMap');
+    const openMap_Here            = () => navigation.navigate('HereSearchCard');
 
   const openSignatureCapture  = () => setIsSignaturePadVisible(true);
   const closeSignatureCapture = () => setIsSignaturePadVisible(false);
@@ -360,6 +361,16 @@ const HomeScreen = () => {
             onPress={openMap}
             activeOpacity={0.9}>
             <AppText style={styles.mapNavigatorBtnText}>Open PTV Navigator Map</AppText>
+          </TouchableOpacity>
+        </View>
+
+
+        <View style={styles.mapNavigatorRow}>
+          <TouchableOpacity
+            style={styles.mapNavigatorBtn}
+            onPress={openMap_Here}
+            activeOpacity={0.9}>
+            <AppText style={styles.mapNavigatorBtnText}>Open Here Navigator Map</AppText>
           </TouchableOpacity>
         </View>
 

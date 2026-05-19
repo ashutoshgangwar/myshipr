@@ -14,6 +14,7 @@ import Onboarding from '../screens/Onboarding/Onboarding';
 import Signup from '../screens/Signup/Signup';
 import SignatureCaptureScreen from '../screens/SignatureCaptureScreen/SignatureCaptureScreen';
 import { VectorMap } from '../screens/VectorMap/VectorMap';
+import HereSearchCard from '../apiservices/hereSearchCard';
 
 
 
@@ -41,6 +42,7 @@ export default function AppStackMain() {
       <Stack.Screen name="Profile" component={Profile} />
       <Stack.Screen name="PTVNavigatorMap" component={NavigationScreen} />
       <Stack.Screen name="VectorMap" component={VectorMap} />
+      <Stack.Screen name="HereSearchCard" component={HereSearchCard} />
       <Stack.Screen name="NavigationScreen" component={NavigationScreen} />
       <Stack.Screen name="DeliveryConfirmation" component={DeliveryConfirmation} />
       <Stack.Screen name="AvailableLoadsScreen" component={AvailableLoadsScreen} />
