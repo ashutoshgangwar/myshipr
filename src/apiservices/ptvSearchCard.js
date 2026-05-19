@@ -15,6 +15,10 @@ import Arrow_left_right from '../assets/svg_icon/arrow-right-lef.svg';
 import styles from '../screens/NavigationScreen/NavigationScreen.styles';
 import AppText from '../theme/AppText';
 
+const PTV_SEARCH_MIN_CHARS = 3;
+const PTV_SEARCH_DEBOUNCE_MS = 700;
+const PTV_SEARCH_CACHE_TTL_MS = 5 * 60 * 1000;
+
 const PtvSearchCard = ({
   sourceRef,
   destinationRef,
@@ -62,12 +66,21 @@ const PtvSearchCard = ({
   const [destSuggestions, setDestSuggestions] = useState([]);
   const [destLoading, setDestLoading] = useState(false);
   const destTimerRef = useRef(null);
+  const suggestionCacheRef = useRef(new Map());
 
   const fetchPtvSuggestions = useCallback(async (q, ptvApiKey) => {
-    if (!q || !ptvApiKey) return [];
+    const query = (q || '').trim();
+    if (!query || query.length < PTV_SEARCH_MIN_CHARS || !ptvApiKey) return [];
+
+    const cacheKey = query.toLowerCase();
+    const cached = suggestionCacheRef.current.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < PTV_SEARCH_CACHE_TTL_MS) {
+      return cached.items;
+    }
+
     try {
       const url = `https://api.myptv.com/geocoding/v1/locations/by-text?searchText=${encodeURIComponent(
-        q,
+        query,
       )}`;
       const res = await fetch(url, {
         method: 'GET',
@@ -75,12 +88,14 @@ const PtvSearchCard = ({
       });
       if (!res.ok) return [];
       const json = await res.json();
-      return (json.locations || []).map(loc => ({
+      const items = (json.locations || []).map(loc => ({
         id: loc.feedbackId || `${loc.referencePosition.latitude}_${loc.referencePosition.longitude}`,
         title: loc.formattedAddress || loc.address?.city || '',
         latitude: loc.referencePosition?.latitude,
         longitude: loc.referencePosition?.longitude,
       }));
+      suggestionCacheRef.current.set(cacheKey, {items, timestamp: Date.now()});
+      return items;
     } catch (err) {
       console.warn('PTV suggestions error', err);
       return [];
@@ -91,13 +106,21 @@ const PtvSearchCard = ({
     q => {
       setSourceQuery(q);
       if (!ptvApiKey) return;
+      const normalized = (q || '').trim();
       if (sourceTimerRef.current) clearTimeout(sourceTimerRef.current);
+
+      if (normalized.length < PTV_SEARCH_MIN_CHARS) {
+        setSourceSuggestions([]);
+        setSourceLoading(false);
+        return;
+      }
+
       sourceTimerRef.current = setTimeout(async () => {
         setSourceLoading(true);
-        const items = await fetchPtvSuggestions(q, ptvApiKey);
+        const items = await fetchPtvSuggestions(normalized, ptvApiKey);
         setSourceSuggestions(items);
         setSourceLoading(false);
-      }, 300);
+      }, PTV_SEARCH_DEBOUNCE_MS);
     },
     [fetchPtvSuggestions, ptvApiKey],
   );
@@ -106,13 +129,21 @@ const PtvSearchCard = ({
     q => {
       setDestQuery(q);
       if (!ptvApiKey) return;
+      const normalized = (q || '').trim();
       if (destTimerRef.current) clearTimeout(destTimerRef.current);
+
+      if (normalized.length < PTV_SEARCH_MIN_CHARS) {
+        setDestSuggestions([]);
+        setDestLoading(false);
+        return;
+      }
+
       destTimerRef.current = setTimeout(async () => {
         setDestLoading(true);
-        const items = await fetchPtvSuggestions(q, ptvApiKey);
+        const items = await fetchPtvSuggestions(normalized, ptvApiKey);
         setDestSuggestions(items);
         setDestLoading(false);
-      }, 300);
+      }, PTV_SEARCH_DEBOUNCE_MS);
     },
     [fetchPtvSuggestions, ptvApiKey],
   );
