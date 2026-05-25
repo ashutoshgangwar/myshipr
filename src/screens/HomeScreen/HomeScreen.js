@@ -314,7 +314,7 @@ const HomeScreen = () => {
         {/* HEADER */}
         <View style={styles.header}>
           <View>
-            <AppText style={styles.welcome}>Welcome back,</AppText>
+            <AppText style={styles.welcome}>Welcome back after update,</AppText>
             <AppText style={styles.username}>Ashutosh Gangwar</AppText>
           </View>
           <TouchableOpacity style={styles.profileCircle}>

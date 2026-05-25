@@ -17,416 +17,56 @@ import {
   getCurrentLocation,
   watchCurrentLocation,
 } from '../../services/LocationService';
-import {calculateTruckRouteREST} from '../../services/hereTruckService';
+import {calculateTruckRouteREST} from './services/hereTruckService';
 
-import {HereMapView, HereMapModule} from '../../components/HereMap/index';
-import HereSearchCard from '../../apiservices/hereSearchCard';
+import {HereMapView, HereMapModule} from './components/HereMap/index';
+import RouteGeometry from './components/HereMap/Routegeometry';
+import HereSearchCard from './hereSearchCard';
 import {useSelector} from 'react-redux';
 import {selectLocation} from '../../redux/slices/locationSlice';
-import RouteGeometry from '../../components/HereMap/Routegeometry';
+
+// Utilities and hooks
+import {useSmoothLocation, isValidCoord, isUsableNavCoord} from './hooks/useSmoothLocation';
+import {
+  haversineDistanceMeters,
+  computeBearing,
+  smallestBearingDelta,
+  directionAwareSnap,
+  resolveLiveSpeedMps,
+  sanitizeRouteCoords,
+} from './utils/mathUtils';
+import {decodeFlexiblePolyline, decodeGooglePolyline} from './utils/polylineDecoder';
+
+// Components
+import {NavigationControls, ToolbarButton} from './components/NavigationControls';
+import {NavigationInfo} from './components/NavigationInfo';
+
+// Constants
+import {
+  NAVIGATION_ZOOM,
+  NAVIGATION_START_ZOOM,
+  NAVIGATION_TILT,
+  NAVIGATION_ANIMATE,
+  NAVIGATION_CAMERA_DURATION_MS,
+  NAVIGATION_CAMERA_INTERVAL_MS,
+  NAVIGATION_MARKER_ANIMATION_MS,
+  NAVIGATION_MIN_MOVE_METERS,
+  NAVIGATION_MIN_TURN_DEGREES,
+  NAVIGATION_MIN_SPEED_MPS,
+  WRONG_WAY_BEARING_THRESHOLD,
+  WRONG_WAY_PROGRESS_BACKTRACK_METERS,
+  WRONG_WAY_STREAK_LIMIT,
+  REROUTE_INTERVAL_MS,
+  OFF_ROUTE_THRESHOLD,
+  NAVIGATION_MARKER,
+  NAVIGATION_ROUTE_WIDTH,
+  ORIGIN,
+  DESTINATION,
+} from './constants/navigationConstants';
 
 const hasHereCredentials = Boolean(
   HERE_ACCESS_KEY_ID && HERE_ACCESS_KEY_SECRET,
 );
-
-function isValidCoord(lat, lng) {
-  return (
-    typeof lat === 'number' &&
-    isFinite(lat) &&
-    lat >= -90 &&
-    lat <= 90 &&
-    typeof lng === 'number' &&
-    isFinite(lng) &&
-    lng >= -180 &&
-    lng <= 180
-  );
-}
-
-function isUsableNavCoord(lat, lng) {
-  // Ignore Null Island (0,0) before first real GPS fix.
-  return isValidCoord(lat, lng) && !(Math.abs(lat) < 1e-6 && Math.abs(lng) < 1e-6);
-}
-
-function haversineDistanceMeters(lat1, lng1, lat2, lng2) {
-  const toRad = d => (d * Math.PI) / 180;
-  const dLat = toRad(lat2 - lat1);
-  const dLng = toRad(lng2 - lng1);
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos(toRad(lat1)) * Math.cos(toRad(lat2)) * Math.sin(dLng / 2) ** 2;
-  return 6371000 * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
-
-function sanitizeRouteCoords(coords, origin, destination) {
-  if (!Array.isArray(coords) || coords.length < 2) return [];
-
-  const cleaned = [];
-  for (const p of coords) {
-    if (!isValidCoord(p?.lat, p?.lng)) continue;
-    if (cleaned.length === 0) {
-      cleaned.push({lat: p.lat, lng: p.lng});
-      continue;
-    }
-
-    const prev = cleaned[cleaned.length - 1];
-    const seg = haversineDistanceMeters(prev.lat, prev.lng, p.lat, p.lng);
-
-    // Drop micro-noise and abnormal huge jumps caused by bad decode/outliers.
-    if (seg < 0.8) continue;
-    if (seg > 2500) continue;
-
-    cleaned.push({lat: p.lat, lng: p.lng});
-  }
-
-  if (cleaned.length < 2) return [];
-
-  if (origin && isUsableNavCoord(origin.lat, origin.lng)) {
-    const dStart = haversineDistanceMeters(
-      origin.lat,
-      origin.lng,
-      cleaned[0].lat,
-      cleaned[0].lng,
-    );
-    if (dStart > 6000) return [];
-  }
-
-  if (destination && isUsableNavCoord(destination.lat, destination.lng)) {
-    const end = cleaned[cleaned.length - 1];
-    const dEnd = haversineDistanceMeters(
-      destination.lat,
-      destination.lng,
-      end.lat,
-      end.lng,
-    );
-    if (dEnd > 8000) return [];
-  }
-
-  return cleaned;
-}
-
-const ORIGIN = {lat: 50.1109, lng: 8.6821};
-const DESTINATION = {lat: 48.1374, lng: 11.5755};
-
-// ── 2D flat navigation view ──
-// Keep this lower than street-level max to avoid over-zoom when navigation starts.
-const NAVIGATION_ZOOM = 14.0;
-const NAVIGATION_START_ZOOM = 13.8;
-const NAVIGATION_TILT = 56;
-const NAVIGATION_ANIMATE = false;
-const NAVIGATION_CAMERA_DURATION_MS = 220;
-const NAVIGATION_CAMERA_INTERVAL_MS = 80;
-const NAVIGATION_MARKER_ANIMATION_MS = 120;
-const NAVIGATION_MIN_MOVE_METERS = 0.2;
-const NAVIGATION_MIN_TURN_DEGREES = 0.5;
-const NAVIGATION_MIN_SPEED_MPS = 1.8;
-const WRONG_WAY_BEARING_THRESHOLD = 135;
-const WRONG_WAY_PROGRESS_BACKTRACK_METERS = 12;
-const WRONG_WAY_STREAK_LIMIT = 2;
-
-const REROUTE_INTERVAL_MS = 12000;
-const OFF_ROUTE_THRESHOLD = 55;
-
-const NAVIGATION_MARKER = {
-  size: 120,
-  iconAsset: 'truck_icon.svg',
-};
-
-const NAVIGATION_ROUTE_WIDTH = 14;
-
-// ---------------------------------------------------------------------------
-// Math utilities
-// ---------------------------------------------------------------------------
-function lerp(a, b, t) {
-  return a + (b - a) * t;
-}
-
-function computeBearing(fromLat, fromLng, toLat, toLng) {
-  const toRad = d => (d * Math.PI) / 180;
-  const toDeg = r => (r * 180) / Math.PI;
-  const lat1 = toRad(fromLat);
-  const lat2 = toRad(toLat);
-  const dLng = toRad(toLng - fromLng);
-  const y = Math.sin(dLng) * Math.cos(lat2);
-  const x =
-    Math.cos(lat1) * Math.sin(lat2) -
-    Math.sin(lat1) * Math.cos(lat2) * Math.cos(dLng);
-  return (toDeg(Math.atan2(y, x)) + 360) % 360;
-}
-
-function lerpBearing(from, to, t) {
-  let diff = to - from;
-  if (diff > 180) diff -= 360;
-  if (diff < -180) diff += 360;
-  return (from + diff * t + 360) % 360;
-}
-
-function smallestBearingDelta(a, b) {
-  let diff = Math.abs((a ?? 0) - (b ?? 0));
-  if (diff > 180) diff = 360 - diff;
-  return diff;
-}
-
-// ---------------------------------------------------------------------------
-// Direction-aware snapping helpers
-// ---------------------------------------------------------------------------
-function metersPerDeg(lat) {
-  // approximate conversions
-  const latMeters = 111132.92 - 559.82 * Math.cos(2 * toRad(lat)) + 1.175 * Math.cos(4 * toRad(lat));
-  const lngMeters = (Math.PI / 180) * 6378137 * Math.cos(toRad(lat));
-  return {latMeters, lngMeters};
-}
-
-function projectPointOnSegment(lat1, lng1, lat2, lng2, latP, lngP) {
-  // Project point P onto segment AB in an equirectangular/meters plane
-  const meanLat = (lat1 + lat2 + latP) / 3;
-  const {latMeters, lngMeters} = metersPerDeg(meanLat);
-
-  const Ax = lng1 * lngMeters;
-  const Ay = lat1 * latMeters;
-  const Bx = lng2 * lngMeters;
-  const By = lat2 * latMeters;
-  const Px = lngP * lngMeters;
-  const Py = latP * latMeters;
-
-  const ABx = Bx - Ax;
-  const ABy = By - Ay;
-  const APx = Px - Ax;
-  const APy = Py - Ay;
-  const ab2 = ABx * ABx + ABy * ABy;
-  let t = ab2 > 0 ? (APx * ABx + APy * ABy) / ab2 : 0;
-  if (t < 0) t = 0;
-  if (t > 1) t = 1;
-
-  const projX = Ax + ABx * t;
-  const projY = Ay + ABy * t;
-
-  const distMeters = Math.hypot(Px - projX, Py - projY);
-  const projLat = projY / latMeters;
-  const projLng = projX / lngMeters;
-
-  return {lat: projLat, lng: projLng, fraction: t, distMeters};
-}
-
-/**
- * directionAwareSnap
- * - Search nearby route segments for a projection point whose segment bearing
- *   matches the vehicle heading. Falls back to rawSnap when no match.
- */
-function directionAwareSnap({
-  lat,
-  lng,
-  heading,
-  speed,
-  accuracy,
-  coords,
-  lastIndex = -1,
-  rawSnap = null,
-}) {
-  if (!Array.isArray(coords) || coords.length < 2) return rawSnap;
-
-  const MAX_ACCURACY = 20; // meters
-  const MAX_SNAP_DISTANCE = 50; // meters allowed for snapping
-  const BEARING_THRESHOLD = 45; // degrees
-  const LOW_SPEED_MPS = 5 / 3.6; // 5 km/h -> m/s
-
-  if (accuracy != null && accuracy > MAX_ACCURACY) {
-    // Poor accuracy: skip direction-aware snapping, use raw nearest snap
-    return rawSnap;
-  }
-
-  const candidates = [];
-
-  // choose window around lastIndex for performance
-  const len = coords.length;
-  const center = Number.isFinite(lastIndex) && lastIndex >= 0 ? lastIndex : 0;
-  const window = Math.max(50, Math.floor(len * 0.1));
-  const start = Math.max(0, center - window);
-  const end = Math.min(len - 2, center + window);
-
-  for (let i = start; i <= end; i++) {
-    const a = coords[i];
-    const b = coords[i + 1];
-    if (!isValidCoord(a?.lat, a?.lng) || !isValidCoord(b?.lat, b?.lng)) continue;
-    const proj = projectPointOnSegment(a.lat, a.lng, b.lat, b.lng, lat, lng);
-    if (proj.distMeters > MAX_SNAP_DISTANCE) continue;
-    const segBearing = computeBearing(a.lat, a.lng, b.lat, b.lng);
-    candidates.push({i, proj, segBearing});
-  }
-
-  if (candidates.length === 0) {
-    // Try full-route scan as fallback (expensive but rare)
-    for (let i = 0; i < len - 1; i++) {
-      const a = coords[i];
-      const b = coords[i + 1];
-      if (!isValidCoord(a?.lat, a?.lng) || !isValidCoord(b?.lat, b?.lng)) continue;
-      const proj = projectPointOnSegment(a.lat, a.lng, b.lat, b.lng, lat, lng);
-      if (proj.distMeters > MAX_SNAP_DISTANCE) continue;
-      const segBearing = computeBearing(a.lat, a.lng, b.lat, b.lng);
-      candidates.push({i, proj, segBearing});
-    }
-  }
-
-  if (candidates.length === 0) return rawSnap;
-
-  // If heading is available and speed sufficient, prefer candidates matching direction
-  let filtered = candidates;
-  if (Number.isFinite(heading) && (speed == null || speed >= LOW_SPEED_MPS)) {
-    filtered = candidates.filter(c => smallestBearingDelta(heading, c.segBearing) <= BEARING_THRESHOLD);
-  }
-
-  // If none matched direction and we had heading, relax by doubling threshold
-  if (filtered.length === 0 && Number.isFinite(heading)) {
-    filtered = candidates.filter(c => smallestBearingDelta(heading, c.segBearing) <= BEARING_THRESHOLD * 2);
-  }
-
-  // choose nearest among filtered
-  let best = null;
-  for (const c of filtered) {
-    if (!best || c.proj.distMeters < best.proj.distMeters) best = c;
-  }
-
-  if (!best) return rawSnap;
-
-  // Build a snap-like object (keep rawSnap.progress if available)
-  return {
-    lat: best.proj.lat,
-    lng: best.proj.lng,
-    bearing: best.segBearing,
-    segmentIndex: best.i,
-    fraction: best.proj.fraction,
-    distFromRoute: best.proj.distMeters,
-    progress: rawSnap?.progress,
-  };
-}
-
-function resolveLiveSpeedMps(position) {
-  const speed = position?.speed;
-  return Number.isFinite(speed) && speed >= 0 ? speed : undefined;
-}
-
-// ---------------------------------------------------------------------------
-// Smooth location animation hook
-// ---------------------------------------------------------------------------
-function useSmoothLocation() {
-  const smoothPos = useRef({lat: 0, lng: 0, bearing: 0, speed: 0});
-  const targetPos = useRef({lat: 0, lng: 0, bearing: 0, speed: 0});
-  const animStartPosRef = useRef({lat: 0, lng: 0, bearing: 0, speed: 0});
-  const prevRawPos = useRef(null);
-  const animFrameRef = useRef(null);
-  const animStartRef = useRef(0);
-  const ANIM_DURATION = 700;
-  const hasFirstFix = useRef(false);
-  const listenersRef = useRef([]);
-
-  const subscribe = useCallback(cb => {
-    listenersRef.current.push(cb);
-    return () => {
-      listenersRef.current = listenersRef.current.filter(l => l !== cb);
-    };
-  }, []);
-
-  const notify = useCallback(() => {
-    const pos = {...smoothPos.current};
-    listenersRef.current.forEach(cb => cb(pos));
-  }, []);
-
-  const runAnimation = useCallback(() => {
-    const now = Date.now();
-    const elapsed = now - animStartRef.current;
-    const rawT = Math.min(elapsed / ANIM_DURATION, 1);
-    const t = 1 - Math.pow(1 - rawT, 3);
-
-    smoothPos.current = {
-      lat: lerp(animStartPosRef.current.lat, targetPos.current.lat, t),
-      lng: lerp(animStartPosRef.current.lng, targetPos.current.lng, t),
-      bearing: lerpBearing(
-        animStartPosRef.current.bearing,
-        targetPos.current.bearing,
-        t,
-      ),
-      speed: lerp(animStartPosRef.current.speed, targetPos.current.speed, t),
-    };
-    notify();
-
-    if (rawT < 1) {
-      animFrameRef.current = requestAnimationFrame(runAnimation);
-    } else {
-      smoothPos.current = {
-        lat: targetPos.current.lat,
-        lng: targetPos.current.lng,
-        bearing: targetPos.current.bearing,
-        speed: targetPos.current.speed,
-      };
-      notify();
-    }
-  }, [notify]);
-
-  const pushLocation = useCallback(
-    (lat, lng, overrideBearing, overrideSpeed) => {
-      if (!isValidCoord(lat, lng)) return;
-
-      const now = Date.now();
-      let bearing = overrideBearing ?? targetPos.current.bearing;
-      let speed =
-        typeof overrideSpeed === 'number' && isFinite(overrideSpeed) && overrideSpeed >= 0
-          ? overrideSpeed
-          : targetPos.current.speed;
-      if (overrideBearing == null && prevRawPos.current) {
-        const dist =
-          Math.abs(lat - prevRawPos.current.lat) +
-          Math.abs(lng - prevRawPos.current.lng);
-        if (dist > 0.00003) {
-          bearing = computeBearing(
-            prevRawPos.current.lat,
-            prevRawPos.current.lng,
-            lat,
-            lng,
-          );
-        }
-      }
-      if (prevRawPos.current) {
-        const dtSec = Math.max(0.001, (now - prevRawPos.current.ts) / 1000);
-        const distMeters = haversineDistanceMeters(
-          prevRawPos.current.lat,
-          prevRawPos.current.lng,
-          lat,
-          lng,
-        );
-        if (!(typeof overrideSpeed === 'number' && isFinite(overrideSpeed))) {
-          speed = distMeters / dtSec;
-        }
-      }
-      prevRawPos.current = {lat, lng, ts: now};
-
-      if (!hasFirstFix.current) {
-        hasFirstFix.current = true;
-        smoothPos.current = {lat, lng, bearing, speed};
-        targetPos.current = {lat, lng, bearing, speed};
-        notify();
-        return;
-      }
-
-      if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
-      animStartPosRef.current = {
-        lat: smoothPos.current.lat,
-        lng: smoothPos.current.lng,
-        bearing: smoothPos.current.bearing,
-        speed: smoothPos.current.speed,
-      };
-      targetPos.current = {lat, lng, bearing, speed};
-      animStartRef.current = now;
-      animFrameRef.current = requestAnimationFrame(runAnimation);
-    },
-    [runAnimation, notify],
-  );
-
-  const cleanup = useCallback(() => {
-    if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
-    listenersRef.current = [];
-  }, []);
-
-  return {pushLocation, subscribe, smoothPos, cleanup};
-}
 
 // ===========================================================================
 // Main Screen
@@ -525,13 +165,6 @@ export default function HereMapScreen() {
 
   // -------------------------------------------------------------------------
   // Subscribe smooth location → push to native map
-  //
-  // 2D view: tilt=0, camera bearing rotates with direction of travel.
-  // Truck SVG bearing = direction of travel (front faces forward).
-  //
-  // Two modes:
-  //   hasRealGeometry=true  → snap to decoded polyline, trim behind truck
-  //   hasRealGeometry=false → raw GPS position, native drawRoute visual only
   // -------------------------------------------------------------------------
   useEffect(() => {
     const unsub = smooth.subscribe(async pos => {
@@ -542,10 +175,6 @@ export default function HereMapScreen() {
           const geo = routeGeometryRef.current;
           const hasReal = hasRealGeometryRef.current;
 
-          // ── Bearing for the truck SVG ──
-          // The SVG truck's natural "front" points UP (bearing=0).
-          // We rotate it to face the direction of travel.
-          // pos.bearing comes from computeBearing in pushLocation.
           const truckBearing = isFinite(pos.bearing) ? pos.bearing : 0;
 
           if (geo && hasReal) {
@@ -553,7 +182,6 @@ export default function HereMapScreen() {
             const snap = geo.snapToRoute(pos.lat, pos.lng);
             if (!isValidCoord(snap.lat, snap.lng)) return;
 
-            // Use route segment bearing for more stable direction
             const routeBearing = isFinite(snap.bearing)
               ? snap.bearing
               : truckBearing;
@@ -579,7 +207,6 @@ export default function HereMapScreen() {
 
             const promises = [];
 
-            // Marker at snapped position, facing route direction
             promises.push(
               mapRef.current?.updateNavigationMarker({
                 lat: snap.lat,
@@ -591,7 +218,6 @@ export default function HereMapScreen() {
               }),
             );
 
-            // Trim polyline behind truck (monotonic guard)
             const cursor = lastTrimCursorRef.current;
             if (
               snap.segmentIndex > cursor.index ||
@@ -613,7 +239,6 @@ export default function HereMapScreen() {
               );
             }
 
-            // Camera: 2D, bearing = direction of travel
             const now = Date.now();
             const canUpdateCamera =
               now - lastCameraUpdateTsRef.current >= NAVIGATION_CAMERA_INTERVAL_MS;
@@ -722,7 +347,7 @@ export default function HereMapScreen() {
   }, []);
 
   // -------------------------------------------------------------------------
-  // Polyline extraction — tries BOTH decoders
+  // Polyline extraction
   // -------------------------------------------------------------------------
   const extractRoutePolyline = useCallback(routeJson => {
     try {
@@ -733,10 +358,8 @@ export default function HereMapScreen() {
         const polyline = section.polyline;
 
         if (typeof polyline === 'string' && polyline.length > 0) {
-          // Try HERE Flexible Polyline first
           let decoded = decodeFlexiblePolyline(polyline);
 
-          // If flex decode returned 0 coords, try Google Polyline format
           if (decoded.length === 0) {
             console.log(
               '[extractRoutePolyline] flex decode failed, trying Google format...',
@@ -806,7 +429,6 @@ export default function HereMapScreen() {
           {lat: destLat, lng: destLng},
         );
         if (coords.length >= 2) {
-          // Reset trim cursor so new polyline trims from beginning
           lastTrimCursorRef.current = {index: -1, fraction: 0};
           await setupRouteGeometry(coords);
         } else {
@@ -934,13 +556,11 @@ export default function HereMapScreen() {
       return;
     }
 
-    // Cancel pending preview redraw to avoid camera/route conflicts at nav start.
     if (previewDebounceRef.current) {
       clearTimeout(previewDebounceRef.current);
       previewDebounceRef.current = null;
     }
 
-    // Always anchor navigation start to LIVE GPS + fresh route from that point.
     let navStartSource = null;
     try {
       const start = await getCurrentLocation({detectMock: true});
@@ -981,7 +601,6 @@ export default function HereMapScreen() {
       }
     }
 
-    // Build fresh route from current GPS to destination for marker/polyline sync.
     routeGeometryRef.current = null;
     routeCoordsRef.current = [];
     hasRealGeometryRef.current = false;
@@ -1099,7 +718,6 @@ export default function HereMapScreen() {
       );
     }
 
-    // Camera + marker: 2D flat view
     try {
       if (immediatePos && isUsableNavCoord(immediatePos.lat, immediatePos.lng)) {
         await mapRef.current?.hideCurrentLocation();
@@ -1123,7 +741,6 @@ export default function HereMapScreen() {
           }),
         ]);
 
-        // Keep polyline corner exactly on the same start point as marker.
         if (startGeo && hasRealAtStart && lastTrimCursorRef.current.index >= 0) {
           await mapRef.current?.trimPolyline({
             trimIndex: lastTrimCursorRef.current.index,
@@ -1134,7 +751,6 @@ export default function HereMapScreen() {
           });
         }
 
-        // Destination pin
         if (
           isValidCoord(
             destinationLocation.latitude,
@@ -1154,7 +770,6 @@ export default function HereMapScreen() {
 
     setIsNavigating(true);
 
-    // GPS watch
     try {
       const watchId = await watchCurrentLocation(
         async position => {
@@ -1177,7 +792,6 @@ export default function HereMapScreen() {
 
           if (geo && hasReal) {
             let rawSnap = geo.snapToRoute(lat, lng);
-            // Try direction-aware snapping using heading, speed and accuracy
             try {
               const heading = Number.isFinite(position?.bearing) && Math.abs(position.bearing) > 0.1
                 ? position.bearing
@@ -1201,7 +815,6 @@ export default function HereMapScreen() {
               console.warn('[Nav] direction-aware snap failed', e?.message ?? e);
             }
 
-            // ── Off-route detection → immediate reroute ──
             if (rawSnap.distFromRoute > OFF_ROUTE_THRESHOLD) {
               console.log(
                 '[Nav] OFF ROUTE:',
@@ -1248,7 +861,6 @@ export default function HereMapScreen() {
             smooth.pushLocation(lat, lng, liveHeading, liveSpeed);
           }
 
-          // Throttled reroute — also updates distance/ETA
           const now = Date.now();
           const dest = destinationLocationRef.current;
           if (
@@ -1275,7 +887,6 @@ export default function HereMapScreen() {
               setRouteSummary(navSummary);
               updateNavigationInfo(navSummary);
 
-              // Redraw polyline from fresh route (handles direction changes)
               console.log('[Nav] reroute reason:', rerouteReason);
               await updateRouteGeometryOnly(
                 origin.latitude,
@@ -1298,7 +909,6 @@ export default function HereMapScreen() {
       );
       navigationWatchIdRef.current = watchId;
 
-      // Background: initial GPS fix + route
       (async () => {
         try {
           const start = await getCurrentLocation({detectMock: true});
@@ -1364,9 +974,6 @@ export default function HereMapScreen() {
               console.warn('fresh route failed', routeErr);
             }
           }
-
-          // Camera follow is already handled by smooth GPS subscription.
-          // Avoid extra bootstrap camera jump here.
         } catch (err) {
           console.warn('bg GPS setup failed', err);
         }
@@ -1473,7 +1080,6 @@ export default function HereMapScreen() {
     }
   };
 
-  // Auto-set source
   useEffect(() => {
     if (
       currentLocation &&
@@ -1491,24 +1097,18 @@ export default function HereMapScreen() {
     }
   }, [currentLocation, sourceLocation, smooth]);
 
-  // Sync markers + route preview
-  // ── Optimised: debounced, cancellable, fetch-then-swap (no empty-map flash) ──
   const previewDebounceRef = useRef(null);
   useEffect(() => {
     if (!sdkReady) return;
     if (isNavigatingRef.current) return;
 
-    // Debounce: wait 350 ms before firing so rapid state changes collapse
     if (previewDebounceRef.current) clearTimeout(previewDebounceRef.current);
 
-    // Cancellation flag – if the effect re-runs before the async work
-    // completes, the stale closure sets cancelled=true and all awaits bail out
     let cancelled = false;
 
     previewDebounceRef.current = setTimeout(async () => {
       if (cancelled || isNavigatingRef.current) return;
       try {
-        // ── 1. Fetch route FIRST (map still shows old content, no flash) ──
         let coords = [];
         let summary = null;
         let usedNative = false;
@@ -1548,7 +1148,6 @@ export default function HereMapScreen() {
 
         if (cancelled) return;
 
-        // ── 2. Now atomically clear + redraw (single frame, no empty flash) ──
         await Promise.all([
           mapRef.current?.clearMarkers(),
           mapRef.current?.clearPolyline(),
@@ -1556,12 +1155,10 @@ export default function HereMapScreen() {
         ]);
         if (cancelled) return;
 
-        // Reset preview refs
         previewRouteCoordsRef.current = [];
         previewRouteSummaryRef.current = null;
         previewUsedNativeRouteRef.current = false;
 
-        // Source blue dot
         if (
           sourceLocation &&
           isUsableNavCoord(sourceLocation.latitude, sourceLocation.longitude)
@@ -1574,7 +1171,6 @@ export default function HereMapScreen() {
         }
         if (cancelled) return;
 
-        // Destination pin
         if (
           destinationLocation &&
           isUsableNavCoord(
@@ -1590,7 +1186,6 @@ export default function HereMapScreen() {
         }
         if (cancelled) return;
 
-        // ── 3. Draw route / polyline ──
         if (summary) {
           setRouteSummary(summary);
           previewRouteSummaryRef.current = summary;
@@ -1605,7 +1200,6 @@ export default function HereMapScreen() {
             width: 10,
           });
           if (cancelled) return;
-          // Fit camera to full route
           const lats = coords.map(c => c.lat);
           const lngs = coords.map(c => c.lng);
           const midLat = (Math.min(...lats) + Math.max(...lats)) / 2;
@@ -1647,7 +1241,6 @@ export default function HereMapScreen() {
       cancelled = true;
       if (previewDebounceRef.current) clearTimeout(previewDebounceRef.current);
     };
-    // smooth intentionally excluded — smoothPos.current is read via ref, not state
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sdkReady, sourceLocation, destinationLocation]);
 
@@ -1739,51 +1332,22 @@ export default function HereMapScreen() {
         </Animated.View>
       )}
 
-      {isNavigating && navigationInfo && (
-        <View style={styles.navInfoBar}>
-          <View style={styles.navInfoRow}>
-            <View style={styles.navInfoEta}>
-              <Text style={styles.navInfoEtaText}>{navigationInfo.etaMin}</Text>
-              <Text style={styles.navInfoEtaLabel}>min</Text>
-            </View>
-            <View style={styles.navInfoDivider} />
-            <View style={styles.navInfoDetails}>
-              <Text style={styles.navInfoDistText}>
-                {navigationInfo.distKm} km remaining
-              </Text>
-              <Text style={styles.navInfoArrivalText}>
-                Arrival at {navigationInfo.arrivalStr}
-              </Text>
-            </View>
-            <TouchableOpacity
-              style={styles.navStopButton}
-              onPress={stopNavigation}
-              activeOpacity={0.75}>
-              <Text style={styles.navStopButtonText}>Stop</Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-      )}
+      <NavigationInfo
+        navigationInfo={navigationInfo}
+        routeSummary={routeSummary}
+        isNavigating={isNavigating}
+        onStop={stopNavigation}
+      />
 
-      {!isNavigating && (
-        <View style={styles.toolbar}>
-          <ToolbarButton label="📷 Camera" onPress={handleMoveCamera} />
-          <ToolbarButton label="📍 Markers" onPress={handleAddMarkers} />
-          <ToolbarButton label="🔵 Location" onPress={handleShowLocation} />
-          <ToolbarButton label="🛣️ Route" onPress={handleDrawRoute} />
-          <ToolbarButton label="🧭 Navigate" onPress={handleStartNavigation} />
-          <ToolbarButton label="🗑️ Clear" onPress={handleClear} />
-        </View>
-      )}
-
-      {routeSummary && !isNavigating && (
-        <View style={styles.routeSummaryBar}>
-          <Text style={styles.routeSummaryText}>
-            Distance: {(routeSummary.length / 1000).toFixed(2)} km • ETA:{' '}
-            {Math.ceil(routeSummary.duration / 60)} min
-          </Text>
-        </View>
-      )}
+      <NavigationControls
+        onCamera={handleMoveCamera}
+        onMarkers={handleAddMarkers}
+        onLocation={handleShowLocation}
+        onRoute={handleDrawRoute}
+        onNavigate={handleStartNavigation}
+        onClear={handleClear}
+        isNavigating={isNavigating}
+      />
 
       {isNavigating && (
         <TouchableOpacity
@@ -1807,141 +1371,5 @@ export default function HereMapScreen() {
         )}
       </TouchableOpacity>
     </SafeAreaView>
-  );
-}
-
-
-const _FLEX_POLY_TABLE = (() => {
-  const T = new Int8Array(128).fill(-1);
-  const C = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_';
-  for (let i = 0; i < C.length; i++) T[C.charCodeAt(i)] = i;
-  return T;
-})();
-
-function decodeFlexiblePolyline(encoded) {
-  if (!encoded || encoded.length === 0) return [];
-  const result = [];
-  let index = 0;
-
-  function readVarint() {
-    let v = 0,
-      s = 0,
-      c;
-    do {
-      const code = encoded.charCodeAt(index);
-      c = code < 128 ? _FLEX_POLY_TABLE[code] : -1;
-      if (c < 0) return -1; // signal failure
-      index++;
-      v |= (c & 0x1f) << s;
-      s += 5;
-    } while (c >= 0x20 && index < encoded.length);
-    return v;
-  }
-  function readDelta() {
-    const v = readVarint();
-    if (v < 0) return NaN;
-    return v & 1 ? ~(v >> 1) : v >> 1;
-  }
-
-  const header = readVarint();
-  if (header < 0) return [];
-  const precision = (header >> 4) & 0xf;
-  const thirdDimT = (header >> 12) & 0x7;
-  const hasThird = thirdDimT !== 0;
-  const factor = Math.pow(10, precision || 5);
-  let lat = 0,
-    lng = 0;
-
-  while (index < encoded.length) {
-    const dLat = readDelta();
-    if (isNaN(dLat)) break;
-    lat += dLat;
-    if (index >= encoded.length) break;
-    const dLng = readDelta();
-    if (isNaN(dLng)) break;
-    lng += dLng;
-    if (hasThird && index < encoded.length) {
-      const d = readDelta();
-      if (isNaN(d)) break;
-    }
-    const fLat = lat / factor,
-      fLng = lng / factor;
-    if (
-      isFinite(fLat) &&
-      fLat >= -90 &&
-      fLat <= 90 &&
-      isFinite(fLng) &&
-      fLng >= -180 &&
-      fLng <= 180
-    ) {
-      result.push({lat: fLat, lng: fLng});
-    }
-  }
-  return result;
-}
-
-// ===========================================================================
-// Google Polyline Decoder (charCode - 63 offset)
-// Used as FALLBACK when HERE Flexible Polyline decode returns 0 coords.
-// HERE v7 Routing API and some REST endpoints use this format.
-// ===========================================================================
-function decodeGooglePolyline(encoded) {
-  if (!encoded || encoded.length === 0) return [];
-  const result = [];
-  let index = 0,
-    lat = 0,
-    lng = 0;
-
-  while (index < encoded.length) {
-    // Decode latitude
-    let shift = 0,
-      val = 0,
-      byte;
-    do {
-      byte = encoded.charCodeAt(index++) - 63;
-      val |= (byte & 0x1f) << shift;
-      shift += 5;
-    } while (byte >= 0x20 && index < encoded.length);
-    lat += val & 1 ? ~(val >> 1) : val >> 1;
-
-    if (index >= encoded.length) break;
-
-    // Decode longitude
-    shift = 0;
-    val = 0;
-    do {
-      byte = encoded.charCodeAt(index++) - 63;
-      val |= (byte & 0x1f) << shift;
-      shift += 5;
-    } while (byte >= 0x20 && index < encoded.length);
-    lng += val & 1 ? ~(val >> 1) : val >> 1;
-
-    const fLat = lat / 1e5;
-    const fLng = lng / 1e5;
-    if (
-      isFinite(fLat) &&
-      fLat >= -90 &&
-      fLat <= 90 &&
-      isFinite(fLng) &&
-      fLng >= -180 &&
-      fLng <= 180
-    ) {
-      result.push({lat: fLat, lng: fLng});
-    }
-  }
-  return result;
-}
-
-function ToolbarButton({label, onPress, highlight}) {
-  return (
-    <TouchableOpacity
-      style={[styles.button, highlight && styles.buttonHighlight]}
-      onPress={onPress}
-      activeOpacity={0.75}>
-      <Text
-        style={[styles.buttonText, highlight && styles.buttonTextHighlight]}>
-        {label}
-      </Text>
-    </TouchableOpacity>
   );
 }

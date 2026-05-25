@@ -10,12 +10,11 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import {scale} from 'react-native-size-matters';
-import Location_Icon from '../assets/svg_icon/location.svg';
-import Arrow_left_right from '../assets/svg_icon/arrow-right-lef.svg';
+import Location_Icon from '../../assets/svg_icon/location.svg';
+import Arrow_left_right from '../../assets/svg_icon/arrow-right-lef.svg';
 import styles from './hereSearchCard.styles';
-import AppText from '../theme/AppText';
-import { HereMapView } from '../components/HereMap/index';
-import { autosuggest, calculateTruckRouteREST } from '../screens/HereMapScreen/services/hereTruckService';
+import AppText from '../../theme/AppText';
+import { autosuggest, calculateTruckRouteREST } from './services/hereTruckService';
 
 const HERE_SEARCH_MIN_CHARS = 3;
 const HERE_SEARCH_DEBOUNCE_MS = 700;
