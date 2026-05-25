@@ -21,19 +21,25 @@ export const LOCATION_ERRORS = {
 const PRESET_OPTIONS = {
   high: {
     enableHighAccuracy: true,
-    timeout: 15000,
-    maximumAge: 5000,
+    timeout: 25000,
+    maximumAge: 8000,
+    showLocationDialog: true,
+    forceRequestLocation: true,
   },
   low: {
     enableHighAccuracy: false,
-    timeout: 20000,
-    maximumAge: 10000,
+    timeout: 30000,
+    maximumAge: 30000,
+    showLocationDialog: true,
+    forceRequestLocation: true,
   },
   watch: {
     enableHighAccuracy: true,
-    timeout: 15000,
+    timeout: 25000,
     maximumAge: 0,
     distanceFilter: 5,
+    showLocationDialog: true,
+    forceRequestLocation: true,
   },
 };
 
@@ -46,8 +52,9 @@ const PRESET_OPTIONS = {
  */
 const DEFAULT_RETRY_STRATEGY = [
   [PRESET_OPTIONS.high, 0],
-  [PRESET_OPTIONS.low,  1500],
-  [PRESET_OPTIONS.high, 2000],
+  [PRESET_OPTIONS.low,  2000],
+  [PRESET_OPTIONS.high, 2500],
+  [PRESET_OPTIONS.low,  3000],
 ];
 
 
@@ -244,7 +251,15 @@ export const getCurrentLocation = async ({
     }
   }
 
-  throw new Error(LOCATION_ERRORS.LOCATION_UNAVAILABLE);
+  if (lastError?.message === LOCATION_ERRORS.TIMEOUT) {
+    try {
+      return await getPosition(PRESET_OPTIONS.low, detectMock);
+    } catch (fallbackError) {
+      lastError = fallbackError;
+    }
+  }
+
+  throw new Error(lastError?.message || LOCATION_ERRORS.LOCATION_UNAVAILABLE);
 };
 
 /**

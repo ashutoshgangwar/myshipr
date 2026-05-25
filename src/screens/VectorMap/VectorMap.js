@@ -55,26 +55,28 @@ const buildRasterTileTemplateUrl = (style, apiKey = '') => {
 const INITIAL_COORDINATE = [8.4055677, 49.0070036];
 const CITY_ZOOM_LEVELS = [5, 8, 11, 13, 15, 17];
 const INITIAL_ZOOM = 11;
-const NAVIGATE_ZOOM = 16; // Closer zoom during navigation for better lane visibility
+const NAVIGATE_ZOOM = 16;
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 18;
 
 // ── Navigation tuning ────────────────────────────────────────────────────────
-// Only re-fetch route when truck moves more than this many metres from last fetch point
-const ROUTE_REFETCH_DISTANCE_METERS = 50;
-// Minimum seconds between two consecutive route API calls (hard throttle)
+const ROUTE_REFETCH_DISTANCE_METERS = 120;
 const ROUTE_REFETCH_MIN_INTERVAL_MS = 60_000; // 60 s
-// How far truck must travel before we consider it "significantly moved" (for camera follow)
-const MOVEMENT_UPDATE_THRESHOLD_METERS = 5;
-// Navigation camera pitch (tilt) in degrees
+const MOVEMENT_UPDATE_THRESHOLD_METERS = 1;
 const NAV_CAMERA_PITCH = 45;
-// Camera padding to place truck slightly lower on screen during navigation
 const NAV_CAMERA_PADDING = {
   paddingTop: verticalScale(280),
   paddingRight: scale(24),
   paddingBottom: verticalScale(90),
   paddingLeft: scale(24),
 };
+
+// ── Off-route detection: if truck is more than this many metres from the route,
+//    re-fetch a new route from current position to destination ──────────────
+const OFF_ROUTE_THRESHOLD_METERS = 120;
+const OFF_ROUTE_CONSECUTIVE_HITS_REQUIRED = 3;
+const OFF_ROUTE_REROUTE_COOLDOWN_MS = 20_000;
+const MAX_OFF_ROUTE_ACCURACY_METERS = 35;
 
 const ZOOM_LABELS = {
   1: 'World', 2: 'World', 3: 'Continent', 4: 'Continent',
@@ -85,6 +87,15 @@ const ZOOM_LABELS = {
 };
 
 MapLibreGL.setAccessToken(null);
+
+// ─── Helpers (defined outside component to avoid re-creation) ────────────────
+
+const smoothBearing = (current, target, factor = 0.15) => {
+  let diff = target - current;
+  while (diff > 180) diff -= 360;
+  while (diff < -180) diff += 360;
+  return current + diff * factor;
+};
 
 // ─── Component ───────────────────────────────────────────────────────────────
 
@@ -99,6 +110,8 @@ export const VectorMap = props => {
 
   // ── Refs ──────────────────────────────────────────────────────────────────
   const cameraRef = useRef(null);
+  const smoothBearingRef = useRef(0);
+  const lastCameraUpdateRef = useRef(0);
   const sourceAutocompleteRef = useRef(null);
   const destinationAutocompleteRef = useRef(null);
   const locationWatchIdRef = useRef(null);
@@ -107,10 +120,27 @@ export const VectorMap = props => {
   const lastRouteFetchCoordRef = useRef(null);
   const lastRouteFetchTimeRef = useRef(null);
   const isFetchingRouteRef = useRef(false);
+  const offRouteConsecutiveHitsRef = useRef(0);
+  const lastOffRouteRerouteTimeRef = useRef(0);
 
   const lastSourceSetByRef = useRef('user');
   const lastDestinationSetByRef = useRef('user');
   const styleSwitchInProgressRef = useRef(false);
+
+  // ─── FIX: Use refs for navigation-critical state to break the dependency
+  //     chain that caused cascading re-renders and progress resets.
+  //     The problem was: GPS update → setSourceLocation → fetchRouteNow changes
+  //     → applyLocationUpdate changes → ensureLiveTrackingStarted changes
+  //     → useEffect re-runs → watcher killed + progress reset.
+  //
+  //     Solution: Store route polyline and navigation flag in refs so the
+  //     applyLocationUpdate callback is STABLE and doesn't cause the useEffect
+  //     to re-trigger.
+  // ──────────────────────────────────────────────────────────────────────────
+  const routePolylineCoordsRef = useRef(null);
+  const isNavigatingRef = useRef(false);
+  const sourceLocationRef = useRef(null);
+  const destinationLocationRef = useRef(null);
 
   // ── State ─────────────────────────────────────────────────────────────────
   const [mapStyle, setMapStyle] = useState(MAP_STYLES.silica);
@@ -125,6 +155,7 @@ export const VectorMap = props => {
   const [sourceText, setSourceText] = useState('');
   const [destinationText, setDestinationText] = useState('');
   const [routeData, setRouteData] = useState(null);
+  const [displayRoutePolyline, setDisplayRoutePolyline] = useState(null);
   const [isLoadingRoute, setIsLoadingRoute] = useState(false);
   const [routeError, setRouteError] = useState(null);
   const [routeApiCallCount, setRouteApiCallCount] = useState(0);
@@ -133,12 +164,17 @@ export const VectorMap = props => {
   const [truckCoordinate, setTruckCoordinate] = useState(null);
   const [truckBearing, setTruckBearing] = useState(0);
   const [routeProgress, setRouteProgress] = useState(0);
-  // remainingPolyline: the slice of the route AHEAD of the truck (trimmed in real-time)
   const [remainingPolyline, setRemainingPolyline] = useState(null);
   const [isStyleLoading, setIsStyleLoading] = useState(false);
   const [pendingStyleId, setPendingStyleId] = useState(null);
   const [annotationRefreshToken, setAnnotationRefreshToken] = useState(0);
   const [isNavigating, setIsNavigating] = useState(false);
+
+  // ─── FIX: Keep refs in sync with state so callbacks always see latest values
+  //     without needing state in their dependency arrays ──────────────────────
+  useEffect(() => { isNavigatingRef.current = isNavigating; }, [isNavigating]);
+  useEffect(() => { sourceLocationRef.current = sourceLocation; }, [sourceLocation]);
+  useEffect(() => { destinationLocationRef.current = destinationLocation; }, [destinationLocation]);
 
   // ── Derived API key ───────────────────────────────────────────────────────
   const effectivePtvApiKey = useMemo(() => {
@@ -313,7 +349,6 @@ export const VectorMap = props => {
       }
 
       // Build the remaining polyline: snapped point → destination
-      // This trims all already-traversed vertices and prepends the projected point
       const remainingCoords = [
         best.coordinate,
         ...coordinates.slice(best.segmentIndex),
@@ -324,6 +359,7 @@ export const VectorMap = props => {
         coordinate: best.coordinate,
         bearing: best.bearing,
         remainingCoords,
+        offRouteDistance: best.distanceMeters,
       };
     },
     [
@@ -335,7 +371,12 @@ export const VectorMap = props => {
   );
 
   // ── Route metrics ─────────────────────────────────────────────────────────
-  const routePolylineCoordinates = routeData?.polylineCoordinates ?? null;
+  const routePolylineCoordinates = displayRoutePolyline;
+
+  // ─── FIX: Keep the ref in sync so the stable applyLocationUpdate can read it
+  useEffect(() => {
+    routePolylineCoordsRef.current = routePolylineCoordinates;
+  }, [routePolylineCoordinates]);
 
   const routePolylineLength = useMemo(
     () => getPolylineLengthMeters(routePolylineCoordinates),
@@ -364,7 +405,6 @@ export const VectorMap = props => {
   }, []);
 
   // ── Location origin setters ───────────────────────────────────────────────
-  // Defined early so all callbacks below can reference them safely
   const setSourceLocationWithOrigin = useCallback((location, origin = 'user') => {
     lastSourceSetByRef.current = origin;
     setSourceLocation(location);
@@ -377,19 +417,17 @@ export const VectorMap = props => {
 
   // ── Fetch route (internal, call-guarded) ──────────────────────────────────
   /**
-   * Fetches a fresh route between sourceLocation and destinationLocation.
-   *
-   * Guards:
-   *  - skips if another fetch is already in progress (isFetchingRouteRef)
-   *  - skips if called too soon after the last call (ROUTE_REFETCH_MIN_INTERVAL_MS)
-   *  - showLoader=false for background refreshes during live navigation
+   * FIX: Accept explicit source/dest so callers can pass coordinates directly
+   * without depending on state (which may be stale in a callback).
+   * Falls back to current sourceLocation/destinationLocation state.
    */
   const fetchRouteNow = useCallback(
-    async (showLoader = true) => {
-      if (!sourceLocation || !destinationLocation) return null;
-      if (isFetchingRouteRef.current) return null; // already in-flight
+    async (showLoader = true, explicitSource = null, explicitDest = null) => {
+      const src = explicitSource || sourceLocationRef.current;
+      const dst = explicitDest || destinationLocationRef.current;
+      if (!src || !dst) return null;
+      if (isFetchingRouteRef.current) return null;
 
-      // Time gate: don't hammer the API
       const now = Date.now();
       if (
         lastRouteFetchTimeRef.current &&
@@ -412,16 +450,32 @@ export const VectorMap = props => {
         if (showLoader) setIsLoadingRoute(true);
         setRouteError(null);
         const response = await getRouteBetweenPoints(
-          sourceLocation.latitude,
-          sourceLocation.longitude,
-          destinationLocation.latitude,
-          destinationLocation.longitude,
+          src.latitude,
+          src.longitude,
+          dst.latitude,
+          dst.longitude,
         );
-        setRouteData(response);
-        // Reset remaining polyline to the full route on a fresh fetch
-        if (response?.polylineCoordinates) {
+        const hasValidPolyline =
+          Array.isArray(response?.polylineCoordinates) &&
+          response.polylineCoordinates.length >= 2;
+
+        if (hasValidPolyline) {
+          setDisplayRoutePolyline(response.polylineCoordinates);
+          routePolylineCoordsRef.current = response.polylineCoordinates;
           setRemainingPolyline(response.polylineCoordinates);
         }
+
+        setRouteData(prev => {
+          if (hasValidPolyline) return response;
+          if (prev?.polylineCoordinates) {
+            return {
+              ...response,
+              polylineCoordinates: prev.polylineCoordinates,
+            };
+          }
+          return response;
+        });
+
         return response;
       } catch (err) {
         console.warn('Route fetch failed:', err);
@@ -432,18 +486,24 @@ export const VectorMap = props => {
         isFetchingRouteRef.current = false;
       }
     },
-    [sourceLocation, destinationLocation],
+    // FIX: No sourceLocation / destinationLocation in deps — we read from refs
+    [],
   );
 
   // ── Live GPS update handler ───────────────────────────────────────────────
   /**
+   * FIX: This callback is now STABLE — it reads navigation state and polyline
+   * from refs instead of depending on them via closure. This prevents the
+   * cascading re-render loop that was resetting progress.
+   *
    * Called on every GPS tick from watchCurrentLocation.
    * Responsibilities:
-   *  1. Skip if movement < MOVEMENT_UPDATE_THRESHOLD_METERS (avoids GPS jitter)
+   *  1. Skip if movement < threshold (avoids GPS jitter)
    *  2. Snap truck to route polyline & update bearing
    *  3. Trim the remaining polyline to the snapped point
-   *  4. Fly camera to truck position with correct heading (north-up is 0°, bearing-up locks heading)
-   *  5. Re-fetch route only when truck moves >20 m from the last fetch point AND time gate passes
+   *  4. Fly camera to truck position with correct heading
+   *  5. Detect off-route and re-fetch if needed
+   *  6. Re-fetch route on distance gate
    */
   const applyLocationUpdate = useCallback(
     location => {
@@ -460,17 +520,31 @@ export const VectorMap = props => {
       }
       lastTrackedGpsCoordRef.current = currentGpsCoord;
 
-      // Always keep source synced to real GPS during navigation (origin='gps' so it
-      // doesn't trigger the route-refetch useEffect)
-      setSourceLocationWithOrigin(
-        {latitude: location.latitude, longitude: location.longitude, description: 'Current Location'},
-        'gps',
-      );
-      sourceAutocompleteRef.current?.setAddressText('Current Location');
+      // Always keep source synced to real GPS during navigation
+      // FIX: Only update source text, DON'T call setSourceLocationWithOrigin
+      // during navigation to avoid triggering dependency chains.
+      // Instead, update the ref directly and only update state minimally.
+      if (isNavigatingRef.current) {
+        sourceLocationRef.current = {
+          latitude: location.latitude,
+          longitude: location.longitude,
+          description: 'Current Location',
+        };
+        sourceAutocompleteRef.current?.setAddressText('Current Location');
+      } else {
+        // When not navigating, still update source location via state
+        // (but with 'gps' origin so it doesn't trigger route refetch)
+        setSourceLocationWithOrigin(
+          {latitude: location.latitude, longitude: location.longitude, description: 'Current Location'},
+          'gps',
+        );
+        sourceAutocompleteRef.current?.setAddressText('Current Location');
+      }
 
       // 2 & 3. Snap to route and trim polyline
+      const polyCoords = routePolylineCoordsRef.current;
       const routePos = getRoutePositionFromCurrentLocation(
-        routePolylineCoordinates,
+        polyCoords,
         currentGpsCoord,
       );
 
@@ -479,32 +553,82 @@ export const VectorMap = props => {
 
       if (routePos) {
         snappedCoord = routePos.coordinate ?? currentGpsCoord;
-        heading = routePos.bearing ?? 0;
+        // FIX: Always update progress (not just during isNavigating)
         setRouteProgress(prev => Math.max(prev, routePos.progress));
         if (routePos.remainingCoords && routePos.remainingCoords.length >= 2) {
           setRemainingPolyline(routePos.remainingCoords);
+        }
+
+        // Apply smooth bearing
+        const rawBearing = routePos.bearing ?? 0;
+        smoothBearingRef.current = smoothBearing(
+          smoothBearingRef.current,
+          rawBearing,
+        );
+        heading = smoothBearingRef.current;
+
+        // ── FIX: Off-route detection — if truck is too far from the route,
+        //    trigger a re-route from current GPS position to destination ──
+        if (isNavigatingRef.current) {
+          const isAccuracyReliable =
+            typeof location?.accuracy !== 'number' ||
+            location.accuracy <= MAX_OFF_ROUTE_ACCURACY_METERS;
+
+          if (
+            isAccuracyReliable &&
+            routePos.offRouteDistance > OFF_ROUTE_THRESHOLD_METERS
+          ) {
+            offRouteConsecutiveHitsRef.current += 1;
+            const canReroute =
+              offRouteConsecutiveHitsRef.current >=
+                OFF_ROUTE_CONSECUTIVE_HITS_REQUIRED &&
+              Date.now() - lastOffRouteRerouteTimeRef.current >=
+                OFF_ROUTE_REROUTE_COOLDOWN_MS;
+
+            if (canReroute) {
+              const currentSrc = {
+                latitude: location.latitude,
+                longitude: location.longitude,
+                description: 'Current Location',
+              };
+              lastRouteFetchCoordRef.current = currentGpsCoord;
+              lastOffRouteRerouteTimeRef.current = Date.now();
+              offRouteConsecutiveHitsRef.current = 0;
+
+              // Force time gate reset so re-route happens immediately
+              lastRouteFetchTimeRef.current = null;
+              fetchRouteNow(false, currentSrc, destinationLocationRef.current);
+            }
+          } else {
+            offRouteConsecutiveHitsRef.current = 0;
+          }
         }
       }
 
       setTruckCoordinate(snappedCoord);
       setTruckBearing(heading);
 
+      // Also update cameraHeading state so the marker can compensate
+      if (isNavigatingRef.current) {
+        setCameraHeading(heading);
+      }
+
       // 4. Follow camera during navigation
-      // heading = road bearing so the map rotates to face direction of travel
-      // pitch = NAV_CAMERA_PITCH for 3-D perspective
-      if (isNavigating) {
+      const now = Date.now();
+      if (isNavigatingRef.current && now - lastCameraUpdateRef.current > 500) {
+        lastCameraUpdateRef.current = now;
         cameraRef.current?.setCamera({
           centerCoordinate: snappedCoord,
           zoomLevel: NAVIGATE_ZOOM,
-          heading: heading,   // map rotates so "up" = direction of travel
+          heading: heading,
           pitch: NAV_CAMERA_PITCH,
           padding: NAV_CAMERA_PADDING,
-          animationDuration: 800,
-          animationMode: 'flyTo',
+          animationMode: 'easeTo',
+          animationDuration: 300,
         });
       }
 
-      // 5. Re-fetch route: only if moved >20 m from last fetch point AND time gate allows
+      // 5. Re-fetch route: only if moved >120 m from last fetch point AND time gate allows
       if (lastRouteFetchCoordRef.current) {
         const distFromLastFetch = getSegmentDistanceMeters(
           lastRouteFetchCoordRef.current,
@@ -512,8 +636,7 @@ export const VectorMap = props => {
         );
         if (distFromLastFetch >= ROUTE_REFETCH_DISTANCE_METERS) {
           lastRouteFetchCoordRef.current = currentGpsCoord;
-          // fetchRouteNow has its own time gate (ROUTE_REFETCH_MIN_INTERVAL_MS)
-          fetchRouteNow(false); // background — no loading spinner
+          fetchRouteNow(false);
         }
       }
 
@@ -524,11 +647,11 @@ export const VectorMap = props => {
         timestamp: location.timestamp,
       });
     },
+    // FIX: Minimal stable dependencies — no isNavigating, no routePolylineCoordinates,
+    // no sourceLocation, no destinationLocation. All read from refs.
     [
       getRoutePositionFromCurrentLocation,
       getSegmentDistanceMeters,
-      isNavigating,
-      routePolylineCoordinates,
       setSourceLocationWithOrigin,
       fetchRouteNow,
       props,
@@ -536,17 +659,16 @@ export const VectorMap = props => {
   );
 
   // ── Start live GPS tracking ───────────────────────────────────────────────
-  const ensureLiveTrackingStarted = useCallback(() => {
-    if (!routePolylineCoordinates || routePolylineCoordinates.length < 2) return;
+  /**
+   * FIX: This function no longer resets progress/polyline/truck position.
+   * It only starts the watcher if one isn't already running.
+   * The initialization of truck position is done ONLY when starting navigation
+   * (in handleNavigateStart), not every time this is called.
+   */
+  const startLiveTracking = useCallback(() => {
+    const polyCoords = routePolylineCoordsRef.current;
+    if (!polyCoords || polyCoords.length < 2) return;
     if (locationWatchIdRef.current != null) return; // already watching
-
-    const [firstPoint, secondPoint] = routePolylineCoordinates;
-    setTruckCoordinate(firstPoint);
-    setTruckBearing(getBearing(firstPoint, secondPoint));
-    setRouteProgress(0);
-    setRemainingPolyline(routePolylineCoordinates);
-    lastTrackedGpsCoordRef.current = null;
-    lastRouteFetchCoordRef.current = firstPoint;
 
     // Immediate one-shot to position truck right away
     getCurrentLocation()
@@ -563,13 +685,22 @@ export const VectorMap = props => {
         locationWatchIdRef.current = watchId;
       })
       .catch(err => console.warn('Unable to start live location watch:', err));
-  }, [applyLocationUpdate, getBearing, routePolylineCoordinates]);
+  }, [applyLocationUpdate]);
 
   // ── Effects ───────────────────────────────────────────────────────────────
 
-  // Stop / start tracking when polyline changes
+  /**
+   * FIX: Separated the "start tracking on route" effect from the "cleanup" effect.
+   * The old code had ensureLiveTrackingStarted (which reset everything) in the
+   * dependency chain, causing the watcher to be killed and restarted on every
+   * applyLocationUpdate change, which reset all progress.
+   *
+   * New approach: We start tracking when routePolylineCoordinates becomes available,
+   * and ONLY clean up on unmount or when the route is cleared entirely.
+   */
   useEffect(() => {
     if (!routePolylineCoordinates || routePolylineCoordinates.length < 2) {
+      // Route cleared — stop tracking and reset
       if (locationWatchIdRef.current != null) {
         clearWatchLocation(locationWatchIdRef.current);
         locationWatchIdRef.current = null;
@@ -579,16 +710,55 @@ export const VectorMap = props => {
       setTruckBearing(0);
       setRouteProgress(0);
       setRemainingPolyline(null);
+      setDisplayRoutePolyline(null);
+      offRouteConsecutiveHitsRef.current = 0;
       return;
     }
-    ensureLiveTrackingStarted();
-    return () => {
-      if (locationWatchIdRef.current != null) {
-        clearWatchLocation(locationWatchIdRef.current);
-        locationWatchIdRef.current = null;
+
+    // Route exists — preserve current progress where possible.
+    // For a new/re-routed polyline, snap to nearest point from current GPS/truck
+    // and keep remaining polyline/progress in sync instead of resetting to zero.
+    const [firstPoint, secondPoint] = routePolylineCoordinates;
+
+    const anchorCoordinate =
+      lastTrackedGpsCoordRef.current || truckCoordinate || firstPoint;
+    const routePos = getRoutePositionFromCurrentLocation(
+      routePolylineCoordinates,
+      anchorCoordinate,
+    );
+
+    if (routePos) {
+      const snapped = routePos.coordinate ?? anchorCoordinate;
+      setTruckCoordinate(snapped);
+      setTruckBearing(routePos.bearing ?? getBearing(firstPoint, secondPoint));
+      setRouteProgress(prev => Math.max(prev, routePos.progress));
+      setRemainingPolyline(
+        routePos.remainingCoords && routePos.remainingCoords.length >= 2
+          ? routePos.remainingCoords
+          : routePolylineCoordinates,
+      );
+      lastRouteFetchCoordRef.current = snapped;
+    } else {
+      if (!truckCoordinate) {
+        setTruckCoordinate(firstPoint);
+        setTruckBearing(getBearing(firstPoint, secondPoint));
       }
-    };
-  }, [routePolylineCoordinates, ensureLiveTrackingStarted]);
+      if (!remainingPolyline || remainingPolyline.length < 2) {
+        setRemainingPolyline(routePolylineCoordinates);
+      }
+      lastRouteFetchCoordRef.current = anchorCoordinate;
+    }
+
+    // Start live tracking immediately
+    startLiveTracking();
+  }, [
+    getBearing,
+    getRoutePositionFromCurrentLocation,
+    remainingPolyline,
+    routePolylineCoordinates,
+    startLiveTracking,
+    truckCoordinate,
+  ]);
 
   // Seed source location from GPS on first mount (only once)
   useEffect(() => {
@@ -614,7 +784,7 @@ export const VectorMap = props => {
       isMounted = false;
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // intentionally empty — run once on mount
+  }, []);
 
   // Clean up location watcher on unmount
   useEffect(() => {
@@ -636,15 +806,7 @@ export const VectorMap = props => {
     return () => clearInterval(intervalId);
   }, [routeApiCallCount]);
 
-  /**
-   * Route fetch triggered by user changing source/destination in the search card.
-   * Uses a 2-second debounce. Only fires when at least one endpoint was set by the user
-   * (not by GPS), and only if the API time gate allows.
-   *
-   * IMPORTANT: we do NOT put sourceLocation/destinationLocation in the deps array.
-   * Instead we subscribe to a "version counter" bumped only on user-driven changes,
-   * so GPS-only updates never restart the debounce.
-   */
+  // ── User-input-driven route fetching ──────────────────────────────────────
   const [userInputVersion, setUserInputVersion] = useState(0);
 
   const setSourceLocationByUser = useCallback(
@@ -664,16 +826,16 @@ export const VectorMap = props => {
   );
 
   useEffect(() => {
-    if (userInputVersion === 0) return; // skip initial render
+    if (userInputVersion === 0) return;
     if (!sourceLocation || !destinationLocation) return;
 
     const timer = setTimeout(() => {
       fetchRouteNow(true);
-    }, 3500); // 3.5-second debounce after user types/selects
+    }, 3500);
 
     return () => clearTimeout(timer);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [userInputVersion]); // ONLY trigger on user input, NOT on every GPS tick
+  }, [userInputVersion]);
 
   // Fly camera when parent passes new lat/lon props
   useEffect(() => {
@@ -710,7 +872,6 @@ export const VectorMap = props => {
       const location = await getCurrentLocation();
       const coord = [location.longitude, location.latitude];
 
-      // This is a user action, so bump userInputVersion to trigger route fetch
       setSourceLocationByUser(
         {latitude: location.latitude, longitude: location.longitude, description: 'Current Location'},
         'user',
@@ -776,14 +937,16 @@ export const VectorMap = props => {
 
   /**
    * handleNavigateStart
+   * - Switches to navigation mode (isNavigating = true)
    * - Fetches route if not already fetched
-   * - Orients camera to the road bearing (north/south correct)
+   * - Orients camera to the road bearing
    * - Tilts to 45° for 3-D navigation view
    * - Starts live GPS tracking
    */
   const handleNavigateStart = useCallback(() => {
     (async () => {
       setIsNavigating(true);
+      isNavigatingRef.current = true;
 
       let data = routeData;
       if (!data?.polylineCoordinates) {
@@ -800,16 +963,14 @@ export const VectorMap = props => {
       const second = coords[1];
       const initialBearing = getBearing(first, second);
 
-      // Record the starting coordinate for distance-gated re-fetches
+      smoothBearingRef.current = initialBearing;
       lastRouteFetchCoordRef.current = first;
 
-      // Set camera with correct heading (road bearing), pitch, and zoom
-      // This is what makes N/S/E/W direction correct on the map
       cameraRef.current?.setCamera({
         centerCoordinate: first,
         zoomLevel: NAVIGATE_ZOOM,
-        heading: initialBearing,   // rotates map so road faces "up"
-        pitch: NAV_CAMERA_PITCH,   // 3-D tilt
+        heading: initialBearing,
+        pitch: NAV_CAMERA_PITCH,
         padding: NAV_CAMERA_PADDING,
         animationDuration: 700,
         animationMode: 'flyTo',
@@ -822,19 +983,20 @@ export const VectorMap = props => {
       setRemainingPolyline(coords);
       setSelectedCoordinate(first);
 
-      // Start live GPS tracking → applyLocationUpdate will keep camera following
-      ensureLiveTrackingStarted();
+      // Ensure live tracking is running
+      startLiveTracking();
     })();
-  }, [routeData, fetchRouteNow, getBearing, ensureLiveTrackingStarted]);
+  }, [routeData, fetchRouteNow, getBearing, startLiveTracking]);
 
   /**
    * handleRecenter
    * - Exits navigation mode
-   * - Resets camera to north-up (heading=0), no tilt
+   * - Resets camera to north-up, no tilt
    * - Flies back to current position
    */
   const handleRecenter = useCallback(() => {
     setIsNavigating(false);
+    isNavigatingRef.current = false;
     setCameraPitch(0);
     setCameraHeading(0);
 
@@ -848,7 +1010,7 @@ export const VectorMap = props => {
     cameraRef.current?.setCamera({
       centerCoordinate: coord,
       zoomLevel: NAVIGATE_ZOOM,
-      heading: 0,   // reset to north-up
+      heading: 0,
       pitch: 0,
       animationDuration: 700,
       animationMode: 'flyTo',
@@ -861,7 +1023,6 @@ export const VectorMap = props => {
         const coords = event?.geometry?.coordinates;
         if (!coords || !Array.isArray(coords) || coords.length < 2) return;
         const [lng, lat] = coords;
-        // User tapped map to pick destination — use user-origin setter to trigger route fetch
         setDestinationLocationByUser(
           {latitude: lat, longitude: lng, description: 'Selected Location'},
           'user',
@@ -906,6 +1067,19 @@ export const VectorMap = props => {
   );
 
   // ── Render ────────────────────────────────────────────────────────────────
+
+  // Compute the visual rotation for the truck icon.
+  // During navigation the map is rotated to cameraHeading, so subtract it to
+  // avoid double-rotation.
+  const truckIconRotation = isNavigating
+    ? truckBearing - cameraHeading
+    : truckBearing;
+
+  // FIX: Show the truck marker whenever we have a route + truck coordinate,
+  // not only when isNavigating. This way the truck is visible even before
+  // the user presses "Navigate" (like Google Maps shows the blue dot).
+  const showTruckMarker = truckCoordinate != null && routePolylineCoordinates != null;
+
   return (
     <View style={styles.container}>
       {/* ── Map ─────────────────────────────────────────────────────────── */}
@@ -920,38 +1094,38 @@ export const VectorMap = props => {
 
         <MapLibreGL.Camera
           ref={cameraRef}
-          zoomLevel={currentZoom}
-          centerCoordinate={centerCoordinate}
-          pitch={cameraPitch}
-          heading={cameraHeading}
-          // animationDuration is handled via setCamera() calls; these props
-          // serve as fallback initial values only
+          defaultSettings={{
+            centerCoordinate,
+            zoomLevel: currentZoom,
+            pitch: 0,
+            heading: 0,
+          }}
         />
 
         {/* ── Full route polyline (dimmed behind-truck portion) ───────── */}
-        {routeData?.polylineCoordinates && (
+        {routePolylineCoordinates && (
           <MapLibreGL.ShapeSource
             id="route-source-full"
             shape={{
               type: 'Feature',
               geometry: {
                 type: 'LineString',
-                coordinates: routeData.polylineCoordinates,
+                coordinates: routePolylineCoordinates,
               },
             }}>
             <MapLibreGL.LineLayer
               id="route-line-full"
               style={{
-                lineColor: '#93C5FD', // light blue — already-covered portion
+                lineColor: '#93C5FD',
                 lineWidth: isNavigating ? moderateScale(6) : moderateScale(4),
-                lineOpacity: isNavigating ? 0.4 : 0.9, // dim when navigating
+                lineOpacity: isNavigating ? 0.4 : 0.9,
               }}
             />
           </MapLibreGL.ShapeSource>
         )}
 
         {/* ── Remaining (ahead-of-truck) polyline ─────────────────────── */}
-        {isNavigating && remainingPolyline && remainingPolyline.length >= 2 && (
+        {remainingPolyline && remainingPolyline.length >= 2 && (
           <MapLibreGL.ShapeSource
             id="route-source-remaining"
             shape={{
@@ -964,8 +1138,8 @@ export const VectorMap = props => {
             <MapLibreGL.LineLayer
               id="route-line-remaining"
               style={{
-                lineColor: '#2563EB', // vivid blue — remaining path
-                lineWidth: moderateScale(8),
+                lineColor: '#2563EB',
+                lineWidth: isNavigating ? moderateScale(8) : moderateScale(6),
                 lineOpacity: 0.95,
               }}
             />
@@ -973,29 +1147,23 @@ export const VectorMap = props => {
         )}
 
         {/* ── Moving truck marker ──────────────────────────────────────── */}
-        {isNavigating && truckCoordinate && routePolylineCoordinates && (
-          <MapLibreGL.PointAnnotation
-            key={`truck-marker-${annotationRefreshToken}`}
-            id={`truck-marker-${annotationRefreshToken}`}
-            coordinate={truckCoordinate}>
+        {/* FIX: Show truck whenever route exists, not only during navigation */}
+        {showTruckMarker && (
+         <MapLibreGL.MarkerView
+          id="truck-marker"
+          coordinate={truckCoordinate}>
             <View
               style={[
                 styles.truckMarkerWrap,
-                // The truck icon itself rotates to face the road
-                // The map heading already points "up = travel direction",
-                // so we counter-rotate the icon by the map heading to keep it upright
-                {transform: [{rotate: `${truckBearing - cameraHeading}deg`}]},
+                {transform: [{rotate: `${truckIconRotation}deg`}]},
               ]}>
               <Truck_Icon width={moderateScale(28)} height={moderateScale(28)} />
             </View>
-            <MapLibreGL.Callout
-              title={routeProgress >= 1 ? 'Arrived ✓' : 'En route'}
-            />
-          </MapLibreGL.PointAnnotation>
+          </MapLibreGL.MarkerView>
         )}
 
-        {/* ── Source marker (hidden during navigation) ─────────────────── */}
-        {sourceLocation && !isNavigating && (
+        {/* ── Source marker (hidden when truck is visible) ─────────────── */}
+        {sourceLocation && !showTruckMarker && (
           <MapLibreGL.PointAnnotation
             key={`source-marker-${annotationRefreshToken}`}
             id={`source-marker-${annotationRefreshToken}`}
@@ -1091,7 +1259,6 @@ export const VectorMap = props => {
         destinationLocation={destinationLocation}
         sourceText={sourceText}
         destinationText={destinationText}
-        // Use the user-origin wrappers so typing triggers a route fetch
         setSourceLocation={setSourceLocationByUser}
         setDestinationLocation={setDestinationLocationByUser}
         setSourceText={setSourceText}
@@ -1106,9 +1273,13 @@ export const VectorMap = props => {
         <TouchableOpacity
           activeOpacity={0.9}
           onPress={handleNavigateStart}
-          style={[styles.bottomButton, styles.bottomButtonPrimary]}>
+          style={[
+            styles.bottomButton,
+            styles.bottomButtonPrimary,
+            isNavigating && {backgroundColor: '#16a34a'},
+          ]}>
           <Text style={[styles.bottomButtonText, styles.bottomButtonTextPrimary]}>
-            Navigate
+            {isNavigating ? 'Navigating...' : 'Navigate'}
           </Text>
         </TouchableOpacity>
 

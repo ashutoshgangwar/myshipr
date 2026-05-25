@@ -15,7 +15,7 @@ import Signup from '../screens/Signup/Signup';
 import SignatureCaptureScreen from '../screens/SignatureCaptureScreen/SignatureCaptureScreen';
 import { VectorMap } from '../screens/VectorMap/VectorMap';
 import HereSearchCard from '../apiservices/hereSearchCard';
-
+import HereMapScreen from '../screens/HereMapScreen/HereMapScreen';
 
 
 const Stack = createNativeStackNavigator();
@@ -43,6 +43,7 @@ export default function AppStackMain() {
       <Stack.Screen name="PTVNavigatorMap" component={NavigationScreen} />
       <Stack.Screen name="VectorMap" component={VectorMap} />
       <Stack.Screen name="HereSearchCard" component={HereSearchCard} />
+      <Stack.Screen name="HereMapScreen" component={HereMapScreen} />
       <Stack.Screen name="NavigationScreen" component={NavigationScreen} />
       <Stack.Screen name="DeliveryConfirmation" component={DeliveryConfirmation} />
       <Stack.Screen name="AvailableLoadsScreen" component={AvailableLoadsScreen} />
