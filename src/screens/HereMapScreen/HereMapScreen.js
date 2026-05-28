@@ -112,8 +112,8 @@ export default function HereMapScreen() {
   const previewRouteJsonRef = useRef(null);
   const previewUsedNativeRouteRef = useRef(false);
 
-  const pendingTrimRef = useRef(null);
-  const isTrimFlushingRef = useRef(false);
+  // const pendingTrimRef = useRef(null);
+  // const isTrimFlushingRef = useRef(false);
 
   const destinationLocationRef = useRef(null);
   useEffect(() => {
@@ -170,24 +170,24 @@ export default function HereMapScreen() {
   const lastRouteProgressMetersRef = useRef(0);
   const wrongWayStreakRef = useRef(0);
 
-  const flushPendingTrim = useCallback(async () => {
-    if (isTrimFlushingRef.current) return;
-    const payload = pendingTrimRef.current;
-    if (!payload) return;
+  // const flushPendingTrim = useCallback(async () => {
+  //   if (isTrimFlushingRef.current) return;
+  //   const payload = pendingTrimRef.current;
+  //   if (!payload) return;
 
-    isTrimFlushingRef.current = true;
-    pendingTrimRef.current = null;
+  //   isTrimFlushingRef.current = true;
+  //   pendingTrimRef.current = null;
 
-    try {
-      await mapRef.current?.trimPolyline(payload);
-    } catch (_) {
-    } finally {
-      isTrimFlushingRef.current = false;
-      if (pendingTrimRef.current) {
-        flushPendingTrim();
-      }
-    }
-  }, []);
+  //   try {
+  //     await mapRef.current?.trimPolyline(payload);
+  //   } catch (_) {
+  //   } finally {
+  //     isTrimFlushingRef.current = false;
+  //     if (pendingTrimRef.current) {
+  //       flushPendingTrim();
+  //     }
+  //   }
+  // }, []);
 
   // ─────────────────────────────────────────────────────────────────────────
   // smooth.subscribe — single source of truth for marker + trim + camera
@@ -250,19 +250,36 @@ export default function HereMapScreen() {
             });
 
             const cursor = lastTrimCursorRef.current;
-            if (Math.abs(snap.fraction - cursor.fraction) > 0.002) {
+
+            if (
+              snap.segmentIndex !== cursor.index ||
+              Math.abs(snap.fraction - cursor.fraction) > 0.0001
+            ) {
               lastTrimCursorRef.current = {
                 index: snap.segmentIndex,
                 fraction: snap.fraction,
               };
-              pendingTrimRef.current = {
+
+              // 🔥 PREDICTIVE TRIM (marker se aage trim karega)
+              const speed = pos.speed || 0;
+
+              // dynamic prediction based on speed
+              let offset = 0.015; // base
+
+              if (speed > 15) offset = 0.035; // highway
+              else if (speed > 8) offset = 0.025; // city
+              else if (speed > 3) offset = 0.02; // slow traffic
+
+              const predictiveFraction = Math.min(snap.fraction + offset, 1);
+
+              // 🚀 DIRECT TRIM (NO QUEUE, NO DELAY)
+              mapRef.current?.trimPolyline({
                 trimIndex: snap.segmentIndex,
-                trimFraction: snap.fraction,
+                trimFraction: predictiveFraction,
                 splitLat: snap.lat,
                 splitLng: snap.lng,
-                speedMps: pos.speed,
-              };
-              flushPendingTrim();
+                speedMps: speed,
+              });
             }
 
             const now = Date.now();
@@ -342,7 +359,7 @@ export default function HereMapScreen() {
       } catch (_) {}
     });
     return unsub;
-  }, [smooth, flushPendingTrim]);
+  }, [smooth]);
 
   useEffect(() => {
     return () => smooth.cleanup();
@@ -420,7 +437,7 @@ export default function HereMapScreen() {
     routeGeometryRef.current = new RouteGeometry(coords);
     hasRealGeometryRef.current = true;
     lastTrimCursorRef.current = {index: -1, fraction: 0};
-    pendingTrimRef.current = null;
+    // pendingTrimRef.current = null;
     try {
       isDrawingRouteRef.current = true;
       await mapRef.current?.clearPolyline();
@@ -636,7 +653,7 @@ export default function HereMapScreen() {
     routeCoordsRef.current = [];
     hasRealGeometryRef.current = false;
     lastTrimCursorRef.current = {index: -1, fraction: 0};
-    pendingTrimRef.current = null;
+    // pendingTrimRef.current = null;
     rerouteRequestedRef.current = false;
     lastRouteProgressMetersRef.current = 0;
     wrongWayStreakRef.current = 0;
@@ -1066,7 +1083,7 @@ export default function HereMapScreen() {
     routeCoordsRef.current = [];
     hasRealGeometryRef.current = false;
     lastTrimCursorRef.current = {index: -1, fraction: 0};
-    pendingTrimRef.current = null;
+    // pendingTrimRef.current = null;
     lastCameraUpdateTsRef.current = 0;
     rerouteRequestedRef.current = false;
     lastRouteProgressMetersRef.current = 0;

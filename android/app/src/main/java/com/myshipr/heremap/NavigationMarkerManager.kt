@@ -41,7 +41,7 @@ class NavigationMarkerManager(private val mapView: MapView) {
 
     companion object {
         private const val TAG            = "NavMarkerManager"
-        const val DEFAULT_MARKER_SIZE_PX = 220
+        const val DEFAULT_MARKER_SIZE_PX = 280
         const val DEFAULT_SVG_ASSET      = "truck_icon.svg"
         private const val SVG_NORTH_OFFSET_DEG = -70.0
         private const val ANCHOR_H = 0.5
@@ -222,14 +222,28 @@ class NavigationMarkerManager(private val mapView: MapView) {
         canvas.save()
         canvas.rotate((bearing + SVG_NORTH_OFFSET_DEG).toFloat(), center, center)
         val svg = loadSvg()
-        if (svg != null) {
-            val iconSz = radius * 1.4f
-            val scale  = iconSz / maxOf(svg.documentWidth, svg.documentHeight)
-            canvas.translate(center, center)
-            canvas.scale(scale, scale)
-            canvas.translate(-svg.documentWidth / 2f, -svg.documentHeight / 2f)
-            svg.renderToCanvas(canvas)
-        }
+       if (svg != null) {
+
+    svg.setDocumentWidth(100f)
+    svg.setDocumentHeight(100f)
+
+   val iconSz = radius * 1.65f
+
+    val scale = iconSz / maxOf(
+        svg.documentWidth,
+        svg.documentHeight
+    )
+
+    canvas.translate(center, center)
+    canvas.scale(scale, scale)
+
+    canvas.translate(
+        -svg.documentWidth / 2f,
+        -svg.documentHeight / 2f
+    )
+
+    svg.renderToCanvas(canvas)
+}
         canvas.restore()
 
         return MapImageFactory.fromBitmap(bitmap)
