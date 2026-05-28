@@ -214,9 +214,9 @@ class NavigationMarkerManager(private val mapView: MapView) {
         // Bold blue border
         canvas.drawCircle(center, center, radius,
             Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.parseColor("#1A73E8")
+                color = Color.parseColor("#000000")
                 style = Paint.Style.STROKE
-                strokeWidth = sz * 0.08f
+                strokeWidth = sz * 0.12f
             })
 
         canvas.save()

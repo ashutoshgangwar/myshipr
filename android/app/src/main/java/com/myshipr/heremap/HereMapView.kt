@@ -33,31 +33,28 @@ import com.here.sdk.routing.Waypoint
 class HereMapView(context: Context) : FrameLayout(context) {
 
     companion object {
-        private const val TAG         = "HereMapView"
+        private const val TAG          = "HereMapView"
         private const val DEFAULT_ZOOM = 14.0
+        // Fixed pixel width for native drawRoute fallback
+        private const val DEFAULT_ROUTE_WIDTH_PX = 26.0
     }
 
     val mapView: MapView = MapView(context)
 
-    private var routingEngine:          RoutingEngine?            = null
-    private var currentPolyline:        MapPolyline?              = null
-    private val markers                                           = mutableListOf<MapMarker>()
-    private var locationIndicator:      LocationIndicator?        = null
-    private var navMarkerManager:       NavigationMarkerManager?  = null
-    private var polylineManager:        PolylineManager?          = null
-    private var navigationCameraManager: NavigationCameraManager? = null
+    private var routingEngine:           RoutingEngine?            = null
+    private var currentPolyline:         MapPolyline?              = null
+    private val markers                                            = mutableListOf<MapMarker>()
+    private var locationIndicator:       LocationIndicator?        = null
+    private var navMarkerManager:        NavigationMarkerManager?  = null
+    private var polylineManager:         PolylineManager?          = null
+    private var navigationCameraManager: NavigationCameraManager?  = null
 
-    /**
-     * WIRING: polylineManager is injected into navMarkerManager so the
-     * marker animator can call syncAnimatedTrim on every frame.
-     * Always create polylineManager first.
-     */
     private fun polylines(): PolylineManager =
         polylineManager ?: PolylineManager(mapView).also { polylineManager = it }
 
     private fun navMarkers(): NavigationMarkerManager =
         navMarkerManager ?: NavigationMarkerManager(mapView).also { mgr ->
-            mgr.polylineManager = polylines()   // inject shared reference
+            mgr.polylineManager = polylines()
             navMarkerManager    = mgr
         }
 
@@ -66,7 +63,7 @@ class HereMapView(context: Context) : FrameLayout(context) {
             ?: NavigationCameraManager(mapView).also { navigationCameraManager = it }
 
     init {
-        layoutParams      = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
+        layoutParams         = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
         mapView.layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
         addView(mapView)
         mapView.onCreate(null)
@@ -140,7 +137,10 @@ class HereMapView(context: Context) : FrameLayout(context) {
         markers.add(m)
     }
 
-    fun clearMarkers() { markers.forEach { mapView.mapScene.removeMapMarker(it) }; markers.clear() }
+    fun clearMarkers() {
+        markers.forEach { mapView.mapScene.removeMapMarker(it) }
+        markers.clear()
+    }
 
     // ─────────────────────────────────────────────────────────────────────────
     // Location indicator
@@ -158,7 +158,10 @@ class HereMapView(context: Context) : FrameLayout(context) {
         })
     }
 
-    fun hideCurrentLocation() { locationIndicator?.disable(); locationIndicator = null }
+    fun hideCurrentLocation() {
+        locationIndicator?.disable()
+        locationIndicator = null
+    }
 
     // ─────────────────────────────────────────────────────────────────────────
     // Routes
@@ -176,8 +179,10 @@ class HereMapView(context: Context) : FrameLayout(context) {
     ) {
         val engine = routingEngine ?: run { onError?.invoke("RoutingEngine not ready"); return }
         engine.calculateRoute(
-            listOf(Waypoint(GeoCoordinates(originLat, originLng)),
-                   Waypoint(GeoCoordinates(destLat, destLng))),
+            listOf(
+                Waypoint(GeoCoordinates(originLat, originLng)),
+                Waypoint(GeoCoordinates(destLat, destLng))
+            ),
             TruckOptions(),
             object : CalculateRouteCallback {
                 override fun onRouteCalculated(error: RoutingError?, routes: List<Route>?) {
@@ -191,12 +196,19 @@ class HereMapView(context: Context) : FrameLayout(context) {
 
     private fun renderRoute(route: Route): Pair<Double, Double> {
         currentPolyline?.let { mapView.mapScene.removeMapPolyline(it) }
+        // FIX: was hardcoded 10.0 DIP — now 16px fixed
         currentPolyline = MapPolyline(
             GeoPolyline(route.geometry.vertices),
             MapPolyline.SolidRepresentation(
-                MapMeasureDependentRenderSize(RenderSize.Unit.PIXELS, 10.0),
+                MapMeasureDependentRenderSize(
+                    RenderSize.Unit.PIXELS,          // ✅ PIXELS not DENSITY_INDEPENDENT_PIXELS
+                    DEFAULT_ROUTE_WIDTH_PX
+                ),
                 HereColor.valueOf(0.259f, 0.522f, 0.957f, 1.0f),
-                MapMeasureDependentRenderSize(RenderSize.Unit.PIXELS, 2.0),
+                MapMeasureDependentRenderSize(
+                    RenderSize.Unit.PIXELS,          // ✅ PIXELS not DENSITY_INDEPENDENT_PIXELS
+                    DEFAULT_ROUTE_WIDTH_PX * 0.15
+                ),
                 HereColor.valueOf(0.0f, 0.3f, 0.8f, 1.0f),
                 LineCap.ROUND
             )
@@ -218,7 +230,6 @@ class HereMapView(context: Context) : FrameLayout(context) {
         markerSize: Int? = null, iconAsset: String? = null,
         segmentIndex: Int = -1
     ) {
-        // Hide HERE blue dot when custom arrow takes over
         if (locationIndicator != null) { locationIndicator!!.disable(); locationIndicator = null }
         navMarkers().update(lat, lng, bearing, durationMs, markerSize, iconAsset, segmentIndex)
     }
@@ -237,21 +248,14 @@ class HereMapView(context: Context) : FrameLayout(context) {
 
     fun drawPolyline(coordinates: List<GeoCoordinates>, color: String, width: Double) {
         polylines().draw(coordinates, color, width)
-        // Re-inject in case polylineManager was recreated (e.g. after reroute)
         navMarkerManager?.polylineManager = polylineManager
     }
 
-    /**
-     * Called from JS at ~1 Hz GPS rate.
-     * Updates segment index in both PolylineManager AND NavigationMarkerManager
-     * so the 60-fps animator loop uses the right route segment immediately.
-     */
     fun trimPolyline(
         trimIndex: Int, trimFraction: Double,
         splitLat: Double?, splitLng: Double?, speedMps: Double?
     ) {
         polylineManager?.trim(trimIndex, trimFraction, splitLat, splitLng, speedMps)
-        // Tell the marker manager so its per-frame sync uses the updated segment index
         if (splitLat != null && splitLng != null) {
             navMarkerManager?.onTrimReceived(trimIndex, splitLat, splitLng)
         }
@@ -260,7 +264,6 @@ class HereMapView(context: Context) : FrameLayout(context) {
     fun clearPolyline() {
         polylineManager?.clear()
         polylineManager = null
-        // Disconnect from marker manager; will be re-wired on next drawPolyline
         navMarkerManager?.polylineManager = null
     }
 }
