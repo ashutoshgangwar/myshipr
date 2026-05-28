@@ -4,72 +4,91 @@ import android.graphics.Color
 import com.here.sdk.core.Color as HereColor
 import com.here.sdk.core.GeoCoordinates
 import com.here.sdk.core.GeoPolyline
-import com.here.sdk.mapview.LineCap
-import com.here.sdk.mapview.MapMeasureDependentRenderSize
-import com.here.sdk.mapview.MapPolyline
-import com.here.sdk.mapview.MapView
-import com.here.sdk.mapview.RenderSize
-import kotlin.math.abs
-import kotlin.math.max
-import kotlin.math.min
+import com.here.sdk.mapview.*
+import kotlin.math.*
 
 class PolylineManager(private val mapView: MapView) {
 
     private val routeProgress = RouteProgressManager()
 
-    private var remainingPolyline: MapPolyline? = null
+    // Full route (blue)
+    private var fullRoutePolyline: MapPolyline? = null
+
+    // Passed overlay (grey)
     private var passedPolyline: MapPolyline? = null
 
-    private var fullCoordinates: List<GeoCoordinates> = emptyList()
+    private var fullCoords: List<GeoCoordinates> = emptyList()
 
-    private var remainingColor: HereColor = defaultRemainingColor()
-    private var passedColor: HereColor = defaultPassedColor()
-    private var lineWidth: Double = 10.0
+    private var lineColor: HereColor = defaultRemainingColor()
+    private var lineWidth: Double = 28.0
 
-    private var lastIndex = -1
-    private var lastFraction = 0.0
-    private var lastDistanceMeters = -1.0
-    private var lastRenderMs = 0L
+    // JS trim state
+    private var lastKnownIndex = -1
+    private var lastKnownFraction = 0.0
+    private var lastKnownDist = -1.0
 
-    private var lastSplitPoint: GeoCoordinates? = null
+    // Render state
+    private var animLastRenderMs = 0L
 
-    // Passed route cache grows incrementally as index advances.
+    // Smooth animation state
+    private var currentAnimatedSplit: GeoCoordinates? = null
+
+    // Passed path
     private val passedPath = ArrayList<GeoCoordinates>()
     private var passedPathLastRouteIndex = -1
 
-    // -------------------------------------------------------------------------
-    // Public API
-    // -------------------------------------------------------------------------
+    // -----------------------------------------------------------------------
+    // PUBLIC
+    // -----------------------------------------------------------------------
 
     fun draw(coords: List<GeoCoordinates>, color: String, width: Double) {
-        fullCoordinates = coords
-        remainingColor = parseColor(color)
-        passedColor = defaultPassedColor()
+        clear()
+
+        if (coords.size < 2) return
+
+        fullCoords = coords
+        lineColor = parseColor(color)
         lineWidth = width
+
         routeProgress.setRoute(coords)
 
-        lastIndex = -1
-        lastFraction = 0.0
-        lastDistanceMeters = -1.0
-        lastRenderMs = 0L
-        lastSplitPoint = null
+        val polyline = createPolyline(
+            coords = coords,
+            color = lineColor,
+            width = lineWidth,
+            outlineWidth = 2.0
+        )
+
+        polyline?.let {
+            mapView.mapScene.addMapPolyline(it)
+            fullRoutePolyline = it
+        }
+    }
+
+    fun clear() {
+        removePassedPolyline()
+        removeFullRoutePolyline()
+
+        fullCoords = emptyList()
+
+        routeProgress.clear()
+
+        lastKnownIndex = -1
+        lastKnownFraction = 0.0
+        lastKnownDist = -1.0
+
+        animLastRenderMs = 0L
+
+        currentAnimatedSplit = null
 
         passedPath.clear()
         passedPathLastRouteIndex = -1
-
-        removePassedPolyline()
-
-        if (coords.size >= 2) swapRemainingPolyline(coords)
-        else clear()
     }
 
-    /**
-     * Dual-polyline trim strategy:
-     * 1) Gray passed route grows incrementally.
-     * 2) Blue remaining route shrinks from split point.
-     *
-     * This avoids full-route redraw behavior and keeps marker + route visually synced.
-     */
+    // -----------------------------------------------------------------------
+    // GPS bookkeeping only
+    // -----------------------------------------------------------------------
+
     fun trim(
         trimIndex: Int,
         trimFraction: Double,
@@ -77,179 +96,121 @@ class PolylineManager(private val mapView: MapView) {
         splitLng: Double? = null,
         speedMps: Double? = null
     ) {
-        if (fullCoordinates.size < 2) return
+        if (fullCoords.size < 2) return
 
-        val progress = routeProgress.buildState(trimIndex, trimFraction, splitLat, splitLng, speedMps)
-            ?: return
-        val safeIndex = progress.trimIndex.coerceIn(0, fullCoordinates.size - 2)
-        val frac = progress.trimFraction.coerceIn(0.0, 1.0)
-        val distanceAtTrim = progress.trimDistanceMeters
+        val progress = routeProgress.buildState(
+            trimIndex,
+            trimFraction,
+            splitLat,
+            splitLng
+        ) ?: return
 
-        // Never move trim backwards due GPS jitter / snap wobble.
+        val dist = progress.trimDistanceMeters
+
+        // Ignore backward jumps
         if (
-            lastDistanceMeters >= 0 &&
-            distanceAtTrim < (lastDistanceMeters - BACKTRACK_TOLERANCE_METERS)
+            lastKnownDist >= 0 &&
+            dist < lastKnownDist - BACKTRACK_TOLERANCE_METERS
         ) {
             return
         }
 
+        lastKnownIndex = progress.trimIndex.coerceIn(
+            0,
+            fullCoords.size - 2
+        )
+
+        lastKnownFraction = progress.trimFraction
+        lastKnownDist = max(lastKnownDist, dist)
+    }
+
+    // -----------------------------------------------------------------------
+    // Smooth trim animation
+    // -----------------------------------------------------------------------
+
+    fun syncAnimatedTrim(
+        lat: Double,
+        lng: Double,
+        segmentIndex: Int
+    ) {
+
+        if (fullCoords.size < 2) return
+        if (segmentIndex < 0) return
+
+        val idx = segmentIndex.coerceIn(
+            0,
+            fullCoords.size - 2
+        )
+
         val now = System.currentTimeMillis()
-        val elapsedMs = now - lastRenderMs
-        val indexChanged = safeIndex != lastIndex
-        val fractionChanged = abs(frac - lastFraction)
-        val advancedMeters = if (lastDistanceMeters < 0) {
-            Double.MAX_VALUE
-        } else {
-            distanceAtTrim - lastDistanceMeters
+
+        // 30 FPS is smoother visually for HERE polyline rebuilding
+        if (now - animLastRenderMs < RENDER_INTERVAL_MS) {
+            return
         }
 
-        val shouldRender = when {
-            lastDistanceMeters < 0 -> true
-            indexChanged && elapsedMs >= MIN_RENDER_INTERVAL_MS -> true
-            advancedMeters >= MIN_TRIM_STEP_METERS && elapsedMs >= MIN_RENDER_INTERVAL_MS -> true
-            elapsedMs >= MAX_RENDER_INTERVAL_MS && advancedMeters >= FORCE_RENDER_MIN_ADVANCE_METERS -> true
-            fractionChanged >= 0.08 && elapsedMs >= MIN_RENDER_INTERVAL_MS -> true
-            else -> false
-        }
+        animLastRenderMs = now
 
-        if (!shouldRender) return
-        val rawSplit = progress.trimPoint
+        val targetSplit = GeoCoordinates(lat, lng)
 
-        // Jitter guard: do not churn geometry if split changed insignificantly.
-        val stableSplit = stabilizeSplit(rawSplit)
+        val previous = currentAnimatedSplit
 
-        updatePassedPath(safeIndex, stableSplit)
-        val remainingPath = buildRemainingPath(safeIndex, stableSplit)
+        // First frame
+        if (previous == null) {
+            currentAnimatedSplit = targetSplit
+            updatePassedPath(idx, targetSplit)
 
-        if (passedPath.size >= 2) swapPassedPolyline(passedPath)
-        if (remainingPath.size >= 2) swapRemainingPolyline(remainingPath)
-
-        lastIndex = safeIndex
-        lastFraction = frac
-        lastDistanceMeters = max(lastDistanceMeters, distanceAtTrim)
-        lastRenderMs = now
-        lastSplitPoint = stableSplit
-    }
-
-    fun clear() {
-        removeRemainingPolyline()
-        removePassedPolyline()
-        fullCoordinates = emptyList()
-        routeProgress.clear()
-
-        lastIndex = -1
-        lastFraction = 0.0
-        lastDistanceMeters = -1.0
-        lastRenderMs = 0L
-        lastSplitPoint = null
-
-        passedPath.clear()
-        passedPathLastRouteIndex = -1
-    }
-
-    // -------------------------------------------------------------------------
-    // Private helpers
-    // -------------------------------------------------------------------------
-
-    private fun removeRemainingPolyline() {
-        remainingPolyline?.let { mapView.mapScene.removeMapPolyline(it) }
-        remainingPolyline = null
-    }
-
-    private fun removePassedPolyline() {
-        passedPolyline?.let { mapView.mapScene.removeMapPolyline(it) }
-        passedPolyline = null
-    }
-
-    private fun swapRemainingPolyline(coords: List<GeoCoordinates>) {
-        val newPolyline = createPolyline(coords, remainingColor, lineWidth, 2.0) ?: return
-
-        // Atomic swap to avoid a blank frame (flicker): add new first, then remove old.
-        mapView.mapScene.addMapPolyline(newPolyline)
-        remainingPolyline?.let { mapView.mapScene.removeMapPolyline(it) }
-        remainingPolyline = newPolyline
-    }
-
-    private fun swapPassedPolyline(coords: List<GeoCoordinates>) {
-        val passedWidth = max(2.0, lineWidth - PASSED_WIDTH_REDUCTION)
-        val newPolyline = createPolyline(coords, passedColor, passedWidth, 0.0) ?: return
-
-        // Atomic swap to avoid a blank frame (flicker): add new first, then remove old.
-        mapView.mapScene.addMapPolyline(newPolyline)
-        passedPolyline?.let { mapView.mapScene.removeMapPolyline(it) }
-        passedPolyline = newPolyline
-    }
-
-    private fun createPolyline(
-        coords: List<GeoCoordinates>,
-        color: HereColor,
-        width: Double,
-        outlineWidthPx: Double
-    ): MapPolyline? {
-        try {
-            val geoPolyline = GeoPolyline(coords)
-
-            val widthRender = MapMeasureDependentRenderSize(
-                RenderSize.Unit.PIXELS,
-                width
-            )
-
-            val outlineWidth = MapMeasureDependentRenderSize(
-                RenderSize.Unit.PIXELS,
-                outlineWidthPx
-            )
-
-            val outlineColor = HereColor.valueOf(0.0f, 0.2f, 0.65f, 1.0f)
-
-            val representation = MapPolyline.SolidRepresentation(
-                widthRender,
-                color,
-                outlineWidth,
-                outlineColor,
-                LineCap.ROUND
-            )
-            return MapPolyline(geoPolyline, representation)
-        } catch (e: Exception) {
-            return null
-        }
-    }
-
-    private fun buildRemainingPath(index: Int, split: GeoCoordinates): List<GeoCoordinates> {
-        val remaining = ArrayList<GeoCoordinates>(fullCoordinates.size - index + 1)
-        remaining.add(split)
-        if (index + 1 < fullCoordinates.size) {
-            remaining.addAll(fullCoordinates.subList(index + 1, fullCoordinates.size))
-        }
-
-        if (remaining.size == 1 && fullCoordinates.isNotEmpty()) {
-            val end = fullCoordinates.last()
-            if (
-                abs(end.latitude - remaining[0].latitude) > 1e-9 ||
-                abs(end.longitude - remaining[0].longitude) > 1e-9
-            ) {
-                remaining.add(end)
+            if (passedPath.size >= 2) {
+                swapPassedPolyline(passedPath)
             }
+
+            return
         }
 
-        return remaining
+        // Ignore tiny movement
+        if (haversineMeters(previous, targetSplit) < JITTER_METERS) {
+            return
+        }
+
+        // Smooth interpolation
+        val smoothSplit = GeoCoordinates(
+            lerp(previous.latitude, targetSplit.latitude, SMOOTHING_FACTOR),
+            lerp(previous.longitude, targetSplit.longitude, SMOOTHING_FACTOR)
+        )
+
+        currentAnimatedSplit = smoothSplit
+
+        updatePassedPath(idx, smoothSplit)
+
+        if (passedPath.size >= 2) {
+            swapPassedPolyline(passedPath)
+        }
     }
 
-    private fun updatePassedPath(index: Int, split: GeoCoordinates) {
+    // -----------------------------------------------------------------------
+    // Passed path
+    // -----------------------------------------------------------------------
+
+    private fun updatePassedPath(
+        idx: Int,
+        split: GeoCoordinates
+    ) {
+
         if (passedPath.isEmpty()) {
-            passedPath.add(fullCoordinates.first())
+            passedPath.add(fullCoords.first())
             passedPathLastRouteIndex = 0
         }
 
-        if (index > passedPathLastRouteIndex) {
-            val from = max(1, passedPathLastRouteIndex + 1)
-            val toInclusive = min(index, fullCoordinates.lastIndex)
-            for (i in from..toInclusive) {
-                passedPath.add(fullCoordinates[i])
+        if (idx > passedPathLastRouteIndex) {
+
+            for (i in passedPathLastRouteIndex + 1..idx) {
+                passedPath.add(fullCoords[i])
             }
-            passedPathLastRouteIndex = toInclusive
+
+            passedPathLastRouteIndex = idx
         }
 
-        // Keep moving split point at the end of passed path for smooth continuity.
+        // Update animated tip
         if (passedPath.size == 1) {
             passedPath.add(split)
         } else {
@@ -257,65 +218,184 @@ class PolylineManager(private val mapView: MapView) {
         }
     }
 
-    private fun stabilizeSplit(raw: GeoCoordinates): GeoCoordinates {
-        val prev = lastSplitPoint ?: return raw
-        val d = haversineMeters(prev, raw)
-        if (d < SPLIT_JITTER_METERS) {
-            return prev
+    // -----------------------------------------------------------------------
+    // Polyline swap
+    // -----------------------------------------------------------------------
+
+    private fun swapPassedPolyline(
+        coords: List<GeoCoordinates>
+    ) {
+
+        if (coords.size < 2) return
+
+        val width = lineWidth + PASSED_WIDTH_EXTRA
+
+        val polyline = createPolyline(
+            coords = coords,
+            color = passedColor(),
+            width = width,
+            outlineWidth = 0.0
+        ) ?: return
+
+        removePassedPolyline()
+
+        mapView.mapScene.addMapPolyline(polyline)
+
+        passedPolyline = polyline
+    }
+
+    private fun createPolyline(
+        coords: List<GeoCoordinates>,
+        color: HereColor,
+        width: Double,
+        outlineWidth: Double
+    ): MapPolyline? {
+
+        if (coords.size < 2) return null
+
+        return try {
+
+           MapPolyline(
+    GeoPolyline(coords),
+
+     MapPolyline.SolidRepresentation(
+    MapMeasureDependentRenderSize(
+        RenderSize.Unit.DENSITY_INDEPENDENT_PIXELS,
+        width
+    ),
+
+    color,
+
+    MapMeasureDependentRenderSize(
+        RenderSize.Unit.DENSITY_INDEPENDENT_PIXELS,
+        outlineWidth
+    ),
+
+    HereColor.valueOf(
+        0.0f,
+        0.2f,
+        0.65f,
+        1.0f
+    ),
+
+    LineCap.ROUND
+)
+)
+
+        } catch (e: Exception) {
+            null
+        }
+    }
+
+    // -----------------------------------------------------------------------
+    // Remove
+    // -----------------------------------------------------------------------
+
+    private fun removeFullRoutePolyline() {
+        fullRoutePolyline?.let {
+            mapView.mapScene.removeMapPolyline(it)
         }
 
-        // Quantize very lightly to reduce tiny floating-point shimmer.
-        val qLat = quantize(raw.latitude, SPLIT_QUANTIZATION_DEGREES)
-        val qLng = quantize(raw.longitude, SPLIT_QUANTIZATION_DEGREES)
-        return GeoCoordinates(qLat, qLng)
+        fullRoutePolyline = null
     }
 
-    private fun quantize(value: Double, step: Double): Double {
-        return kotlin.math.round(value / step) * step
+    private fun removePassedPolyline() {
+        passedPolyline?.let {
+            mapView.mapScene.removeMapPolyline(it)
+        }
+
+        passedPolyline = null
     }
 
-    private fun haversineMeters(a: GeoCoordinates, b: GeoCoordinates): Double {
-        val dLat = Math.toRadians(b.latitude - a.latitude)
-        val dLng = Math.toRadians(b.longitude - a.longitude)
-        val lat1 = Math.toRadians(a.latitude)
-        val lat2 = Math.toRadians(b.latitude)
+    // -----------------------------------------------------------------------
+    // Utils
+    // -----------------------------------------------------------------------
 
-        val sinLat = kotlin.math.sin(dLat / 2.0)
-        val sinLng = kotlin.math.sin(dLng / 2.0)
-        val x = sinLat * sinLat + kotlin.math.cos(lat1) * kotlin.math.cos(lat2) * sinLng * sinLng
-        val c = 2.0 * kotlin.math.atan2(kotlin.math.sqrt(x), kotlin.math.sqrt(max(0.0, 1.0 - x)))
-        return EARTH_RADIUS_METERS * c
+    private fun lerp(
+        start: Double,
+        end: Double,
+        fraction: Double
+    ): Double {
+        return start + (end - start) * fraction
+    }
+
+    private fun haversineMeters(
+        a: GeoCoordinates,
+        b: GeoCoordinates
+    ): Double {
+
+        val dLat = Math.toRadians(
+            b.latitude - a.latitude
+        )
+
+        val dLng = Math.toRadians(
+            b.longitude - a.longitude
+        )
+
+        val x =
+            sin(dLat / 2).pow(2) +
+            cos(Math.toRadians(a.latitude)) *
+            cos(Math.toRadians(b.latitude)) *
+            sin(dLng / 2).pow(2)
+
+        return 6_371_000.0 *
+            2 *
+            atan2(sqrt(x), sqrt(1 - x))
     }
 
     private fun parseColor(hex: String): HereColor {
+
         return try {
+
             val c = Color.parseColor(hex)
+
             HereColor.valueOf(
                 Color.red(c) / 255f,
                 Color.green(c) / 255f,
                 Color.blue(c) / 255f,
                 Color.alpha(c) / 255f
             )
+
         } catch (e: Exception) {
             defaultRemainingColor()
         }
     }
 
-    private companion object {
-        const val EARTH_RADIUS_METERS = 6_371_000.0
-        const val MIN_RENDER_INTERVAL_MS = 33L          // ~30fps ceiling
-        const val MAX_RENDER_INTERVAL_MS = 66L          // keep sync tight under slow movement
-        const val MIN_TRIM_STEP_METERS = 0.55           // smaller step for smoother movement
-        const val FORCE_RENDER_MIN_ADVANCE_METERS = 0.25
-        const val BACKTRACK_TOLERANCE_METERS = 0.75
-        const val SPLIT_JITTER_METERS = 0.18
-        const val SPLIT_QUANTIZATION_DEGREES = 1e-7
-        const val PASSED_WIDTH_REDUCTION = 1.5
+    companion object {
 
-        fun defaultRemainingColor() =
-            HereColor.valueOf(0.259f, 0.522f, 0.957f, 1.0f) // #4285F4
+        // 30 FPS
+        const val RENDER_INTERVAL_MS = 16L
 
-        fun defaultPassedColor() =
-            HereColor.valueOf(0.53f, 0.56f, 0.60f, 1.0f) // gray, Google-like passed route
+        // Ignore tiny movements
+        const val JITTER_METERS = 0.5
+
+        // Ignore backtrack
+        const val BACKTRACK_TOLERANCE_METERS = 2.0
+
+        // Grey overlay width
+        const val PASSED_WIDTH_EXTRA = 8.0
+
+        // 0.0 -> no smoothing
+        // 1.0 -> instant snap
+        // 0.18-0.25 feels smooth
+        const val SMOOTHING_FACTOR = 0.55
+
+        fun defaultRemainingColor(): HereColor {
+            return HereColor.valueOf(
+                0.259f,
+                0.522f,
+                0.957f,
+                1.0f
+            )
+        }
+
+        fun passedColor(): HereColor {
+            return HereColor.valueOf(
+                0.91f,
+                0.91f,
+                0.93f,
+                1.0f
+            )
+        }
     }
 }

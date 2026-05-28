@@ -26,7 +26,11 @@ import {useSelector} from 'react-redux';
 import {selectLocation} from '../../redux/slices/locationSlice';
 
 // Utilities and hooks
-import {useSmoothLocation, isValidCoord, isUsableNavCoord} from './hooks/useSmoothLocation';
+import {
+  useSmoothLocation,
+  isValidCoord,
+  isUsableNavCoord,
+} from './hooks/useSmoothLocation';
 import {
   haversineDistanceMeters,
   computeBearing,
@@ -35,18 +39,20 @@ import {
   resolveLiveSpeedMps,
   sanitizeRouteCoords,
 } from './utils/mathUtils';
-import {decodeFlexiblePolyline, decodeGooglePolyline} from './utils/polylineDecoder';
+import {
+  decodeFlexiblePolyline,
+  decodeGooglePolyline,
+} from './utils/polylineDecoder';
 
 // Components
-import {NavigationControls, ToolbarButton} from './components/NavigationControls';
+import {
+  NavigationControls,
+  ToolbarButton,
+} from './components/NavigationControls';
 import {NavigationInfo} from './components/NavigationInfo';
 
 // Constants
 import {
-  NAVIGATION_ZOOM,
-  NAVIGATION_START_ZOOM,
-  NAVIGATION_TILT,
-  NAVIGATION_ANIMATE,
   NAVIGATION_CAMERA_DURATION_MS,
   NAVIGATION_CAMERA_INTERVAL_MS,
   NAVIGATION_MARKER_ANIMATION_MS,
@@ -68,9 +74,6 @@ const hasHereCredentials = Boolean(
   HERE_ACCESS_KEY_ID && HERE_ACCESS_KEY_SECRET,
 );
 
-// ===========================================================================
-// Main Screen
-// ===========================================================================
 export default function HereMapScreen() {
   const mapRef = useRef(null);
   const [sdkReady, setSdkReady] = useState(false);
@@ -88,6 +91,8 @@ export default function HereMapScreen() {
   const [isNavigating, setIsNavigating] = useState(false);
   const isNavigatingRef = useRef(false);
   const [navigationInfo, setNavigationInfo] = useState(null);
+  // ── NEW: loading overlay state ──
+  const [isRouteLoading, setIsRouteLoading] = useState(false);
   const navigationWatchIdRef = useRef(null);
   const lastRouteRefreshRef = useRef(0);
   const isDrawingRouteRef = useRef(false);
@@ -107,7 +112,9 @@ export default function HereMapScreen() {
   const previewRouteJsonRef = useRef(null);
   const previewUsedNativeRouteRef = useRef(false);
 
-  // Store destination ref for reroute callbacks (avoids stale closure)
+  const pendingTrimRef = useRef(null);
+  const isTrimFlushingRef = useRef(false);
+
   const destinationLocationRef = useRef(null);
   useEffect(() => {
     destinationLocationRef.current = destinationLocation;
@@ -163,9 +170,29 @@ export default function HereMapScreen() {
   const lastRouteProgressMetersRef = useRef(0);
   const wrongWayStreakRef = useRef(0);
 
-  // -------------------------------------------------------------------------
-  // Subscribe smooth location → push to native map
-  // -------------------------------------------------------------------------
+  const flushPendingTrim = useCallback(async () => {
+    if (isTrimFlushingRef.current) return;
+    const payload = pendingTrimRef.current;
+    if (!payload) return;
+
+    isTrimFlushingRef.current = true;
+    pendingTrimRef.current = null;
+
+    try {
+      await mapRef.current?.trimPolyline(payload);
+    } catch (_) {
+    } finally {
+      isTrimFlushingRef.current = false;
+      if (pendingTrimRef.current) {
+        flushPendingTrim();
+      }
+    }
+  }, []);
+
+  // ─────────────────────────────────────────────────────────────────────────
+  // smooth.subscribe — single source of truth for marker + trim + camera
+  // (identical to Version 2 which has the working trim logic)
+  // ─────────────────────────────────────────────────────────────────────────
   useEffect(() => {
     const unsub = smooth.subscribe(async pos => {
       try {
@@ -178,88 +205,84 @@ export default function HereMapScreen() {
           const truckBearing = isFinite(pos.bearing) ? pos.bearing : 0;
 
           if (geo && hasReal) {
-            // ── REAL geometry: snap + trim ──
             const snap = geo.snapToRoute(pos.lat, pos.lng);
             if (!isValidCoord(snap.lat, snap.lng)) return;
 
-            const routeBearing = isFinite(snap.bearing)
+            const rawBearing = isFinite(snap.bearing)
               ? snap.bearing
               : truckBearing;
 
             const prev = lastNativeMarkerRef.current;
-            const movedEnough =
-              (Math.abs(snap.lat - prev.lat) + Math.abs(snap.lng - prev.lng)) *
-                111_000 >=
-              NAVIGATION_MIN_MOVE_METERS;
-            let bd = Math.abs(routeBearing - prev.bearing);
+            const distance = haversineDistanceMeters(
+              prev.lat,
+              prev.lng,
+              snap.lat,
+              snap.lng,
+            );
+
+            const movedEnough = distance >= 2;
+            let bd = Math.abs(rawBearing - prev.bearing);
             if (bd > 180) bd = 360 - bd;
             const turnedEnough = bd >= NAVIGATION_MIN_TURN_DEGREES;
             const segChanged = snap.segmentIndex !== prev.trimIndex;
 
             if (!movedEnough && !turnedEnough && !segChanged) return;
 
+            const smoothBearing =
+              prev.bearing +
+              smallestBearingDelta(prev.bearing, rawBearing) * 0.2;
+
             lastNativeMarkerRef.current = {
               lat: snap.lat,
               lng: snap.lng,
-              bearing: routeBearing,
+              bearing: smoothBearing,
               trimIndex: snap.segmentIndex,
             };
 
-            const promises = [];
-
-            promises.push(
-              mapRef.current?.updateNavigationMarker({
-                lat: snap.lat,
-                lng: snap.lng,
-                bearing: routeBearing,
-                animationDuration: NAVIGATION_MARKER_ANIMATION_MS,
-                markerSize: NAVIGATION_MARKER.size,
-                iconAsset: NAVIGATION_MARKER.iconAsset,
-              }),
-            );
+            mapRef.current?.updateNavigationMarker({
+              lat: snap.lat,
+              lng: snap.lng,
+              bearing: smoothBearing,
+              animationDuration: NAVIGATION_MARKER_ANIMATION_MS,
+              markerSize: NAVIGATION_MARKER.size,
+              iconAsset: NAVIGATION_MARKER.iconAsset,
+              segmentIndex: snap.segmentIndex,
+            });
 
             const cursor = lastTrimCursorRef.current;
-            if (
-              snap.segmentIndex > cursor.index ||
-              (snap.segmentIndex === cursor.index &&
-                snap.fraction > cursor.fraction)
-            ) {
+            if (Math.abs(snap.fraction - cursor.fraction) > 0.002) {
               lastTrimCursorRef.current = {
                 index: snap.segmentIndex,
                 fraction: snap.fraction,
               };
-              promises.push(
-                mapRef.current?.trimPolyline({
-                  trimIndex: snap.segmentIndex,
-                  trimFraction: snap.fraction,
-                  splitLat: snap.lat,
-                  splitLng: snap.lng,
-                  speedMps: pos.speed,
-                }),
-              );
+              pendingTrimRef.current = {
+                trimIndex: snap.segmentIndex,
+                trimFraction: snap.fraction,
+                splitLat: snap.lat,
+                splitLng: snap.lng,
+                speedMps: pos.speed,
+              };
+              flushPendingTrim();
             }
 
             const now = Date.now();
             const canUpdateCamera =
-              now - lastCameraUpdateTsRef.current >= NAVIGATION_CAMERA_INTERVAL_MS;
+              now - lastCameraUpdateTsRef.current >=
+              NAVIGATION_CAMERA_INTERVAL_MS;
             if (
               !isDrawingRouteRef.current &&
               !isCameraFreeRef.current &&
               canUpdateCamera
             ) {
               lastCameraUpdateTsRef.current = now;
-              promises.push(
-                mapRef.current?.updateNavigationCamera({
-                  lat: snap.lat,
-                  lng: snap.lng,
-                  bearing: routeBearing,
-                  speedMps: pos.speed,
-                  animationDuration: NAVIGATION_CAMERA_DURATION_MS,
-                }),
-              );
+              mapRef.current?.updateNavigationCamera({
+                lat: snap.lat,
+                lng: snap.lng,
+                bearing: smoothBearing,
+                speedMps: pos.speed,
+                animationDuration: NAVIGATION_CAMERA_DURATION_MS,
+              });
             }
-
-            await Promise.all(promises);
           } else {
             // ── No real geometry: raw GPS ──
             const prev = lastNativeMarkerRef.current;
@@ -280,40 +303,34 @@ export default function HereMapScreen() {
               trimIndex: -1,
             };
 
-            const promises = [];
-
-            promises.push(
-              mapRef.current?.updateNavigationMarker({
-                lat: pos.lat,
-                lng: pos.lng,
-                bearing: truckBearing,
-                animationDuration: NAVIGATION_MARKER_ANIMATION_MS,
-                markerSize: NAVIGATION_MARKER.size,
-                iconAsset: NAVIGATION_MARKER.iconAsset,
-              }),
-            );
+            mapRef.current?.updateNavigationMarker({
+              lat: pos.lat,
+              lng: pos.lng,
+              bearing: truckBearing,
+              animationDuration: NAVIGATION_MARKER_ANIMATION_MS,
+              markerSize: NAVIGATION_MARKER.size,
+              iconAsset: NAVIGATION_MARKER.iconAsset,
+              segmentIndex: -1,
+            });
 
             const now = Date.now();
             const canUpdateCamera =
-              now - lastCameraUpdateTsRef.current >= NAVIGATION_CAMERA_INTERVAL_MS;
+              now - lastCameraUpdateTsRef.current >=
+              NAVIGATION_CAMERA_INTERVAL_MS;
             if (
               !isDrawingRouteRef.current &&
               !isCameraFreeRef.current &&
               canUpdateCamera
             ) {
               lastCameraUpdateTsRef.current = now;
-              promises.push(
-                mapRef.current?.updateNavigationCamera({
-                  lat: pos.lat,
-                  lng: pos.lng,
-                  bearing: truckBearing,
-                  speedMps: pos.speed,
-                  animationDuration: NAVIGATION_CAMERA_DURATION_MS,
-                }),
-              );
+              mapRef.current?.updateNavigationCamera({
+                lat: pos.lat,
+                lng: pos.lng,
+                bearing: truckBearing,
+                speedMps: pos.speed,
+                animationDuration: NAVIGATION_CAMERA_DURATION_MS,
+              });
             }
-
-            await Promise.all(promises);
           }
         } else {
           await mapRef.current?.showCurrentLocation({
@@ -325,7 +342,7 @@ export default function HereMapScreen() {
       } catch (_) {}
     });
     return unsub;
-  }, [smooth]);
+  }, [smooth, flushPendingTrim]);
 
   useEffect(() => {
     return () => smooth.cleanup();
@@ -403,7 +420,9 @@ export default function HereMapScreen() {
     routeGeometryRef.current = new RouteGeometry(coords);
     hasRealGeometryRef.current = true;
     lastTrimCursorRef.current = {index: -1, fraction: 0};
+    pendingTrimRef.current = null;
     try {
+      isDrawingRouteRef.current = true;
       await mapRef.current?.clearPolyline();
       await mapRef.current?.drawPolyline({
         coordinates: coords,
@@ -415,6 +434,8 @@ export default function HereMapScreen() {
     } catch (err) {
       console.warn('[Nav] drawPolyline failed:', err);
       return [];
+    } finally {
+      isDrawingRouteRef.current = false;
     }
   }, []);
 
@@ -525,7 +546,10 @@ export default function HereMapScreen() {
       !isUsableNavCoord(origin.latitude, origin.longitude) ||
       !isUsableNavCoord(dest.latitude, dest.longitude)
     ) {
-      Alert.alert('Route', 'Please wait for valid source and destination coordinates.');
+      Alert.alert(
+        'Route',
+        'Please wait for valid source and destination coordinates.',
+      );
       return;
     }
 
@@ -545,6 +569,8 @@ export default function HereMapScreen() {
 
   // -------------------------------------------------------------------------
   // handleStartNavigation
+  // Keeps Version 2's full logic (working trim + reroute) and adds the
+  // loading overlay from Version 1 around it.
   // -------------------------------------------------------------------------
   const handleStartNavigation = async () => {
     if (!destinationLocation) {
@@ -560,6 +586,9 @@ export default function HereMapScreen() {
       clearTimeout(previewDebounceRef.current);
       previewDebounceRef.current = null;
     }
+
+    // ── Show loading overlay ──
+    setIsRouteLoading(true);
 
     let navStartSource = null;
     try {
@@ -597,19 +626,23 @@ export default function HereMapScreen() {
         };
       } else {
         Alert.alert('Navigation', 'Current GPS location not available yet.');
+        setIsRouteLoading(false); // ── hide loader on early exit ──
         return;
       }
     }
 
+    // Reset all navigation state
     routeGeometryRef.current = null;
     routeCoordsRef.current = [];
     hasRealGeometryRef.current = false;
     lastTrimCursorRef.current = {index: -1, fraction: 0};
+    pendingTrimRef.current = null;
     rerouteRequestedRef.current = false;
     lastRouteProgressMetersRef.current = 0;
     wrongWayStreakRef.current = 0;
 
     try {
+      // Fetch route while loader is showing
       const startRoute = await calculateTruckRouteREST(
         {
           latitude: navStartSource.latitude,
@@ -681,6 +714,7 @@ export default function HereMapScreen() {
       Math.abs(navStartSource.bearing) > 0.1
         ? navStartSource.bearing
         : 0;
+
     if (immediatePos) {
       if (startGeo && hasRealAtStart) {
         const snap = startGeo.snapToRoute(immediatePos.lat, immediatePos.lng);
@@ -719,7 +753,10 @@ export default function HereMapScreen() {
     }
 
     try {
-      if (immediatePos && isUsableNavCoord(immediatePos.lat, immediatePos.lng)) {
+      if (
+        immediatePos &&
+        isUsableNavCoord(immediatePos.lat, immediatePos.lng)
+      ) {
         await mapRef.current?.hideCurrentLocation();
 
         await Promise.all([
@@ -730,6 +767,7 @@ export default function HereMapScreen() {
             animationDuration: 0,
             markerSize: NAVIGATION_MARKER.size,
             iconAsset: NAVIGATION_MARKER.iconAsset,
+            segmentIndex: lastTrimCursorRef.current.index,
           }),
           mapRef.current?.updateNavigationCamera({
             lat: immediatePos.lat,
@@ -741,7 +779,11 @@ export default function HereMapScreen() {
           }),
         ]);
 
-        if (startGeo && hasRealAtStart && lastTrimCursorRef.current.index >= 0) {
+        if (
+          startGeo &&
+          hasRealAtStart &&
+          lastTrimCursorRef.current.index >= 0
+        ) {
           await mapRef.current?.trimPolyline({
             trimIndex: lastTrimCursorRef.current.index,
             trimFraction: lastTrimCursorRef.current.fraction,
@@ -770,6 +812,9 @@ export default function HereMapScreen() {
 
     setIsNavigating(true);
 
+    // ── Hide loader — navigation has started ──
+    setIsRouteLoading(false);
+
     try {
       const watchId = await watchCurrentLocation(
         async position => {
@@ -778,7 +823,8 @@ export default function HereMapScreen() {
           if (!isUsableNavCoord(lat, lng)) return;
           const liveSpeed = resolveLiveSpeedMps(position);
           const liveHeading =
-            Number.isFinite(position?.bearing) && Math.abs(position.bearing) > 0.1
+            Number.isFinite(position?.bearing) &&
+            Math.abs(position.bearing) > 0.1
               ? position.bearing
               : Number.isFinite(position?.heading) &&
                 Math.abs(position.heading) > 0.1
@@ -790,14 +836,18 @@ export default function HereMapScreen() {
           const geo = routeGeometryRef.current;
           const hasReal = hasRealGeometryRef.current;
 
+          // Push to smooth — smooth.subscribe handles marker/trim/camera
           if (geo && hasReal) {
             let rawSnap = geo.snapToRoute(lat, lng);
             try {
-              const heading = Number.isFinite(position?.bearing) && Math.abs(position.bearing) > 0.1
-                ? position.bearing
-                : Number.isFinite(position?.heading) && Math.abs(position.heading) > 0.1
-                ? position.heading
-                : undefined;
+              const heading =
+                Number.isFinite(position?.bearing) &&
+                Math.abs(position.bearing) > 0.1
+                  ? position.bearing
+                  : Number.isFinite(position?.heading) &&
+                    Math.abs(position.heading) > 0.1
+                  ? position.heading
+                  : undefined;
               const accuracy = position?.accuracy ?? undefined;
               const speed = resolveLiveSpeedMps(position);
               const dirSnap = directionAwareSnap({
@@ -812,7 +862,10 @@ export default function HereMapScreen() {
               });
               if (dirSnap) rawSnap = dirSnap;
             } catch (e) {
-              console.warn('[Nav] direction-aware snap failed', e?.message ?? e);
+              console.warn(
+                '[Nav] direction-aware snap failed',
+                e?.message ?? e,
+              );
             }
 
             if (rawSnap.distFromRoute > OFF_ROUTE_THRESHOLD) {
@@ -826,7 +879,8 @@ export default function HereMapScreen() {
             }
 
             const progressMeters =
-              Number.isFinite(rawSnap.progress) && Number.isFinite(geo?.totalDistance)
+              Number.isFinite(rawSnap.progress) &&
+              Number.isFinite(geo?.totalDistance)
                 ? rawSnap.progress * geo.totalDistance
                 : 0;
             const progressBacktrack =
@@ -845,7 +899,9 @@ export default function HereMapScreen() {
               : Math.max(0, wrongWayStreakRef.current - 1);
 
             if (wrongWayStreakRef.current >= WRONG_WAY_STREAK_LIMIT) {
-              console.log('[Nav] wrong-way movement detected — forcing reroute');
+              console.log(
+                '[Nav] wrong-way movement detected — forcing reroute',
+              );
               rerouteRequestedRef.current = true;
               lastRouteRefreshRef.current = 0;
             }
@@ -861,6 +917,7 @@ export default function HereMapScreen() {
             smooth.pushLocation(lat, lng, liveHeading, liveSpeed);
           }
 
+          // Periodic / deviation reroute
           const now = Date.now();
           const dest = destinationLocationRef.current;
           if (
@@ -909,6 +966,7 @@ export default function HereMapScreen() {
       );
       navigationWatchIdRef.current = watchId;
 
+      // Background: get a precise GPS fix and freshen geometry if still missing
       (async () => {
         try {
           const start = await getCurrentLocation({detectMock: true});
@@ -918,9 +976,12 @@ export default function HereMapScreen() {
           };
           setSourceText('Current Location');
 
-          const startGeo = routeGeometryRef.current;
-          if (startGeo && hasRealGeometryRef.current) {
-            const snap = startGeo.snapToRoute(start.latitude, start.longitude);
+          const startGeoNow = routeGeometryRef.current;
+          if (startGeoNow && hasRealGeometryRef.current) {
+            const snap = startGeoNow.snapToRoute(
+              start.latitude,
+              start.longitude,
+            );
             smooth.pushLocation(snap.lat, snap.lng, snap.bearing);
           } else {
             smooth.pushLocation(start.latitude, start.longitude);
@@ -982,6 +1043,7 @@ export default function HereMapScreen() {
       Alert.alert('Navigation', err?.message || 'Unable to start');
       isNavigatingRef.current = false;
       setIsNavigating(false);
+      setIsRouteLoading(false); // ── safety: hide loader on catch ──
     }
   };
 
@@ -1004,6 +1066,7 @@ export default function HereMapScreen() {
     routeCoordsRef.current = [];
     hasRealGeometryRef.current = false;
     lastTrimCursorRef.current = {index: -1, fraction: 0};
+    pendingTrimRef.current = null;
     lastCameraUpdateTsRef.current = 0;
     rerouteRequestedRef.current = false;
     lastRouteProgressMetersRef.current = 0;
@@ -1124,8 +1187,14 @@ export default function HereMapScreen() {
         ) {
           try {
             const routeJson = await calculateTruckRouteREST(
-              {latitude: sourceLocation.latitude, longitude: sourceLocation.longitude},
-              {latitude: destinationLocation.latitude, longitude: destinationLocation.longitude},
+              {
+                latitude: sourceLocation.latitude,
+                longitude: sourceLocation.longitude,
+              },
+              {
+                latitude: destinationLocation.latitude,
+                longitude: destinationLocation.longitude,
+              },
             );
             if (cancelled) return;
             summary = routeJson?.routes?.[0]?.sections?.[0]?.summary || null;
@@ -1197,7 +1266,7 @@ export default function HereMapScreen() {
           await mapRef.current?.drawPolyline({
             coordinates: coords,
             color: '#4285F4',
-            width: 10,
+            width: NAVIGATION_ROUTE_WIDTH,
           });
           if (cancelled) return;
           const lats = coords.map(c => c.lat);
@@ -1210,13 +1279,17 @@ export default function HereMapScreen() {
           );
           const zoom = Math.max(5, Math.min(14, 14 - Math.log2(span * 111)));
           await mapRef.current?.moveCamera({
-            lat: midLat, lng: midLng, zoom,
-            animate: true, animationDuration: 700,
+            lat: midLat,
+            lng: midLng,
+            zoom,
+            animate: true,
+            animationDuration: 700,
           });
           console.log('[Preview] polyline drawn:', coords.length, 'pts');
         } else if (
           usedNative &&
-          sourceLocation && destinationLocation &&
+          sourceLocation &&
+          destinationLocation &&
           isUsableNavCoord(sourceLocation.latitude, sourceLocation.longitude) &&
           isUsableNavCoord(
             destinationLocation.latitude,
@@ -1267,9 +1340,30 @@ export default function HereMapScreen() {
     }
   };
 
-  // Render
+  // ── Render ──────────────────────────────────────────────────────────────
   return (
     <SafeAreaView style={styles.container}>
+      {/* Loading overlay — shown while fetching the initial route */}
+      {isRouteLoading && (
+        <View
+          style={{
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.6)',
+            justifyContent: 'center',
+            alignItems: 'center',
+            zIndex: 9999,
+          }}>
+          <ActivityIndicator size="large" color="#fff" />
+          <Text style={{color: '#fff', marginTop: 12, fontSize: 16}}>
+            Fetching best route for you...
+          </Text>
+        </View>
+      )}
+
       {sdkReady ? (
         <HereMapView
           ref={mapRef}

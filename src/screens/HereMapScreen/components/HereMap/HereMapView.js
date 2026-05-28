@@ -66,10 +66,6 @@ const HereMapView = forwardRef(function HereMapView(
     simulateNavigation: ({ speed = 1.0 } = {}) =>
       HereMapModule.simulateNavigation(getTag(), { speed }),
 
-    // ── Animated navigation marker ──
-    // Smoothly moves a directional arrow marker to the given position.
-    // Native side handles ValueAnimator for lat/lng/bearing interpolation.
-    // Optional: markerSize (px, default 180), iconAsset (SVG filename in assets/)
     updateNavigationMarker: ({
       lat, lng, bearing = 0, animationDuration = 1000,
       markerSize, iconAsset,
@@ -99,21 +95,18 @@ const HereMapView = forwardRef(function HereMapView(
     removeNavigationMarker: () =>
       HereMapModule.removeNavigationMarker(getTag()),
 
-    // ── Polyline (with trimming) ──
-    // coordinates: Array of { lat, lng }
-    drawPolyline: ({ coordinates, color = '#4285F4', width = 8 }) =>
-      HereMapModule.drawPolyline(getTag(), { coordinates, color, width }),
-
-    // Trims (hides) the polyline from index 0 up to trimIndex + trimFraction.
-    // Optional splitLat/splitLng lets native use exact snapped marker point.
-    trimPolyline: ({ trimIndex, trimFraction = 0, splitLat, splitLng, speedMps }) =>
-      HereMapModule.trimPolyline(getTag(), {
+    drawPolyline: ({ coordinates, color = '#4285F4', width = 20 }) => {
+      return HereMapModule.drawPolyline(getTag(), { coordinates, color, width });
+    },
+    trimPolyline: ({ trimIndex, trimFraction = 0, splitLat, splitLng, speedMps }) => {
+      return HereMapModule.trimPolyline(getTag(), {
         trimIndex,
         trimFraction,
-        ...(splitLat != null ? {splitLat} : {}),
-        ...(splitLng != null ? {splitLng} : {}),
-        ...(speedMps != null ? {speedMps} : {}),
-      }),
+        ...(splitLat != null ? { splitLat } : {}),
+        ...(splitLng != null ? { splitLng } : {}),
+        ...(speedMps != null ? { speedMps } : {}),
+      });
+    },
 
     clearPolyline: () => HereMapModule.clearPolyline(getTag()),
   }));

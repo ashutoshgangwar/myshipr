@@ -13,6 +13,10 @@ data class RouteProgressState(
     val markerFraction: Double,
     val markerDistanceMeters: Double,
     val markerPoint: GeoCoordinates,
+    // FIX: trimIndex/trimFraction/trimPoint now equal the MARKER position,
+    // not a look-ahead projection. The old look-ahead logic placed the trim
+    // point 4–24 m ahead of the vehicle, so the polyline appeared to "lag"
+    // because the grey/blue split was always ahead of the arrow.
     val trimIndex: Int,
     val trimFraction: Double,
     val trimDistanceMeters: Double,
@@ -50,33 +54,42 @@ class RouteProgressManager {
         cumulativeMeters = DoubleArray(0)
     }
 
+    /**
+     * Build the progress state for the current marker position.
+     *
+     * FIX: speedMps parameter removed. The old code used it to project a
+     * look-ahead point ahead of the vehicle and used THAT as trimPoint.
+     * That is why the polyline always appeared to lag — the grey/blue split
+     * was in front of the arrow, not behind it.
+     *
+     * trimPoint is now identical to markerPoint. The passed segment is
+     * everything behind the arrow; the remaining segment starts at the arrow.
+     * This matches what Google Maps and Waze do visually.
+     */
     fun buildState(
         markerIndex: Int,
         markerFraction: Double,
         splitLat: Double? = null,
-        splitLng: Double? = null,
-        speedMps: Double? = null
+        splitLng: Double? = null
     ): RouteProgressState? {
         if (coordinates.size < 2) return null
 
-        val safeMarkerIndex = markerIndex.coerceIn(0, coordinates.size - 2)
-        val safeMarkerFraction = markerFraction.coerceIn(0.0, 1.0)
-        val markerPoint = explicitPointOrInterpolated(safeMarkerIndex, safeMarkerFraction, splitLat, splitLng)
-        val markerDistanceMeters = routeDistanceAt(safeMarkerIndex, safeMarkerFraction)
+        val safeIndex = markerIndex.coerceIn(0, coordinates.size - 2)
+        val safeFraction = markerFraction.coerceIn(0.0, 1.0)
 
-        val lookAheadMeters = computeLookAheadMeters(speedMps ?: 0.0)
-        val trimDistanceMeters = min(totalDistanceMeters(), markerDistanceMeters + lookAheadMeters)
-        val trimPoint = pointAtDistance(trimDistanceMeters)
+        val markerPoint = explicitPointOrInterpolated(safeIndex, safeFraction, splitLat, splitLng)
+        val markerDistance = routeDistanceAt(safeIndex, safeFraction)
 
+        // trimPoint == markerPoint: trim exactly where the arrow is
         return RouteProgressState(
-            markerIndex = safeMarkerIndex,
-            markerFraction = safeMarkerFraction,
-            markerDistanceMeters = markerDistanceMeters,
-            markerPoint = markerPoint,
-            trimIndex = trimPoint.index,
-            trimFraction = trimPoint.fraction,
-            trimDistanceMeters = trimDistanceMeters,
-            trimPoint = trimPoint.coordinates
+            markerIndex        = safeIndex,
+            markerFraction     = safeFraction,
+            markerDistanceMeters = markerDistance,
+            markerPoint        = markerPoint,
+            trimIndex          = safeIndex,
+            trimFraction       = safeFraction,
+            trimDistanceMeters = markerDistance,
+            trimPoint          = markerPoint
         )
     }
 
@@ -87,68 +100,27 @@ class RouteProgressManager {
         splitLng: Double?
     ): GeoCoordinates {
         if (
-            splitLat != null &&
-            splitLng != null &&
-            splitLat.isFinite() &&
-            splitLng.isFinite() &&
-            splitLat in -90.0..90.0 &&
-            splitLng in -180.0..180.0
+            splitLat != null && splitLng != null &&
+            splitLat.isFinite() && splitLng.isFinite() &&
+            splitLat in -90.0..90.0 && splitLng in -180.0..180.0
         ) {
             return GeoCoordinates(splitLat, splitLng)
         }
 
         val start = coordinates[index]
-        val end = coordinates[index + 1]
+        val end   = coordinates[index + 1]
         return GeoCoordinates(
-            start.latitude + (end.latitude - start.latitude) * fraction,
+            start.latitude  + (end.latitude  - start.latitude)  * fraction,
             start.longitude + (end.longitude - start.longitude) * fraction
         )
-    }
-
-    private fun pointAtDistance(distanceMeters: Double): RoutePoint {
-        if (coordinates.size < 2) {
-            return RoutePoint(0, 0.0, coordinates.firstOrNull() ?: GeoCoordinates(0.0, 0.0))
-        }
-
-        val clampedDistance = distanceMeters.coerceIn(0.0, totalDistanceMeters())
-        var low = 0
-        var high = max(0, cumulativeMeters.size - 1)
-        while (low < high) {
-            val mid = (low + high + 1) / 2
-            if (cumulativeMeters[mid] <= clampedDistance) {
-                low = mid
-            } else {
-                high = mid - 1
-            }
-        }
-
-        val index = min(low, coordinates.size - 2)
-        val segStartDistance = cumulativeMeters[index]
-        val segLength = segmentLengthsMeters.getOrElse(index) { 0.0 }
-        val fraction = if (segLength <= 1e-6) 0.0 else ((clampedDistance - segStartDistance) / segLength).coerceIn(0.0, 1.0)
-        val start = coordinates[index]
-        val end = coordinates[index + 1]
-        val point = GeoCoordinates(
-            start.latitude + (end.latitude - start.latitude) * fraction,
-            start.longitude + (end.longitude - start.longitude) * fraction
-        )
-
-        return RoutePoint(index, fraction, point)
     }
 
     private fun routeDistanceAt(index: Int, fraction: Double): Double {
         if (cumulativeMeters.isEmpty()) return 0.0
-        val safeIndex = index.coerceIn(0, max(0, segmentLengthsMeters.size - 1))
+        val safeIndex   = index.coerceIn(0, max(0, segmentLengthsMeters.size - 1))
         val safeFraction = fraction.coerceIn(0.0, 1.0)
-        val segmentLength = segmentLengthsMeters.getOrElse(safeIndex) { 0.0 }
-        return cumulativeMeters[safeIndex] + segmentLength * safeFraction
-    }
-
-    private fun totalDistanceMeters(): Double = cumulativeMeters.lastOrNull() ?: 0.0
-
-    private fun computeLookAheadMeters(speedMps: Double): Double {
-        val safeSpeed = speedMps.coerceIn(0.0, 40.0)
-        return (4.0 + safeSpeed * 1.4).coerceIn(4.0, 24.0)
+        val segLen = segmentLengthsMeters.getOrElse(safeIndex) { 0.0 }
+        return cumulativeMeters[safeIndex] + segLen * safeFraction
     }
 
     private fun haversineMeters(a: GeoCoordinates, b: GeoCoordinates): Double {
@@ -162,12 +134,6 @@ class RouteProgressManager {
         val c = 2.0 * atan2(sqrt(x), sqrt(max(0.0, 1.0 - x)))
         return EARTH_RADIUS_METERS * c
     }
-
-    private data class RoutePoint(
-        val index: Int,
-        val fraction: Double,
-        val coordinates: GeoCoordinates
-    )
 
     private companion object {
         const val EARTH_RADIUS_METERS = 6_371_000.0
