@@ -84,6 +84,10 @@ const HereSearchCard = ({
 
   // ─── route fetch ─────────────────────────────────────────────────────────
   const fetchHereRoute = useCallback(async (origin, destination) => {
+     console.log('🚀 [Route] Request Start');
+     console.log('📍 Origin:', origin);
+     console.log('📍 Destination:', destination);
+
     if (
       !Number.isFinite(origin?.latitude)      || !Number.isFinite(origin?.longitude) ||
       !Number.isFinite(destination?.latitude) || !Number.isFinite(destination?.longitude)
@@ -96,8 +100,11 @@ const HereSearchCard = ({
         {latitude: origin.latitude,      longitude: origin.longitude},
         {latitude: destination.latitude, longitude: destination.longitude},
       );
+
+      console.log('✅ Route API Response:', json);
       setRouteResponse(json);
     } catch (error) {
+       console.log('❌ Route API Error:', error);
       setRouteResponse(null);
       setRouteError(error?.message || 'Unable to fetch route');
     } finally {
@@ -108,6 +115,8 @@ const HereSearchCard = ({
   // ─── autocomplete ────────────────────────────────────────────────────────
   const fetchHereSuggestions = useCallback(async (q, coords = null) => {
     const query = (q || '').trim();
+     console.log('🔍 [Search] Query:', query);
+     console.log('📍 Coords:', coords);
     if (!query || query.length < HERE_SEARCH_MIN_CHARS) return [];
 
     const searchCoords =
@@ -118,8 +127,11 @@ const HereSearchCard = ({
     const cached = suggestionCacheRef.current.get(cacheKey);
     if (cached && Date.now() - cached.timestamp < HERE_SEARCH_CACHE_TTL_MS) return cached.items;
 
+    console.log('🌐 Calling HERE autosuggest API...');
+
     try {
       const items = await autosuggest(query, searchCoords, 5);
+        console.log('✅ Suggestions Response:', items);
       suggestionCacheRef.current.set(cacheKey, {items, timestamp: Date.now()});
       return items;
     } catch (err) {
@@ -129,9 +141,11 @@ const HereSearchCard = ({
   }, []);
 
   const onSourceChange = useCallback(q => {
+    console.log('⌨️ Source Input:', q);
     setFocusedField('source');
     setSourceQuery(q);
     setSourceCoords(null);
+     console.log('🧹 Clearing route due to source change');
     setDestSuggestions([]);
     setDestLoading(false);
     clearRoutePreview();
@@ -151,9 +165,11 @@ const HereSearchCard = ({
   }, [clearRoutePreview, fetchHereSuggestions, sourceCoords]);
 
   const onDestChange = useCallback(q => {
+      console.log('⌨️ Destination Input:', q);
     setFocusedField('destination');
     setDestQuery(q);
     setDestCoords(null);
+      console.log('🧹 Clearing route due to destination change');
     setSourceSuggestions([]);
     setSourceLoading(false);
     clearRoutePreview();
@@ -174,6 +190,7 @@ const HereSearchCard = ({
 
   // ─── selection handlers ──────────────────────────────────────────────────
   const handleHereSourceSelect = item => {
+     console.log('✅ Source Selected:', item);
     const location = {latitude: item.latitude, longitude: item.longitude, description: item.title};
     setSourceLocation?.(location);
     setSourceText?.(item.title);
@@ -185,6 +202,7 @@ const HereSearchCard = ({
   };
 
   const handleHereDestSelect = item => {
+    console.log('✅ Destination Selected:', item);
     const location = {latitude: item.latitude, longitude: item.longitude, description: item.title};
     setDestinationLocation?.(location);
     setDestinationText?.(item.title);
@@ -238,6 +256,9 @@ const HereSearchCard = ({
 
   // ─── route preview trigger ───────────────────────────────────────────────
   React.useEffect(() => {
+     console.log('🧭 Checking route trigger...');
+  console.log('SourceCoords:', sourceCoords);
+  console.log('DestCoords:', destCoords);
     if (
       !Number.isFinite(sourceCoords?.latitude)  || !Number.isFinite(sourceCoords?.longitude) ||
       !Number.isFinite(destCoords?.latitude)    || !Number.isFinite(destCoords?.longitude)

@@ -50,6 +50,7 @@ import {
   ToolbarButton,
 } from './components/NavigationControls';
 import {NavigationInfo} from './components/NavigationInfo';
+import TurnByTurnPanel from './utils/Turnbyturnpanel';
 
 // Constants
 import {
@@ -91,8 +92,21 @@ export default function HereMapScreen() {
   const [isNavigating, setIsNavigating] = useState(false);
   const isNavigatingRef = useRef(false);
   const [navigationInfo, setNavigationInfo] = useState(null);
-  // ── NEW: loading overlay state ──
+
+  // ── Turn-by-turn panel state ──────────────────────────────────────────────
+  const [routeResponseForPanel, setRouteResponseForPanel] = useState(null);
+  const routeResponseForPanelRef = useRef(null); // ref so subscribe callback can read it
+  useEffect(() => {
+    routeResponseForPanelRef.current = routeResponseForPanel;
+  }, [routeResponseForPanel]);
+
+  // Live snap position → panel
+  const [snapSegmentIndex, setSnapSegmentIndex] = useState(-1);
+  const [metersToNext, setMetersToNext] = useState(null);
+
+  // ── Loading overlay ───────────────────────────────────────────────────────
   const [isRouteLoading, setIsRouteLoading] = useState(false);
+
   const navigationWatchIdRef = useRef(null);
   const lastRouteRefreshRef = useRef(0);
   const isDrawingRouteRef = useRef(false);
@@ -111,9 +125,6 @@ export default function HereMapScreen() {
   const previewRouteSummaryRef = useRef(null);
   const previewRouteJsonRef = useRef(null);
   const previewUsedNativeRouteRef = useRef(false);
-
-  // const pendingTrimRef = useRef(null);
-  // const isTrimFlushingRef = useRef(false);
 
   const destinationLocationRef = useRef(null);
   useEffect(() => {
@@ -170,29 +181,7 @@ export default function HereMapScreen() {
   const lastRouteProgressMetersRef = useRef(0);
   const wrongWayStreakRef = useRef(0);
 
-  // const flushPendingTrim = useCallback(async () => {
-  //   if (isTrimFlushingRef.current) return;
-  //   const payload = pendingTrimRef.current;
-  //   if (!payload) return;
-
-  //   isTrimFlushingRef.current = true;
-  //   pendingTrimRef.current = null;
-
-  //   try {
-  //     await mapRef.current?.trimPolyline(payload);
-  //   } catch (_) {
-  //   } finally {
-  //     isTrimFlushingRef.current = false;
-  //     if (pendingTrimRef.current) {
-  //       flushPendingTrim();
-  //     }
-  //   }
-  // }, []);
-
-  // ─────────────────────────────────────────────────────────────────────────
-  // smooth.subscribe — single source of truth for marker + trim + camera
-  // (identical to Version 2 which has the working trim logic)
-  // ─────────────────────────────────────────────────────────────────────────
+  // ─── smooth.subscribe ────────────────────────────────────────────────────
   useEffect(() => {
     const unsub = smooth.subscribe(async pos => {
       try {
@@ -201,7 +190,6 @@ export default function HereMapScreen() {
         if (isNavigatingRef.current) {
           const geo = routeGeometryRef.current;
           const hasReal = hasRealGeometryRef.current;
-
           const truckBearing = isFinite(pos.bearing) ? pos.bearing : 0;
 
           if (geo && hasReal) {
@@ -250,7 +238,6 @@ export default function HereMapScreen() {
             });
 
             const cursor = lastTrimCursorRef.current;
-
             if (
               snap.segmentIndex !== cursor.index ||
               Math.abs(snap.fraction - cursor.fraction) > 0.0001
@@ -260,19 +247,13 @@ export default function HereMapScreen() {
                 fraction: snap.fraction,
               };
 
-              // 🔥 PREDICTIVE TRIM (marker se aage trim karega)
               const speed = pos.speed || 0;
-
-              // dynamic prediction based on speed
-              let offset = 0.015; // base
-
-              if (speed > 15) offset = 0.035; // highway
-              else if (speed > 8) offset = 0.025; // city
-              else if (speed > 3) offset = 0.02; // slow traffic
-
+              let offset = 0.015;
+              if (speed > 15) offset = 0.035;
+              else if (speed > 8) offset = 0.025;
+              else if (speed > 3) offset = 0.02;
               const predictiveFraction = Math.min(snap.fraction + offset, 1);
 
-              // 🚀 DIRECT TRIM (NO QUEUE, NO DELAY)
               mapRef.current?.trimPolyline({
                 trimIndex: snap.segmentIndex,
                 trimFraction: predictiveFraction,
@@ -280,6 +261,70 @@ export default function HereMapScreen() {
                 splitLng: snap.lng,
                 speedMps: speed,
               });
+
+              // ── NEXT-ACTION LOOKAHEAD ─────────────────────────────────
+              // Update panel: which segment we're on + metres to next maneuver
+              setSnapSegmentIndex(snap.segmentIndex);
+
+              (() => {
+                try {
+                  const coords = routeCoordsRef.current;
+                  const actions =
+                    routeResponseForPanelRef.current?.routes?.[0]?.sections?.[0]
+                      ?.actions ?? [];
+
+                  if (!coords.length || !actions.length) return;
+
+                  // First action whose offset > current segment = the upcoming maneuver
+                  const nextAction = actions.find(
+                    a => (a.offset ?? 0) > snap.segmentIndex,
+                  );
+                  if (!nextAction) {
+                    setMetersToNext(0);
+                    return;
+                  }
+
+                  const targetSegIdx = nextAction.offset;
+
+                  // Sum distances: partial current segment + full segments to target
+                  let dist = 0;
+                  const currentSegEnd = coords[snap.segmentIndex + 1];
+
+                  if (currentSegEnd) {
+                    dist += haversineDistanceMeters(
+                      snap.lat,
+                      snap.lng,
+                      currentSegEnd.lat,
+                      currentSegEnd.lng,
+                    );
+                  }
+                  // Distance from snap point to end of current segment
+                  // if (snap.segmentIndex < coords.length - 1) {
+                  //   const segEnd = coords[snap.segmentIndex + 1];
+                  //   dist += haversineDistanceMeters(
+                  //     snap.lat, snap.lng,
+                  //     segEnd.lat, segEnd.lng,
+                  //   );
+                  // }
+
+                  // Full segments between (snap+1) and targetSeg
+                  for (
+                    let si = snap.segmentIndex + 1;
+                    si < targetSegIdx && si + 1 < coords.length;
+                    si++
+                  ) {
+                    dist += haversineDistanceMeters(
+                      coords[si].lat,
+                      coords[si].lng,
+                      coords[si + 1].lat,
+                      coords[si + 1].lng,
+                    );
+                  }
+
+                  setMetersToNext(dist);
+                } catch (_) {}
+              })();
+              // ─────────────────────────────────────────────────────────
             }
 
             const now = Date.now();
@@ -310,7 +355,6 @@ export default function HereMapScreen() {
             let bd = Math.abs(truckBearing - prev.bearing);
             if (bd > 180) bd = 360 - bd;
             const turnedEnough = bd >= NAVIGATION_MIN_TURN_DEGREES;
-
             if (!movedEnough && !turnedEnough) return;
 
             lastNativeMarkerRef.current = {
@@ -319,7 +363,6 @@ export default function HereMapScreen() {
               bearing: truckBearing,
               trimIndex: -1,
             };
-
             mapRef.current?.updateNavigationMarker({
               lat: pos.lat,
               lng: pos.lng,
@@ -380,34 +423,22 @@ export default function HereMapScreen() {
     })();
   }, []);
 
-  // -------------------------------------------------------------------------
-  // Polyline extraction
-  // -------------------------------------------------------------------------
+  // ── Polyline extraction ───────────────────────────────────────────────────
   const extractRoutePolyline = useCallback(routeJson => {
     try {
       const sections = routeJson?.routes?.[0]?.sections || [];
       const allCoords = [];
-
       for (const section of sections) {
         const polyline = section.polyline;
-
         if (typeof polyline === 'string' && polyline.length > 0) {
           let decoded = decodeFlexiblePolyline(polyline);
-
-          if (decoded.length === 0) {
-            console.log(
-              '[extractRoutePolyline] flex decode failed, trying Google format...',
-            );
-            decoded = decodeGooglePolyline(polyline);
-          }
-
-          if (decoded.length > 0) {
+          if (decoded.length === 0) decoded = decodeGooglePolyline(polyline);
+          if (decoded.length > 0)
             console.log(
               '[extractRoutePolyline] decoded',
               decoded.length,
               'coords from section',
             );
-          }
           allCoords.push(...decoded);
         } else if (Array.isArray(polyline)) {
           for (const pt of polyline) {
@@ -417,7 +448,6 @@ export default function HereMapScreen() {
           }
         }
       }
-
       console.log('[extractRoutePolyline] total coords:', allCoords.length);
       return allCoords;
     } catch (err) {
@@ -437,7 +467,6 @@ export default function HereMapScreen() {
     routeGeometryRef.current = new RouteGeometry(coords);
     hasRealGeometryRef.current = true;
     lastTrimCursorRef.current = {index: -1, fraction: 0};
-    // pendingTrimRef.current = null;
     try {
       isDrawingRouteRef.current = true;
       await mapRef.current?.clearPolyline();
@@ -471,7 +500,6 @@ export default function HereMapScreen() {
           await setupRouteGeometry(coords);
         } else {
           hasRealGeometryRef.current = false;
-          console.log('[Nav] reroute decode failed, keeping native drawRoute');
           try {
             await mapRef.current?.drawRoute({
               originLat,
@@ -488,9 +516,7 @@ export default function HereMapScreen() {
     [extractRoutePolyline, setupRouteGeometry],
   );
 
-  // -------------------------------------------------------------------------
-  // Button handlers
-  // -------------------------------------------------------------------------
+  // ── Button handlers ───────────────────────────────────────────────────────
   const handleMoveCamera = async () => {
     try {
       await mapRef.current?.moveCamera({
@@ -569,7 +595,6 @@ export default function HereMapScreen() {
       );
       return;
     }
-
     try {
       const routeJson = await calculateTruckRouteREST(origin, dest);
       setRouteSummary(routeJson?.routes?.[0]?.sections?.[0]?.summary || null);
@@ -584,11 +609,7 @@ export default function HereMapScreen() {
     }
   };
 
-  // -------------------------------------------------------------------------
-  // handleStartNavigation
-  // Keeps Version 2's full logic (working trim + reroute) and adds the
-  // loading overlay from Version 1 around it.
-  // -------------------------------------------------------------------------
+  // ── handleStartNavigation ─────────────────────────────────────────────────
   const handleStartNavigation = async () => {
     if (!destinationLocation) {
       Alert.alert('Navigation', 'Select a destination first.');
@@ -604,7 +625,6 @@ export default function HereMapScreen() {
       previewDebounceRef.current = null;
     }
 
-    // ── Show loading overlay ──
     setIsRouteLoading(true);
 
     let navStartSource = null;
@@ -643,23 +663,23 @@ export default function HereMapScreen() {
         };
       } else {
         Alert.alert('Navigation', 'Current GPS location not available yet.');
-        setIsRouteLoading(false); // ── hide loader on early exit ──
+        setIsRouteLoading(false);
         return;
       }
     }
 
-    // Reset all navigation state
+    // Reset nav state
     routeGeometryRef.current = null;
     routeCoordsRef.current = [];
     hasRealGeometryRef.current = false;
     lastTrimCursorRef.current = {index: -1, fraction: 0};
-    // pendingTrimRef.current = null;
     rerouteRequestedRef.current = false;
     lastRouteProgressMetersRef.current = 0;
     wrongWayStreakRef.current = 0;
+    setSnapSegmentIndex(-1);
+    setMetersToNext(null);
 
     try {
-      // Fetch route while loader is showing
       const startRoute = await calculateTruckRouteREST(
         {
           latitude: navStartSource.latitude,
@@ -671,6 +691,9 @@ export default function HereMapScreen() {
         },
       );
 
+      // ── Feed panel ──
+      setRouteResponseForPanel(startRoute);
+
       const startSummary =
         startRoute?.routes?.[0]?.sections?.[0]?.summary || null;
       setRouteSummary(startSummary);
@@ -680,10 +703,7 @@ export default function HereMapScreen() {
       const startCoords = sanitizeRouteCoords(
         startRawCoords,
         {lat: navStartSource.latitude, lng: navStartSource.longitude},
-        {
-          lat: destinationLocation.latitude,
-          lng: destinationLocation.longitude,
-        },
+        {lat: destinationLocation.latitude, lng: destinationLocation.longitude},
       );
       if (startCoords.length >= 2) {
         await setupRouteGeometry(startCoords);
@@ -775,7 +795,6 @@ export default function HereMapScreen() {
         isUsableNavCoord(immediatePos.lat, immediatePos.lng)
       ) {
         await mapRef.current?.hideCurrentLocation();
-
         await Promise.all([
           mapRef.current?.updateNavigationMarker({
             lat: immediatePos.lat,
@@ -795,7 +814,6 @@ export default function HereMapScreen() {
             forceInstant: true,
           }),
         ]);
-
         if (
           startGeo &&
           hasRealAtStart &&
@@ -809,7 +827,6 @@ export default function HereMapScreen() {
             speedMps: immediateSpeed,
           });
         }
-
         if (
           isValidCoord(
             destinationLocation.latitude,
@@ -828,8 +845,6 @@ export default function HereMapScreen() {
     } catch (_) {}
 
     setIsNavigating(true);
-
-    // ── Hide loader — navigation has started ──
     setIsRouteLoading(false);
 
     try {
@@ -853,7 +868,6 @@ export default function HereMapScreen() {
           const geo = routeGeometryRef.current;
           const hasReal = hasRealGeometryRef.current;
 
-          // Push to smooth — smooth.subscribe handles marker/trim/camera
           if (geo && hasReal) {
             let rawSnap = geo.snapToRoute(lat, lng);
             try {
@@ -886,11 +900,6 @@ export default function HereMapScreen() {
             }
 
             if (rawSnap.distFromRoute > OFF_ROUTE_THRESHOLD) {
-              console.log(
-                '[Nav] OFF ROUTE:',
-                rawSnap.distFromRoute.toFixed(0),
-                'm — forcing reroute',
-              );
               rerouteRequestedRef.current = true;
               lastRouteRefreshRef.current = 0;
             }
@@ -916,9 +925,6 @@ export default function HereMapScreen() {
               : Math.max(0, wrongWayStreakRef.current - 1);
 
             if (wrongWayStreakRef.current >= WRONG_WAY_STREAK_LIMIT) {
-              console.log(
-                '[Nav] wrong-way movement detected — forcing reroute',
-              );
               rerouteRequestedRef.current = true;
               lastRouteRefreshRef.current = 0;
             }
@@ -956,6 +962,12 @@ export default function HereMapScreen() {
                 {latitude: origin.latitude, longitude: origin.longitude},
                 {latitude: dest.latitude, longitude: dest.longitude},
               );
+              // ── Feed updated route to panel ──
+              setRouteResponseForPanel(navRoute);
+              // Reset snap state so panel recalculates from segment 0
+              setSnapSegmentIndex(-1);
+              setMetersToNext(null);
+
               const navSummary =
                 navRoute?.routes?.[0]?.sections?.[0]?.summary || null;
               setRouteSummary(navSummary);
@@ -983,7 +995,7 @@ export default function HereMapScreen() {
       );
       navigationWatchIdRef.current = watchId;
 
-      // Background: get a precise GPS fix and freshen geometry if still missing
+      // Background: fresh GPS fix
       (async () => {
         try {
           const start = await getCurrentLocation({detectMock: true});
@@ -1005,7 +1017,6 @@ export default function HereMapScreen() {
           }
 
           if (!hasRealGeometryRef.current) {
-            console.log('[Nav] fetching fresh route for geometry...');
             try {
               const freshRoute = await calculateTruckRouteREST(
                 {latitude: start.latitude, longitude: start.longitude},
@@ -1030,15 +1041,7 @@ export default function HereMapScreen() {
               );
               if (safeCoords.length >= 2) {
                 await setupRouteGeometry(safeCoords);
-                console.log(
-                  '[Nav] fresh route geometry ready:',
-                  safeCoords.length,
-                  'pts',
-                );
               } else {
-                console.log(
-                  '[Nav] decode still fails — raw GPS mode continues',
-                );
                 try {
                   await mapRef.current?.drawRoute({
                     originLat: start.latitude,
@@ -1060,10 +1063,11 @@ export default function HereMapScreen() {
       Alert.alert('Navigation', err?.message || 'Unable to start');
       isNavigatingRef.current = false;
       setIsNavigating(false);
-      setIsRouteLoading(false); // ── safety: hide loader on catch ──
+      setIsRouteLoading(false);
     }
   };
 
+  // ── stopNavigation ────────────────────────────────────────────────────────
   const stopNavigation = useCallback(() => {
     if (navigationWatchIdRef.current != null) {
       clearWatchLocation(navigationWatchIdRef.current);
@@ -1072,18 +1076,22 @@ export default function HereMapScreen() {
     isNavigatingRef.current = false;
     setIsNavigating(false);
     setNavigationInfo(null);
+    setRouteResponseForPanel(null);
+    setSnapSegmentIndex(-1);
+    setMetersToNext(null);
     setIsCameraFree(false);
+
     if (sourceRef.current)
       setSourceLocation({
         latitude: sourceRef.current.latitude,
         longitude: sourceRef.current.longitude,
         description: 'Current Location',
       });
+
     routeGeometryRef.current = null;
     routeCoordsRef.current = [];
     hasRealGeometryRef.current = false;
     lastTrimCursorRef.current = {index: -1, fraction: 0};
-    // pendingTrimRef.current = null;
     lastCameraUpdateTsRef.current = 0;
     rerouteRequestedRef.current = false;
     lastRouteProgressMetersRef.current = 0;
@@ -1181,11 +1189,9 @@ export default function HereMapScreen() {
   useEffect(() => {
     if (!sdkReady) return;
     if (isNavigatingRef.current) return;
-
     if (previewDebounceRef.current) clearTimeout(previewDebounceRef.current);
 
     let cancelled = false;
-
     previewDebounceRef.current = setTimeout(async () => {
       if (cancelled || isNavigatingRef.current) return;
       try {
@@ -1227,13 +1233,11 @@ export default function HereMapScreen() {
             if (coords.length < 2) usedNative = true;
           } catch (routeErr) {
             if (cancelled) return;
-            console.warn('[Preview] route fetch failed:', routeErr.message);
             usedNative = true;
           }
         }
 
         if (cancelled) return;
-
         await Promise.all([
           mapRef.current?.clearMarkers(),
           mapRef.current?.clearPolyline(),
@@ -1302,7 +1306,6 @@ export default function HereMapScreen() {
             animate: true,
             animationDuration: 700,
           });
-          console.log('[Preview] polyline drawn:', coords.length, 'pts');
         } else if (
           usedNative &&
           sourceLocation &&
@@ -1320,7 +1323,6 @@ export default function HereMapScreen() {
             destLat: destinationLocation.latitude,
             destLng: destinationLocation.longitude,
           });
-          console.log('[Preview] native drawRoute fallback');
         }
       } catch (err) {
         if (!cancelled) console.warn('sync failed', err);
@@ -1336,9 +1338,8 @@ export default function HereMapScreen() {
 
   useEffect(() => {
     return () => {
-      if (navigationWatchIdRef.current != null) {
+      if (navigationWatchIdRef.current != null)
         clearWatchLocation(navigationWatchIdRef.current);
-      }
     };
   }, []);
 
@@ -1357,10 +1358,10 @@ export default function HereMapScreen() {
     }
   };
 
-  // ── Render ──────────────────────────────────────────────────────────────
+  // ── Render ────────────────────────────────────────────────────────────────
   return (
     <SafeAreaView style={styles.container}>
-      {/* Loading overlay — shown while fetching the initial route */}
+      {/* Loading overlay */}
       {isRouteLoading && (
         <View
           style={{
@@ -1481,6 +1482,15 @@ export default function HereMapScreen() {
           <GpsIcon width={28} height={28} fill="#040000" />
         )}
       </TouchableOpacity>
+
+      {/* ── Turn-by-turn panel ── */}
+      <TurnByTurnPanel
+        routeResponse={routeResponseForPanel}
+        isNavigating={isNavigating}
+        snapSegmentIndex={snapSegmentIndex}
+        metersToNext={metersToNext}
+        style={{bottom: 120}}
+      />
     </SafeAreaView>
   );
 }
