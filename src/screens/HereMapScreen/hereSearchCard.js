@@ -8,13 +8,18 @@ import {
   ActivityIndicator,
   ScrollView,
   useWindowDimensions,
+  Modal,
 } from 'react-native';
 import {scale} from 'react-native-size-matters';
 import Location_Icon from '../../assets/svg_icon/location.svg';
 import Arrow_left_right from '../../assets/svg_icon/arrow-right-lef.svg';
 import styles from './hereSearchCard.styles';
 import AppText from '../../theme/AppText';
-import {autosuggest, calculateTruckRouteREST} from './services/hereTruckService';
+import {
+  autosuggest,
+  calculateTruckRouteREST,
+  calculateRouteTolls,
+} from './services/hereTruckService';
 
 const HERE_SEARCH_MIN_CHARS = 3;
 const HERE_SEARCH_DEBOUNCE_MS = 700;
@@ -44,9 +49,11 @@ const HereSearchCard = ({
   setDestinationText,
   onCoordinateSelect,
   onSwap,
+  onSourceSelected,
+  onDestinationSelected,
 }) => {
   const {height: screenHeight} = useWindowDimensions();
-  const cardMaxHeight = Math.max(420, screenHeight * 0.84);
+  const cardMaxHeight = Math.max(320, screenHeight * 0.68);
 
   const [sourceQuery, setSourceQuery]           = useState('');
   const [sourceSuggestions, setSourceSuggestions] = useState([]);
@@ -66,6 +73,8 @@ const HereSearchCard = ({
   const [routeLoading, setRouteLoading]   = useState(false);
   const [routeError, setRouteError]       = useState('');
   const [routeResponse, setRouteResponse] = useState(null);
+  const [routeTollData, setRouteTollData] = useState(null);
+  const [tollModalVisible, setTollModalVisible] = useState(false);
   const [mapStyle, setMapStyle]           = useState('explore.day');
 
   // ─── helpers ────────────────────────────────────────────────────────────
@@ -82,6 +91,16 @@ const HereSearchCard = ({
   const formatDuration = v =>
     Number.isFinite(v) ? `${Math.ceil(v / 60)} min` : 'N/A';
 
+  const getCurrencySymbol = currency => {
+    switch (currency) {
+      case 'USD': return '$';
+      case 'EUR': return '€';
+      case 'GBP': return '£';
+      case 'INR': return '₹';
+      default: return currency || '$';
+    }
+  };
+
   // ─── route fetch ─────────────────────────────────────────────────────────
   const fetchHereRoute = useCallback(async (origin, destination) => {
      console.log('🚀 [Route] Request Start');
@@ -95,17 +114,34 @@ const HereSearchCard = ({
 
     setRouteLoading(true);
     setRouteError('');
+    setRouteResponse(null);
+    setRouteTollData(null);
+
     try {
-      const json = await calculateTruckRouteREST(
-        {latitude: origin.latitude,      longitude: origin.longitude},
-        {latitude: destination.latitude, longitude: destination.longitude},
-      );
+      const [json, tollJson] = await Promise.all([
+        calculateTruckRouteREST(
+          {latitude: origin.latitude,      longitude: origin.longitude},
+          {latitude: destination.latitude, longitude: destination.longitude},
+        ),
+        calculateRouteTolls(
+          {latitude: origin.latitude,      longitude: origin.longitude},
+          {latitude: destination.latitude, longitude: destination.longitude},
+        ).catch(err => {
+          console.warn('🚧 Toll preview failed', err);
+          return null;
+        }),
+      ]);
 
       console.log('✅ Route API Response:', json);
+      if (tollJson) {
+        console.log('✅ Toll API Response:', tollJson);
+      }
       setRouteResponse(json);
+      setRouteTollData(tollJson);
     } catch (error) {
        console.log('❌ Route API Error:', error);
       setRouteResponse(null);
+      setRouteTollData(null);
       setRouteError(error?.message || 'Unable to fetch route');
     } finally {
       setRouteLoading(false);
@@ -196,6 +232,7 @@ const HereSearchCard = ({
     setSourceText?.(item.title);
     setSourceCoords({latitude: item.latitude, longitude: item.longitude});
     onCoordinateSelect?.(item.latitude, item.longitude);
+    onSourceSelected?.(location);
     setSourceSuggestions([]);
     setSourceQuery(item.title);
     Keyboard.dismiss();
@@ -208,6 +245,7 @@ const HereSearchCard = ({
     setDestinationText?.(item.title);
     setDestCoords({latitude: item.latitude, longitude: item.longitude});
     onCoordinateSelect?.(item.latitude, item.longitude);
+    onDestinationSelected?.(location);
     setDestSuggestions([]);
     setDestQuery(item.title);
     Keyboard.dismiss();
@@ -313,9 +351,17 @@ const HereSearchCard = ({
   const routeArrivalTime  = routeSection?.arrival?.time
     ? new Date(routeSection.arrival.time).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})
     : 'N/A';
-  const routeMode = routeSection?.transport?.mode || 'truck';
-  const routeId   = routeResponse?.routes?.[0]?.id || 'N/A';
-  const sectionId = routeSection?.id || 'N/A';
+
+  const tollSections = routeTollData?.routes?.[0]?.sections || [];
+  const tollList = tollSections.flatMap(section => section.tolls || []);
+  const tollCurrency = tollList[0]?.fares?.[0]?.price?.currency || 'USD';
+  const tollTotal = tollList.reduce((sum, toll) => {
+    const price = toll?.fares?.[0]?.price?.value;
+    return sum + (Number.isFinite(price) ? price : 0);
+  }, 0);
+  const tollLabel = tollList.length
+    ? `${getCurrencySymbol(tollCurrency)}${tollTotal.toFixed(2)} · ${tollList.length} booth${tollList.length > 1 ? 's' : ''}`
+    : 'No tolls';
 
   const isSuggestionOpen =
     (focusedField === 'source'      && sourceSuggestions.length > 0) ||
@@ -447,6 +493,16 @@ const HereSearchCard = ({
             <AppText style={styles.routeError}>{routeError}</AppText>
           )}
 
+          {/* ── Route preview helper message ── */}
+          {!routeLoading && !routeResponse && !routeError && (
+            <View style={styles.routeEmptyCard}>
+              <Text style={styles.routeEmptyTitle}>Select both points to preview your route.</Text>
+              <Text style={styles.routeEmptyText}>
+                Choose a start and destination to see estimated distance, duration, and toll information.
+              </Text>
+            </View>
+          )}
+
           {/* ── Route preview card ── */}
           {routeResponse && (
             <View style={styles.floatingSectionCard}>
@@ -457,8 +513,16 @@ const HereSearchCard = ({
                   <View style={styles.routeTitleRow}>
                     <AppText style={styles.routeTitle}>Route Preview</AppText>
                   </View>
-                  <View style={styles.routeBadgeCompact}>
-                    <AppText style={styles.routeBadgeText}>ON ROUTE</AppText>
+                  <View style={styles.routeHeaderBadges}>
+                    <View style={styles.routeBadgeCompact}>
+                      <AppText style={styles.routeBadgeText}>ON ROUTE</AppText>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.routeBadgeSmall}
+                      onPress={() => setTollModalVisible(true)}
+                      activeOpacity={0.7}>
+                      <AppText style={styles.routeBadgeSmallText}>{tollLabel}</AppText>
+                    </TouchableOpacity>
                   </View>
                 </View>
 
@@ -493,30 +557,9 @@ const HereSearchCard = ({
                       </AppText>
                     </View>
 
-                    <View style={styles.routeInfoPill}>
-                      <AppText style={styles.routeInfoPillLabel}>Base ETA</AppText>
-                      <AppText style={styles.routeInfoPillValue}>
-                        {formatDuration(routeSummary?.baseDuration)}
-                      </AppText>
-                    </View>
-
-                    <View style={styles.routeInfoPill}>
-                      <AppText style={styles.routeInfoPillLabel}>Mode</AppText>
-                      <AppText style={styles.routeInfoPillValue}>{routeMode}</AppText>
-                    </View>
-
                     <View style={styles.routeInfoPillWide}>
-                      <AppText style={styles.routeInfoPillLabel}>Route ID</AppText>
-                      <AppText style={styles.routeInfoPillValue} numberOfLines={1}>
-                        {routeId}
-                      </AppText>
-                    </View>
-
-                    <View style={styles.routeInfoPillWide}>
-                      <AppText style={styles.routeInfoPillLabel}>Section ID</AppText>
-                      <AppText style={styles.routeInfoPillValue} numberOfLines={1}>
-                        {sectionId}
-                      </AppText>
+                      <AppText style={styles.routeInfoPillLabel}>Toll Estimate</AppText>
+                      <AppText style={styles.routeInfoPillValue}>{tollLabel}</AppText>
                     </View>
 
                   </ScrollView>
@@ -556,6 +599,69 @@ const HereSearchCard = ({
           </ScrollView>
         </View>
       )}
+
+      {/* ── Toll Details Modal ── */}
+      <Modal
+        visible={tollModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setTollModalVisible(false)}>
+        <TouchableOpacity
+          style={styles.tollModalOverlay}
+          activeOpacity={1}
+          onPress={() => setTollModalVisible(false)}>
+          <View style={styles.tollModalContent}>
+            <View style={styles.tollModalHeader}>
+              <Text style={styles.tollModalTitle}>Toll Breakdown</Text>
+              <TouchableOpacity
+                onPress={() => setTollModalVisible(false)}
+                activeOpacity={0.7}>
+                <Text style={styles.tollModalClose}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              style={styles.tollModalScroll}
+              showsVerticalScrollIndicator={false}
+              scrollEventThrottle={16}
+              decelerationRate="fast"
+              bounces={true}>
+              {routeTollData?.routes?.[0]?.sections?.map((section, si) =>
+                section.tolls?.map((toll, ti) => {
+                  const fares = toll.fares || [];
+                  const singleFares = fares.filter(f => {
+                    if (!f.pass) return true;
+                    if (f.pass.returnJourney === true) return false;
+                    if (f.pass.validityPeriod != null) return false;
+                    return true;
+                  });
+                  const best = (singleFares.length ? singleFares : fares)[0];
+                  const amount = best?.price?.value || 0;
+                  const currency = best?.price?.currency || 'USD';
+
+                  return (
+                    <View key={`${si}-${ti}`} style={styles.tollItem}>
+                      <Text style={styles.tollItemName}>{toll.tollSystem}</Text>
+                      <Text style={styles.tollItemAmount}>
+                        {getCurrencySymbol(currency)}{amount.toFixed(2)}
+                      </Text>
+                    </View>
+                  );
+                }) || [],
+              )}
+              <View style={styles.tollItemTotal}>
+                <Text style={styles.tollItemTotalLabel}>Total Estimate</Text>
+                <Text style={styles.tollItemTotalAmount}>
+                  {getCurrencySymbol(tollCurrency)}{tollTotal.toFixed(2)}
+                </Text>
+              </View>
+              <Text style={styles.tollModalNote}>
+                * Cheapest one-way per booth
+              </Text>
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </View>
   );
 };

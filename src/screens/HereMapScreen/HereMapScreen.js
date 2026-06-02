@@ -8,6 +8,9 @@ import {
   Text,
   TouchableOpacity,
   View,
+  Modal,
+  ScrollView,
+  Dimensions,
 } from 'react-native';
 import styles from './HereMapScreen.styles';
 import GpsIcon from '../../assets/svg_icon/gps-svg.svg';
@@ -17,15 +20,16 @@ import {
   getCurrentLocation,
   watchCurrentLocation,
 } from '../../services/LocationService';
-import {calculateTruckRouteREST} from './services/hereTruckService';
+import {
+  calculateTruckRouteREST,
+  calculateRouteTolls,
+} from './services/hereTruckService';
 
 import {HereMapView, HereMapModule} from './components/HereMap/index';
 import RouteGeometry from './components/HereMap/Routegeometry';
-import HereSearchCard from './hereSearchCard';
 import {useSelector} from 'react-redux';
 import {selectLocation} from '../../redux/slices/locationSlice';
 
-// Utilities and hooks
 import {
   useSmoothLocation,
   isValidCoord,
@@ -44,7 +48,6 @@ import {
   decodeGooglePolyline,
 } from './utils/polylineDecoder';
 
-// Components
 import {
   NavigationControls,
   ToolbarButton,
@@ -52,7 +55,6 @@ import {
 import {NavigationInfo} from './components/NavigationInfo';
 import TurnByTurnPanel from './utils/Turnbyturnpanel';
 
-// Constants
 import {
   NAVIGATION_CAMERA_DURATION_MS,
   NAVIGATION_CAMERA_INTERVAL_MS,
@@ -70,12 +72,77 @@ import {
   ORIGIN,
   DESTINATION,
 } from './constants/navigationConstants';
+import {moderateScale, verticalScale, scale} from 'react-native-size-matters';
 
+const SCREEN_HEIGHT = Dimensions.get('window').height;
+const SHEET_EXPANDED = Math.round(SCREEN_HEIGHT * 0.45); // matches old flex:0.45
+const SHEET_COLLAPSED = verticalScale(48); // just the handle stays visible
+// ── Helpers ───────────────────────────────────────────────────────────────
 const hasHereCredentials = Boolean(
   HERE_ACCESS_KEY_ID && HERE_ACCESS_KEY_SECRET,
 );
 
-export default function HereMapScreen() {
+function bearingToDirection(bearing) {
+  if (!Number.isFinite(bearing)) return '—';
+  const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
+  const idx = Math.round((((bearing % 360) + 360) % 360) / 45) % 8;
+  return dirs[idx];
+}
+
+function formatTollTotal(tollData) {
+  const tollSections = tollData?.routes?.[0]?.sections || [];
+  const tollList = tollSections.flatMap(s => s.tolls || []);
+  const currency = tollList[0]?.fares?.[0]?.price?.currency || 'USD';
+  const total = tollList.reduce((sum, toll) => {
+    const price = toll?.fares?.[0]?.price?.value;
+    return sum + (Number.isFinite(price) ? price : 0);
+  }, 0);
+  const symbol =
+    currency === 'INR'
+      ? '₹'
+      : currency === 'USD'
+      ? '$'
+      : currency === 'EUR'
+      ? '€'
+      : currency;
+  return `${symbol}${total.toFixed(2)}`;
+}
+
+// ── Safe camera-to-polyline helper ───────────────────────────────────────
+// Extracted so it can be reused in both preview and nav flows.
+async function fitCameraToCoords(mapRef, coords) {
+  if (!mapRef?.current || !coords || coords.length < 2) return;
+  try {
+    const lats = coords.map(c => c.lat);
+    const lngs = coords.map(c => c.lng);
+    const minLat = Math.min(...lats);
+    const maxLat = Math.max(...lats);
+    const minLng = Math.min(...lngs);
+    const maxLng = Math.max(...lngs);
+    const midLat = (minLat + maxLat) / 2;
+    const midLng = (minLng + maxLng) / 2;
+    const spanDeg = Math.max(maxLat - minLat, maxLng - minLng);
+    // Clamp zoom: very short routes → 15, cross-country → 5
+    const zoom = Math.max(
+      5,
+      Math.min(15, 14 - Math.log2(Math.max(spanDeg, 0.001) * 111)),
+    );
+    await mapRef.current.moveCamera({
+      lat: midLat,
+      lng: midLng,
+      zoom,
+      bearing: 0,
+      tilt: 0,
+      animate: true,
+      animationDuration: 800,
+    });
+  } catch (err) {
+    console.warn('[fitCameraToCoords] moveCamera failed:', err);
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+export default function HereMapScreen({navigation, route}) {
   const mapRef = useRef(null);
   const [sdkReady, setSdkReady] = useState(false);
   const currentLocation = useSelector(selectLocation);
@@ -93,18 +160,23 @@ export default function HereMapScreen() {
   const isNavigatingRef = useRef(false);
   const [navigationInfo, setNavigationInfo] = useState(null);
 
-  // ── Turn-by-turn panel state ──────────────────────────────────────────────
+  const lastTollRouteRef = useRef('');
+  const [tollData, setTollData] = useState(null);
+  const [tollModalVisible, setTollModalVisible] = useState(false);
+  const [turnModalVisible, setTurnModalVisible] = useState(false);
+  const [isTollLoading, setIsTollLoading] = useState(false);
+
+  const [liveSpeedKph, setLiveSpeedKph] = useState(0);
+  const [liveBearing, setLiveBearing] = useState(null);
+
   const [routeResponseForPanel, setRouteResponseForPanel] = useState(null);
-  const routeResponseForPanelRef = useRef(null); // ref so subscribe callback can read it
+  const routeResponseForPanelRef = useRef(null);
   useEffect(() => {
     routeResponseForPanelRef.current = routeResponseForPanel;
   }, [routeResponseForPanel]);
 
-  // Live snap position → panel
   const [snapSegmentIndex, setSnapSegmentIndex] = useState(-1);
   const [metersToNext, setMetersToNext] = useState(null);
-
-  // ── Loading overlay ───────────────────────────────────────────────────────
   const [isRouteLoading, setIsRouteLoading] = useState(false);
 
   const navigationWatchIdRef = useRef(null);
@@ -130,12 +202,71 @@ export default function HereMapScreen() {
   useEffect(() => {
     destinationLocationRef.current = destinationLocation;
   }, [destinationLocation]);
-
   useEffect(() => {
     isNavigatingRef.current = isNavigating;
   }, [isNavigating]);
 
+  // Keep mirror refs so the preview effect always sees the latest values
+  // without needing to list them as deps (which would cause extra fetches).
+  const sourceLocationRef = useRef(null);
+  useEffect(() => {
+    sourceLocationRef.current = sourceLocation;
+  }, [sourceLocation]);
+
+  const [bottomSheetCollapsed, setBottomSheetCollapsed] = useState(false);
+  const sheetHeightAnim = useRef(new Animated.Value(SHEET_EXPANDED)).current;
+
+  const toggleBottomSheet = useCallback(() => {
+    const next = !bottomSheetCollapsed;
+    setBottomSheetCollapsed(next);
+    Animated.timing(sheetHeightAnim, {
+      toValue: next ? SHEET_COLLAPSED : SHEET_EXPANDED,
+      duration: 280,
+      easing: Easing.inOut(Easing.ease),
+      useNativeDriver: false, // height can't use the native driver
+    }).start();
+  }, [bottomSheetCollapsed, sheetHeightAnim]);
+
   const smooth = useSmoothLocation();
+
+  // ─── FIX: Replace the fragile shouldFetchPreviewRef boolean with a
+  //     stable "preview key" that increments whenever BOTH coords are
+  //     present and either one has changed. The preview useEffect depends
+  //     on this key — it fires exactly once per increment, no more.
+  // ─────────────────────────────────────────────────────────────────────────
+  const [previewKey, setPreviewKey] = useState(0);
+  const lastPreviewPairRef = useRef({srcKey: null, dstKey: null});
+
+  // Bump previewKey only when a genuinely new src+dst pair appears.
+  useEffect(() => {
+    if (isNavigatingRef.current) return;
+
+    const srcReady =
+      sourceLocation &&
+      isUsableNavCoord(sourceLocation.latitude, sourceLocation.longitude);
+    const dstReady =
+      destinationLocation &&
+      isUsableNavCoord(
+        destinationLocation.latitude,
+        destinationLocation.longitude,
+      );
+
+    if (!srcReady || !dstReady) return;
+
+    // Use coords as a cheap key so referential identity doesn't matter.
+    const srcKey = `${sourceLocation.latitude.toFixed(
+      6,
+    )},${sourceLocation.longitude.toFixed(6)}`;
+    const dstKey = `${destinationLocation.latitude.toFixed(
+      6,
+    )},${destinationLocation.longitude.toFixed(6)}`;
+
+    const prev = lastPreviewPairRef.current;
+    if (srcKey === prev.srcKey && dstKey === prev.dstKey) return; // same pair, skip
+
+    lastPreviewPairRef.current = {srcKey, dstKey};
+    setPreviewKey(k => k + 1);
+  }, [sourceLocation, destinationLocation]);
 
   const pulseAnim = useRef(new Animated.Value(1)).current;
   useEffect(() => {
@@ -188,6 +319,13 @@ export default function HereMapScreen() {
         if (!isUsableNavCoord(pos.lat, pos.lng)) return;
 
         if (isNavigatingRef.current) {
+          setLiveSpeedKph(
+            Number.isFinite(pos.speed) ? Math.round(pos.speed * 3.6) : 0,
+          );
+          setLiveBearing(Number.isFinite(pos.bearing) ? pos.bearing : null);
+        }
+
+        if (isNavigatingRef.current) {
           const geo = routeGeometryRef.current;
           const hasReal = hasRealGeometryRef.current;
           const truckBearing = isFinite(pos.bearing) ? pos.bearing : 0;
@@ -199,7 +337,6 @@ export default function HereMapScreen() {
             const rawBearing = isFinite(snap.bearing)
               ? snap.bearing
               : truckBearing;
-
             const prev = lastNativeMarkerRef.current;
             const distance = haversineDistanceMeters(
               prev.lat,
@@ -219,7 +356,6 @@ export default function HereMapScreen() {
             const smoothBearing =
               prev.bearing +
               smallestBearingDelta(prev.bearing, rawBearing) * 0.2;
-
             lastNativeMarkerRef.current = {
               lat: snap.lat,
               lng: snap.lng,
@@ -261,9 +397,6 @@ export default function HereMapScreen() {
                 splitLng: snap.lng,
                 speedMps: speed,
               });
-
-              // ── NEXT-ACTION LOOKAHEAD ─────────────────────────────────
-              // Update panel: which segment we're on + metres to next maneuver
               setSnapSegmentIndex(snap.segmentIndex);
 
               (() => {
@@ -272,10 +405,7 @@ export default function HereMapScreen() {
                   const actions =
                     routeResponseForPanelRef.current?.routes?.[0]?.sections?.[0]
                       ?.actions ?? [];
-
                   if (!coords.length || !actions.length) return;
-
-                  // First action whose offset > current segment = the upcoming maneuver
                   const nextAction = actions.find(
                     a => (a.offset ?? 0) > snap.segmentIndex,
                   );
@@ -283,31 +413,16 @@ export default function HereMapScreen() {
                     setMetersToNext(0);
                     return;
                   }
-
                   const targetSegIdx = nextAction.offset;
-
-                  // Sum distances: partial current segment + full segments to target
                   let dist = 0;
                   const currentSegEnd = coords[snap.segmentIndex + 1];
-
-                  if (currentSegEnd) {
+                  if (currentSegEnd)
                     dist += haversineDistanceMeters(
                       snap.lat,
                       snap.lng,
                       currentSegEnd.lat,
                       currentSegEnd.lng,
                     );
-                  }
-                  // Distance from snap point to end of current segment
-                  // if (snap.segmentIndex < coords.length - 1) {
-                  //   const segEnd = coords[snap.segmentIndex + 1];
-                  //   dist += haversineDistanceMeters(
-                  //     snap.lat, snap.lng,
-                  //     segEnd.lat, segEnd.lng,
-                  //   );
-                  // }
-
-                  // Full segments between (snap+1) and targetSeg
                   for (
                     let si = snap.segmentIndex + 1;
                     si < targetSegIdx && si + 1 < coords.length;
@@ -320,11 +435,9 @@ export default function HereMapScreen() {
                       coords[si + 1].lng,
                     );
                   }
-
                   setMetersToNext(dist);
                 } catch (_) {}
               })();
-              // ─────────────────────────────────────────────────────────
             }
 
             const now = Date.now();
@@ -346,7 +459,6 @@ export default function HereMapScreen() {
               });
             }
           } else {
-            // ── No real geometry: raw GPS ──
             const prev = lastNativeMarkerRef.current;
             const movedEnough =
               (Math.abs(pos.lat - prev.lat) + Math.abs(pos.lng - prev.lng)) *
@@ -423,7 +535,6 @@ export default function HereMapScreen() {
     })();
   }, []);
 
-  // ── Polyline extraction ───────────────────────────────────────────────────
   const extractRoutePolyline = useCallback(routeJson => {
     try {
       const sections = routeJson?.routes?.[0]?.sections || [];
@@ -432,13 +543,18 @@ export default function HereMapScreen() {
         const polyline = section.polyline;
         if (typeof polyline === 'string' && polyline.length > 0) {
           let decoded = decodeFlexiblePolyline(polyline);
-          if (decoded.length === 0) decoded = decodeGooglePolyline(polyline);
-          if (decoded.length > 0)
-            console.log(
-              '[extractRoutePolyline] decoded',
-              decoded.length,
-              'coords from section',
+          if (decoded.length === 0) {
+            console.warn(
+              '[Polyline] decodeFlexiblePolyline returned 0 coords — falling back to Google decoder',
             );
+            decoded = decodeGooglePolyline(polyline);
+          }
+          if (decoded.length === 0) {
+            console.warn(
+              '[Polyline] Both decoders returned 0 coords — polyline string may be malformed:',
+              polyline.slice(0, 60),
+            );
+          }
           allCoords.push(...decoded);
         } else if (Array.isArray(polyline)) {
           for (const pt of polyline) {
@@ -448,7 +564,6 @@ export default function HereMapScreen() {
           }
         }
       }
-      console.log('[extractRoutePolyline] total coords:', allCoords.length);
       return allCoords;
     } catch (err) {
       console.warn('extractRoutePolyline failed', err);
@@ -469,13 +584,15 @@ export default function HereMapScreen() {
     lastTrimCursorRef.current = {index: -1, fraction: 0};
     try {
       isDrawingRouteRef.current = true;
-      await mapRef.current?.clearPolyline();
+      await Promise.all([
+        mapRef.current?.clearPolyline(),
+        mapRef.current?.clearRoute(),
+      ]);
       await mapRef.current?.drawPolyline({
         coordinates: coords,
         color: '#4285F4',
         width: NAVIGATION_ROUTE_WIDTH,
       });
-      console.log('[Nav] drawPolyline success:', coords.length, 'pts');
       return coords;
     } catch (err) {
       console.warn('[Nav] drawPolyline failed:', err);
@@ -499,8 +616,15 @@ export default function HereMapScreen() {
           lastTrimCursorRef.current = {index: -1, fraction: 0};
           await setupRouteGeometry(coords);
         } else {
+          console.warn(
+            '[Polyline] sanitizeRouteCoords returned < 2 points — using native drawRoute fallback',
+          );
           hasRealGeometryRef.current = false;
           try {
+            await Promise.all([
+              mapRef.current?.clearPolyline(),
+              mapRef.current?.clearRoute(),
+            ]);
             await mapRef.current?.drawRoute({
               originLat,
               originLng,
@@ -516,7 +640,6 @@ export default function HereMapScreen() {
     [extractRoutePolyline, setupRouteGeometry],
   );
 
-  // ── Button handlers ───────────────────────────────────────────────────────
   const handleMoveCamera = async () => {
     try {
       await mapRef.current?.moveCamera({
@@ -584,32 +707,86 @@ export default function HereMapScreen() {
           longitude: destinationLocation.longitude,
         }
       : {latitude: DESTINATION.lat, longitude: DESTINATION.lng};
-
-    if (
-      !isUsableNavCoord(origin.latitude, origin.longitude) ||
-      !isUsableNavCoord(dest.latitude, dest.longitude)
-    ) {
-      Alert.alert(
-        'Route',
-        'Please wait for valid source and destination coordinates.',
-      );
-      return;
-    }
+    setIsTollLoading(true);
     try {
       const routeJson = await calculateTruckRouteREST(origin, dest);
+      const tollResponse = await calculateRouteTolls(origin, dest);
+      setTollData(tollResponse);
       setRouteSummary(routeJson?.routes?.[0]?.sections?.[0]?.summary || null);
-      await mapRef.current?.drawRoute({
-        originLat: origin.latitude,
-        originLng: origin.longitude,
-        destLat: dest.latitude,
-        destLng: dest.longitude,
-      });
+
+      await Promise.all([
+        mapRef.current?.clearMarkers(),
+        mapRef.current?.clearPolyline(),
+        mapRef.current?.clearRoute(),
+      ]);
+
+      if (
+        sourceLocation &&
+        isUsableNavCoord(sourceLocation.latitude, sourceLocation.longitude)
+      ) {
+        if (
+          sourceLocation.description?.toLowerCase().includes('current location')
+        ) {
+          await mapRef.current?.showCurrentLocation({
+            lat: sourceLocation.latitude,
+            lng: sourceLocation.longitude,
+            bearing: smooth.smoothPos.current.bearing ?? 0,
+          });
+        } else {
+          await mapRef.current?.addMarker({
+            lat: sourceLocation.latitude,
+            lng: sourceLocation.longitude,
+            color: '#22C55E',
+          });
+        }
+      }
+      if (
+        destinationLocation &&
+        isUsableNavCoord(
+          destinationLocation.latitude,
+          destinationLocation.longitude,
+        )
+      ) {
+        await mapRef.current?.addMarker({
+          lat: destinationLocation.latitude,
+          lng: destinationLocation.longitude,
+          color: '#FF3366',
+        });
+      }
+
+      const rawCoords = extractRoutePolyline(routeJson);
+      const coords = sanitizeRouteCoords(
+        rawCoords,
+        {lat: origin.latitude, lng: origin.longitude},
+        {lat: dest.latitude, lng: dest.longitude},
+      );
+      if (coords.length >= 2) {
+        await mapRef.current?.drawPolyline({
+          coordinates: coords,
+          color: '#4285F4',
+          width: NAVIGATION_ROUTE_WIDTH,
+        });
+        // ── FIX: Fit camera to the drawn polyline ──────────────────────
+        await fitCameraToCoords(mapRef, coords);
+      } else {
+        console.warn(
+          '[handleDrawRoute] Falling back to native drawRoute — coord count:',
+          coords.length,
+        );
+        await mapRef.current?.drawRoute({
+          originLat: origin.latitude,
+          originLng: origin.longitude,
+          destLat: dest.latitude,
+          destLng: dest.longitude,
+        });
+      }
     } catch (e) {
       Alert.alert('Route Error', e.message);
+    } finally {
+      setIsTollLoading(false);
     }
   };
 
-  // ── handleStartNavigation ─────────────────────────────────────────────────
   const handleStartNavigation = async () => {
     if (!destinationLocation) {
       Alert.alert('Navigation', 'Select a destination first.');
@@ -668,7 +845,6 @@ export default function HereMapScreen() {
       }
     }
 
-    // Reset nav state
     routeGeometryRef.current = null;
     routeCoordsRef.current = [];
     hasRealGeometryRef.current = false;
@@ -678,6 +854,8 @@ export default function HereMapScreen() {
     wrongWayStreakRef.current = 0;
     setSnapSegmentIndex(-1);
     setMetersToNext(null);
+    setLiveSpeedKph(0);
+    setLiveBearing(null);
 
     try {
       const startRoute = await calculateTruckRouteREST(
@@ -690,10 +868,7 @@ export default function HereMapScreen() {
           longitude: destinationLocation.longitude,
         },
       );
-
-      // ── Feed panel ──
       setRouteResponseForPanel(startRoute);
-
       const startSummary =
         startRoute?.routes?.[0]?.sections?.[0]?.summary || null;
       setRouteSummary(startSummary);
@@ -710,6 +885,10 @@ export default function HereMapScreen() {
       } else {
         hasRealGeometryRef.current = false;
         try {
+          await Promise.all([
+            mapRef.current?.clearPolyline(),
+            mapRef.current?.clearRoute(),
+          ]);
           await mapRef.current?.drawRoute({
             originLat: navStartSource.latitude,
             originLng: navStartSource.longitude,
@@ -733,7 +912,6 @@ export default function HereMapScreen() {
     const hasSmoothFix =
       isValidCoord(smoothLat, smoothLng) &&
       (smoothLat !== 0 || smoothLng !== 0);
-
     const startGeo = routeGeometryRef.current;
     const hasRealAtStart = hasRealGeometryRef.current;
 
@@ -780,14 +958,13 @@ export default function HereMapScreen() {
       }
     }
 
-    if (immediatePos) {
+    if (immediatePos)
       smooth.pushLocation(
         immediatePos.lat,
         immediatePos.lng,
         immediateBearing,
         immediateSpeed,
       );
-    }
 
     try {
       if (
@@ -879,14 +1056,12 @@ export default function HereMapScreen() {
                     Math.abs(position.heading) > 0.1
                   ? position.heading
                   : undefined;
-              const accuracy = position?.accuracy ?? undefined;
-              const speed = resolveLiveSpeedMps(position);
               const dirSnap = directionAwareSnap({
                 lat,
                 lng,
                 heading,
-                speed,
-                accuracy,
+                speed: resolveLiveSpeedMps(position),
+                accuracy: position?.accuracy ?? undefined,
                 coords: routeCoordsRef.current,
                 lastIndex: lastTrimCursorRef.current?.index ?? -1,
                 rawSnap,
@@ -923,7 +1098,6 @@ export default function HereMapScreen() {
             wrongWayStreakRef.current = wrongWay
               ? wrongWayStreakRef.current + 1
               : Math.max(0, wrongWayStreakRef.current - 1);
-
             if (wrongWayStreakRef.current >= WRONG_WAY_STREAK_LIMIT) {
               rerouteRequestedRef.current = true;
               lastRouteRefreshRef.current = 0;
@@ -940,7 +1114,6 @@ export default function HereMapScreen() {
             smooth.pushLocation(lat, lng, liveHeading, liveSpeed);
           }
 
-          // Periodic / deviation reroute
           const now = Date.now();
           const dest = destinationLocationRef.current;
           if (
@@ -962,17 +1135,13 @@ export default function HereMapScreen() {
                 {latitude: origin.latitude, longitude: origin.longitude},
                 {latitude: dest.latitude, longitude: dest.longitude},
               );
-              // ── Feed updated route to panel ──
               setRouteResponseForPanel(navRoute);
-              // Reset snap state so panel recalculates from segment 0
               setSnapSegmentIndex(-1);
               setMetersToNext(null);
-
               const navSummary =
                 navRoute?.routes?.[0]?.sections?.[0]?.summary || null;
               setRouteSummary(navSummary);
               updateNavigationInfo(navSummary);
-
               console.log('[Nav] reroute reason:', rerouteReason);
               await updateRouteGeometryOnly(
                 origin.latitude,
@@ -995,7 +1164,6 @@ export default function HereMapScreen() {
       );
       navigationWatchIdRef.current = watchId;
 
-      // Background: fresh GPS fix
       (async () => {
         try {
           const start = await getCurrentLocation({detectMock: true});
@@ -1004,7 +1172,6 @@ export default function HereMapScreen() {
             longitude: start.longitude,
           };
           setSourceText('Current Location');
-
           const startGeoNow = routeGeometryRef.current;
           if (startGeoNow && hasRealGeometryRef.current) {
             const snap = startGeoNow.snapToRoute(
@@ -1015,7 +1182,6 @@ export default function HereMapScreen() {
           } else {
             smooth.pushLocation(start.latitude, start.longitude);
           }
-
           if (!hasRealGeometryRef.current) {
             try {
               const freshRoute = await calculateTruckRouteREST(
@@ -1029,7 +1195,6 @@ export default function HereMapScreen() {
                 freshRoute?.routes?.[0]?.sections?.[0]?.summary || null;
               setRouteSummary(summary);
               updateNavigationInfo(summary);
-
               const coords = extractRoutePolyline(freshRoute);
               const safeCoords = sanitizeRouteCoords(
                 coords,
@@ -1043,6 +1208,10 @@ export default function HereMapScreen() {
                 await setupRouteGeometry(safeCoords);
               } else {
                 try {
+                  await Promise.all([
+                    mapRef.current?.clearPolyline(),
+                    mapRef.current?.clearRoute(),
+                  ]);
                   await mapRef.current?.drawRoute({
                     originLat: start.latitude,
                     originLng: start.longitude,
@@ -1067,7 +1236,6 @@ export default function HereMapScreen() {
     }
   };
 
-  // ── stopNavigation ────────────────────────────────────────────────────────
   const stopNavigation = useCallback(() => {
     if (navigationWatchIdRef.current != null) {
       clearWatchLocation(navigationWatchIdRef.current);
@@ -1080,6 +1248,10 @@ export default function HereMapScreen() {
     setSnapSegmentIndex(-1);
     setMetersToNext(null);
     setIsCameraFree(false);
+    setTollData(null);
+    setLiveSpeedKph(0);
+    setLiveBearing(null);
+    setTurnModalVisible(false);
 
     if (sourceRef.current)
       setSourceLocation({
@@ -1101,8 +1273,10 @@ export default function HereMapScreen() {
       try {
         await mapRef.current?.resetNavigationCamera();
         await mapRef.current?.removeNavigationMarker();
-        await mapRef.current?.clearPolyline();
-        await mapRef.current?.clearRoute();
+        await Promise.all([
+          mapRef.current?.clearPolyline(),
+          mapRef.current?.clearRoute(),
+        ]);
         const pos = smooth.smoothPos.current;
         if (isUsableNavCoord(pos.lat, pos.lng)) {
           await mapRef.current?.showCurrentLocation({
@@ -1130,13 +1304,16 @@ export default function HereMapScreen() {
       return;
     }
     const distKm = (summary.length / 1000).toFixed(1);
-    const etaMin = Math.ceil(summary.duration / 60);
+    const totalMinutes = Math.ceil(summary.duration / 60);
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    const etaText = hours > 0 ? `${hours} hr ${minutes} min` : `${minutes} min`;
     const arrivalTime = new Date(Date.now() + summary.duration * 1000);
     const arrivalStr = arrivalTime.toLocaleTimeString([], {
       hour: '2-digit',
       minute: '2-digit',
     });
-    setNavigationInfo({distKm, etaMin, arrivalStr});
+    setNavigationInfo({distKm, etaText, arrivalStr});
   };
 
   const handleReCenter = useCallback(async () => {
@@ -1168,6 +1345,7 @@ export default function HereMapScreen() {
     }
   };
 
+  // ─── Seed source from Redux current location (only when no source yet) ───
   useEffect(() => {
     if (
       currentLocation &&
@@ -1185,59 +1363,108 @@ export default function HereMapScreen() {
     }
   }, [currentLocation, sourceLocation, smooth]);
 
+  // ─── Seed from route params ───────────────────────────────────────────────
+  useEffect(() => {
+    const params = route?.params || {};
+    if (
+      params.destinationLocation &&
+      Number.isFinite(params.destinationLocation.latitude) &&
+      Number.isFinite(params.destinationLocation.longitude)
+    ) {
+      setDestinationLocation(params.destinationLocation);
+      setDestinationText(
+        params.destinationText || params.destinationLocation.description || '',
+      );
+    }
+    if (
+      params.sourceLocation &&
+      Number.isFinite(params.sourceLocation.latitude) &&
+      Number.isFinite(params.sourceLocation.longitude)
+    ) {
+      setSourceLocation(params.sourceLocation);
+      setSourceText(
+        params.sourceText || params.sourceLocation.description || '',
+      );
+    }
+    // NOTE: No longer manually setting shouldFetchPreviewRef here.
+    // The previewKey useEffect above automatically detects the new pair.
+  }, [route?.params]);
+
+  // ─── Preview useEffect — fires exactly once per new src+dst pair ──────────
+  // Depends on previewKey (incremented only when a genuinely new pair arrives)
+  // and sdkReady. Reads the latest locations via refs to avoid stale closures.
+  // ─────────────────────────────────────────────────────────────────────────
   const previewDebounceRef = useRef(null);
+
   useEffect(() => {
     if (!sdkReady) return;
+    if (previewKey === 0) return; // no pair has arrived yet
     if (isNavigatingRef.current) return;
+
+    // Read the LATEST locations via refs (not stale closure values).
+    const src = sourceLocationRef.current;
+    const dst = destinationLocationRef.current;
+
+    const srcReady = src && isUsableNavCoord(src.latitude, src.longitude);
+    const dstReady = dst && isUsableNavCoord(dst.latitude, dst.longitude);
+    if (!srcReady || !dstReady) return;
+
     if (previewDebounceRef.current) clearTimeout(previewDebounceRef.current);
+    setTollData(null);
 
     let cancelled = false;
+
     previewDebounceRef.current = setTimeout(async () => {
       if (cancelled || isNavigatingRef.current) return;
+
+      // Re-read refs inside the timeout to get truly latest values.
+      const latestSrc = sourceLocationRef.current;
+      const latestDst = destinationLocationRef.current;
+      if (
+        !latestSrc ||
+        !latestDst ||
+        !isUsableNavCoord(latestSrc.latitude, latestSrc.longitude) ||
+        !isUsableNavCoord(latestDst.latitude, latestDst.longitude)
+      ) {
+        return;
+      }
+
       try {
         let coords = [];
         let summary = null;
         let usedNative = false;
 
-        if (
-          sourceLocation &&
-          destinationLocation &&
-          isUsableNavCoord(sourceLocation.latitude, sourceLocation.longitude) &&
-          isUsableNavCoord(
-            destinationLocation.latitude,
-            destinationLocation.longitude,
-          )
-        ) {
-          try {
-            const routeJson = await calculateTruckRouteREST(
-              {
-                latitude: sourceLocation.latitude,
-                longitude: sourceLocation.longitude,
-              },
-              {
-                latitude: destinationLocation.latitude,
-                longitude: destinationLocation.longitude,
-              },
-            );
-            if (cancelled) return;
-            summary = routeJson?.routes?.[0]?.sections?.[0]?.summary || null;
-            coords = sanitizeRouteCoords(
-              extractRoutePolyline(routeJson),
-              {lat: sourceLocation.latitude, lng: sourceLocation.longitude},
-              {
-                lat: destinationLocation.latitude,
-                lng: destinationLocation.longitude,
-              },
-            );
-            previewRouteJsonRef.current = routeJson;
-            if (coords.length < 2) usedNative = true;
-          } catch (routeErr) {
-            if (cancelled) return;
-            usedNative = true;
-          }
+        // ── Call the API (route + tolls) ─────────────────────────────────
+        try {
+          const [routeJson, tollResponse] = await Promise.all([
+            calculateTruckRouteREST(
+              {latitude: latestSrc.latitude, longitude: latestSrc.longitude},
+              {latitude: latestDst.latitude, longitude: latestDst.longitude},
+            ),
+            calculateRouteTolls(
+              {latitude: latestSrc.latitude, longitude: latestSrc.longitude},
+              {latitude: latestDst.latitude, longitude: latestDst.longitude},
+            ),
+          ]);
+          if (cancelled) return;
+          setTollData(tollResponse);
+          summary = routeJson?.routes?.[0]?.sections?.[0]?.summary || null;
+          coords = sanitizeRouteCoords(
+            extractRoutePolyline(routeJson),
+            {lat: latestSrc.latitude, lng: latestSrc.longitude},
+            {lat: latestDst.latitude, lng: latestDst.longitude},
+          );
+          previewRouteJsonRef.current = routeJson;
+          if (coords.length < 2) usedNative = true;
+        } catch (routeErr) {
+          console.warn('[Preview] Route API failed:', routeErr);
+          if (cancelled) return;
+          usedNative = true;
         }
 
         if (cancelled) return;
+
+        // ── Clear map layers before drawing ──────────────────────────────
         await Promise.all([
           mapRef.current?.clearMarkers(),
           mapRef.current?.clearPolyline(),
@@ -1249,28 +1476,31 @@ export default function HereMapScreen() {
         previewRouteSummaryRef.current = null;
         previewUsedNativeRouteRef.current = false;
 
-        if (
-          sourceLocation &&
-          isUsableNavCoord(sourceLocation.latitude, sourceLocation.longitude)
-        ) {
-          await mapRef.current?.showCurrentLocation({
-            lat: sourceLocation.latitude,
-            lng: sourceLocation.longitude,
-            bearing: smooth.smoothPos.current.bearing ?? 0,
-          });
+        // ── Source marker ─────────────────────────────────────────────────
+        if (isUsableNavCoord(latestSrc.latitude, latestSrc.longitude)) {
+          if (
+            latestSrc.description?.toLowerCase().includes('current location')
+          ) {
+            await mapRef.current?.showCurrentLocation({
+              lat: latestSrc.latitude,
+              lng: latestSrc.longitude,
+              bearing: smooth.smoothPos.current.bearing ?? 0,
+            });
+          } else {
+            await mapRef.current?.addMarker({
+              lat: latestSrc.latitude,
+              lng: latestSrc.longitude,
+              color: '#22C55E',
+            });
+          }
         }
         if (cancelled) return;
 
-        if (
-          destinationLocation &&
-          isUsableNavCoord(
-            destinationLocation.latitude,
-            destinationLocation.longitude,
-          )
-        ) {
+        // ── Destination marker ────────────────────────────────────────────
+        if (isUsableNavCoord(latestDst.latitude, latestDst.longitude)) {
           await mapRef.current?.addMarker({
-            lat: destinationLocation.latitude,
-            lng: destinationLocation.longitude,
+            lat: latestDst.latitude,
+            lng: latestDst.longitude,
             color: '#FF3366',
           });
         }
@@ -1281,51 +1511,39 @@ export default function HereMapScreen() {
           previewRouteSummaryRef.current = summary;
         }
 
+        // ── Draw polyline or fallback ─────────────────────────────────────
         if (coords.length >= 2) {
           previewRouteCoordsRef.current = coords;
-          previewUsedNativeRouteRef.current = false;
           await mapRef.current?.drawPolyline({
             coordinates: coords,
             color: '#4285F4',
             width: NAVIGATION_ROUTE_WIDTH,
           });
           if (cancelled) return;
-          const lats = coords.map(c => c.lat);
-          const lngs = coords.map(c => c.lng);
-          const midLat = (Math.min(...lats) + Math.max(...lats)) / 2;
-          const midLng = (Math.min(...lngs) + Math.max(...lngs)) / 2;
-          const span = Math.max(
-            Math.max(...lats) - Math.min(...lats),
-            Math.max(...lngs) - Math.min(...lngs),
-          );
-          const zoom = Math.max(5, Math.min(14, 14 - Math.log2(span * 111)));
-          await mapRef.current?.moveCamera({
-            lat: midLat,
-            lng: midLng,
-            zoom,
-            animate: true,
-            animationDuration: 700,
-          });
+          // ── FIX: Always fit camera after drawing preview polyline ──────
+          await fitCameraToCoords(mapRef, coords);
         } else if (
           usedNative &&
-          sourceLocation &&
-          destinationLocation &&
-          isUsableNavCoord(sourceLocation.latitude, sourceLocation.longitude) &&
-          isUsableNavCoord(
-            destinationLocation.latitude,
-            destinationLocation.longitude,
-          )
+          isUsableNavCoord(latestSrc.latitude, latestSrc.longitude) &&
+          isUsableNavCoord(latestDst.latitude, latestDst.longitude)
         ) {
           previewUsedNativeRouteRef.current = true;
           await mapRef.current?.drawRoute({
-            originLat: sourceLocation.latitude,
-            originLng: sourceLocation.longitude,
-            destLat: destinationLocation.latitude,
-            destLng: destinationLocation.longitude,
+            originLat: latestSrc.latitude,
+            originLng: latestSrc.longitude,
+            destLat: latestDst.latitude,
+            destLng: latestDst.longitude,
           });
+          // ── FIX: Fit camera for native fallback route too ─────────────
+          if (!cancelled) {
+            await fitCameraToCoords(mapRef, [
+              {lat: latestSrc.latitude, lng: latestSrc.longitude},
+              {lat: latestDst.latitude, lng: latestDst.longitude},
+            ]);
+          }
         }
       } catch (err) {
-        if (!cancelled) console.warn('sync failed', err);
+        if (!cancelled) console.warn('preview sync failed', err);
       }
     }, 350);
 
@@ -1334,7 +1552,9 @@ export default function HereMapScreen() {
       if (previewDebounceRef.current) clearTimeout(previewDebounceRef.current);
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [sdkReady, sourceLocation, destinationLocation]);
+  }, [sdkReady, previewKey]);
+  // ^^^ ONLY sdkReady and previewKey — not sourceLocation/destinationLocation.
+  //     This prevents double-firing when both states update in the same cycle.
 
   useEffect(() => {
     return () => {
@@ -1345,14 +1565,19 @@ export default function HereMapScreen() {
 
   const handleClear = async () => {
     try {
-      await mapRef.current?.clearMarkers();
-      await mapRef.current?.clearRoute();
-      await mapRef.current?.clearPolyline();
+      await Promise.all([
+        mapRef.current?.clearMarkers(),
+        mapRef.current?.clearPolyline(),
+        mapRef.current?.clearRoute(),
+      ]);
       setRouteSummary(null);
       setNavigationInfo(null);
+      setTollData(null);
       routeGeometryRef.current = null;
       routeCoordsRef.current = [];
       hasRealGeometryRef.current = false;
+      // Reset the preview pair so next destination select triggers a fresh fetch
+      lastPreviewPairRef.current = {srcKey: null, dstKey: null};
     } catch (e) {
       Alert.alert('Error', e.message);
     }
@@ -1361,7 +1586,7 @@ export default function HereMapScreen() {
   // ── Render ────────────────────────────────────────────────────────────────
   return (
     <SafeAreaView style={styles.container}>
-      {/* Loading overlay */}
+      {/* ── Loading overlay ── */}
       {isRouteLoading && (
         <View
           style={{
@@ -1370,127 +1595,427 @@ export default function HereMapScreen() {
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: 'rgba(0,0,0,0.6)',
+            backgroundColor: 'rgba(15,23,42,0.75)',
             justifyContent: 'center',
             alignItems: 'center',
             zIndex: 9999,
           }}>
-          <ActivityIndicator size="large" color="#fff" />
-          <Text style={{color: '#fff', marginTop: 12, fontSize: 16}}>
+          <ActivityIndicator size="large" color="#3b82f6" />
+          <Text
+            style={{
+              color: '#e2e8f0',
+              marginTop: 12,
+              fontSize: 15,
+              fontWeight: '600',
+            }}>
             Fetching best route for you...
           </Text>
         </View>
       )}
 
-      {sdkReady ? (
-        <HereMapView
-          ref={mapRef}
-          style={styles.map}
-          centerLat={ORIGIN.lat}
-          centerLng={ORIGIN.lng}
-          zoomLevel={10}
-        />
-      ) : (
-        <View style={styles.loading}>
-          <Text style={styles.loadingText}>
-            {hasHereCredentials
-              ? 'Initialising HERE SDK…'
-              : 'Add credentials to .env'}
-          </Text>
-        </View>
-      )}
-
-      {sdkReady && (
-        <Animated.View
-          style={[
-            styles.searchCardWrapper,
-            {
-              opacity: searchCardAnim,
-              transform: [
-                {
-                  translateY: searchCardAnim.interpolate({
-                    inputRange: [0, 1],
-                    outputRange: [-200, 0],
-                  }),
-                },
-              ],
-            },
-          ]}
-          pointerEvents={isNavigating ? 'none' : 'auto'}>
-          <HereSearchCard
-            sourceRef={sourceRef}
-            destinationRef={destinationRef}
-            activeInput={activeInput}
-            onActiveInputChange={setActiveInput}
-            sourceLocation={sourceLocation}
-            destinationLocation={destinationLocation}
-            sourceText={sourceText}
-            destinationText={destinationText}
-            setSourceLocation={setSourceLocation}
-            setDestinationLocation={setDestinationLocation}
-            setSourceText={setSourceText}
-            setDestinationText={setDestinationText}
-            onCoordinateSelect={handleCoordinateSelect}
-            onSwap={() => {
-              const s = sourceLocation;
-              const d = destinationLocation;
-              setSourceLocation(d);
-              setDestinationLocation(s);
-              const t = sourceText;
-              setSourceText(destinationText);
-              setDestinationText(t);
-            }}
+      {/* ── Top / Map area ── */}
+      <View style={[styles.topArea, {flex: 1}]}>
+        {sdkReady ? (
+          <HereMapView
+            ref={mapRef}
+            style={styles.map}
+            centerLat={ORIGIN.lat}
+            centerLng={ORIGIN.lng}
+            zoomLevel={10}
           />
-        </Animated.View>
-      )}
-
-      <NavigationInfo
-        navigationInfo={navigationInfo}
-        routeSummary={routeSummary}
-        isNavigating={isNavigating}
-        onStop={stopNavigation}
-      />
-
-      <NavigationControls
-        onCamera={handleMoveCamera}
-        onMarkers={handleAddMarkers}
-        onLocation={handleShowLocation}
-        onRoute={handleDrawRoute}
-        onNavigate={handleStartNavigation}
-        onClear={handleClear}
-        isNavigating={isNavigating}
-      />
-
-      {isNavigating && (
-        <TouchableOpacity
-          style={styles.reCenterButton}
-          onPress={handleReCenter}
-          activeOpacity={0.8}>
-          <Text style={styles.reCenterIcon}>◎</Text>
-          <Text style={styles.reCenterLabel}>Re-center</Text>
-        </TouchableOpacity>
-      )}
-
-      <TouchableOpacity
-        style={[styles.gpsButton, isNavigating && styles.gpsButtonNavigating]}
-        onPress={handleShowLocation}
-        disabled={isFetchingLocation}
-        activeOpacity={0.8}>
-        {isFetchingLocation ? (
-          <ActivityIndicator size="small" color="#040000" />
         ) : (
-          <GpsIcon width={28} height={28} fill="#040000" />
+          <View style={styles.loading}>
+            <Text style={styles.loadingText}>
+              {hasHereCredentials
+                ? 'Initialising HERE SDK…'
+                : 'Add credentials to .env'}
+            </Text>
+          </View>
         )}
-      </TouchableOpacity>
 
-      {/* ── Turn-by-turn panel ── */}
-      <TurnByTurnPanel
-        routeResponse={routeResponseForPanel}
-        isNavigating={isNavigating}
-        snapSegmentIndex={snapSegmentIndex}
-        metersToNext={metersToNext}
-        style={{bottom: 120}}
-      />
+        {/* ── Speed + Direction HUD (top-left, navigating only) ── */}
+        {isNavigating && (
+          <View
+            style={{
+              position: 'absolute',
+              top: 12,
+              left: 12,
+              zIndex: 100,
+              elevation: 100,
+              alignItems: 'center',
+            }}>
+            <View
+              style={{
+                backgroundColor: 'rgba(15,23,42,0.82)',
+                borderRadius: 12,
+                paddingHorizontal: 12,
+                paddingVertical: 6,
+                alignItems: 'center',
+                minWidth: 52,
+                borderWidth: 1,
+                borderColor: 'rgba(255,255,255,0.12)',
+              }}>
+              <Text
+                style={{
+                  color: '#f59e0b',
+                  fontSize: moderateScale(40),
+                  lineHeight: moderateScale(20),
+                  transform: [
+                    {
+                      rotate: `${
+                        Number.isFinite(liveBearing) ? liveBearing : 0
+                      }deg`,
+                    },
+                  ],
+                }}>
+                ⬆
+              </Text>
+              <Text
+                style={{
+                  color: '#e2e8f0',
+                  fontSize: 12,
+                  fontWeight: '700',
+                  lineHeight: 16,
+                }}>
+                {bearingToDirection(liveBearing)}
+              </Text>
+            </View>
+          </View>
+        )}
+
+        {/* Re-center (navigating only) */}
+        {isNavigating && (
+          <TouchableOpacity
+            style={styles.reCenterButton}
+            onPress={handleReCenter}
+            activeOpacity={0.8}>
+            <Text style={styles.reCenterIcon}>◎</Text>
+            <Text style={styles.reCenterLabel}>Re-center</Text>
+          </TouchableOpacity>
+        )}
+
+        {/* GPS button */}
+        <TouchableOpacity
+          style={[styles.gpsButton, isNavigating && styles.gpsButtonNavigating]}
+          onPress={handleShowLocation}
+          disabled={isFetchingLocation}
+          activeOpacity={0.8}>
+          {isFetchingLocation ? (
+            <ActivityIndicator size="small" color="#040000" />
+          ) : (
+            <GpsIcon width={28} height={28} fill="#040000" />
+          )}
+        </TouchableOpacity>
+      </View>
+
+      {/* ── Bottom area ── */}
+      {/* <View style={styles.bottomArea}> */}
+
+      <Animated.View
+        style={[styles.bottomArea, {flex: 0, height: sheetHeightAnim}]}>
+        {/* Drag handle / hide-show toggle */}
+        <TouchableOpacity
+          activeOpacity={0.8}
+          onPress={toggleBottomSheet}
+          style={styles.sheetHandle}>
+          <View style={styles.sheetHandleBar} />
+        </TouchableOpacity>
+        <View style={styles.sheetBody}>
+          {!destinationLocation ? (
+            <View style={styles.placeholderCard}>
+              <Text style={styles.placeholderTitle}>Pick your destination</Text>
+              <Text style={styles.placeholderText}>
+                Tap the search button above to choose where you want to go and
+                preview the route.
+              </Text>
+            </View>
+          ) : isNavigating ? (
+            // ── NAVIGATION-MODE bottom panel ──────────────────────────────
+            <View style={styles.navPanel}>
+              <ScrollView
+                showsVerticalScrollIndicator={false}
+                contentContainerStyle={{paddingBottom: 1}}>
+              {/* Small button → opens turn-by-turn directions modal */}
+              <TouchableOpacity
+                style={styles.navDirectionsBtn}
+                onPress={() => setTurnModalVisible(true)}
+                activeOpacity={0.85}>
+                <Text style={styles.navDirectionsIcon}>🧭</Text>
+                <Text style={styles.navDirectionsText} numberOfLines={1}>
+                  Turn-by-turn directions
+                </Text>
+                <Text style={styles.navDirectionsChevron}>›</Text>
+              </TouchableOpacity>
+              <View style={styles.navTopRow}>
+                {/* Left side → Speed */}
+                <View style={styles.navSpeedHero}>
+                  <Text style={styles.navSpeedValue}>{liveSpeedKph}</Text>
+                  <Text style={styles.navSpeedUnit}>km/h</Text>
+                </View>
+
+                {/* Right side → Button */}
+                <TouchableOpacity
+                  style={styles.navStopBtn}
+                  onPress={stopNavigation}
+                  activeOpacity={0.85}>
+                  <Text style={styles.navStopBtnText}>End Navigation</Text>
+                </TouchableOpacity>
+              </View>
+
+              {/* Trip stats: remaining time | distance | arrival */}
+              <View style={styles.navStatsRow}>
+                <View style={styles.navStatItem}>
+                  <Text style={styles.navStatValue}>
+                    {navigationInfo?.etaText ?? '—'}
+                  </Text>
+                  <Text style={styles.navStatLabel}>Remaining</Text>
+                </View>
+                <View style={styles.navStatDivider} />
+                <View style={styles.navStatItem}>
+                  <Text style={styles.navStatValue}>
+                    {navigationInfo?.distKm ?? '—'} km
+                  </Text>
+                  <Text style={styles.navStatLabel}>Distance</Text>
+                </View>
+                <View style={styles.navStatDivider} />
+                <View style={styles.navStatItem}>
+                  <Text style={styles.navStatValue}>
+                    {navigationInfo?.arrivalStr ?? '—'}
+                  </Text>
+                  <Text style={styles.navStatLabel}>Arrival</Text>
+                </View>
+              </View>
+
+              {/* Destination + toll */}
+              <View style={styles.navMetaRow}>
+                <View style={{flex: 1, marginRight: scale(10)}}>
+                  <Text style={styles.navMetaLabel}>To</Text>
+                  <Text style={styles.navMetaValue} numberOfLines={1}>
+                    {destinationText || '—'}
+                  </Text>
+                </View>
+                <View style={{alignItems: 'flex-end'}}>
+                  <Text style={styles.navMetaLabel}>Toll</Text>
+                  {isTollLoading ? (
+                    <ActivityIndicator size="small" color="#10B981" />
+                  ) : tollData ? (
+                    <TouchableOpacity onPress={() => setTollModalVisible(true)}>
+                      <Text style={styles.navTollValue}>
+                        {formatTollTotal(tollData)}
+                      </Text>
+                    </TouchableOpacity>
+                  ) : (
+                    <Text style={styles.navTollValue}>—</Text>
+                  )}
+                </View>
+              </View>
+                </ScrollView>
+            </View>
+          ) : (
+            // ── PREVIEW MODE (your existing details UI, unchanged) ────────
+            <View style={[styles.detailsContainer, {flex: 1}]}>
+              <View style={styles.bottomControlsBar}>
+                <NavigationControls
+                  onCamera={handleMoveCamera}
+                  onMarkers={handleAddMarkers}
+                  onLocation={handleShowLocation}
+                  onRoute={handleDrawRoute}
+                  onNavigate={handleStartNavigation}
+                  onClear={handleClear}
+                  isNavigating={isNavigating}
+                />
+              </View>
+
+              <ScrollView
+                style={{flex: 1}}
+                contentContainerStyle={{paddingBottom: 24}}
+                showsVerticalScrollIndicator={false}
+                keyboardShouldPersistTaps="handled">
+                <View
+                  style={{
+                    flex: 1,
+                    backgroundColor: '#fff',
+                    borderTopLeftRadius: 16,
+                    borderTopRightRadius: 16,
+                    paddingHorizontal: 16,
+                    paddingTop: 16,
+                    paddingBottom: 8,
+                    elevation: 4,
+                  }}>
+                  <View style={styles.detailsHeader}>
+                    <Text style={styles.detailsTitle}>Route Details</Text>
+                    <View style={styles.summaryItem}>
+                      <Text style={styles.summaryLabel}>Toll Cost</Text>
+                      {isTollLoading ? (
+                        <ActivityIndicator size="small" color="#3B7EFF" />
+                      ) : tollData ? (
+                        <TouchableOpacity
+                          onPress={() => setTollModalVisible(true)}>
+                          <Text style={styles.summaryValueToll}>
+                            {formatTollTotal(tollData)}
+                          </Text>
+                        </TouchableOpacity>
+                      ) : (
+                        <Text style={styles.summaryValueToll}>Fetching...</Text>
+                      )}
+                    </View>
+                  </View>
+
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>From</Text>
+                    <Text style={styles.detailValue} numberOfLines={1}>
+                      {sourceText || 'Current Location'}
+                    </Text>
+                  </View>
+
+                  <View style={styles.detailRow}>
+                    <Text style={styles.detailLabel}>To</Text>
+                    <Text style={styles.detailValue} numberOfLines={1}>
+                      {destinationText}
+                    </Text>
+                  </View>
+
+                  {routeSummary ? (
+                    <View style={styles.routeSummaryCard}>
+                      <View style={styles.summaryItem}>
+                        <Text style={styles.summaryLabel}>Total Distance</Text>
+                        <Text style={styles.summaryValue}>
+                          {(routeSummary.length / 1000).toFixed(2)} km
+                        </Text>
+                      </View>
+                      <View style={styles.summaryDivider} />
+                      <View style={styles.summaryItem}>
+                        <Text style={styles.summaryLabel}>Est. Time</Text>
+                        <Text style={styles.summaryValue}>
+                          {Math.ceil(routeSummary.duration / 60)} min
+                        </Text>
+                      </View>
+                    </View>
+                  ) : (
+                    <View style={styles.loadingDetails}>
+                      <Text style={styles.loadingText}>
+                        Loading route details...
+                      </Text>
+                    </View>
+                  )}
+                </View>
+              </ScrollView>
+            </View>
+          )}
+        </View>
+      </Animated.View>
+      {/* </View> */}
+
+      {/* ── Turn-by-turn directions modal ── */}
+      <Modal
+        visible={turnModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setTurnModalVisible(false)}>
+        <TouchableOpacity
+          style={styles.turnModalOverlay}
+          activeOpacity={1}
+          onPress={() => setTurnModalVisible(false)}>
+          {/* Inner content swallows taps so it doesn't close on press */}
+          <TouchableOpacity activeOpacity={1} style={styles.turnModalContent}>
+            <View style={styles.turnModalHeader}>
+              <Text style={styles.turnModalTitle}>Directions</Text>
+              <TouchableOpacity
+                onPress={() => setTurnModalVisible(false)}
+                activeOpacity={0.7}>
+                <Text style={styles.tollModalClose}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <TurnByTurnPanel
+              routeResponse={routeResponseForPanel}
+              isNavigating={false} // false → render the full scrollable step list
+              snapSegmentIndex={snapSegmentIndex}
+              metersToNext={metersToNext}
+              style={styles.turnPanelInModal} // cancels component's position:absolute
+            />
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* ── Toll breakdown modal ── */}
+      <Modal
+        visible={tollModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setTollModalVisible(false)}>
+        <TouchableOpacity
+          style={styles.tollModalOverlay}
+          activeOpacity={1}
+          onPress={() => setTollModalVisible(false)}>
+          <View style={styles.tollModalContent}>
+            <View style={styles.tollModalHeader}>
+              <Text style={styles.tollModalTitle}>Toll Breakdown</Text>
+              <TouchableOpacity
+                onPress={() => setTollModalVisible(false)}
+                activeOpacity={0.7}>
+                <Text style={styles.tollModalClose}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              style={styles.tollModalScroll}
+              showsVerticalScrollIndicator={false}
+              bounces>
+              {tollData?.routes?.[0]?.sections?.map(
+                (section, si) =>
+                  section.tolls?.map((toll, ti) => {
+                    const fares = toll.fares || [];
+                    const singleFares = fares.filter(f => {
+                      if (!f.pass) return true;
+                      if (f.pass.returnJourney === true) return false;
+                      if (f.pass.validityPeriod != null) return false;
+                      return true;
+                    });
+                    const best = (singleFares.length ? singleFares : fares)[0];
+                    const amount = best?.price?.value || 0;
+                    const currency = best?.price?.currency || 'USD';
+                    const symbol =
+                      currency === 'INR'
+                        ? '₹'
+                        : currency === 'USD'
+                        ? '$'
+                        : currency === 'EUR'
+                        ? '€'
+                        : currency;
+                    return (
+                      <View key={`${si}-${ti}`} style={styles.tollItem}>
+                        <View style={styles.tollItemLeft}>
+                          <Text style={styles.tollItemName}>
+                            {toll.tollSystem || 'Toll'}
+                          </Text>
+                          <Text style={styles.tollItemRoad}>
+                            {toll.name || 'Route'}
+                          </Text>
+                        </View>
+                        <Text style={styles.tollItemAmount}>
+                          {symbol}
+                          {amount.toFixed(2)}
+                        </Text>
+                      </View>
+                    );
+                  }) || [],
+              )}
+
+              <View style={styles.tollItemTotal}>
+                <Text style={styles.tollItemTotalLabel}>Total Estimate</Text>
+                <Text style={styles.tollItemTotalAmount}>
+                  {formatTollTotal(tollData)}
+                </Text>
+              </View>
+
+              <Text style={styles.tollModalNote}>
+                * Shows cheapest one-way toll per booth
+              </Text>
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
     </SafeAreaView>
   );
 }

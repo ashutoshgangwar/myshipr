@@ -147,8 +147,6 @@ export async function calculateTruckRouteREST(
 }
 
 export async function findSequence(params) {
-  // params should include start, destinations array, end, improveFor etc.
-
   const searchParams = new URLSearchParams();
 
   Object.keys(params).forEach(k =>
@@ -168,9 +166,61 @@ export async function findSequence(params) {
   }
 }
 
+
+export async function calculateRouteTolls(
+  origin,
+  destination,
+  currency = 'USD',
+) {
+  if (!origin || !destination) return null;
+
+  const params = new URLSearchParams();
+
+  params.append(
+    'origin',
+    `${origin.latitude},${origin.longitude}`,
+  );
+
+  params.append(
+    'destination',
+    `${destination.latitude},${destination.longitude}`,
+  );
+
+  params.append('transportMode', 'truck');
+  params.append('routingMode', 'fast');
+  params.append('return', 'tolls');
+  params.append('currency', currency);
+  params.append('apiKey', HERE_KEY);
+
+  const url = `https://router.hereapi.com/v8/routes?${params.toString()}`;
+
+  try {
+    const res = await axios.get(url);
+
+    console.log(
+      '🛣️ Toll API Response:',
+      JSON.stringify(res.data, null, 2),
+    );
+
+    return res.data;
+  } catch (e) {
+    console.error(
+      '❌ Toll API Error:',
+      e?.response?.data || e.message,
+    );
+
+    throw new Error(
+      `HERE toll route error: ${JSON.stringify(
+        e?.response?.data || e.message,
+      )}`,
+    );
+  }
+}
+
 export default {
   autosuggest,
   lookup,
   calculateTruckRouteREST,
   findSequence,
+  calculateRouteTolls
 };

@@ -9,8 +9,7 @@ export function NavigationInfo({navigationInfo, routeSummary, isNavigating, onSt
       <View style={styles.navInfoBar}>
         <View style={styles.navInfoRow}>
           <View style={styles.navInfoEta}>
-            <Text style={styles.navInfoEtaText}>{navigationInfo.etaMin}</Text>
-            <Text style={styles.navInfoEtaLabel}>min</Text>
+            <Text style={styles.navInfoEtaText}>{navigationInfo.etaText}</Text>
           </View>
           <View style={styles.navInfoDivider} />
           <View style={styles.navInfoDetails}>
@@ -32,17 +31,6 @@ export function NavigationInfo({navigationInfo, routeSummary, isNavigating, onSt
     );
   }
 
-  // Route summary bar when not navigating
-  if (routeSummary && !isNavigating) {
-    return (
-      <View style={styles.routeSummaryBar}>
-        <Text style={styles.routeSummaryText}>
-          Distance: {(routeSummary.length / 1000).toFixed(2)} km • ETA:{' '}
-          {Math.ceil(routeSummary.duration / 60)} min
-        </Text>
-      </View>
-    );
-  }
-
   return null;
 }
+

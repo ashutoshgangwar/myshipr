@@ -34,12 +34,10 @@ export function NavigationControls({
 
   return (
     <View style={styles.toolbar}>
-      {/* <ToolbarButton label="📷 Camera" onPress={onCamera} /> */}
-      {/* <ToolbarButton label="📍 Markers" onPress={onMarkers} /> */}
-      {/* <ToolbarButton label="🔵 Location" onPress={onLocation} /> */}
+      <ToolbarButton label="📍 Current" onPress={onLocation} />
       <ToolbarButton label="🛣️ Route" onPress={onRoute} />
-      <ToolbarButton label="🧭 Navigate" onPress={onNavigate} />
-      {/* <ToolbarButton label="🗑️ Clear" onPress={onClear} /> */}
+      <ToolbarButton label="🧭 Navigate" onPress={onNavigate} highlight />
+      <ToolbarButton label="🗑️ Clear" onPress={onClear} />
     </View>
   );
 }

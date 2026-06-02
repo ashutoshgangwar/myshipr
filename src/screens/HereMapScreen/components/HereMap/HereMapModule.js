@@ -17,11 +17,12 @@ function safeMethod(name, fallbackReturn) {
   if (NativeHereMapModule?.[name]) {
     return (...args) => NativeHereMapModule[name](...args);
   }
-  return async () => {
+  return (...args) => {
+    const message = `[HereMapModule] ${name} not implemented in native module`;
+    console.warn(message, args);
     if (fallbackReturn === 'reject') {
-      return Promise.reject(new Error(`${name} not implemented in native module`));
+      return Promise.reject(new Error(message));
     }
-    // Silent no-op for non-critical methods
   };
 }
 
@@ -51,16 +52,16 @@ const HereMapModule = {
   // ── New: Polyline management ──
   // Draws a polyline from an array of coordinates
   // Params: tag, { coordinates: [{lat, lng}, ...], color, width }
-  drawPolyline: safeMethod('drawPolyline'),
+  drawPolyline: safeMethod('drawPolyline', 'reject'),
 
   // Updates the polyline – trims from the start up to a given index + fraction
   // Params: tag, { trimIndex, trimFraction }
   // trimIndex = index of the segment the marker is on
   // trimFraction = 0-1 how far along that segment
-  trimPolyline: safeMethod('trimPolyline'),
+  trimPolyline: safeMethod('trimPolyline', 'reject'),
 
   // Clears the drawn polyline
-  clearPolyline: safeMethod('clearPolyline'),
+  clearPolyline: safeMethod('clearPolyline', 'reject'),
 
   // Navigation-related – reject if unavailable so callers can handle
   calculateRoute: safeMethod('calculateRoute', 'reject'),
