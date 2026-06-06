@@ -20,10 +20,7 @@ import {
   getCurrentLocation,
   watchCurrentLocation,
 } from '../../services/LocationService';
-import {
-  calculateTruckRouteREST,
-  calculateRouteTolls,
-} from './services/hereTruckService';
+import {calculateRouteTolls} from './services/hereTruckService';
 
 import {HereMapView, HereMapModule} from './components/HereMap/index';
 import RouteGeometry from './components/HereMap/Routegeometry';
@@ -42,6 +39,7 @@ import {
   directionAwareSnap,
   resolveLiveSpeedMps,
   sanitizeRouteCoords,
+  reduceRouteCoords,
 } from './utils/mathUtils';
 import {
   decodeFlexiblePolyline,
@@ -90,6 +88,24 @@ function bearingToDirection(bearing) {
 }
 
 function formatTollTotal(tollData) {
+  if (!tollData) return '—';
+
+  // If caller passed the normalized shape from calculateRouteTolls
+  if (typeof tollData.total === 'number' || Array.isArray(tollData.tolls)) {
+    const currency = tollData.currency || 'USD';
+    const total = typeof tollData.total === 'number'
+      ? tollData.total
+      : (Array.isArray(tollData.tolls)
+        ? tollData.tolls.reduce((sum, t) => {
+            const price = t?.fares?.[0]?.price?.value;
+            return sum + (Number.isFinite(price) ? price : 0);
+          }, 0)
+        : 0);
+    const symbol = currency === 'INR' ? '₹' : currency === 'USD' ? '$' : currency === 'EUR' ? '€' : currency;
+    return `${symbol}${Number(total || 0).toFixed(2)}`;
+  }
+
+  // Legacy HERE route shape
   const tollSections = tollData?.routes?.[0]?.sections || [];
   const tollList = tollSections.flatMap(s => s.tolls || []);
   const currency = tollList[0]?.fares?.[0]?.price?.currency || 'USD';
@@ -97,19 +113,10 @@ function formatTollTotal(tollData) {
     const price = toll?.fares?.[0]?.price?.value;
     return sum + (Number.isFinite(price) ? price : 0);
   }, 0);
-  const symbol =
-    currency === 'INR'
-      ? '₹'
-      : currency === 'USD'
-      ? '$'
-      : currency === 'EUR'
-      ? '€'
-      : currency;
+  const symbol = currency === 'INR' ? '₹' : currency === 'USD' ? '$' : currency === 'EUR' ? '€' : currency;
   return `${symbol}${total.toFixed(2)}`;
 }
 
-// ── Safe camera-to-polyline helper ───────────────────────────────────────
-// Extracted so it can be reused in both preview and nav flows.
 async function fitCameraToCoords(mapRef, coords) {
   if (!mapRef?.current || !coords || coords.length < 2) return;
   try {
@@ -150,15 +157,39 @@ export default function HereMapScreen({navigation, route}) {
   const sourceRef = useRef(null);
   const destinationRef = useRef(null);
   const [activeInput, setActiveInput] = useState(null);
-  const [sourceLocation, setSourceLocation] = useState(null);
-  const [destinationLocation, setDestinationLocation] = useState(null);
-  const [sourceText, setSourceText] = useState('');
-  const [destinationText, setDestinationText] = useState('');
+
+  const normalizeLocation = loc => {
+    if (!loc) return null;
+    const lat = Number(loc.latitude);
+    const lng = Number(loc.longitude);
+    if (!Number.isFinite(lat) || !Number.isFinite(lng)) {
+      return null;
+    }
+    return {
+      latitude: lat,
+      longitude: lng,
+      description: loc.description || '',
+    };
+  };
+
+  const [sourceLocation, setSourceLocation] = useState(
+    normalizeLocation(route?.params?.sourceLocation),
+  );
+  const [destinationLocation, setDestinationLocation] = useState(
+    normalizeLocation(route?.params?.destinationLocation),
+  );
+  const [sourceText, setSourceText] = useState(
+    route?.params?.sourceText || '',
+  );
+  const [destinationText, setDestinationText] = useState(
+    route?.params?.destinationText || '',
+  );
   const [isFetchingLocation, setIsFetchingLocation] = useState(false);
   const [routeSummary, setRouteSummary] = useState(null);
   const [isNavigating, setIsNavigating] = useState(false);
   const isNavigatingRef = useRef(false);
   const [navigationInfo, setNavigationInfo] = useState(null);
+  const [truckDetails, setTruckDetails] = useState(null);
 
   const lastTollRouteRef = useRef('');
   const [tollData, setTollData] = useState(null);
@@ -200,7 +231,7 @@ export default function HereMapScreen({navigation, route}) {
 
   const destinationLocationRef = useRef(null);
   useEffect(() => {
-    destinationLocationRef.current = destinationLocation;
+    destinationLocationRef.current = normalizeLocation(destinationLocation);
   }, [destinationLocation]);
   useEffect(() => {
     isNavigatingRef.current = isNavigating;
@@ -210,7 +241,7 @@ export default function HereMapScreen({navigation, route}) {
   // without needing to list them as deps (which would cause extra fetches).
   const sourceLocationRef = useRef(null);
   useEffect(() => {
-    sourceLocationRef.current = sourceLocation;
+    sourceLocationRef.current = normalizeLocation(sourceLocation);
   }, [sourceLocation]);
 
   const [bottomSheetCollapsed, setBottomSheetCollapsed] = useState(false);
@@ -241,25 +272,13 @@ export default function HereMapScreen({navigation, route}) {
   useEffect(() => {
     if (isNavigatingRef.current) return;
 
-    const srcReady =
-      sourceLocation &&
-      isUsableNavCoord(sourceLocation.latitude, sourceLocation.longitude);
-    const dstReady =
-      destinationLocation &&
-      isUsableNavCoord(
-        destinationLocation.latitude,
-        destinationLocation.longitude,
-      );
+    const safeSource = normalizeLocation(sourceLocation);
+    const safeDestination = normalizeLocation(destinationLocation);
 
-    if (!srcReady || !dstReady) return;
+    if (!safeSource || !safeDestination) return;
 
-    // Use coords as a cheap key so referential identity doesn't matter.
-    const srcKey = `${sourceLocation.latitude.toFixed(
-      6,
-    )},${sourceLocation.longitude.toFixed(6)}`;
-    const dstKey = `${destinationLocation.latitude.toFixed(
-      6,
-    )},${destinationLocation.longitude.toFixed(6)}`;
+    const srcKey = `${safeSource.latitude.toFixed(6)},${safeSource.longitude.toFixed(6)}`;
+    const dstKey = `${safeDestination.latitude.toFixed(6)},${safeDestination.longitude.toFixed(6)}`;
 
     const prev = lastPreviewPairRef.current;
     if (srcKey === prev.srcKey && dstKey === prev.dstKey) return; // same pair, skip
@@ -542,20 +561,59 @@ export default function HereMapScreen({navigation, route}) {
       for (const section of sections) {
         const polyline = section.polyline;
         if (typeof polyline === 'string' && polyline.length > 0) {
-          let decoded = decodeFlexiblePolyline(polyline);
-          if (decoded.length === 0) {
+          // sanitize polyline (remove whitespace which may break decoding)
+          const cleaned = String(polyline).replace(/\s+/g, '');
+          let decoded = decodeFlexiblePolyline(cleaned);
+          if (!decoded || decoded.length === 0) {
             console.warn(
-              '[Polyline] decodeFlexiblePolyline returned 0 coords — falling back to Google decoder',
+              '[Polyline] flexible decode returned 0 coords, trying Google decoder. polyline_len=',
+              cleaned.length,
+              'prefix=', cleaned.slice(0, 80),
             );
-            decoded = decodeGooglePolyline(polyline);
+            decoded = decodeGooglePolyline(cleaned);
           }
-          if (decoded.length === 0) {
+          if (!decoded || decoded.length === 0) {
             console.warn(
-              '[Polyline] Both decoders returned 0 coords — polyline string may be malformed:',
-              polyline.slice(0, 60),
+              '[Polyline] Both decoders returned 0 coords — attempting fallbacks. raw_prefix=',
+              String(polyline).slice(0, 120),
             );
+
+            // Fallback 1: maybe API returned JSON-encoded array string
+            try {
+              const parsed = JSON.parse(polyline);
+              if (Array.isArray(parsed) && parsed.length > 0) {
+                const coordsFromJson = parsed.map(pt => {
+                  if (Array.isArray(pt)) return {lat: pt[0], lng: pt[1]};
+                  if (pt && (pt.lat != null || pt.lat !== undefined)) return {lat: pt.lat, lng: pt.lng ?? pt.lon};
+                  return null;
+                }).filter(Boolean);
+                if (coordsFromJson.length) decoded = coordsFromJson;
+              }
+            } catch (e) {}
+
+            // Fallback 2: maybe a whitespace/space separated list of lat,lng pairs
+            if ((!decoded || decoded.length === 0) && typeof cleaned === 'string') {
+              const parts = cleaned.trim().split(/\s+/);
+              const maybeCoords = [];
+              for (const p of parts) {
+                const bits = p.split(',');
+                if (bits.length >= 2) {
+                  const la = Number(bits[0]);
+                  const lo = Number(bits[1]);
+                  if (Number.isFinite(la) && Number.isFinite(lo)) maybeCoords.push({lat: la, lng: lo});
+                }
+              }
+              if (maybeCoords.length) decoded = maybeCoords;
+            }
+
+            if ((!decoded || decoded.length === 0)) {
+              console.warn(
+                '[Polyline] All decode attempts failed — polyline may be malformed. raw_prefix=',
+                String(polyline).slice(0, 240),
+              );
+            }
           }
-          allCoords.push(...decoded);
+          allCoords.push(...(decoded || []));
         } else if (Array.isArray(polyline)) {
           for (const pt of polyline) {
             if (Array.isArray(pt)) allCoords.push({lat: pt[0], lng: pt[1]});
@@ -584,12 +642,13 @@ export default function HereMapScreen({navigation, route}) {
     lastTrimCursorRef.current = {index: -1, fraction: 0};
     try {
       isDrawingRouteRef.current = true;
+      const displayCoords = reduceRouteCoords(coords, 1000);
       await Promise.all([
         mapRef.current?.clearPolyline(),
         mapRef.current?.clearRoute(),
       ]);
       await mapRef.current?.drawPolyline({
-        coordinates: coords,
+        coordinates: displayCoords,
         color: '#4285F4',
         width: NAVIGATION_ROUTE_WIDTH,
       });
@@ -698,20 +757,31 @@ export default function HereMapScreen({navigation, route}) {
   };
 
   const handleDrawRoute = async () => {
-    const origin = sourceLocation
-      ? {latitude: sourceLocation.latitude, longitude: sourceLocation.longitude}
+    const safeSource = normalizeLocation(sourceLocation);
+    const safeDest = normalizeLocation(destinationLocation);
+    const origin = safeSource
+      ? {latitude: safeSource.latitude, longitude: safeSource.longitude}
       : {latitude: ORIGIN.lat, longitude: ORIGIN.lng};
-    const dest = destinationLocation
-      ? {
-          latitude: destinationLocation.latitude,
-          longitude: destinationLocation.longitude,
-        }
+    const dest = safeDest
+      ? {latitude: safeDest.latitude, longitude: safeDest.longitude}
       : {latitude: DESTINATION.lat, longitude: DESTINATION.lng};
+
+    if (destinationLocation && !safeDest) {
+      Alert.alert('Route Error', 'Destination coordinates are invalid.');
+      return;
+    }
+
     setIsTollLoading(true);
     try {
-      const routeJson = await calculateTruckRouteREST(origin, dest);
-      const tollResponse = await calculateRouteTolls(origin, dest);
+      const tollResponse = await calculateRouteTolls(
+        origin,
+        dest,
+        truckDetails?.currency || 'USD',
+        truckDetails,
+      );
+      const routeJson = tollResponse?.raw || null;
       setTollData(tollResponse);
+      setRouteResponseForPanel(routeJson);
       setRouteSummary(routeJson?.routes?.[0]?.sections?.[0]?.summary || null);
 
       await Promise.all([
@@ -720,36 +790,25 @@ export default function HereMapScreen({navigation, route}) {
         mapRef.current?.clearRoute(),
       ]);
 
-      if (
-        sourceLocation &&
-        isUsableNavCoord(sourceLocation.latitude, sourceLocation.longitude)
-      ) {
-        if (
-          sourceLocation.description?.toLowerCase().includes('current location')
-        ) {
+      if (safeSource) {
+        if (safeSource.description?.toLowerCase().includes('current location')) {
           await mapRef.current?.showCurrentLocation({
-            lat: sourceLocation.latitude,
-            lng: sourceLocation.longitude,
+            lat: safeSource.latitude,
+            lng: safeSource.longitude,
             bearing: smooth.smoothPos.current.bearing ?? 0,
           });
         } else {
           await mapRef.current?.addMarker({
-            lat: sourceLocation.latitude,
-            lng: sourceLocation.longitude,
+            lat: safeSource.latitude,
+            lng: safeSource.longitude,
             color: '#22C55E',
           });
         }
       }
-      if (
-        destinationLocation &&
-        isUsableNavCoord(
-          destinationLocation.latitude,
-          destinationLocation.longitude,
-        )
-      ) {
+      if (safeDest) {
         await mapRef.current?.addMarker({
-          lat: destinationLocation.latitude,
-          lng: destinationLocation.longitude,
+          lat: safeDest.latitude,
+          lng: safeDest.longitude,
           color: '#FF3366',
         });
       }
@@ -760,9 +819,10 @@ export default function HereMapScreen({navigation, route}) {
         {lat: origin.latitude, lng: origin.longitude},
         {lat: dest.latitude, lng: dest.longitude},
       );
-      if (coords.length >= 2) {
+      const displayCoords = reduceRouteCoords(coords, 1000);
+      if (displayCoords.length >= 2) {
         await mapRef.current?.drawPolyline({
-          coordinates: coords,
+          coordinates: displayCoords,
           color: '#4285F4',
           width: NAVIGATION_ROUTE_WIDTH,
         });
@@ -829,20 +889,25 @@ export default function HereMapScreen({navigation, route}) {
     } catch (_) {}
 
     if (!navStartSource) {
-      if (
-        sourceLocation &&
-        isUsableNavCoord(sourceLocation.latitude, sourceLocation.longitude)
-      ) {
+      const safeSource = normalizeLocation(sourceLocation);
+      if (safeSource) {
         navStartSource = {
-          latitude: sourceLocation.latitude,
-          longitude: sourceLocation.longitude,
-          description: sourceLocation.description || 'Current Location',
+          latitude: safeSource.latitude,
+          longitude: safeSource.longitude,
+          description: safeSource.description || 'Current Location',
         };
       } else {
         Alert.alert('Navigation', 'Current GPS location not available yet.');
         setIsRouteLoading(false);
         return;
       }
+    }
+
+    const safeDestination = normalizeLocation(destinationLocation);
+    if (!safeDestination) {
+      Alert.alert('Navigation', 'Selected destination coordinates are invalid.');
+      setIsRouteLoading(false);
+      return;
     }
 
     routeGeometryRef.current = null;
@@ -858,19 +923,15 @@ export default function HereMapScreen({navigation, route}) {
     setLiveBearing(null);
 
     try {
-      const startRoute = await calculateTruckRouteREST(
-        {
-          latitude: navStartSource.latitude,
-          longitude: navStartSource.longitude,
-        },
-        {
-          latitude: destinationLocation.latitude,
-          longitude: destinationLocation.longitude,
-        },
+      const tollResponse = await calculateRouteTolls(
+        {latitude: navStartSource.latitude, longitude: navStartSource.longitude},
+        {latitude: safeDestination.latitude, longitude: safeDestination.longitude},
+        truckDetails?.currency || 'USD',
+        truckDetails,
       );
+      const startRoute = tollResponse?.raw || null;
       setRouteResponseForPanel(startRoute);
-      const startSummary =
-        startRoute?.routes?.[0]?.sections?.[0]?.summary || null;
+      const startSummary = startRoute?.routes?.[0]?.sections?.[0]?.summary || null;
       setRouteSummary(startSummary);
       updateNavigationInfo(startSummary);
 
@@ -878,7 +939,7 @@ export default function HereMapScreen({navigation, route}) {
       const startCoords = sanitizeRouteCoords(
         startRawCoords,
         {lat: navStartSource.latitude, lng: navStartSource.longitude},
-        {lat: destinationLocation.latitude, lng: destinationLocation.longitude},
+        {lat: safeDestination.latitude, lng: safeDestination.longitude},
       );
       if (startCoords.length >= 2) {
         await setupRouteGeometry(startCoords);
@@ -892,8 +953,8 @@ export default function HereMapScreen({navigation, route}) {
           await mapRef.current?.drawRoute({
             originLat: navStartSource.latitude,
             originLng: navStartSource.longitude,
-            destLat: destinationLocation.latitude,
-            destLng: destinationLocation.longitude,
+            destLat: safeDestination.latitude,
+            destLng: safeDestination.longitude,
           });
         } catch (_) {}
       }
@@ -940,8 +1001,8 @@ export default function HereMapScreen({navigation, route}) {
             : computeBearing(
                 immediatePos.lat,
                 immediatePos.lng,
-                destinationLocation.latitude,
-                destinationLocation.longitude,
+                safeDestination.latitude,
+                safeDestination.longitude,
               );
           lastTrimCursorRef.current = {
             index: snap.segmentIndex,
@@ -952,8 +1013,8 @@ export default function HereMapScreen({navigation, route}) {
         immediateBearing = computeBearing(
           immediatePos.lat,
           immediatePos.lng,
-          destinationLocation.latitude,
-          destinationLocation.longitude,
+          safeDestination.latitude,
+          safeDestination.longitude,
         );
       }
     }
@@ -1006,13 +1067,13 @@ export default function HereMapScreen({navigation, route}) {
         }
         if (
           isValidCoord(
-            destinationLocation.latitude,
-            destinationLocation.longitude,
+            safeDestination.latitude,
+            safeDestination.longitude,
           )
         ) {
           await mapRef.current?.addMarker({
-            lat: destinationLocation.latitude,
-            lng: destinationLocation.longitude,
+            lat: safeDestination.latitude,
+            lng: safeDestination.longitude,
             color: '#FF3366',
           });
         }
@@ -1115,7 +1176,7 @@ export default function HereMapScreen({navigation, route}) {
           }
 
           const now = Date.now();
-          const dest = destinationLocationRef.current;
+          const dest = normalizeLocation(destinationLocationRef.current);
           if (
             dest &&
             (rerouteRequestedRef.current ||
@@ -1127,14 +1188,17 @@ export default function HereMapScreen({navigation, route}) {
               : 'periodic-refresh';
             rerouteRequestedRef.current = false;
             try {
-              const origin = sourceRef.current ?? {
+              const origin = normalizeLocation(sourceRef.current) ?? {
                 latitude: lat,
                 longitude: lng,
               };
-              const navRoute = await calculateTruckRouteREST(
+              const tollResponse = await calculateRouteTolls(
                 {latitude: origin.latitude, longitude: origin.longitude},
                 {latitude: dest.latitude, longitude: dest.longitude},
+                truckDetails?.currency || 'USD',
+                truckDetails,
               );
+              const navRoute = tollResponse?.raw || null;
               setRouteResponseForPanel(navRoute);
               setSnapSegmentIndex(-1);
               setMetersToNext(null);
@@ -1184,15 +1248,17 @@ export default function HereMapScreen({navigation, route}) {
           }
           if (!hasRealGeometryRef.current) {
             try {
-              const freshRoute = await calculateTruckRouteREST(
+              const tollResponse = await calculateRouteTolls(
                 {latitude: start.latitude, longitude: start.longitude},
                 {
-                  latitude: destinationLocation.latitude,
-                  longitude: destinationLocation.longitude,
+                  latitude: safeDestination.latitude,
+                  longitude: safeDestination.longitude,
                 },
+                truckDetails?.currency || 'USD',
+                truckDetails,
               );
-              const summary =
-                freshRoute?.routes?.[0]?.sections?.[0]?.summary || null;
+              const freshRoute = tollResponse?.raw || null;
+              const summary = freshRoute?.routes?.[0]?.sections?.[0]?.summary || null;
               setRouteSummary(summary);
               updateNavigationInfo(summary);
               const coords = extractRoutePolyline(freshRoute);
@@ -1200,8 +1266,8 @@ export default function HereMapScreen({navigation, route}) {
                 coords,
                 {lat: start.latitude, lng: start.longitude},
                 {
-                  lat: destinationLocation.latitude,
-                  lng: destinationLocation.longitude,
+                  lat: safeDestination.latitude,
+                  lng: safeDestination.longitude,
                 },
               );
               if (safeCoords.length >= 2) {
@@ -1215,8 +1281,8 @@ export default function HereMapScreen({navigation, route}) {
                   await mapRef.current?.drawRoute({
                     originLat: start.latitude,
                     originLng: start.longitude,
-                    destLat: destinationLocation.latitude,
-                    destLng: destinationLocation.longitude,
+                    destLat: safeDestination.latitude,
+                    destLng: safeDestination.longitude,
                   });
                 } catch (_) {}
               }
@@ -1366,25 +1432,65 @@ export default function HereMapScreen({navigation, route}) {
   // ─── Seed from route params ───────────────────────────────────────────────
   useEffect(() => {
     const params = route?.params || {};
-    if (
-      params.destinationLocation &&
-      Number.isFinite(params.destinationLocation.latitude) &&
-      Number.isFinite(params.destinationLocation.longitude)
-    ) {
-      setDestinationLocation(params.destinationLocation);
+    const incomingDestination = normalizeLocation(params.destinationLocation);
+    const incomingSource = normalizeLocation(params.sourceLocation);
+
+    if (incomingDestination) {
+      setDestinationLocation(incomingDestination);
       setDestinationText(
-        params.destinationText || params.destinationLocation.description || '',
+        params.destinationText || incomingDestination.description || '',
       );
     }
-    if (
-      params.sourceLocation &&
-      Number.isFinite(params.sourceLocation.latitude) &&
-      Number.isFinite(params.sourceLocation.longitude)
-    ) {
-      setSourceLocation(params.sourceLocation);
+    if (incomingSource) {
+      setSourceLocation(incomingSource);
       setSourceText(
-        params.sourceText || params.sourceLocation.description || '',
+        params.sourceText || incomingSource.description || '',
       );
+    }
+    if (params.truckDetails && typeof params.truckDetails === 'object') {
+      setTruckDetails(params.truckDetails);
+    }
+    if (params.tollsData) {
+      setTollData(params.tollsData);
+      try {
+        const routeJson = params.tollsData?.raw || null;
+        if (routeJson) {
+          const origin = incomingSource || {
+            latitude: ORIGIN.lat,
+            longitude: ORIGIN.lng,
+          };
+          const dest = incomingDestination || {
+            latitude: DESTINATION.lat,
+            longitude: DESTINATION.lng,
+          };
+          const rawCoords = extractRoutePolyline(routeJson);
+          const coords = sanitizeRouteCoords(
+            rawCoords,
+            {lat: origin.latitude, lng: origin.longitude},
+            {lat: dest.latitude, lng: dest.longitude},
+          );
+          if (coords.length >= 2) {
+            const displayCoords = reduceRouteCoords(coords, 600);
+            // draw preview polyline
+            (async () => {
+              try {
+                await mapRef.current?.clearMarkers();
+                await mapRef.current?.clearPolyline();
+                await mapRef.current?.drawPolyline({
+                  coordinates: displayCoords,
+                  color: '#4285F4',
+                  width: NAVIGATION_ROUTE_WIDTH,
+                });
+                // expose route json to panels
+                setRouteResponseForPanel(routeJson);
+                const summary = routeJson?.routes?.[0]?.sections?.[0]?.summary || null;
+                setRouteSummary(summary);
+                await fitCameraToCoords(mapRef, coords);
+              } catch (_) {}
+            })();
+          }
+        }
+      } catch (_) {}
     }
     // NOTE: No longer manually setting shouldFetchPreviewRef here.
     // The previewKey useEffect above automatically detects the new pair.
@@ -1402,8 +1508,8 @@ export default function HereMapScreen({navigation, route}) {
     if (isNavigatingRef.current) return;
 
     // Read the LATEST locations via refs (not stale closure values).
-    const src = sourceLocationRef.current;
-    const dst = destinationLocationRef.current;
+    const src = normalizeLocation(sourceLocationRef.current);
+    const dst = normalizeLocation(destinationLocationRef.current);
 
     const srcReady = src && isUsableNavCoord(src.latitude, src.longitude);
     const dstReady = dst && isUsableNavCoord(dst.latitude, dst.longitude);
@@ -1418,8 +1524,8 @@ export default function HereMapScreen({navigation, route}) {
       if (cancelled || isNavigatingRef.current) return;
 
       // Re-read refs inside the timeout to get truly latest values.
-      const latestSrc = sourceLocationRef.current;
-      const latestDst = destinationLocationRef.current;
+      const latestSrc = normalizeLocation(sourceLocationRef.current);
+      const latestDst = normalizeLocation(destinationLocationRef.current);
       if (
         !latestSrc ||
         !latestDst ||
@@ -1436,18 +1542,17 @@ export default function HereMapScreen({navigation, route}) {
 
         // ── Call the API (route + tolls) ─────────────────────────────────
         try {
-          const [routeJson, tollResponse] = await Promise.all([
-            calculateTruckRouteREST(
-              {latitude: latestSrc.latitude, longitude: latestSrc.longitude},
-              {latitude: latestDst.latitude, longitude: latestDst.longitude},
-            ),
-            calculateRouteTolls(
-              {latitude: latestSrc.latitude, longitude: latestSrc.longitude},
-              {latitude: latestDst.latitude, longitude: latestDst.longitude},
-            ),
-          ]);
+          const tollResponse = await calculateRouteTolls(
+            {latitude: latestSrc.latitude, longitude: latestSrc.longitude},
+            {latitude: latestDst.latitude, longitude: latestDst.longitude},
+            truckDetails?.currency || 'USD',
+            truckDetails,
+          );
           if (cancelled) return;
+          const routeJson = tollResponse?.raw || null;
           setTollData(tollResponse);
+          // expose route json to panels
+          setRouteResponseForPanel(routeJson);
           summary = routeJson?.routes?.[0]?.sections?.[0]?.summary || null;
           coords = sanitizeRouteCoords(
             extractRoutePolyline(routeJson),
@@ -1513,9 +1618,10 @@ export default function HereMapScreen({navigation, route}) {
 
         // ── Draw polyline or fallback ─────────────────────────────────────
         if (coords.length >= 2) {
-          previewRouteCoordsRef.current = coords;
+          const displayCoords = reduceRouteCoords(coords, 600);
+          previewRouteCoordsRef.current = displayCoords;
           await mapRef.current?.drawPolyline({
-            coordinates: coords,
+            coordinates: displayCoords,
             color: '#4285F4',
             width: NAVIGATION_ROUTE_WIDTH,
           });
@@ -1962,44 +2068,46 @@ export default function HereMapScreen({navigation, route}) {
               style={styles.tollModalScroll}
               showsVerticalScrollIndicator={false}
               bounces>
-              {tollData?.routes?.[0]?.sections?.map(
-                (section, si) =>
-                  section.tolls?.map((toll, ti) => {
-                    const fares = toll.fares || [];
-                    const singleFares = fares.filter(f => {
-                      if (!f.pass) return true;
-                      if (f.pass.returnJourney === true) return false;
-                      if (f.pass.validityPeriod != null) return false;
-                      return true;
-                    });
-                    const best = (singleFares.length ? singleFares : fares)[0];
-                    const amount = best?.price?.value || 0;
-                    const currency = best?.price?.currency || 'USD';
-                    const symbol =
-                      currency === 'INR'
-                        ? '₹'
-                        : currency === 'USD'
-                        ? '$'
-                        : currency === 'EUR'
-                        ? '€'
-                        : currency;
-                    return (
-                      <View key={`${si}-${ti}`} style={styles.tollItem}>
-                        <View style={styles.tollItemLeft}>
-                          <Text style={styles.tollItemName}>
-                            {toll.tollSystem || 'Toll'}
-                          </Text>
-                          <Text style={styles.tollItemRoad}>
-                            {toll.name || 'Route'}
-                          </Text>
-                        </View>
-                        <Text style={styles.tollItemAmount}>
-                          {symbol}
-                          {amount.toFixed(2)}
+              {(tollData?.routes?.[0]?.sections ||
+                tollData?.raw?.routes?.[0]?.sections ||
+                (Array.isArray(tollData?.tolls) ? [{tolls: tollData.tolls}] : [])
+              ).map((section, si) =>
+                (section.tolls || []).map((toll, ti) => {
+                  const fares = toll.fares || [];
+                  const singleFares = fares.filter(f => {
+                    if (!f.pass) return true;
+                    if (f.pass.returnJourney === true) return false;
+                    if (f.pass.validityPeriod != null) return false;
+                    return true;
+                  });
+                  const best = (singleFares.length ? singleFares : fares)[0];
+                  const amount = best?.price?.value || 0;
+                  const currency = best?.price?.currency || tollData?.currency || 'USD';
+                  const symbol =
+                    currency === 'INR'
+                      ? '₹'
+                      : currency === 'USD'
+                      ? '$'
+                      : currency === 'EUR'
+                      ? '€'
+                      : currency;
+                  return (
+                    <View key={`${si}-${ti}`} style={styles.tollItem}>
+                      <View style={styles.tollItemLeft}>
+                        <Text style={styles.tollItemName}>
+                          {toll.tollSystem || 'Toll'}
+                        </Text>
+                        <Text style={styles.tollItemRoad}>
+                          {toll.name || 'Route'}
                         </Text>
                       </View>
-                    );
-                  }) || [],
+                      <Text style={styles.tollItemAmount}>
+                        {symbol}
+                        {amount.toFixed(2)}
+                      </Text>
+                    </View>
+                  );
+                }),
               )}
 
               <View style={styles.tollItemTotal}>

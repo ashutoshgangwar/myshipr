@@ -9,7 +9,7 @@ import {
   Modal,
 } from 'react-native';
 import styles from './VectorMap.styles';
-import MapLibreGL from '@maplibre/maplibre-react-native';
+import MapLibreGL, { setAccessToken } from '@maplibre/maplibre-react-native';
 import Gps_Icon from '../../assets/svg_icon/gps-svg.svg';
 import Truck_Icon from '../../assets/svg_icon/truck-icon.svg';
 import Location_Icon from '../../assets/svg_icon/location.svg';
@@ -86,7 +86,7 @@ const ZOOM_LABELS = {
   17: 'Buildings', 18: 'Buildings',
 };
 
-MapLibreGL.setAccessToken(null);
+setAccessToken(null);
 
 // ─── Helpers (defined outside component to avoid re-creation) ────────────────
 

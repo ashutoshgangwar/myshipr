@@ -31,12 +31,16 @@ export function decodeFlexiblePolyline(encoded) {
     return v & 1 ? ~(v >> 1) : v >> 1;
   }
 
-  const header = readVarint();
-  if (header < 0) return [];
-  const precision = (header >> 4) & 0xf;
-  const thirdDimT = (header >> 12) & 0x7;
+  const version = readVarint();
+  if (version < 0 || version !== 1) return [];
+  const headerContent = readVarint();
+  if (headerContent < 0) return [];
+  const precision = headerContent & 0xf;
+  const thirdDimT = (headerContent >> 4) & 0x7;
+  const thirdDimPrecision = (headerContent >> 7) & 0xf;
   const hasThird = thirdDimT !== 0;
   const factor = Math.pow(10, precision || 5);
+  const thirdDimFactor = Math.pow(10, thirdDimPrecision || 0);
   let lat = 0,
     lng = 0;
 
@@ -49,8 +53,10 @@ export function decodeFlexiblePolyline(encoded) {
     if (isNaN(dLng)) break;
     lng += dLng;
     if (hasThird && index < encoded.length) {
-      const d = readDelta();
-      if (isNaN(d)) break;
+      const dZ = readDelta();
+      if (isNaN(dZ)) break;
+      // ignore third dimension values for 2D route rendering
+      void dZ;
     }
     const fLat = lat / factor,
       fLng = lng / factor;

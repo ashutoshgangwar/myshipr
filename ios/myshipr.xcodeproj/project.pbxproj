@@ -8,10 +8,19 @@
 
 /* Begin PBXBuildFile section */
 		07B84572DB2BBE7557815134 /* libPods-myshipr.a in Frameworks */ = {isa = PBXBuildFile; fileRef = 1FD0FE47BFF96C2049FFE272 /* libPods-myshipr.a */; };
+		0F690290327B006BECE20237 /* HERERoutingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = EB11681B4C6B6E55E8A9D889 /* HERERoutingService.swift */; };
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
+		2F91C33DC25251ED85C36910 /* HEREBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E5482C501D624A7ABE254EE /* HEREBridge.swift */; };
+		4A3C528A2FD51804E73C7A0D /* HERECredentials.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75D9B8683DD5E5D5C7E4FB2C /* HERECredentials.swift */; };
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
+		7668EB5D0638349BD3DD1D56 /* HEREGeocodingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4B0B38154B1F8E7065C3236 /* HEREGeocodingService.swift */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
+		8B1C2D3E4F5A6B7098CDEF0A /* HereMapViewManager.m in Sources */ = {isa = PBXBuildFile; fileRef = 8B1C2D3E4F5A6B7098CDEFAB /* HereMapViewManager.m */; };
+		8B55DB05B0F5C78A59E3C730 /* HEREAutosuggestService.swift in Sources */ = {isa = PBXBuildFile; fileRef = BFB9EEFFC6FBE1710AA55A18 /* HEREAutosuggestService.swift */; };
+		9A1B2C3D4E5F6A7089ABCDE0 /* HereMapModule.m in Sources */ = {isa = PBXBuildFile; fileRef = 9A1B2C3D4E5F6A7089ABCDEF /* HereMapModule.m */; };
+		AEFB71908104BD3C2C46044A /* HEREMapView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 652A87127241BC53E7DD7CBE /* HEREMapView.swift */; };
 		EEBC38502153550CF55B9CE9 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
+		F0079D9A380C94255B34B2F3 /* HERESDKManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A7D762A901244F77286D876 /* HERESDKManager.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -20,10 +29,19 @@
 		13B07FB61A68108700A75B9A /* Info.plist */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = Info.plist; path = myshipr/Info.plist; sourceTree = "<group>"; };
 		13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = text.plist.xml; name = PrivacyInfo.xcprivacy; path = myshipr/PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		1FD0FE47BFF96C2049FFE272 /* libPods-myshipr.a */ = {isa = PBXFileReference; explicitFileType = archive.ar; includeInIndex = 0; path = "libPods-myshipr.a"; sourceTree = BUILT_PRODUCTS_DIR; };
+		4E5482C501D624A7ABE254EE /* HEREBridge.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HEREBridge.swift; path = myshipr/HEREBridge.swift; sourceTree = "<group>"; };
+		5A7D762A901244F77286D876 /* HERESDKManager.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HERESDKManager.swift; path = myshipr/HERESDKManager.swift; sourceTree = "<group>"; };
+		652A87127241BC53E7DD7CBE /* HEREMapView.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HEREMapView.swift; path = myshipr/HEREMapView.swift; sourceTree = "<group>"; };
+		75D9B8683DD5E5D5C7E4FB2C /* HERECredentials.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HERECredentials.swift; path = myshipr/HERECredentials.swift; sourceTree = "<group>"; };
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = myshipr/AppDelegate.swift; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = myshipr/LaunchScreen.storyboard; sourceTree = "<group>"; };
+		8B1C2D3E4F5A6B7098CDEFAB /* HereMapViewManager.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = HereMapViewManager.m; path = myshipr/HereMapViewManager.m; sourceTree = "<group>"; };
+		9A1B2C3D4E5F6A7089ABCDEF /* HereMapModule.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = HereMapModule.m; path = myshipr/HereMapModule.m; sourceTree = "<group>"; };
 		BA16E415C2305DE8C3F6F856 /* Pods-myshipr.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-myshipr.release.xcconfig"; path = "Target Support Files/Pods-myshipr/Pods-myshipr.release.xcconfig"; sourceTree = "<group>"; };
+		BFB9EEFFC6FBE1710AA55A18 /* HEREAutosuggestService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HEREAutosuggestService.swift; path = myshipr/HEREAutosuggestService.swift; sourceTree = "<group>"; };
+		C4B0B38154B1F8E7065C3236 /* HEREGeocodingService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HEREGeocodingService.swift; path = myshipr/HEREGeocodingService.swift; sourceTree = "<group>"; };
 		DD734111EF3451B8DE7E78E5 /* Pods-myshipr.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-myshipr.debug.xcconfig"; path = "Target Support Files/Pods-myshipr/Pods-myshipr.debug.xcconfig"; sourceTree = "<group>"; };
+		EB11681B4C6B6E55E8A9D889 /* HERERoutingService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HERERoutingService.swift; path = myshipr/HERERoutingService.swift; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
 /* End PBXFileReference section */
 
@@ -47,6 +65,15 @@
 				13B07FB61A68108700A75B9A /* Info.plist */,
 				81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */,
 				13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */,
+				5A7D762A901244F77286D876 /* HERESDKManager.swift */,
+				75D9B8683DD5E5D5C7E4FB2C /* HERECredentials.swift */,
+				BFB9EEFFC6FBE1710AA55A18 /* HEREAutosuggestService.swift */,
+				EB11681B4C6B6E55E8A9D889 /* HERERoutingService.swift */,
+				C4B0B38154B1F8E7065C3236 /* HEREGeocodingService.swift */,
+				652A87127241BC53E7DD7CBE /* HEREMapView.swift */,
+				9A1B2C3D4E5F6A7089ABCDEF /* HereMapModule.m */,
+				8B1C2D3E4F5A6B7098CDEFAB /* HereMapViewManager.m */,
+				4E5482C501D624A7ABE254EE /* HEREBridge.swift */,
 			);
 			name = myshipr;
 			sourceTree = "<group>";
@@ -247,6 +274,15 @@
 			buildActionMask = 2147483647;
 			files = (
 				761780ED2CA45674006654EE /* AppDelegate.swift in Sources */,
+				F0079D9A380C94255B34B2F3 /* HERESDKManager.swift in Sources */,
+				4A3C528A2FD51804E73C7A0D /* HERECredentials.swift in Sources */,
+				8B55DB05B0F5C78A59E3C730 /* HEREAutosuggestService.swift in Sources */,
+				0F690290327B006BECE20237 /* HERERoutingService.swift in Sources */,
+				7668EB5D0638349BD3DD1D56 /* HEREGeocodingService.swift in Sources */,
+				AEFB71908104BD3C2C46044A /* HEREMapView.swift in Sources */,
+				9A1B2C3D4E5F6A7089ABCDE0 /* HereMapModule.m in Sources */,
+				8B1C2D3E4F5A6B7098CDEF0A /* HereMapViewManager.m in Sources */,
+				2F91C33DC25251ED85C36910 /* HEREBridge.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

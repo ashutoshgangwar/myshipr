@@ -206,7 +206,7 @@ const HomeScreen = () => {
   };
 
   const openMap_navigation = () => navigation.navigate('NavigationScreen');
-  const openMap            = () => navigation.navigate('VectorMap');
+  const openMap            = () => navigation.navigate('NavigationScreen');
     const openMap_Here            = () => navigation.navigate('HereSearchScreen');
 
   const openSignatureCapture  = () => setIsSignaturePadVisible(true);

@@ -20,6 +20,9 @@ import {
   calculateTruckRouteREST,
   calculateRouteTolls,
 } from './services/hereTruckService';
+import Button from '../../component/Button/Button';
+import TrucksInput from './components/TruckInputs/TrucksInput';
+
 
 const HERE_SEARCH_MIN_CHARS = 3;
 const HERE_SEARCH_DEBOUNCE_MS = 700;
@@ -76,6 +79,19 @@ const HereSearchCard = ({
   const [routeTollData, setRouteTollData] = useState(null);
   const [tollModalVisible, setTollModalVisible] = useState(false);
   const [mapStyle, setMapStyle]           = useState('explore.day');
+  const [truckDetailsModalVisible, setTruckDetailsModalVisible] = useState(false);
+  const [truckDetails, setTruckDetails] = useState({
+    currency: 'USD',
+    departureTime: 'any',
+    currentWeight: '',
+    grossWeight: '',
+    height: '',
+    width: '',
+    length: '',
+    axleCount: '',
+    trailerCount: '',
+    type: '',
+  });
 
   // ─── helpers ────────────────────────────────────────────────────────────
   const clearRoutePreview = useCallback(() => {
@@ -106,6 +122,7 @@ const HereSearchCard = ({
      console.log('🚀 [Route] Request Start');
      console.log('📍 Origin:', origin);
      console.log('📍 Destination:', destination);
+     console.log('🚚 Truck Details:', truckDetails);
 
     if (
       !Number.isFinite(origin?.latitude)      || !Number.isFinite(origin?.longitude) ||
@@ -118,26 +135,21 @@ const HereSearchCard = ({
     setRouteTollData(null);
 
     try {
-      const [json, tollJson] = await Promise.all([
-        calculateTruckRouteREST(
-          {latitude: origin.latitude,      longitude: origin.longitude},
-          {latitude: destination.latitude, longitude: destination.longitude},
-        ),
-        calculateRouteTolls(
-          {latitude: origin.latitude,      longitude: origin.longitude},
-          {latitude: destination.latitude, longitude: destination.longitude},
-        ).catch(err => {
-          console.warn('🚧 Toll preview failed', err);
-          return null;
-        }),
-      ]);
+      const resp = await calculateRouteTolls(
+        {latitude: origin.latitude, longitude: origin.longitude},
+        {latitude: destination.latitude, longitude: destination.longitude},
+        truckDetails?.currency || 'USD',
+        truckDetails,
+      ).catch(err => {
+        console.warn('🚧 Toll preview failed', err);
+        return null;
+      });
 
+      console.log('✅ Toll API Response (normalized):', resp);
+      const json = resp?.raw || null;
       console.log('✅ Route API Response:', json);
-      if (tollJson) {
-        console.log('✅ Toll API Response:', tollJson);
-      }
       setRouteResponse(json);
-      setRouteTollData(tollJson);
+      setRouteTollData(resp);
     } catch (error) {
        console.log('❌ Route API Error:', error);
       setRouteResponse(null);
@@ -146,7 +158,7 @@ const HereSearchCard = ({
     } finally {
       setRouteLoading(false);
     }
-  }, []);
+  }, [truckDetails]);
 
   // ─── autocomplete ────────────────────────────────────────────────────────
   const fetchHereSuggestions = useCallback(async (q, coords = null) => {
@@ -245,7 +257,7 @@ const HereSearchCard = ({
     setDestinationText?.(item.title);
     setDestCoords({latitude: item.latitude, longitude: item.longitude});
     onCoordinateSelect?.(item.latitude, item.longitude);
-    onDestinationSelected?.(location);
+    onDestinationSelected?.(location, truckDetails);
     setDestSuggestions([]);
     setDestQuery(item.title);
     Keyboard.dismiss();
@@ -302,11 +314,24 @@ const HereSearchCard = ({
       !Number.isFinite(destCoords?.latitude)    || !Number.isFinite(destCoords?.longitude)
     ) return;
 
-    const routeKey = `${sourceCoords.latitude},${sourceCoords.longitude}:${destCoords.latitude},${destCoords.longitude}`;
+    const vehicleKey = [
+      truckDetails.currentWeight,
+      truckDetails.grossWeight,
+      truckDetails.height,
+      truckDetails.width,
+      truckDetails.length,
+      truckDetails.axleCount,
+      truckDetails.trailerCount,
+      truckDetails.type,
+    ]
+      .map(value => String(value || ''))
+      .join('|');
+
+    const routeKey = `${sourceCoords.latitude},${sourceCoords.longitude}:${destCoords.latitude},${destCoords.longitude}:${vehicleKey}`;
     if (lastRouteKeyRef.current === routeKey) return;
     lastRouteKeyRef.current = routeKey;
     fetchHereRoute(sourceCoords, destCoords);
-  }, [destCoords, fetchHereRoute, sourceCoords]);
+  }, [destCoords, fetchHereRoute, sourceCoords, truckDetails]);
 
   // ─── swap ────────────────────────────────────────────────────────────────
   const handleSwapPress = () => {
@@ -342,6 +367,20 @@ const HereSearchCard = ({
     ) onCoordinateSelect(nextDest.latitude, nextDest.longitude);
   };
 
+  const handleTruckDetailsDone = useCallback(() => {
+    setTruckDetailsModalVisible(false);
+    if (
+      sourceCoords &&
+      destCoords &&
+      Number.isFinite(sourceCoords.latitude) &&
+      Number.isFinite(sourceCoords.longitude) &&
+      Number.isFinite(destCoords.latitude) &&
+      Number.isFinite(destCoords.longitude)
+    ) {
+      fetchHereRoute(sourceCoords, destCoords);
+    }
+  }, [destCoords, fetchHereRoute, sourceCoords]);
+
   // ─── route data helpers ──────────────────────────────────────────────────
   const routeSection      = routeResponse?.routes?.[0]?.sections?.[0];
   const routeSummary      = routeSection?.summary;
@@ -352,13 +391,24 @@ const HereSearchCard = ({
     ? new Date(routeSection.arrival.time).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})
     : 'N/A';
 
-  const tollSections = routeTollData?.routes?.[0]?.sections || [];
-  const tollList = tollSections.flatMap(section => section.tolls || []);
-  const tollCurrency = tollList[0]?.fares?.[0]?.price?.currency || 'USD';
-  const tollTotal = tollList.reduce((sum, toll) => {
-    const price = toll?.fares?.[0]?.price?.value;
-    return sum + (Number.isFinite(price) ? price : 0);
-  }, 0);
+  // Support both old raw route shape and normalized toll response
+  const rawRoutes = routeTollData?.raw?.routes || null;
+  const tollSections = rawRoutes?.[0]?.sections || [];
+  let tollList = [];
+  if (tollSections && tollSections.length) {
+    tollList = tollSections.flatMap(section => section.tolls || []);
+  } else if (Array.isArray(routeTollData?.tolls)) {
+    tollList = routeTollData.tolls;
+  }
+  const tollCurrency =
+    tollList[0]?.fares?.[0]?.price?.currency || routeTollData?.currency || 'USD';
+  const tollTotal =
+    typeof routeTollData?.total === 'number'
+      ? routeTollData.total
+      : tollList.reduce((sum, toll) => {
+          const price = toll?.fares?.[0]?.price?.value;
+          return sum + (Number.isFinite(price) ? price : 0);
+        }, 0);
   const tollLabel = tollList.length
     ? `${getCurrencySymbol(tollCurrency)}${tollTotal.toFixed(2)} · ${tollList.length} booth${tollList.length > 1 ? 's' : ''}`
     : 'No tolls';
@@ -492,17 +542,6 @@ const HereSearchCard = ({
           {!!routeError && (
             <AppText style={styles.routeError}>{routeError}</AppText>
           )}
-
-          {/* ── Route preview helper message ── */}
-          {!routeLoading && !routeResponse && !routeError && (
-            <View style={styles.routeEmptyCard}>
-              <Text style={styles.routeEmptyTitle}>Select both points to preview your route.</Text>
-              <Text style={styles.routeEmptyText}>
-                Choose a start and destination to see estimated distance, duration, and toll information.
-              </Text>
-            </View>
-          )}
-
           {/* ── Route preview card ── */}
           {routeResponse && (
             <View style={styles.floatingSectionCard}>
@@ -568,37 +607,43 @@ const HereSearchCard = ({
               </View>
             </View>
           )}
-
         </ScrollView>
+        <Button
+          title="Truck Details"
+          onPress={() => setTruckDetailsModalVisible(true)}
+        />
       </View>
 
-      {/* ── Map style pills (bottom, hidden when suggestions open) ── */}
-      {!isSuggestionOpen && (
-        <View style={styles.bottomControlsWrap}>
-          <ScrollView
-            horizontal
-            showsHorizontalScrollIndicator={false}
-            contentContainerStyle={styles.bottomControlsContent}>
-            {MAP_STYLE_OPTIONS.map(option => (
+      {/* ── Truck Details Modal ── */}
+      <Modal
+        visible={truckDetailsModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setTruckDetailsModalVisible(false)}>
+        <TouchableOpacity
+          style={styles.tollModalOverlay}
+          activeOpacity={1}
+          onPress={() => setTruckDetailsModalVisible(false)}>
+          <TouchableOpacity activeOpacity={1} style={styles.tollModalContent}>
+            <View style={styles.tollModalHeader}>
+              <Text style={styles.tollModalTitle}>Truck Details</Text>
               <TouchableOpacity
-                key={option.value}
-                style={[
-                  styles.pillButtonBottom,
-                  mapStyle === option.value && styles.pillButtonActive,
-                ]}
-                onPress={() => setMapStyle(option.value)}
-                activeOpacity={0.75}>
-                <Text style={[
-                  styles.pillText,
-                  mapStyle === option.value && styles.pillTextActive,
-                ]}>
-                  {option.label}
-                </Text>
+                onPress={() => setTruckDetailsModalVisible(false)}
+                activeOpacity={0.7}>
+                <Text style={styles.tollModalClose}>✕</Text>
               </TouchableOpacity>
-            ))}
-          </ScrollView>
-        </View>
-      )}
+            </View>
+            <TrucksInput
+              truckDetails={truckDetails}
+              setTruckDetails={setTruckDetails}
+              isLoading={false}
+              submitButtonText="Done"
+              onSubmit={handleTruckDetailsDone}
+              onCancel={() => setTruckDetailsModalVisible(false)}
+            />
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
 
       {/* ── Toll Details Modal ── */}
       <Modal
@@ -626,29 +671,51 @@ const HereSearchCard = ({
               scrollEventThrottle={16}
               decelerationRate="fast"
               bounces={true}>
-              {routeTollData?.routes?.[0]?.sections?.map((section, si) =>
-                section.tolls?.map((toll, ti) => {
-                  const fares = toll.fares || [];
-                  const singleFares = fares.filter(f => {
-                    if (!f.pass) return true;
-                    if (f.pass.returnJourney === true) return false;
-                    if (f.pass.validityPeriod != null) return false;
-                    return true;
-                  });
-                  const best = (singleFares.length ? singleFares : fares)[0];
-                  const amount = best?.price?.value || 0;
-                  const currency = best?.price?.currency || 'USD';
+              {tollSections.length
+                ? tollSections.map((section, si) =>
+                    (section.tolls || []).map((toll, ti) => {
+                      const fares = toll.fares || [];
+                      const singleFares = fares.filter(f => {
+                        if (!f.pass) return true;
+                        if (f.pass.returnJourney === true) return false;
+                        if (f.pass.validityPeriod != null) return false;
+                        return true;
+                      });
+                      const best = (singleFares.length ? singleFares : fares)[0];
+                      const amount = best?.price?.value || 0;
+                      const currency = best?.price?.currency || 'USD';
 
-                  return (
-                    <View key={`${si}-${ti}`} style={styles.tollItem}>
-                      <Text style={styles.tollItemName}>{toll.tollSystem}</Text>
-                      <Text style={styles.tollItemAmount}>
-                        {getCurrencySymbol(currency)}{amount.toFixed(2)}
-                      </Text>
-                    </View>
-                  );
-                }) || [],
-              )}
+                      return (
+                        <View key={`${si}-${ti}`} style={styles.tollItem}>
+                          <Text style={styles.tollItemName}>{toll.tollSystem}</Text>
+                          <Text style={styles.tollItemAmount}>
+                            {getCurrencySymbol(currency)}{amount.toFixed(2)}
+                          </Text>
+                        </View>
+                      );
+                    })
+                  )
+                : (routeTollData?.tolls || []).map((toll, ti) => {
+                    const fares = toll.fares || [];
+                    const singleFares = fares.filter(f => {
+                      if (!f.pass) return true;
+                      if (f.pass.returnJourney === true) return false;
+                      if (f.pass.validityPeriod != null) return false;
+                      return true;
+                    });
+                    const best = (singleFares.length ? singleFares : fares)[0];
+                    const amount = best?.price?.value || 0;
+                    const currency = best?.price?.currency || routeTollData?.currency || 'USD';
+
+                    return (
+                      <View key={`t-${ti}`} style={styles.tollItem}>
+                        <Text style={styles.tollItemName}>{toll.tollSystem || toll.name || 'Toll'}</Text>
+                        <Text style={styles.tollItemAmount}>
+                          {getCurrencySymbol(currency)}{amount.toFixed(2)}
+                        </Text>
+                      </View>
+                    );
+                  })}
               <View style={styles.tollItemTotal}>
                 <Text style={styles.tollItemTotalLabel}>Total Estimate</Text>
                 <Text style={styles.tollItemTotalAmount}>

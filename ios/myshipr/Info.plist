@@ -76,5 +76,58 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
+	<!-- HERE SDK Credentials -->
+	<key>HERE_ACCESS_KEY_ID</key>
+	<string>K8yahtGLkhVNX-Iccqs20Q</string>
+	<key>HERE_ACCESS_KEY_SECRET</key>
+	<string>23nHMHxJ3-6siXLbYaGwz3z14KZ_1P1lXl1lUUp0LYhAJgSU8__b19Xc_734Tq3OoQ5XTRoHjRjWOxFpcUmVOg</string>
+	<key>HERE_API_KEY</key>
+	<string>3nXPL2aYbn53qdzDc0rQ8Qbuhhtr8QjHR68m6XmFiwQ</string>
+	<!-- Allow HTTP connections to HERE API endpoints -->
+	<key>NSExceptionDomains</key>
+	<dict>
+		<key>autosuggest.search.hereapi.com</key>
+		<dict>
+			<key>NSIncludesSubdomains</key>
+			<true/>
+			<key>NSTemporaryExceptionAllowsInsecureHTTPLoads</key>
+			<false/>
+		</dict>
+		<key>lookup.search.hereapi.com</key>
+		<dict>
+			<key>NSIncludesSubdomains</key>
+			<true/>
+			<key>NSTemporaryExceptionAllowsInsecureHTTPLoads</key>
+			<false/>
+		</dict>
+		<key>router.hereapi.com</key>
+		<dict>
+			<key>NSIncludesSubdomains</key>
+			<true/>
+			<key>NSTemporaryExceptionAllowsInsecureHTTPLoads</key>
+			<false/>
+		</dict>
+		<key>geocode.search.hereapi.com</key>
+		<dict>
+			<key>NSIncludesSubdomains</key>
+			<true/>
+			<key>NSTemporaryExceptionAllowsInsecureHTTPLoads</key>
+			<false/>
+		</dict>
+		<key>revgeocode.search.hereapi.com</key>
+		<dict>
+			<key>NSIncludesSubdomains</key>
+			<true/>
+			<key>NSTemporaryExceptionAllowsInsecureHTTPLoads</key>
+			<false/>
+		</dict>
+		<key>wps.hereapi.com</key>
+		<dict>
+			<key>NSIncludesSubdomains</key>
+			<true/>
+			<key>NSTemporaryExceptionAllowsInsecureHTTPLoads</key>
+			<false/>
+		</dict>
+	</dict>
 </dict>
 </plist>

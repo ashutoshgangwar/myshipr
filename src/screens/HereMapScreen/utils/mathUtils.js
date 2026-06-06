@@ -212,6 +212,23 @@ export function sanitizeRouteCoords(coords, origin, destination) {
   return cleaned;
 }
 
+export function reduceRouteCoords(coords, maxPoints = 500) {
+  if (!Array.isArray(coords) || coords.length <= maxPoints) return coords;
+  if (maxPoints < 2) return [];
+
+  const reduced = [];
+  const step = (coords.length - 1) / (maxPoints - 1);
+
+  for (let i = 0; i < maxPoints; i++) {
+    const index = Math.min(Math.round(i * step), coords.length - 1);
+    reduced.push(coords[index]);
+  }
+
+  return reduced.filter(
+    (pt, idx, arr) => idx === 0 || pt.lat !== arr[idx - 1].lat || pt.lng !== arr[idx - 1].lng,
+  );
+}
+
 export function resolveLiveSpeedMps(position) {
   const speed = position?.speed;
   return Number.isFinite(speed) && speed >= 0 ? speed : undefined;

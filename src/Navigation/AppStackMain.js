@@ -13,7 +13,6 @@ import ResetPassword from '../screens/ResetPassword/ResetPassword';
 import Onboarding from '../screens/Onboarding/Onboarding';
 import Signup from '../screens/Signup/Signup';
 import SignatureCaptureScreen from '../screens/SignatureCaptureScreen/SignatureCaptureScreen';
-import { VectorMap } from '../screens/VectorMap/VectorMap';
 import HereMapScreen from '../screens/HereMapScreen/HereMapScreen';
 import HereSearchScreen from '../screens/HereMapScreen/HereSearchScreen';
 
@@ -33,6 +32,7 @@ export default function AppStackMain() {
       <Stack.Screen name="SignupScreen" component={Signup} />
       <Stack.Screen name="ResetPassword" component={ResetPassword} />
       <Stack.Screen name="Onboarding" component={Onboarding} />
+      {/* <Stack.Screen name="TruckInputs" component={TruckInputs} /> */}
 
       {/* Main App with Bottom Tabs */}
       <Stack.Screen name="MainApp" component={AppBottomTabs} />
@@ -40,7 +40,6 @@ export default function AppStackMain() {
       {/* Extra flows (no bottom tab) */}
       <Stack.Screen name="Profile" component={Profile} />
       <Stack.Screen name="PTVNavigatorMap" component={NavigationScreen} />
-      <Stack.Screen name="VectorMap" component={VectorMap} />
       <Stack.Screen name="HereSearchScreen" component={HereSearchScreen} />
       <Stack.Screen name="HereMapScreen" component={HereMapScreen} />
       <Stack.Screen name="NavigationScreen" component={NavigationScreen} />

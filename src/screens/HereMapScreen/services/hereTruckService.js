@@ -1,5 +1,6 @@
 import axios from 'axios';
-import { HERE_API_KEY } from '@env';
+import {HERE_API_KEY} from '@env';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const HERE_KEY = HERE_API_KEY;
 
@@ -55,103 +56,71 @@ export async function lookup(placeId) {
   }
 }
 
-export async function calculateTruckRouteREST(
-  origin,
-  destination,
-  vehicle = {},
-) {
-  if (!origin || !destination) return null;
+function normalizeLocationCoords(location) {
+  if (!location) return null;
 
-  const originCoords =
-    origin.access && origin.access.length
-      ? origin.access[0]
-      : {
-          lat: origin.latitude,
-          lng: origin.longitude,
-        };
+  if (location.access && location.access.length) {
+    const point = location.access[0];
+    return {
+      lat: Number.isFinite(point.lat) ? point.lat : point.latitude,
+      lng: Number.isFinite(point.lng) ? point.lng : point.longitude,
+    };
+  }
 
-  const destCoords =
-    destination.access && destination.access.length
-      ? destination.access[0]
-      : {
-          lat: destination.latitude,
-          lng: destination.longitude,
-        };
+  if (
+    Number.isFinite(location.latitude) &&
+    Number.isFinite(location.longitude)
+  ) {
+    return {lat: location.latitude, lng: location.longitude};
+  }
 
-  const params = new URLSearchParams();
+  if (Number.isFinite(location.lat) && Number.isFinite(location.lng)) {
+    return {lat: location.lat, lng: location.lng};
+  }
 
-  params.append('transportMode', 'truck');
-  params.append('routingMode', 'fast');
+  return null;
+}
 
-  params.append(
-    'origin',
-    `${originCoords.lat},${originCoords.lng}`,
-  );
-
-  params.append(
-    'destination',
-    `${destCoords.lat},${destCoords.lng}`,
-  );
-
-  params.append(
-    'return',
-    'summary,polyline,actions,instructions',
-  );
-
-  // vehicle params: currentWeight (kg), height (cm), width (cm), length (cm)
+function appendTruckVehicleParams(params, vehicle = {}) {
+  if (vehicle.grossWeight) {
+    params.append('vehicle[grossWeight]', String(vehicle.grossWeight));
+  }
 
   if (vehicle.currentWeight) {
-    params.append(
-      'vehicle[currentWeight]',
-      String(vehicle.currentWeight),
-    );
+    params.append('vehicle[currentWeight]', String(vehicle.currentWeight));
+  } else if (vehicle.grossWeight) {
+    params.append('vehicle[currentWeight]', String(vehicle.grossWeight));
   }
 
   if (vehicle.height) {
-    params.append(
-      'vehicle[height]',
-      String(vehicle.height),
-    );
+    params.append('vehicle[height]', String(vehicle.height));
   }
 
   if (vehicle.width) {
-    params.append(
-      'vehicle[width]',
-      String(vehicle.width),
-    );
+    params.append('vehicle[width]', String(vehicle.width));
   }
 
   if (vehicle.length) {
-    params.append(
-      'vehicle[length]',
-      String(vehicle.length),
-    );
+    params.append('vehicle[length]', String(vehicle.length));
   }
 
-  params.append('apiKey', HERE_KEY);
+  if (vehicle.axleCount) {
+    params.append('vehicle[axleCount]', String(vehicle.axleCount));
+  }
 
-  const url = `https://router.hereapi.com/v8/routes?${params.toString()}`;
+  if (vehicle.trailerCount) {
+    params.append('vehicle[trailerCount]', String(vehicle.trailerCount));
+  }
 
-  try {
-    const res = await axios.get(url);
-
-    return res.data;
-  } catch (e) {
-    const errorText =
-      e?.response?.data || e.message;
-
-    throw new Error(
-      `HERE route error: ${JSON.stringify(errorText)}`,
-    );
+  if (vehicle.weightPerAxle) {
+    params.append('vehicle[weightPerAxle]', String(vehicle.weightPerAxle));
   }
 }
 
 export async function findSequence(params) {
   const searchParams = new URLSearchParams();
 
-  Object.keys(params).forEach(k =>
-    searchParams.append(k, params[k]),
-  );
+  Object.keys(params).forEach(k => searchParams.append(k, params[k]));
 
   searchParams.append('apikey', HERE_KEY);
 
@@ -159,59 +128,91 @@ export async function findSequence(params) {
 
   try {
     const res = await axios.get(url);
-
     return res.data;
   } catch (e) {
     throw new Error('WPS findsequence failed');
   }
 }
 
-
 export async function calculateRouteTolls(
   origin,
   destination,
   currency = 'USD',
+  vehicle = {},
 ) {
   if (!origin || !destination) return null;
 
+  console.log("🚛 vehicle params received:", JSON.stringify(vehicle));
+
+  const originCoords = normalizeLocationCoords(origin);
+  const destCoords = normalizeLocationCoords(destination);
+
+  if (!originCoords || !destCoords) {
+    return null;
+  }
+
   const params = new URLSearchParams();
 
-  params.append(
-    'origin',
-    `${origin.latitude},${origin.longitude}`,
-  );
-
-  params.append(
-    'destination',
-    `${destination.latitude},${destination.longitude}`,
-  );
-
   params.append('transportMode', 'truck');
-  params.append('routingMode', 'fast');
-  params.append('return', 'tolls');
+  params.append('origin', `${originCoords.lat},${originCoords.lng}`);
+  params.append('destination', `${destCoords.lat},${destCoords.lng}`);
+  params.append('return', 'tolls,summary,polyline,actions,instructions');
   params.append('currency', currency);
+  params.append('tolls[summaries]', 'total');
+
+  appendTruckVehicleParams(params, vehicle);
+
   params.append('apiKey', HERE_KEY);
 
   const url = `https://router.hereapi.com/v8/routes?${params.toString()}`;
 
-  try {
-    const res = await axios.get(url);
+  console.log('🚚 Toll URL:', url);
 
-    console.log(
-      '🛣️ Toll API Response:',
-      JSON.stringify(res.data, null, 2),
+  try {
+    const {data} = await axios.get(url);
+
+    const route = data?.routes?.[0];
+    const section = route?.sections?.[0];
+
+    if (!route || !section) {
+      return null;
+    }
+
+    const normalized = {
+      raw: data,
+      total: section?.summary?.tolls?.total?.value ?? null,
+      currency: section?.summary?.tolls?.total?.currency ?? null,
+      tolls: section?.tolls ?? [],
+      polyline: section?.polyline ?? null,
+      actions: section?.actions ?? [],
+      travelTimeSeconds: section?.summary?.duration ?? null,
+      baseDurationSeconds: section?.summary?.baseDuration ?? null,
+      distanceMeters: section?.summary?.length ?? null,
+      departureTime: section?.departure?.time ?? null,
+      arrivalTime: section?.arrival?.time ?? null,
+    };
+
+    await AsyncStorage.setItem(
+      'here_last_tolls',
+      JSON.stringify(normalized),
     );
 
-    return res.data;
+    console.log('✅ Route Toll Result', {
+      total: normalized.total,
+      distanceMeters: normalized.distanceMeters,
+      travelTimeSeconds: normalized.travelTimeSeconds,
+    });
+
+    return normalized;
   } catch (e) {
     console.error(
-      '❌ Toll API Error:',
-      e?.response?.data || e.message,
+      '❌ HERE Toll Error',
+      e?.response?.data || e?.message,
     );
 
     throw new Error(
       `HERE toll route error: ${JSON.stringify(
-        e?.response?.data || e.message,
+        e?.response?.data || e?.message,
       )}`,
     );
   }
@@ -220,7 +221,6 @@ export async function calculateRouteTolls(
 export default {
   autosuggest,
   lookup,
-  calculateTruckRouteREST,
   findSequence,
-  calculateRouteTolls
+  calculateRouteTolls,
 };

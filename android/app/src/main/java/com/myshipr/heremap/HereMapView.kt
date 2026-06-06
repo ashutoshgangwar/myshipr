@@ -66,10 +66,21 @@ class HereMapView(context: Context) : FrameLayout(context) {
         layoutParams         = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
         mapView.layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
         addView(mapView)
+        
+        Log.d(TAG, "✅ HereMapView initialized")
+        Log.d(TAG, "✅ MapView added to hierarchy with MATCH_PARENT layout")
+        
+        // Call onCreate with null SavedInstanceState
         mapView.onCreate(null)
+        Log.d(TAG, "✅ mapView.onCreate() called")
+        
+        // Load map scene
         mapView.mapScene.loadScene(MapScheme.NORMAL_DAY) { err ->
-            if (err != null) { Log.e(TAG, "Scene load error: $err"); return@loadScene }
-            Log.d(TAG, "Map scene loaded")
+            if (err != null) {
+                Log.e(TAG, "❌ Scene load error: $err")
+                return@loadScene
+            }
+            Log.d(TAG, "✅ Map scene loaded successfully")
             MapView.setPrimaryLanguage(LanguageCode.EN_US)
             initRoutingEngine()
         }
@@ -79,9 +90,16 @@ class HereMapView(context: Context) : FrameLayout(context) {
     // Lifecycle
     // ─────────────────────────────────────────────────────────────────────────
 
-    fun onResume()  = mapView.onResume()
-    fun onPause()   = mapView.onPause()
+    fun onResume()  {
+        Log.d(TAG, "onResume called")
+        mapView.onResume()
+    }
+    fun onPause()   {
+        Log.d(TAG, "onPause called")
+        mapView.onPause()
+    }
     fun onDestroy() {
+        Log.d(TAG, "onDestroy called")
         locationIndicator?.disable()
         navMarkerManager?.remove()
         polylineManager?.clear()
@@ -99,6 +117,7 @@ class HereMapView(context: Context) : FrameLayout(context) {
         bearing: Double = 0.0, tilt: Double = 0.0,
         animate: Boolean = false, animationDurationMs: Int = 800
     ) {
+        Log.d(TAG, "moveCamera: lat=$lat, lng=$lng, zoom=$zoomLevel, animate=$animate")
         val target      = GeoCoordinates(lat, lng)
         val measure     = MapMeasure(MapMeasure.Kind.DISTANCE_IN_METERS, zoomLevelToDistance(zoomLevel))
         val orientation = GeoOrientationUpdate(bearing, tilt)
@@ -110,12 +129,14 @@ class HereMapView(context: Context) : FrameLayout(context) {
                         0.0, Duration.ofMillis(animationDurationMs.toLong())
                     )
                 )
+                Log.d(TAG, "✅ Camera animation started")
             } catch (e: Exception) {
                 Log.w(TAG, "flyTo failed, fallback: ${e.message}")
                 mapView.camera.lookAt(target, orientation, measure)
             }
         } else {
             mapView.camera.lookAt(target, orientation, measure)
+            Log.d(TAG, "✅ Camera positioned")
         }
     }
 

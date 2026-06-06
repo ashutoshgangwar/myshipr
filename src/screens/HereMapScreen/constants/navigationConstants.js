@@ -19,7 +19,7 @@ export const NAVIGATION_MARKER = {
   size: 140,
   iconAsset: 'truck_icon.svg',
 };
-export const NAVIGATION_ROUTE_WIDTH = 160;
+export const NAVIGATION_ROUTE_WIDTH = 20;
 
 // Default locations for map
 export const ORIGIN = {lat: 50.1109, lng: 8.6821};
