@@ -1,4 +1,4 @@
-import {StyleSheet} from 'react-native';
+import {Platform, StyleSheet} from 'react-native';
 import {moderateScale, verticalScale, scale} from 'react-native-size-matters';
 import {colors} from '../../theme/colors';
 
@@ -531,12 +531,13 @@ export default StyleSheet.create({
   toolbar: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    backgroundColor: '#0f172a',
+    backgroundColor: '#e3fbff',
     paddingVertical: verticalScale(8),
-    paddingHorizontal: scale(4),
+    paddingHorizontal: Platform.OS === 'ios' ? scale(1) : scale(4),
     justifyContent: 'space-around',
-    borderTopWidth: 1,
+    borderTopWidth: moderateScale(1),
     borderTopColor: '#1e293b',
+    borderRadius: moderateScale(12),
   },
   button: {
     backgroundColor: '#1e293b',

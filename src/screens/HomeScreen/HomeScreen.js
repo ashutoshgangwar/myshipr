@@ -355,14 +355,14 @@ const HomeScreen = () => {
           </TouchableOpacity>
         </View>
 
-        <View style={styles.mapNavigatorRow}>
+        {/* <View style={styles.mapNavigatorRow}>
           <TouchableOpacity
             style={styles.mapNavigatorBtn}
             onPress={openMap}
             activeOpacity={0.9}>
             <AppText style={styles.mapNavigatorBtnText}>Open PTV Navigator Map</AppText>
           </TouchableOpacity>
-        </View>
+        </View> */}
 
 
         <View style={styles.mapNavigatorRow}>
@@ -444,11 +444,11 @@ const HomeScreen = () => {
             <View style={[styles.progressFill, {width: '72%'}]} />
           </View>
 
-          <View style={styles.actionRow}>
+          {/* <View style={styles.actionRow}>
             <TouchableOpacity onPress={openMap_navigation} style={styles.primaryBtn}>
               <AppText style={styles.primaryBtnText}>Navigation</AppText>
             </TouchableOpacity>
-          </View>
+          </View> */}
         </View>
 
       </ScrollView>

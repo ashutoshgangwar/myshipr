@@ -22,12 +22,9 @@ export function ToolbarButton({label, onPress, highlight}) {
 }
 
 export function NavigationControls({
-  onCamera,
-  onMarkers,
   onLocation,
   onRoute,
   onNavigate,
-  onClear,
   isNavigating,
 }) {
   if (isNavigating) return null;
@@ -37,7 +34,6 @@ export function NavigationControls({
       <ToolbarButton label="📍 Current" onPress={onLocation} />
       <ToolbarButton label="🛣️ Route" onPress={onRoute} />
       <ToolbarButton label="🧭 Navigate" onPress={onNavigate} highlight />
-      <ToolbarButton label="🗑️ Clear" onPress={onClear} />
     </View>
   );
 }

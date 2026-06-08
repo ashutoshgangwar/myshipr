@@ -48,9 +48,7 @@ import {
 
 import {
   NavigationControls,
-  ToolbarButton,
 } from './components/NavigationControls';
-import {NavigationInfo} from './components/NavigationInfo';
 import TurnByTurnPanel from './utils/Turnbyturnpanel';
 
 import {
@@ -73,8 +71,8 @@ import {
 import {moderateScale, verticalScale, scale} from 'react-native-size-matters';
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
-const SHEET_EXPANDED = Math.round(SCREEN_HEIGHT * 0.45); // matches old flex:0.45
-const SHEET_COLLAPSED = verticalScale(48); // just the handle stays visible
+const SHEET_EXPANDED = Math.round(SCREEN_HEIGHT * 0.45);
+const SHEET_COLLAPSED = verticalScale(48);
 // ── Helpers ───────────────────────────────────────────────────────────────
 const hasHereCredentials = Boolean(
   HERE_ACCESS_KEY_ID && HERE_ACCESS_KEY_SECRET,
@@ -90,7 +88,6 @@ function bearingToDirection(bearing) {
 function formatTollTotal(tollData) {
   if (!tollData) return '—';
 
-  // If caller passed the normalized shape from calculateRouteTolls
   if (typeof tollData.total === 'number' || Array.isArray(tollData.tolls)) {
     const currency = tollData.currency || 'USD';
     const total = typeof tollData.total === 'number'
@@ -1710,8 +1707,8 @@ export default function HereMapScreen({navigation, route}) {
           <Text
             style={{
               color: '#e2e8f0',
-              marginTop: 12,
-              fontSize: 15,
+              marginTop: verticalScale(12),
+              fontSize: moderateScale(15),
               fontWeight: '600',
             }}>
             Fetching best route for you...
@@ -1753,11 +1750,11 @@ export default function HereMapScreen({navigation, route}) {
             <View
               style={{
                 backgroundColor: 'rgba(15,23,42,0.82)',
-                borderRadius: 12,
-                paddingHorizontal: 12,
-                paddingVertical: 6,
+                borderRadius: moderateScale(12),
+                paddingHorizontal: moderateScale(12),
+                paddingVertical: moderateScale(6),
                 alignItems: 'center',
-                minWidth: 52,
+                minWidth: moderateScale(52),
                 borderWidth: 1,
                 borderColor: 'rgba(255,255,255,0.12)',
               }}>
@@ -1779,9 +1776,9 @@ export default function HereMapScreen({navigation, route}) {
               <Text
                 style={{
                   color: '#e2e8f0',
-                  fontSize: 12,
+                  fontSize: moderateScale(12),
                   fontWeight: '700',
-                  lineHeight: 16,
+                  lineHeight: moderateScale(16),
                 }}>
                 {bearingToDirection(liveBearing)}
               </Text>
@@ -1809,7 +1806,7 @@ export default function HereMapScreen({navigation, route}) {
           {isFetchingLocation ? (
             <ActivityIndicator size="small" color="#040000" />
           ) : (
-            <GpsIcon width={28} height={28} fill="#040000" />
+            <GpsIcon width={verticalScale(28)} height={verticalScale(28)} fill="#040000" />
           )}
         </TouchableOpacity>
       </View>
@@ -1934,19 +1931,19 @@ export default function HereMapScreen({navigation, route}) {
 
               <ScrollView
                 style={{flex: 1}}
-                contentContainerStyle={{paddingBottom: 24}}
+                contentContainerStyle={{paddingBottom: verticalScale(24)}}
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled">
                 <View
                   style={{
                     flex: 1,
                     backgroundColor: '#fff',
-                    borderTopLeftRadius: 16,
-                    borderTopRightRadius: 16,
-                    paddingHorizontal: 16,
-                    paddingTop: 16,
-                    paddingBottom: 8,
-                    elevation: 4,
+                    borderTopLeftRadius: moderateScale(16),
+                    borderTopRightRadius: moderateScale(16),
+                    paddingHorizontal: moderateScale(16),
+                    paddingTop: moderateScale(16),
+                    paddingBottom: moderateScale(8),
+                    elevation: moderateScale(4),
                   }}>
                   <View style={styles.detailsHeader}>
                     <Text style={styles.detailsTitle}>Route Details</Text>
@@ -1962,7 +1959,7 @@ export default function HereMapScreen({navigation, route}) {
                           </Text>
                         </TouchableOpacity>
                       ) : (
-                        <Text style={styles.summaryValueToll}>Fetching...</Text>
+                        <Text style={styles.summaryValueToll}>Fetching..</Text>
                       )}
                     </View>
                   </View>
