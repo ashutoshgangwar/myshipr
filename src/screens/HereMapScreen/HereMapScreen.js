@@ -544,8 +544,10 @@ export default function HereMapScreen({navigation, route}) {
       }
       try {
         await HereMapModule.initSDK(HERE_ACCESS_KEY_ID, HERE_ACCESS_KEY_SECRET);
+        console.log('✅ HERE SDK initialized');
         setSdkReady(true);
       } catch (e) {
+        console.error('❌ HERE SDK init failed:', e.message);
         Alert.alert('HERE SDK Error', e.message);
       }
     })();
@@ -1730,7 +1732,7 @@ export default function HereMapScreen({navigation, route}) {
           <View style={styles.loading}>
             <Text style={styles.loadingText}>
               {hasHereCredentials
-                ? 'Initialising HERE SDK…'
+                ? 'Initializing HERE SDK…'
                 : 'Add credentials to .env'}
             </Text>
           </View>

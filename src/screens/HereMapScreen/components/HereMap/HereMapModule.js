@@ -1,73 +1,72 @@
 import { NativeModules } from 'react-native';
 
-const { HereMapModule: NativeHereMapModule } = NativeModules;
+const NativeHereMapModule = NativeModules.HereMapModule;
 
 if (!NativeHereMapModule) {
   console.warn(
-    '[HereMapModule] Native module not found. Make sure you have rebuilt the Android app after adding HereMapPackage.',
+    '[HereMapModule] Native module not found. Make sure the native module is linked and the app has been rebuilt.',
   );
 }
 
-/**
- * Creates a safe wrapper for a native method.
- * If the method doesn't exist on the native module, returns a rejected promise
- * with a clear error message.
- */
-function safeMethod(name, fallbackReturn) {
-  if (NativeHereMapModule?.[name]) {
-    return (...args) => NativeHereMapModule[name](...args);
+function safeMethod(name, fallback = 'noop') {
+  const method = NativeHereMapModule?.[name];
+
+  if (typeof method === 'function') {
+    return (...args) => method(...args);
   }
+
   return (...args) => {
-    const message = `[HereMapModule] ${name} not implemented in native module`;
+    const message = `[HereMapModule] ${name} is not implemented in the native module`;
+
     console.warn(message, args);
-    if (fallbackReturn === 'reject') {
+
+    if (fallback === 'reject') {
       return Promise.reject(new Error(message));
     }
+
+    return undefined;
   };
 }
 
 const HereMapModule = {
-  // Core SDK initialisation – must reject if unavailable
+  // SDK
   initSDK: safeMethod('initSDK', 'reject'),
 
-  // Map manipulation – silent no-ops if unavailable
+  // Map
   moveCamera: safeMethod('moveCamera'),
   addMarker: safeMethod('addMarker'),
   clearMarkers: safeMethod('clearMarkers'),
+
+  // Location
   showCurrentLocation: safeMethod('showCurrentLocation'),
   hideCurrentLocation: safeMethod('hideCurrentLocation'),
+
+  // Route
   drawRoute: safeMethod('drawRoute'),
   clearRoute: safeMethod('clearRoute'),
-
-  // ── New: Animated navigation marker ──
-  // Adds/updates the navigation arrow marker with smooth native animation
-  // Params: tag, { lat, lng, bearing, animationDuration }
-  updateNavigationMarker: safeMethod('updateNavigationMarker'),
-  updateNavigationCamera: safeMethod('updateNavigationCamera'),
-  resetNavigationCamera: safeMethod('resetNavigationCamera'),
-
-  // Removes the navigation marker
-  removeNavigationMarker: safeMethod('removeNavigationMarker'),
-
-  // ── New: Polyline management ──
-  // Draws a polyline from an array of coordinates
-  // Params: tag, { coordinates: [{lat, lng}, ...], color, width }
-  drawPolyline: safeMethod('drawPolyline', 'reject'),
-
-  // Updates the polyline – trims from the start up to a given index + fraction
-  // Params: tag, { trimIndex, trimFraction }
-  // trimIndex = index of the segment the marker is on
-  // trimFraction = 0-1 how far along that segment
-  trimPolyline: safeMethod('trimPolyline', 'reject'),
-
-  // Clears the drawn polyline
-  clearPolyline: safeMethod('clearPolyline', 'reject'),
-
-  // Navigation-related – reject if unavailable so callers can handle
   calculateRoute: safeMethod('calculateRoute', 'reject'),
+
+  // Navigation
   startNavigation: safeMethod('startNavigation', 'reject'),
   stopNavigation: safeMethod('stopNavigation', 'reject'),
   simulateNavigation: safeMethod('simulateNavigation', 'reject'),
+
+  // Navigation Marker
+  updateNavigationMarker: safeMethod('updateNavigationMarker'),
+  removeNavigationMarker: safeMethod('removeNavigationMarker'),
+
+  // Navigation Camera
+  updateNavigationCamera: safeMethod('updateNavigationCamera'),
+  resetNavigationCamera: safeMethod('resetNavigationCamera'),
+
+  // Polyline
+  drawPolyline: safeMethod('drawPolyline', 'reject'),
+  trimPolyline: safeMethod('trimPolyline', 'reject'),
+  clearPolyline: safeMethod('clearPolyline', 'reject'),
+
+  // Debug
+  isAvailable: () => !!NativeHereMapModule,
+  nativeModule: NativeHereMapModule,
 };
 
 export default HereMapModule;

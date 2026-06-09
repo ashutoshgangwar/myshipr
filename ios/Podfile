@@ -79,9 +79,21 @@ target 'myshipr' do
     # this post_install hook will add them automatically.
     frameworks_dir = File.join(installer.sandbox.root.parent, 'ios/Frameworks')
     if Dir.exist?(frameworks_dir)
-      Dir.glob(File.join(frameworks_dir, '*.framework')).each do |fw|
+      # Include both .framework and .xcframework so bundles like heresdk.xcframework are handled
+      Dir.glob(File.join(frameworks_dir, '*.{framework,xcframework}')).each do |fw|
+        next unless File.exist?(fw)
         file_ref = installer.pods_project.new_file(fw)
+        # Link into Frameworks and also embed into the app bundle
         myshipr_target.frameworks_build_phase.add_file_reference(file_ref)
+
+        # Ensure there's an Embed Frameworks copy-files phase and add the framework there
+        embed_phase = myshipr_target.copy_files_build_phases.find { |phase| phase.name == 'Embed Frameworks' }
+        unless embed_phase
+          embed_phase = myshipr_target.new_copy_files_build_phase('Embed Frameworks')
+          # Destination 10 == Frameworks
+          embed_phase.dst_subfolder_spec = '10'
+        end
+        embed_phase.add_file_reference(file_ref)
       end
     end
 
