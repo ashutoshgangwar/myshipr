@@ -29,42 +29,53 @@ function safeMethod(name, fallback = 'noop') {
 }
 
 const HereMapModule = {
-  // SDK
+  // ── SDK ────────────────────────────────────────────────────────────────────
   initSDK: safeMethod('initSDK', 'reject'),
 
-  // Map
+  // ── Map ────────────────────────────────────────────────────────────────────
   moveCamera: safeMethod('moveCamera'),
+
+  // ── Markers ────────────────────────────────────────────────────────────────
+  //  addMarker(type, latitude, longitude)
+  //    type: 'source' | 'destination' | 'generic'
+  //  Both platforms expose a single addMarker that accepts a type string so
+  //  callers never need to know which platform they're on.
   addMarker: safeMethod('addMarker'),
   clearMarkers: safeMethod('clearMarkers'),
 
-  // Location
+  // ── Location dot ──────────────────────────────────────────────────────────
   showCurrentLocation: safeMethod('showCurrentLocation'),
   hideCurrentLocation: safeMethod('hideCurrentLocation'),
 
-  // Route
+  // ── Route ─────────────────────────────────────────────────────────────────
   drawRoute: safeMethod('drawRoute'),
   clearRoute: safeMethod('clearRoute'),
   calculateRoute: safeMethod('calculateRoute', 'reject'),
 
-  // Navigation
+  // ── Navigation ────────────────────────────────────────────────────────────
   startNavigation: safeMethod('startNavigation', 'reject'),
   stopNavigation: safeMethod('stopNavigation', 'reject'),
   simulateNavigation: safeMethod('simulateNavigation', 'reject'),
 
-  // Navigation Marker
+  // ── Navigation Marker (live GPS dot) ──────────────────────────────────────
+  //  updateNavigationMarker(latitude, longitude, bearing)
+  //  Fire & forget — no await, called on every GPS tick
   updateNavigationMarker: safeMethod('updateNavigationMarker'),
   removeNavigationMarker: safeMethod('removeNavigationMarker'),
 
-  // Navigation Camera
+  // ── Navigation Camera ─────────────────────────────────────────────────────
   updateNavigationCamera: safeMethod('updateNavigationCamera'),
   resetNavigationCamera: safeMethod('resetNavigationCamera'),
 
-  // Polyline
+  // ── Polyline ──────────────────────────────────────────────────────────────
+  //  drawPolyline(coords)
+  //    coords: Array of { latitude, longitude } objects
+  //            OR array of [lat, lng] arrays — both platforms normalise internally
   drawPolyline: safeMethod('drawPolyline', 'reject'),
   trimPolyline: safeMethod('trimPolyline', 'reject'),
   clearPolyline: safeMethod('clearPolyline', 'reject'),
 
-  // Debug
+  // ── Debug ─────────────────────────────────────────────────────────────────
   isAvailable: () => !!NativeHereMapModule,
   nativeModule: NativeHereMapModule,
 };
