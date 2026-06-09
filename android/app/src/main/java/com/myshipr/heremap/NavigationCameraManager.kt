@@ -17,7 +17,8 @@ class NavigationCameraManager(private val mapView: MapView) {
         FOLLOW    // Uber / Google Maps style
     }
 
-    var cameraMode = CameraMode.FOLLOW
+    // Default to CENTER on Android so camera focuses on marker during navigation
+    var cameraMode = CameraMode.CENTER
 
     private var lastUpdateMs = 0L
     private var lastBearing = 0.0

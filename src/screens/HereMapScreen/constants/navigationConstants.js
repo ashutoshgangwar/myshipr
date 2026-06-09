@@ -16,7 +16,8 @@ export const REROUTE_INTERVAL_MS = 12000;
 export const OFF_ROUTE_THRESHOLD = 55;
 
 export const NAVIGATION_MARKER = {
-  size: 140,
+  // Increased marker size for clearer navigation marker on map
+  size: 250,
   iconAsset: 'truck_icon.svg',
 };
 export const NAVIGATION_ROUTE_WIDTH = 20;

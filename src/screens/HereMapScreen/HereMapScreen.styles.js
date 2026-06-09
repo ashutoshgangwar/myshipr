@@ -63,7 +63,7 @@ export default StyleSheet.create({
   // GPS + Re-center buttons
   gpsButton: {
     position: 'absolute',
-    right: scale(16),
+    left: scale(16),
     bottom: verticalScale(16),
     width: scale(52),
     height: scale(52),

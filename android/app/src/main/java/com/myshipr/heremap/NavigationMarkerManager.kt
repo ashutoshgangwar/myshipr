@@ -41,9 +41,9 @@ class NavigationMarkerManager(private val mapView: MapView) {
 
     companion object {
         private const val TAG            = "NavMarkerManager"
-        const val DEFAULT_MARKER_SIZE_PX = 280
+        const val DEFAULT_MARKER_SIZE_PX = 480
         const val DEFAULT_SVG_ASSET      = "truck_icon.svg"
-        private const val SVG_NORTH_OFFSET_DEG = -70.0
+        private const val SVG_NORTH_OFFSET_DEG = -80.0
         private const val ANCHOR_H = 0.5
         private const val ANCHOR_V = 0.5
         private const val GPS_INTERVAL_MS = 950L
@@ -201,23 +201,8 @@ class NavigationMarkerManager(private val mapView: MapView) {
         val bitmap = Bitmap.createBitmap(bitmapSz, bitmapSz, Bitmap.Config.ARGB_8888)
         val canvas = Canvas(bitmap)
 
-        // Shadow
-        canvas.drawCircle(center + sz * 0.04f, center + sz * 0.05f, radius,
-            Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.argb(70, 0, 0, 0); style = Paint.Style.FILL
-            })
-        // White fill
-        canvas.drawCircle(center, center, radius,
-            Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.WHITE; style = Paint.Style.FILL
-            })
-        // Bold blue border
-        canvas.drawCircle(center, center, radius,
-            Paint(Paint.ANTI_ALIAS_FLAG).apply {
-                color = Color.parseColor("#000000")
-                style = Paint.Style.STROKE
-                strokeWidth = sz * 0.12f
-            })
+        // Render truck SVG only (no background circle, shadow or border)
+        // This ensures the navigation marker appears as a clean truck icon on Android.
 
         canvas.save()
         canvas.rotate((bearing + SVG_NORTH_OFFSET_DEG).toFloat(), center, center)
