@@ -107,6 +107,31 @@ class HereMapModule(
         }
     }
 
+    /** Returns the live camera state { lat, lng, bearing, tilt, distanceMeters }. */
+    @ReactMethod
+    fun getCameraState(viewTag: Int, promise: Promise) {
+        runOnView(viewTag, promise) { view ->
+            val state = view.getCameraState()
+            val result = Arguments.createMap().apply {
+                putDouble("lat", state["lat"] ?: 0.0)
+                putDouble("lng", state["lng"] ?: 0.0)
+                putDouble("bearing", state["bearing"] ?: 0.0)
+                putDouble("tilt", state["tilt"] ?: 0.0)
+                putDouble("distanceMeters", state["distanceMeters"] ?: 0.0)
+            }
+            promise.resolve(result)
+        }
+    }
+
+    /** Animate the map back to north-up — the compass reset-to-north action. */
+    @ReactMethod
+    fun resetNorth(viewTag: Int, promise: Promise) {
+        runOnView(viewTag, promise) { view ->
+            view.resetNorth()
+            promise.resolve(null)
+        }
+    }
+
     // -------------------------------------------------------------------------
     // Markers
     // -------------------------------------------------------------------------

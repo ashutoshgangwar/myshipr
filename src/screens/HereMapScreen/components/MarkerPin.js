@@ -1,9 +1,6 @@
 import React from 'react';
 import {moderateScale, verticalScale, scale} from 'react-native-size-matters';
 import HomeIcon from '../../../assets/svg_icon/home.svg';
-// Red truck marker (embedded raster, downscaled to a 750×340 image ~360KB).
-// The native side scales the rasterised PNG to MARKER_DISPLAY_SIZE, so the
-// portrait viewBox no longer renders oversized.
 import TruckIcon from '../../../assets/svg_icon/truck_icon.svg';
 import CarIcon from '../../../assets/svg_icon/car.svg';
 

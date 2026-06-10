@@ -61,6 +61,12 @@ const HereMapView = forwardRef(function HereMapView(
         }),
       ),
 
+    // Returns { lat, lng, bearing, tilt, distanceMeters } for the current camera.
+    getCameraState: () => withTag(tag => HereMapModule.getCameraState(tag)),
+
+    // Animate the map back to a north-up orientation (compass reset-to-north).
+    resetNorth: () => withTag(tag => HereMapModule.resetNorth(tag)),
+
     // ── Markers ──
     // `markerSize` (px) is the on-screen size JS wants; native scales the
     // supplied PNG to it, so the rasterised SVG can be any resolution.

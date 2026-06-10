@@ -14,6 +14,7 @@ import {
 } from 'react-native';
 import styles from './HereMapScreen.styles';
 import GpsIcon from '../../assets/svg_icon/gps-svg.svg';
+import CompassIcon from '../../assets/svg_icon/compass.svg';
 import {HERE_ACCESS_KEY_ID, HERE_ACCESS_KEY_SECRET} from '@env';
 import {
   clearWatchLocation,
@@ -72,7 +73,7 @@ import {
   ORIGIN,
   DESTINATION,
 } from './constants/navigationConstants';
-import {moderateScale, verticalScale, scale} from 'react-native-size-matters';
+import {verticalScale, scale} from 'react-native-size-matters';
 
 const SCREEN_HEIGHT = Dimensions.get('window').height;
 const SHEET_EXPANDED = Math.round(SCREEN_HEIGHT * 0.45);
@@ -209,6 +210,11 @@ export default function HereMapScreen({navigation, route}) {
   const [liveSpeedKph, setLiveSpeedKph] = useState(0);
   const [liveBearing, setLiveBearing] = useState(null);
 
+  // Live map orientation (degrees, 0 = north-up). Polled from native so the
+  // compass reset-to-north button can appear only when the user has rotated the
+  // map, and so its needle tracks the current heading.
+  const [mapBearing, setMapBearing] = useState(0);
+
   const [routeResponseForPanel, setRouteResponseForPanel] = useState(null);
   const routeResponseForPanelRef = useRef(null);
   useEffect(() => {
@@ -336,6 +342,9 @@ export default function HereMapScreen({navigation, route}) {
   });
   const lastTrimCursorRef = useRef({index: -1, fraction: 0});
   const lastCameraUpdateTsRef = useRef(0);
+  // Timestamp of the last native marker forward — used to glide the native
+  // marker animation over the real gap between forwards instead of a fixed ms.
+  const lastMarkerUpdateTsRef = useRef(0);
   const rerouteRequestedRef = useRef(false);
   const lastRouteProgressMetersRef = useRef(0);
   const wrongWayStreakRef = useRef(0);
@@ -375,13 +384,23 @@ export default function HereMapScreen({navigation, route}) {
               snap.lng,
             );
 
-            const movedEnough = distance >= 2;
+            const movedEnough = distance >= 0.6;
             let bd = Math.abs(rawBearing - prev.bearing);
             if (bd > 180) bd = 360 - bd;
             const turnedEnough = bd >= NAVIGATION_MIN_TURN_DEGREES;
             const segChanged = snap.segmentIndex !== prev.trimIndex;
 
             if (!movedEnough && !turnedEnough && !segChanged) return;
+
+            // Glide the native marker over the real gap since the last forward
+            // (clamped) so it keeps moving between forwards instead of darting
+            // in a fixed 180 ms and freezing.
+            const nowMarker = Date.now();
+            const sinceMarker = lastMarkerUpdateTsRef.current
+              ? nowMarker - lastMarkerUpdateTsRef.current
+              : NAVIGATION_MARKER_ANIMATION_MS;
+            lastMarkerUpdateTsRef.current = nowMarker;
+            const markerAnimMs = Math.min(900, Math.max(120, sinceMarker));
 
             const smoothBearing =
               prev.bearing +
@@ -397,7 +416,7 @@ export default function HereMapScreen({navigation, route}) {
               lat: snap.lat,
               lng: snap.lng,
               bearing: smoothBearing,
-              animationDuration: NAVIGATION_MARKER_ANIMATION_MS,
+              animationDuration: markerAnimMs,
               markerSize: NAVIGATION_MARKER.size,
               iconAsset: NAVIGATION_MARKER.iconAsset,
               iconImage: markerImagesRef.current?.vehicle,
@@ -500,6 +519,13 @@ export default function HereMapScreen({navigation, route}) {
             const turnedEnough = bd >= NAVIGATION_MIN_TURN_DEGREES;
             if (!movedEnough && !turnedEnough) return;
 
+            const nowMarker = Date.now();
+            const sinceMarker = lastMarkerUpdateTsRef.current
+              ? nowMarker - lastMarkerUpdateTsRef.current
+              : NAVIGATION_MARKER_ANIMATION_MS;
+            lastMarkerUpdateTsRef.current = nowMarker;
+            const markerAnimMs = Math.min(900, Math.max(120, sinceMarker));
+
             lastNativeMarkerRef.current = {
               lat: pos.lat,
               lng: pos.lng,
@@ -510,7 +536,7 @@ export default function HereMapScreen({navigation, route}) {
               lat: pos.lat,
               lng: pos.lng,
               bearing: truckBearing,
-              animationDuration: NAVIGATION_MARKER_ANIMATION_MS,
+              animationDuration: markerAnimMs,
               markerSize: NAVIGATION_MARKER.size,
               iconAsset: NAVIGATION_MARKER.iconAsset,
               iconImage: markerImagesRef.current?.vehicle,
@@ -793,8 +819,17 @@ export default function HereMapScreen({navigation, route}) {
   const handleDrawRoute = async () => {
     const safeSource = normalizeLocation(sourceLocation);
     const safeDest = normalizeLocation(destinationLocation);
+    // Default the route origin to the user's CURRENT location. Only fall back to
+    // the hardcoded ORIGIN constant when neither a picked source nor a live GPS
+    // fix is available.
+    const hasCurrentLocation =
+      currentLocation &&
+      Number.isFinite(currentLocation.latitude) &&
+      Number.isFinite(currentLocation.longitude);
     const origin = safeSource
       ? {latitude: safeSource.latitude, longitude: safeSource.longitude}
+      : hasCurrentLocation
+      ? {latitude: currentLocation.latitude, longitude: currentLocation.longitude}
       : {latitude: ORIGIN.lat, longitude: ORIGIN.lng};
     const dest = safeDest
       ? {latitude: safeDest.latitude, longitude: safeDest.longitude}
@@ -1004,6 +1039,7 @@ export default function HereMapScreen({navigation, route}) {
 
     lastRouteRefreshRef.current = Date.now();
     lastCameraUpdateTsRef.current = 0;
+    lastMarkerUpdateTsRef.current = 0;
     isNavigatingRef.current = true;
     await mapRef.current?.resetNavigationCamera();
 
@@ -1398,6 +1434,7 @@ export default function HereMapScreen({navigation, route}) {
     hasRealGeometryRef.current = false;
     lastTrimCursorRef.current = {index: -1, fraction: 0};
     lastCameraUpdateTsRef.current = 0;
+    lastMarkerUpdateTsRef.current = 0;
     rerouteRequestedRef.current = false;
     lastRouteProgressMetersRef.current = 0;
     wrongWayStreakRef.current = 0;
@@ -1468,6 +1505,38 @@ export default function HereMapScreen({navigation, route}) {
       });
     } catch (_) {}
   }, [smooth]);
+
+  // ─── Compass reset-to-north ──────────────────────────────────────────────
+  const handleResetNorth = useCallback(async () => {
+    try {
+      await mapRef.current?.resetNorth();
+      setMapBearing(0);
+    } catch (_) {}
+  }, []);
+
+  // Poll the native camera bearing so the compass button can show only when the
+  // map is rotated away from north. Runs in preview/idle mode only — during
+  // navigation the map is intentionally heading-up and the Re-center button
+  // governs the camera instead.
+  useEffect(() => {
+    if (!sdkReady || isNavigating) {
+      setMapBearing(0);
+      return undefined;
+    }
+    let active = true;
+    const id = setInterval(async () => {
+      try {
+        const state = await mapRef.current?.getCameraState();
+        if (active && state && Number.isFinite(state.bearing)) {
+          setMapBearing(state.bearing);
+        }
+      } catch (_) {}
+    }, 600);
+    return () => {
+      active = false;
+      clearInterval(id);
+    };
+  }, [sdkReady, isNavigating]);
 
   const handleCoordinateSelect = async (lat, lng) => {
     try {
@@ -1808,26 +1877,9 @@ export default function HereMapScreen({navigation, route}) {
     <SafeAreaView style={styles.container}>
       {/* ── Loading overlay ── */}
       {isRouteLoading && (
-        <View
-          style={{
-            position: 'absolute',
-            top: 0,
-            left: 0,
-            right: 0,
-            bottom: 0,
-            backgroundColor: 'rgba(15,23,42,0.75)',
-            justifyContent: 'center',
-            alignItems: 'center',
-            zIndex: 9999,
-          }}>
+        <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color="#3b82f6" />
-          <Text
-            style={{
-              color: '#e2e8f0',
-              marginTop: verticalScale(12),
-              fontSize: moderateScale(15),
-              fontWeight: '600',
-            }}>
+          <Text style={styles.loadingOverlayText}>
             Fetching best route for you...
           </Text>
         </View>
@@ -1855,52 +1907,51 @@ export default function HereMapScreen({navigation, route}) {
 
         {/* ── Speed + Direction HUD (top-left, navigating only) ── */}
         {isNavigating && (
-          <View
-            style={{
-              position: 'absolute',
-              top: 12,
-              left: 12,
-              zIndex: 100,
-              elevation: 100,
-              alignItems: 'center',
-            }}>
-            <View
-              style={{
-                backgroundColor: 'rgba(15,23,42,0.82)',
-                borderRadius: moderateScale(12),
-                paddingHorizontal: moderateScale(12),
-                paddingVertical: moderateScale(6),
-                alignItems: 'center',
-                minWidth: moderateScale(52),
-                borderWidth: 1,
-                borderColor: 'rgba(255,255,255,0.12)',
-              }}>
+          <View style={styles.speedHud}>
+            <View style={styles.speedHudCard}>
               <Text
-                style={{
-                  color: '#f59e0b',
-                  fontSize: moderateScale(40),
-                  lineHeight: moderateScale(20),
-                  transform: [
-                    {
-                      rotate: `${
-                        Number.isFinite(liveBearing) ? liveBearing : 0
-                      }deg`,
-                    },
-                  ],
-                }}>
+                style={[
+                  styles.speedHudArrow,
+                  {
+                    transform: [
+                      {
+                        rotate: `${
+                          Number.isFinite(liveBearing) ? liveBearing : 0
+                        }deg`,
+                      },
+                    ],
+                  },
+                ]}>
                 ⬆
               </Text>
-              <Text
-                style={{
-                  color: '#e2e8f0',
-                  fontSize: moderateScale(12),
-                  fontWeight: '700',
-                  lineHeight: moderateScale(16),
-                }}>
+              <Text style={styles.speedHudDir}>
                 {bearingToDirection(liveBearing)}
               </Text>
             </View>
           </View>
+        )}
+
+        {/* Compass — visible in preview/idle mode (hidden while navigating).
+            The needle tracks the live map heading; tapping snaps the map back
+            to north-up. */}
+        {!isNavigating && (
+          <TouchableOpacity
+            style={styles.compassButton}
+            onPress={handleResetNorth}
+            activeOpacity={0.8}>
+            {/* The whole compass icon rotates opposite the map bearing so it
+                always points to geographic north on screen. */}
+            <View
+              style={{
+                transform: [{rotate: `${-mapBearing}deg`}],
+              }}>
+              <CompassIcon
+                width={scale(28)}
+                height={scale(28)}
+                fill="#1e293b"
+              />
+            </View>
+          </TouchableOpacity>
         )}
 
         {/* Re-center (navigating only) */}
@@ -1930,22 +1981,7 @@ export default function HereMapScreen({navigation, route}) {
         {/* Marker-icon picker (hidden during navigation) */}
         {!isNavigating && (
           <TouchableOpacity
-            style={{
-              position: 'absolute',
-              right: moderateScale(14),
-              bottom: verticalScale(82),
-              width: verticalScale(48),
-              height: verticalScale(48),
-              borderRadius: verticalScale(24),
-              backgroundColor: '#ffffff',
-              alignItems: 'center',
-              justifyContent: 'center',
-              shadowColor: '#000',
-              shadowOpacity: 0.25,
-              shadowRadius: 4,
-              shadowOffset: {width: 0, height: 2},
-              elevation: 5,
-            }}
+            style={styles.markerPickerBtn}
             onPress={() => setMarkerModalVisible(true)}
             activeOpacity={0.8}>
             <MarkerPin iconKey={markerShape} color="#2563EB" width={verticalScale(26)} />
@@ -1987,7 +2023,7 @@ export default function HereMapScreen({navigation, route}) {
             <View style={styles.navPanel}>
               <ScrollView
                 showsVerticalScrollIndicator={false}
-                contentContainerStyle={{paddingBottom: 1}}>
+                contentContainerStyle={styles.navScrollContent}>
               {/* Small button → opens turn-by-turn directions modal */}
               <TouchableOpacity
                 style={styles.navDirectionsBtn}
@@ -2041,13 +2077,13 @@ export default function HereMapScreen({navigation, route}) {
 
               {/* Destination + toll */}
               <View style={styles.navMetaRow}>
-                <View style={{flex: 1, marginRight: scale(10)}}>
+                <View style={styles.navMetaToCol}>
                   <Text style={styles.navMetaLabel}>To</Text>
                   <Text style={styles.navMetaValue} numberOfLines={1}>
                     {destinationText || '—'}
                   </Text>
                 </View>
-                <View style={{alignItems: 'flex-end'}}>
+                <View style={styles.navMetaTollCol}>
                   <Text style={styles.navMetaLabel}>Toll</Text>
                   {isTollLoading ? (
                     <ActivityIndicator size="small" color="#10B981" />
@@ -2080,21 +2116,11 @@ export default function HereMapScreen({navigation, route}) {
               </View>
 
               <ScrollView
-                style={{flex: 1}}
-                contentContainerStyle={{paddingBottom: verticalScale(24)}}
+                style={styles.previewScroll}
+                contentContainerStyle={styles.previewScrollContent}
                 showsVerticalScrollIndicator={false}
                 keyboardShouldPersistTaps="handled">
-                <View
-                  style={{
-                    flex: 1,
-                    backgroundColor: '#fff',
-                    borderTopLeftRadius: moderateScale(16),
-                    borderTopRightRadius: moderateScale(16),
-                    paddingHorizontal: moderateScale(16),
-                    paddingTop: moderateScale(16),
-                    paddingBottom: moderateScale(8),
-                    elevation: moderateScale(4),
-                  }}>
+                <View style={styles.previewCard}>
                   <View style={styles.detailsHeader}>
                     <Text style={styles.detailsTitle}>Route Details</Text>
                     <View style={styles.summaryItem}>
@@ -2279,40 +2305,18 @@ export default function HereMapScreen({navigation, route}) {
         animationType="fade"
         onRequestClose={() => setMarkerModalVisible(false)}>
         <TouchableOpacity
-          style={{
-            flex: 1,
-            backgroundColor: 'rgba(15,23,42,0.55)',
-            justifyContent: 'center',
-            alignItems: 'center',
-          }}
+          style={styles.markerModalOverlay}
           activeOpacity={1}
           onPress={() => setMarkerModalVisible(false)}>
-          <View
-            style={{
-              width: '82%',
-              backgroundColor: '#ffffff',
-              borderRadius: moderateScale(16),
-              padding: moderateScale(20),
-            }}>
-            <Text
-              style={{
-                fontSize: moderateScale(17),
-                fontWeight: '700',
-                color: '#0f172a',
-                marginBottom: verticalScale(4),
-              }}>
+          <View style={styles.markerModalCard}>
+            <Text style={styles.markerModalTitle}>
               Choose vehicle icon
             </Text>
-            <Text
-              style={{
-                fontSize: moderateScale(12),
-                color: '#64748b',
-                marginBottom: verticalScale(16),
-              }}>
+            <Text style={styles.markerModalSubtitle}>
               Shown for your vehicle while navigating. Source uses a home pin and
               destination a truck pin.
             </Text>
-            <View style={{flexDirection: 'row', justifyContent: 'space-around'}}>
+            <View style={styles.markerModalRow}>
               {['truck', 'car'].map(shape => {
                 const selected = markerShape === shape;
                 return (
@@ -2320,28 +2324,23 @@ export default function HereMapScreen({navigation, route}) {
                     key={shape}
                     onPress={() => handleSelectMarkerShape(shape)}
                     activeOpacity={0.85}
-                    style={{
-                      alignItems: 'center',
-                      paddingVertical: verticalScale(14),
-                      paddingHorizontal: moderateScale(18),
-                      borderRadius: moderateScale(12),
-                      borderWidth: 2,
-                      borderColor: selected ? '#2563EB' : '#e2e8f0',
-                      backgroundColor: selected ? '#eff6ff' : '#ffffff',
-                    }}>
+                    style={[
+                      styles.markerOption,
+                      {
+                        borderColor: selected ? '#2563EB' : '#e2e8f0',
+                        backgroundColor: selected ? '#eff6ff' : '#ffffff',
+                      },
+                    ]}>
                     <MarkerPin
                       iconKey={shape}
                       color="#2563EB"
                       width={verticalScale(46)}
                     />
                     <Text
-                      style={{
-                        marginTop: verticalScale(8),
-                        fontSize: moderateScale(13),
-                        fontWeight: '600',
-                        color: selected ? '#2563EB' : '#475569',
-                        textTransform: 'capitalize',
-                      }}>
+                      style={[
+                        styles.markerOptionLabel,
+                        {color: selected ? '#2563EB' : '#475569'},
+                      ]}>
                       {shape}
                     </Text>
                   </TouchableOpacity>

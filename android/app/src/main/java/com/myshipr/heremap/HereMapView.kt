@@ -167,6 +167,34 @@ class HereMapView(context: Context) : FrameLayout(context) {
         return (40_000_000.0 / Math.pow(2.0, z)).coerceAtMost(5_000_000.0)
     }
 
+    /** Live camera orientation/position — JS uses it to drive the compass button. */
+    fun getCameraState(): Map<String, Double> {
+        val s = mapView.camera.state
+        return mapOf(
+            "lat" to s.targetCoordinates.latitude,
+            "lng" to s.targetCoordinates.longitude,
+            "bearing" to s.orientationAtTarget.bearing,
+            "tilt" to s.orientationAtTarget.tilt,
+            "distanceMeters" to s.distanceToTargetInMeters
+        )
+    }
+
+    /** Animate the map back to north-up (bearing 0, tilt 0), keeping target + zoom. */
+    fun resetNorth() {
+        val s = mapView.camera.state
+        val target      = GeoCoordinatesUpdate(s.targetCoordinates.latitude, s.targetCoordinates.longitude)
+        val measure     = MapMeasure(MapMeasure.Kind.DISTANCE_IN_METERS, s.distanceToTargetInMeters)
+        val orientation = GeoOrientationUpdate(0.0, 0.0)
+        try {
+            mapView.camera.startAnimation(
+                MapCameraAnimationFactory.flyTo(target, orientation, measure, 0.0, Duration.ofMillis(400))
+            )
+        } catch (e: Exception) {
+            Log.w(TAG, "resetNorth flyTo failed, fallback: ${e.message}")
+            mapView.camera.lookAt(s.targetCoordinates, orientation, measure)
+        }
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // Markers
     // ─────────────────────────────────────────────────────────────────────────

@@ -19,7 +19,13 @@ export function useSmoothLocation() {
   const prevRawPos = useRef(null);
   const animFrameRef = useRef(null);
   const animStartRef = useRef(0);
-  const ANIM_DURATION = 700;
+  // Animation duration is ADAPTIVE: each fix glides over the measured time
+  // since the previous fix, so the marker is always still moving when the next
+  // fix arrives (no dead-time freeze). Clamped so a long GPS gap doesn't crawl
+  // forever and a burst of fixes doesn't snap.
+  const animDurationRef = useRef(1000);
+  const ANIM_MIN_MS = 350;
+  const ANIM_MAX_MS = 2200;
   const hasFirstFix = useRef(false);
   const listenersRef = useRef([]);
 
@@ -38,7 +44,7 @@ export function useSmoothLocation() {
   const runAnimation = useCallback(() => {
     const now = Date.now();
     const elapsed = now - animStartRef.current;
-    const rawT = Math.min(elapsed / ANIM_DURATION, 1);
+    const rawT = Math.min(elapsed / animDurationRef.current, 1);
     const t = 1 - Math.pow(1 - rawT, 3);
 
     smoothPos.current = {
@@ -105,6 +111,16 @@ export function useSmoothLocation() {
       // shows a phantom km/h reading.
       if (!(Number.isFinite(speed) && speed >= STATIONARY_SPEED_MPS)) {
         speed = 0;
+      }
+
+      // Glide the next animation over the measured gap to the previous fix
+      // (clamped), so the marker keeps moving right up until the next fix lands.
+      if (prevRawPos.current) {
+        const measured = now - prevRawPos.current.ts;
+        animDurationRef.current = Math.min(
+          ANIM_MAX_MS,
+          Math.max(ANIM_MIN_MS, measured),
+        );
       }
       prevRawPos.current = {lat, lng, ts: now};
 

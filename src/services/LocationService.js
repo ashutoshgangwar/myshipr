@@ -37,7 +37,11 @@ const PRESET_OPTIONS = {
     enableHighAccuracy: true,
     timeout: 25000,
     maximumAge: 0,
-    distanceFilter: 5,
+    // 1 m (was 5 m) so navigation receives a fresh fix roughly every metre
+    // instead of every 5 m. Finer source points let the marker glide
+    // continuously between them — at walking/slow-traffic speeds a 5 m filter
+    // starved the animation and the truck froze between fixes.
+    distanceFilter: 1,
     showLocationDialog: true,
     forceRequestLocation: true,
   },

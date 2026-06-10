@@ -34,6 +34,10 @@ const HereMapModule = {
 
   // ── Map ────────────────────────────────────────────────────────────────────
   moveCamera: safeMethod('moveCamera'),
+  // getCameraState() → { lat, lng, bearing, tilt, distanceMeters }
+  getCameraState: safeMethod('getCameraState', 'reject'),
+  // resetNorth() — animate the map back to a north-up orientation
+  resetNorth: safeMethod('resetNorth'),
 
   // ── Markers ────────────────────────────────────────────────────────────────
   //  addMarker(type, latitude, longitude)

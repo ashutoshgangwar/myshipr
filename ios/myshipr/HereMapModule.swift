@@ -68,8 +68,47 @@ class HereMapModule: NSObject {
         // in view. Fall back to `distanceMeters` only when no zoom is given.
         let zoom = Self.double(options["zoom"])
         let distance = Self.double(options["distanceMeters"])
+        // bearing/tilt let JS rotate the map (e.g. the compass reset-to-north
+        // sends bearing 0); animate + animationDuration ease the move.
+        let bearing = Self.double(options["bearing"]) ?? 0.0
+        let tilt = Self.double(options["tilt"]) ?? 0.0
+        let animate = (options["animate"] as? NSNumber)?.boolValue ?? false
+        let animationMs = Self.double(options["animationDuration"]) ?? 800.0
         DispatchQueue.main.async {
-            self.findHereMapView()?.moveCamera(lat: lat, lng: lng, zoom: zoom, distanceMeters: distance)
+            self.findHereMapView()?.moveCamera(
+                lat: lat, lng: lng, zoom: zoom, distanceMeters: distance,
+                bearing: bearing, tilt: tilt, animate: animate, animationDurationMs: animationMs
+            )
+            resolve(nil)
+        }
+    }
+
+    /// getCameraState — returns { lat, lng, bearing, tilt, distanceMeters } so the
+    /// JS layer can drive the compass button.
+    @objc(getCameraState:resolver:rejecter:)
+    func getCameraState(
+        _ viewTag: NSNumber,
+        resolver resolve: @escaping RCTPromiseResolveBlock,
+        rejecter reject: @escaping RCTPromiseRejectBlock
+    ) {
+        DispatchQueue.main.async {
+            guard let mapView = self.findHereMapView() else {
+                reject("NO_MAP", "HereMapView not found", nil)
+                return
+            }
+            resolve(mapView.cameraState())
+        }
+    }
+
+    /// resetNorth — animates the map back to a north-up orientation.
+    @objc(resetNorth:resolver:rejecter:)
+    func resetNorth(
+        _ viewTag: NSNumber,
+        resolver resolve: @escaping RCTPromiseResolveBlock,
+        rejecter reject: @escaping RCTPromiseRejectBlock
+    ) {
+        DispatchQueue.main.async {
+            self.findHereMapView()?.resetNorth()
             resolve(nil)
         }
     }
@@ -154,8 +193,9 @@ class HereMapModule: NSObject {
             reject("BAD_ARGS", "showCurrentLocation requires lat and lng", nil)
             return
         }
+        let bearing = Self.double(options["bearing"]) ?? 0.0
         DispatchQueue.main.async {
-            self.findHereMapView()?.showCurrentLocation(lat: lat, lng: lng)
+            self.findHereMapView()?.showCurrentLocation(lat: lat, lng: lng, bearing: bearing)
             resolve(nil)
         }
     }
@@ -284,9 +324,14 @@ class HereMapModule: NSObject {
         let bearing = Self.double(options["bearing"]) ?? 0.0
         let iconData = Self.dataFromBase64(options["iconImage"] as? String)
         let markerSize = (options["markerSize"] as? NSNumber).map { CGFloat(truncating: $0) }
+        // Segment index + animation duration drive the native smooth-follow
+        // animation and the grey "passed" polyline overlay (parity with Android).
+        let segmentIndex = Int(Self.double(options["segmentIndex"]) ?? -1)
+        let animationMs = Self.double(options["animationDuration"]) ?? 180.0
         DispatchQueue.main.async {
             self.findHereMapView()?.updateNavigationMarker(
-                lat: lat, lng: lng, bearing: bearing, iconPngData: iconData, sizePx: markerSize
+                lat: lat, lng: lng, bearing: bearing, iconPngData: iconData, sizePx: markerSize,
+                segmentIndex: segmentIndex, animationDurationMs: animationMs
             )
         }
     }
@@ -316,8 +361,17 @@ class HereMapModule: NSObject {
             return
         }
         let bearing = Self.double(options["bearing"]) ?? 0.0
+        // Speed drives the follow-camera zoom/tilt; animationDuration + forceInstant
+        // let the JS layer snap the camera on nav start / re-center and animate it
+        // smoothly otherwise (parity with Android's NavigationCameraManager).
+        let speedMps = Self.double(options["speedMps"])
+        let animationMs = Self.double(options["animationDuration"]) ?? 220.0
+        let forceInstant = (options["forceInstant"] as? NSNumber)?.boolValue ?? false
         DispatchQueue.main.async {
-            self.findHereMapView()?.updateNavigationCamera(lat: lat, lng: lng, bearing: bearing)
+            self.findHereMapView()?.updateNavigationCamera(
+                lat: lat, lng: lng, bearing: bearing,
+                speedMps: speedMps, animationDurationMs: animationMs, forceInstant: forceInstant
+            )
             resolve(nil)
         }
     }

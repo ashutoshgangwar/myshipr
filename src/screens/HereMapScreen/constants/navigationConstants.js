@@ -15,19 +15,12 @@ export const WRONG_WAY_STREAK_LIMIT = 2;
 export const REROUTE_INTERVAL_MS = 12000;
 export const OFF_ROUTE_THRESHOLD = 55;
 
-// On-screen pixel size (longest side) for every JS-supplied marker image
-// (source / destination pins and the navigation truck). This is the single
-// size that JS sends to native; native scales whatever PNG it receives to this,
-// preserving aspect ratio. ↓ Lower this if the marker looks too big / too long.
 export const MARKER_DISPLAY_SIZE = 220;
 
 export const NAVIGATION_MARKER = {
-  // Size sent to native for the live navigation truck marker.
   size: MARKER_DISPLAY_SIZE,
   iconAsset: 'truck_icon.svg',
 };
 export const NAVIGATION_ROUTE_WIDTH = 20;
-
-// Default locations for map
 export const ORIGIN = {lat: 50.1109, lng: 8.6821};
 export const DESTINATION = {lat: 48.1374, lng: 11.5755};

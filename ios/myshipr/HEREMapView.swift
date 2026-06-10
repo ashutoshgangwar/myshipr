@@ -29,8 +29,11 @@ class HereMapView: UIView {
     private var navigationMarker:  MapMarker?
     private var genericMarkers:    [MapMarker] = []
 
-    // Location dot (blue circle)
+    // Location dot (blue circle). `locationBearing` is the heading the dot's
+    // direction beam currently points to — kept so the dot image is only rebuilt
+    // when the heading actually changes (moving it otherwise just re-positions).
     private var locationMarker: MapMarker?
+    private var locationBearing: Double = -999
 
     // Navigation state
     private var isNavigating = false
@@ -40,6 +43,46 @@ class HereMapView: UIView {
     private var navigationIconData: Data?
     // On-screen size (px) JS requested for the navigation truck marker.
     private var navigationIconSize: CGFloat?
+
+    // ── Realtime navigation (Google-Maps-style smooth follow) ───────────────
+    // Mirrors Android's NavigationMarkerManager + PolylineManager.syncAnimatedTrim:
+    // a CADisplayLink interpolates the truck between GPS points every frame, and
+    // each frame grows a grey "passed" polyline overlay so the traveled part of
+    // the route trims smoothly behind the marker — no whole-route redraw, no
+    // camera refight.
+    private var navDisplayLink: CADisplayLink?
+    private var navAnimFrom = GeoCoordinates(latitude: 0, longitude: 0)
+    private var navAnimTo   = GeoCoordinates(latitude: 0, longitude: 0)
+    private var navAnimStart: CFTimeInterval = 0
+    private var navAnimDuration: CFTimeInterval = 0.18
+    private var navCurrentCoord = GeoCoordinates(latitude: 0, longitude: 0)
+    private var navSegmentIndex = -1
+
+    // ── Navigation camera follow (Google-Maps-style heading-up) ─────────────
+    // 1:1 port of Android's NavigationCameraManager: the camera is centered on
+    // the truck and rotated to the travel bearing, so the billboarded marker
+    // (which points forward/up in its image) always faces the moving direction.
+    // Bearing, zoom and tilt are smoothed frame-to-frame and the move is run as
+    // an animated flyTo so the heading the marker faces tracks the route
+    // accurately instead of snapping on every GPS tick.
+    private var navCamLastUpdate: CFTimeInterval = 0
+    private var navCamLastBearing: Double = 0
+    private var navCamLastZoom: Double = 16.6
+    private var navCamHasState = false
+
+    private static let navCamMinUpdateInterval: CFTimeInterval = 0.033   // ~30 fps
+    private static let navCamBearingSmoothing = 0.3
+    private static let navCamZoomSmoothing = 0.18
+    private static let navCamMinBearingDelta = 0.75
+    private static let navCamMaxSpeedMps = 38.0
+
+    // Full route geometry (set by drawRoutePolyline) used to build the passed path.
+    private var navRouteCoords: [GeoCoordinates] = []
+    // Grey overlay drawn over the consumed part of the route.
+    private var navPassedPolyline: MapPolyline?
+    private var navPassedPath: [GeoCoordinates] = []
+    private var navPassedLastRouteIndex = -1
+    private var navLastRenderedSplit: GeoCoordinates?
 
     // Scene-load gating: HERE's mapScene.loadScene is async. Any draw/marker/camera
     // call that arrives before the scene is ready (e.g. the route preview that fires
@@ -134,7 +177,9 @@ class HereMapView: UIView {
 
     // MARK: - Camera
 
-    func moveCamera(lat: Double, lng: Double, zoom: Double? = nil, distanceMeters: Double? = nil) {
+    func moveCamera(lat: Double, lng: Double, zoom: Double? = nil, distanceMeters: Double? = nil,
+                    bearing: Double = 0, tilt: Double = 0,
+                    animate: Bool = false, animationDurationMs: Double = 800) {
         whenSceneReady { [weak self] in
             guard let self = self else { return }
             // A zoom level frames the route the way the JS camera-fit expects;
@@ -145,32 +190,174 @@ class HereMapView: UIView {
             } else {
                 measure = MapMeasure(kind: .distanceInMeters, value: distanceMeters ?? 1000)
             }
-            self.mapView.camera.lookAt(
-                point: GeoCoordinates(latitude: lat, longitude: lng),
-                zoom: measure
-            )
+            // Honor the orientation JS sends so the compass reset (bearing 0) and
+            // any heading-up framing actually rotate the map (parity with Android).
+            let orientation = GeoOrientationUpdate(bearing: bearing, tilt: tilt)
+            if animate && animationDurationMs > 0 {
+                let target = GeoCoordinatesUpdate(latitude: lat, longitude: lng)
+                let animation = MapCameraAnimationFactory.flyTo(
+                    target: target,
+                    orientation: orientation,
+                    zoom: measure,
+                    bowFactor: 0.0,
+                    duration: animationDurationMs / 1000.0
+                )
+                self.mapView.camera.startAnimation(animation)
+            } else {
+                self.mapView.camera.lookAt(
+                    point: GeoCoordinates(latitude: lat, longitude: lng),
+                    orientation: orientation,
+                    zoom: measure
+                )
+            }
         }
     }
 
-    /// Tilt + head camera to follow the nav arrow during navigation
-    func updateNavigationCamera(lat: Double, lng: Double, bearing: Double) {
-        let coord = GeoCoordinates(latitude: lat, longitude: lng)
-        // Smooth follow: keep tilt for navigation perspective
-        let distance = MapMeasure(kind: .distanceInMeters, value: 300)
-        let orientation = GeoOrientationUpdate(bearing: bearing, tilt: 45.0)
-        mapView.camera.lookAt(
-            point: coord,
-            orientation: orientation,
-            zoom: distance
-        )
+    /// Returns the live camera orientation/position so JS can drive the compass
+    /// button (show it when the map is rotated, rotate the needle to match).
+    func cameraState() -> [String: Double] {
+        let state = mapView.camera.state
+        return [
+            "lat": state.targetCoordinates.latitude,
+            "lng": state.targetCoordinates.longitude,
+            "bearing": state.orientationAtTarget.bearing,
+            "tilt": state.orientationAtTarget.tilt,
+            "distanceMeters": state.distanceToTargetInMeters,
+        ]
+    }
+
+    /// Animates the map back to a north-up (bearing 0, tilt 0) orientation while
+    /// keeping the current target and zoom — the compass reset-to-north action.
+    func resetNorth() {
+        whenSceneReady { [weak self] in
+            guard let self = self else { return }
+            let state = self.mapView.camera.state
+            let target = GeoCoordinatesUpdate(
+                latitude: state.targetCoordinates.latitude,
+                longitude: state.targetCoordinates.longitude
+            )
+            let measure = MapMeasure(kind: .distanceInMeters, value: state.distanceToTargetInMeters)
+            let orientation = GeoOrientationUpdate(bearing: 0.0, tilt: 0.0)
+            let animation = MapCameraAnimationFactory.flyTo(
+                target: target,
+                orientation: orientation,
+                zoom: measure,
+                bowFactor: 0.0,
+                duration: 0.4
+            )
+            self.mapView.camera.startAnimation(animation)
+        }
+    }
+
+    /// Smoothly follows the truck during navigation: the camera is centered on
+    /// `lat/lng` and rotated to `bearing`, so the billboarded marker always
+    /// faces the moving direction. Speed drives the zoom/tilt, bearing & zoom
+    /// are smoothed, and the move is animated (flyTo) unless `forceInstant`.
+    /// Port of Android's NavigationCameraManager.update (CENTER mode).
+    func updateNavigationCamera(lat: Double, lng: Double, bearing: Double,
+                                speedMps: Double? = nil,
+                                animationDurationMs: Double = 220,
+                                forceInstant: Bool = false) {
+        guard lat.isFinite, lng.isFinite else { return }
+
+        let now = CACurrentMediaTime()
+        if !forceInstant && (now - navCamLastUpdate) < Self.navCamMinUpdateInterval { return }
+
+        let safeSpeed = min(max(speedMps ?? 0, 0), Self.navCamMaxSpeedMps)
+
+        let targetBearing = normalizeNavBearing(bearing)
+        let smoothedBearing: Double = (navCamHasState && !forceInstant)
+            ? interpolateNavBearing(navCamLastBearing, targetBearing, Self.navCamBearingSmoothing)
+            : targetBearing
+
+        let desiredZoom = zoomForSpeed(safeSpeed)
+        let desiredTilt = tiltForSpeed(safeSpeed)
+        let zoom: Double = (navCamHasState && !forceInstant)
+            ? navCamLastZoom + (desiredZoom - navCamLastZoom) * Self.navCamZoomSmoothing
+            : desiredZoom
+
+        let measure = MapMeasure(kind: .zoomLevel, value: zoom)
+        let orientation = GeoOrientationUpdate(bearing: smoothedBearing, tilt: desiredTilt)
+
+        if forceInstant || animationDurationMs <= 0 {
+            mapView.camera.lookAt(
+                point: GeoCoordinates(latitude: lat, longitude: lng),
+                orientation: orientation,
+                zoom: measure
+            )
+        } else {
+            let target = GeoCoordinatesUpdate(latitude: lat, longitude: lng)
+            let animation = MapCameraAnimationFactory.flyTo(
+                target: target,
+                orientation: orientation,
+                zoom: measure,
+                bowFactor: 0.0,
+                duration: animationDurationMs / 1000.0
+            )
+            mapView.camera.startAnimation(animation)
+        }
+
+        navCamLastUpdate = now
+        navCamLastBearing = smoothedBearing
+        navCamLastZoom = zoom
+        navCamHasState = true
     }
 
     func resetNavigationCamera() {
         isNavigating = false
-        // Zoom back out to overview
+        // Drop the follow-camera smoothing state so the next navigation start
+        // snaps cleanly to the first heading instead of easing from a stale one.
+        navCamHasState = false
+        navCamLastUpdate = 0
+        navCamLastBearing = 0
+        navCamLastZoom = 16.6
+        // Zoom back out to a north-up overview.
         if let navMarker = navigationMarker {
             let distance = MapMeasure(kind: .distanceInMeters, value: 5000)
-            mapView.camera.lookAt(point: navMarker.coordinates, zoom: distance)
+            let northUp = GeoOrientationUpdate(bearing: 0.0, tilt: 0.0)
+            mapView.camera.lookAt(point: navMarker.coordinates, orientation: northUp, zoom: distance)
+        }
+    }
+
+    // ── Navigation camera helpers (ported from Android NavigationCameraManager) ──
+
+    /// Wraps a bearing into [0, 360) and suppresses sub-threshold jitter so the
+    /// camera (and therefore the direction the marker faces) doesn't wobble when
+    /// the truck is essentially going straight.
+    private func normalizeNavBearing(_ value: Double) -> Double {
+        var out = value.truncatingRemainder(dividingBy: 360.0)
+        if out < 0 { out += 360.0 }
+        if navCamHasState && abs(out - navCamLastBearing) < Self.navCamMinBearingDelta {
+            return navCamLastBearing
+        }
+        return out
+    }
+
+    /// Shortest-arc interpolation between two bearings (handles the 359°→0° wrap).
+    private func interpolateNavBearing(_ from: Double, _ to: Double, _ t: Double) -> Double {
+        var diff = to - from
+        if diff > 180 { diff -= 360 }
+        if diff < -180 { diff += 360 }
+        var result = (from + diff * t).truncatingRemainder(dividingBy: 360.0)
+        if result < 0 { result += 360.0 }
+        return result
+    }
+
+    private func zoomForSpeed(_ speedMps: Double) -> Double {
+        switch speedMps {
+        case ..<2.0:  return 17.2
+        case ..<6.0:  return 16.8
+        case ..<12.0: return 16.3
+        case ..<20.0: return 15.8
+        default:      return 15.2
+        }
+    }
+
+    private func tiltForSpeed(_ speedMps: Double) -> Double {
+        switch speedMps {
+        case ..<2.0: return 46.0
+        case ..<8.0: return 52.0
+        default:     return 58.0
         }
     }
 
@@ -232,15 +419,22 @@ class HereMapView: UIView {
             self.mapView.mapScene.addMapPolyline(mapPolyline)
             self.allMapPolylines.append(mapPolyline)
             self.routePolylineObject = mapPolyline
+            // Capture the full route for the navigation passed-overlay and reset
+            // any in-progress trim (the route just changed / was redrawn).
+            self.navRouteCoords = geoCoords
+            self.resetPassedPath()
             self.fitCameraToPolyline(coords: geoCoords)
         }
     }
 
-    /// Removes already-driven segments (called during navigation progress)
+    /// Called during navigation progress. Previously this cleared and redrew the
+    /// whole polyline AND refit the camera every frame — which stuttered and
+    /// fought the navigation camera. Now the trim is purely visual and driven by
+    /// the marker animation (`syncPassedPolyline`); here we only advance the
+    /// segment floor so progress never moves backwards on GPS jitter.
     func trimPolyline(upToIndex: Int) {
-        guard upToIndex > 0, upToIndex < currentPolylineCoords.count else { return }
-        let remaining = Array(currentPolylineCoords[upToIndex...])
-        drawRoutePolyline(coords: remaining)
+        guard upToIndex >= 0 else { return }
+        if upToIndex > navSegmentIndex { navSegmentIndex = upToIndex }
     }
 
     func clearPolylines() {
@@ -254,6 +448,10 @@ class HereMapView: UIView {
         allMapPolylines.removeAll()
         routePolylineObject = nil
         currentPolylineCoords = []
+        // The navigation passed-overlay is tracked separately from
+        // allMapPolylines — tear it down here too so it never lingers.
+        navRouteCoords = []
+        resetPassedPath()
     }
 
     private func fitCameraToPolyline(coords: [GeoCoordinates]) {
@@ -350,17 +548,25 @@ class HereMapView: UIView {
 
     // MARK: - Location Dot
 
-    func showCurrentLocation(lat: Double, lng: Double) {
+    func showCurrentLocation(lat: Double, lng: Double, bearing: Double = 0) {
         whenSceneReady { [weak self] in
             guard let self = self else { return }
             let coord = GeoCoordinates(latitude: lat, longitude: lng)
-            if let existing = self.locationMarker {
+            let heading = bearing.isFinite ? bearing : 0
+            // Rebuild the dot only when the heading swings by ≥2° (otherwise the
+            // beam direction is unchanged and we just move the existing marker).
+            let bearingChanged = abs(heading - self.locationBearing) >= 2
+            if let existing = self.locationMarker, !bearingChanged {
                 existing.coordinates = coord
                 return
             }
-            let image    = self.drawLocationDotImage()
+            self.locationBearing = heading
+            let image    = self.drawLocationDotImage(bearing: heading)
             let mapImage = MapImage(pixelData: image.pngData()!, imageFormat: ImageFormat.png)
             let anchor   = Anchor2D(horizontal: 0.5, vertical: 0.5)
+            if let existing = self.locationMarker {
+                self.mapView.mapScene.removeMapMarker(existing)
+            }
             let marker   = MapMarker(at: coord, image: mapImage, anchor: anchor)
             self.mapView.mapScene.addMapMarker(marker)
             self.locationMarker = marker
@@ -372,11 +578,14 @@ class HereMapView: UIView {
             mapView.mapScene.removeMapMarker(loc)
             locationMarker = nil
         }
+        locationBearing = -999
     }
 
     // MARK: - Navigation Marker (live GPS)
 
-    func updateNavigationMarker(lat: Double, lng: Double, bearing: Double, iconPngData: Data? = nil, sizePx: CGFloat? = nil) {
+    func updateNavigationMarker(lat: Double, lng: Double, bearing: Double,
+                                iconPngData: Data? = nil, sizePx: CGFloat? = nil,
+                                segmentIndex: Int = -1, animationDurationMs: Double = 180) {
         // Detect whether the JS-supplied icon (or its on-screen size) changed
         // since the last call. The first GPS updates can arrive before the JS
         // marker rasteriser has produced the vehicle PNG, so the icon shows up
@@ -393,33 +602,138 @@ class HereMapView: UIView {
             navigationIconSize = sizePx
             iconChanged = true
         }
-        let coord = GeoCoordinates(latitude: lat, longitude: lng)
-        if let existing = navigationMarker, !iconChanged {
-            existing.coordinates = coord
-            // Bearing rotation: if your HERE SDK version supports it via
-            // MapMarker orientation, apply here. Otherwise re-draw the image.
-        } else {
-            // First placement, or the JS icon just arrived/changed → (re)create
-            // the marker so the new image is actually rendered.
-            if let existing = navigationMarker {
-                mapView.mapScene.removeMapMarker(existing)
-            }
+
+        if segmentIndex >= 0 { navSegmentIndex = max(navSegmentIndex, segmentIndex) }
+        let target = GeoCoordinates(latitude: lat, longitude: lng)
+
+        // First placement, or the icon just changed → (re)create the marker and
+        // snap to the target instantly (no animation for this frame).
+        if navigationMarker == nil || iconChanged {
+            stopNavDisplayLink()
+            if let existing = navigationMarker { mapView.mapScene.removeMapMarker(existing) }
             let marker = makeNavigationMarker(lat: lat, lng: lng)
             mapView.mapScene.addMapMarker(marker)
             navigationMarker = marker
+            navCurrentCoord = target
+            syncPassedPolyline(split: target)
+            return
         }
-        // Follow the marker while navigating
-        if isNavigating {
-            let distance = MapMeasure(kind: .distanceInMeters, value: 300)
-            mapView.camera.lookAt(point: coord, zoom: distance)
-        }
+
+        // Steady state → animate the truck from where it is now to the new GPS
+        // point over `animationDurationMs`, driving the passed-polyline trim each
+        // frame (Google-Maps-style smooth follow). The camera is followed
+        // separately via updateNavigationCamera so we don't fight it here.
+        navAnimFrom = navCurrentCoord
+        navAnimTo = target
+        navAnimStart = CACurrentMediaTime()
+        navAnimDuration = max(0.05, animationDurationMs / 1000.0)
+        startNavDisplayLink()
     }
 
     func removeNavigationMarker() {
+        stopNavDisplayLink()
         if let marker = navigationMarker {
             mapView.mapScene.removeMapMarker(marker)
             navigationMarker = nil
         }
+        resetPassedPath()
+        navSegmentIndex = -1
+    }
+
+    // MARK: - Navigation smooth-follow internals
+
+    private func startNavDisplayLink() {
+        if navDisplayLink != nil { return }
+        let link = CADisplayLink(target: self, selector: #selector(navTick))
+        link.add(to: .main, forMode: .common)
+        navDisplayLink = link
+    }
+
+    private func stopNavDisplayLink() {
+        navDisplayLink?.invalidate()
+        navDisplayLink = nil
+    }
+
+    @objc private func navTick() {
+        let now = CACurrentMediaTime()
+        let t = min(1.0, max(0.0, (now - navAnimStart) / navAnimDuration))
+        let lat = navAnimFrom.latitude  + (navAnimTo.latitude  - navAnimFrom.latitude)  * t
+        let lng = navAnimFrom.longitude + (navAnimTo.longitude - navAnimFrom.longitude) * t
+        let coord = GeoCoordinates(latitude: lat, longitude: lng)
+        navCurrentCoord = coord
+        navigationMarker?.coordinates = coord
+        syncPassedPolyline(split: coord)
+        if t >= 1.0 { stopNavDisplayLink() }
+    }
+
+    /// Grows the grey "passed" overlay so it ends exactly at the marker's current
+    /// (animated) position. 1:1 port of Android PolylineManager.updatePassedPath
+    /// + swapPassedPolyline. Skips redundant rebuilds while the split barely moves
+    /// (jitter guard) to keep the per-frame cost down on long routes.
+    private func syncPassedPolyline(split: GeoCoordinates) {
+        guard navRouteCoords.count >= 2, navSegmentIndex >= 0 else { return }
+
+        // Jitter guard: only rebuild when the split moved enough or a segment was crossed.
+        if let last = navLastRenderedSplit,
+           navPassedLastRouteIndex >= navSegmentIndex,
+           Self.approxMeters(last, split) < 0.5 {
+            return
+        }
+
+        let idx = min(max(navSegmentIndex, 0), navRouteCoords.count - 2)
+
+        if navPassedPath.isEmpty {
+            navPassedPath.append(navRouteCoords[0])
+            navPassedLastRouteIndex = 0
+        }
+        if idx > navPassedLastRouteIndex {
+            for i in (navPassedLastRouteIndex + 1)...idx {
+                navPassedPath.append(navRouteCoords[i])
+            }
+            navPassedLastRouteIndex = idx
+        }
+        if navPassedPath.count == 1 {
+            navPassedPath.append(split)
+        } else {
+            navPassedPath[navPassedPath.count - 1] = split
+        }
+        guard navPassedPath.count >= 2 else { return }
+
+        swapPassedPolyline(navPassedPath)
+        navLastRenderedSplit = split
+    }
+
+    private func swapPassedPolyline(_ coords: [GeoCoordinates]) {
+        guard coords.count >= 2, let geoPolyline = try? GeoPolyline(vertices: coords) else { return }
+        let passedWidth = 16.0 + 6.0   // route width + Android's PASSED_WIDTH_EXTRA
+        let grey = UIColor(red: 0.91, green: 0.91, blue: 0.93, alpha: 1.0)
+        do {
+            let lineWidth = try MapMeasureDependentRenderSize(sizeUnit: RenderSize.Unit.pixels, size: passedWidth)
+            let representation = try MapPolyline.SolidRepresentation(
+                lineWidth: lineWidth, color: grey, capShape: LineCap.round
+            )
+            let polyline = try MapPolyline(geometry: geoPolyline, representation: representation)
+            if let old = navPassedPolyline { mapView.mapScene.removeMapPolyline(old) }
+            mapView.mapScene.addMapPolyline(polyline)
+            navPassedPolyline = polyline
+        } catch {
+            // ignore a single failed frame
+        }
+    }
+
+    private func resetPassedPath() {
+        if let old = navPassedPolyline { mapView.mapScene.removeMapPolyline(old) }
+        navPassedPolyline = nil
+        navPassedPath.removeAll()
+        navPassedLastRouteIndex = -1
+        navLastRenderedSplit = nil
+    }
+
+    /// Cheap great-circle distance (metres) for the jitter guard.
+    private static func approxMeters(_ a: GeoCoordinates, _ b: GeoCoordinates) -> Double {
+        let dLat = (b.latitude - a.latitude) * 111_320.0
+        let dLng = (b.longitude - a.longitude) * 111_320.0 * cos(a.latitude * .pi / 180.0)
+        return (dLat * dLat + dLng * dLng).squareRoot()
     }
 
     // MARK: - Clear All
@@ -554,22 +868,42 @@ class HereMapView: UIView {
         return UIGraphicsGetImageFromCurrentImageContext()!
     }
 
-    // Draws a blue "current location" dot with a white ring (Google-Maps style)
-    private func drawLocationDotImage() -> UIImage {
-        let size = CGSize(width: 24, height: 24)
+    // Draws a blue "current location" dot with a white ring plus a direction
+    // beam fanning out toward `bearing` (0 = up/north, clockwise) — the
+    // Google-Maps-style "which way you're facing" indicator.
+    private func drawLocationDotImage(bearing: Double = 0) -> UIImage {
+        let size = CGSize(width: 48, height: 48)
         UIGraphicsBeginImageContextWithOptions(size, false, 0)
         defer { UIGraphicsEndImageContext() }
         let ctx = UIGraphicsGetCurrentContext()!
-        // white outer ring with soft shadow
+        let center = CGPoint(x: size.width / 2, y: size.height / 2)
+
+        // ── Direction beam (rotated to the heading) ──────────────────────────
+        ctx.saveGState()
+        ctx.translateBy(x: center.x, y: center.y)
+        ctx.rotate(by: CGFloat(bearing) * .pi / 180.0)
+        ctx.translateBy(x: -center.x, y: -center.y)
+        let beam = UIBezierPath()
+        beam.move(to: center)
+        // A ~50° wedge opening upward (north before rotation).
+        beam.addArc(withCenter: center, radius: 22,
+                    startAngle: -(.pi / 2) - 0.44,
+                    endAngle: -(.pi / 2) + 0.44,
+                    clockwise: true)
+        beam.close()
+        UIColor(red: 0.10, green: 0.46, blue: 0.94, alpha: 0.30).setFill()
+        beam.fill()
+        ctx.restoreGState()
+
+        // ── White ring + blue dot (heading-independent, drawn on top) ────────
         ctx.setShadow(offset: CGSize(width: 0, height: 1), blur: 3,
                       color: UIColor.black.withAlphaComponent(0.4).cgColor)
-        UIBezierPath(ovalIn: CGRect(x: 2, y: 2, width: 20, height: 20)).do {
+        UIBezierPath(ovalIn: CGRect(x: center.x - 9, y: center.y - 9, width: 18, height: 18)).do {
             UIColor.white.setFill()
             $0.fill()
         }
         ctx.setShadow(offset: .zero, blur: 0, color: nil)
-        // blue inner dot
-        UIBezierPath(ovalIn: CGRect(x: 5, y: 5, width: 14, height: 14)).do {
+        UIBezierPath(ovalIn: CGRect(x: center.x - 6, y: center.y - 6, width: 12, height: 12)).do {
             UIColor(red: 0.10, green: 0.46, blue: 0.94, alpha: 1.0).setFill()
             $0.fill()
         }

@@ -17,6 +17,16 @@ RCT_EXTERN_METHOD(
   rejecter:(RCTPromiseRejectBlock)reject
 )
 
+RCT_EXTERN_METHOD(
+  getCameraState:(nonnull NSNumber *)viewTag resolver:(RCTPromiseResolveBlock)resolve
+  rejecter:(RCTPromiseRejectBlock)reject
+)
+
+RCT_EXTERN_METHOD(
+  resetNorth:(nonnull NSNumber *)viewTag resolver:(RCTPromiseResolveBlock)resolve
+  rejecter:(RCTPromiseRejectBlock)reject
+)
+
 // ── Markers ────────────────────────────────────────────────────────────────
 // addMarker({ lat, lng, color?, type? })
 RCT_EXTERN_METHOD(

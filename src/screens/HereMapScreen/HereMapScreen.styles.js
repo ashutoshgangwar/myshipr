@@ -118,6 +118,27 @@ export default StyleSheet.create({
     fontWeight: '600',
   },
 
+  // ── Compass (reset-to-north) ──────────────────────────────────────────────
+  compassButton: {
+    position: 'absolute',
+    top: verticalScale(14),
+    right: scale(14),
+    width: scale(46),
+    height: scale(46),
+    borderRadius: moderateScale(23),
+    backgroundColor: '#ffffff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 999,
+    elevation: moderateScale(8),
+    shadowColor: '#3b82f6',
+    shadowOffset: {width: 0, height: verticalScale(2)},
+    shadowOpacity: 0.35,
+    shadowRadius: moderateScale(6),
+    borderWidth: 1,
+    borderColor: 'rgba(59,130,246,0.3)',
+  },
+
   // ── Navigation-mode bottom panel ──────────────────────────────────────────
   navPanel: {
     flex: 1,
@@ -720,5 +741,145 @@ export default StyleSheet.create({
     fontSize: moderateScale(11),
     textAlign: 'center',
     marginTop: verticalScale(4),
+  },
+
+  // ── Route-loading overlay ─────────────────────────────────────────────────
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(15,23,42,0.75)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 9999,
+  },
+  loadingOverlayText: {
+    color: '#e2e8f0',
+    marginTop: verticalScale(12),
+    fontSize: moderateScale(15),
+    fontWeight: '600',
+  },
+
+  // ── Speed + direction HUD (navigating) ────────────────────────────────────
+  speedHud: {
+    position: 'absolute',
+    top: 12,
+    left: 12,
+    zIndex: 100,
+    elevation: 100,
+    alignItems: 'center',
+  },
+  speedHudCard: {
+    backgroundColor: 'rgba(15,23,42,0.82)',
+    borderRadius: moderateScale(12),
+    paddingHorizontal: moderateScale(12),
+    paddingVertical: moderateScale(6),
+    alignItems: 'center',
+    minWidth: moderateScale(52),
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.12)',
+  },
+  speedHudArrow: {
+    color: '#f59e0b',
+    fontSize: moderateScale(40),
+    lineHeight: moderateScale(20),
+  },
+  speedHudDir: {
+    color: '#e2e8f0',
+    fontSize: moderateScale(12),
+    fontWeight: '700',
+    lineHeight: moderateScale(16),
+  },
+
+  // ── Marker-icon picker FAB ────────────────────────────────────────────────
+  markerPickerBtn: {
+    position: 'absolute',
+    left: moderateScale(14),
+    bottom: verticalScale(82),
+    width: verticalScale(48),
+    height: verticalScale(48),
+    borderRadius: verticalScale(24),
+    backgroundColor: '#ffffff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    shadowOffset: {width: 0, height: 2},
+    elevation: 5,
+  },
+
+  // ── Navigation bottom-panel rows ──────────────────────────────────────────
+  navScrollContent: {
+    paddingBottom: 1,
+  },
+  navMetaToCol: {
+    flex: 1,
+    marginRight: scale(10),
+  },
+  navMetaTollCol: {
+    alignItems: 'flex-end',
+  },
+
+  // ── Preview-mode route details ────────────────────────────────────────────
+  previewScroll: {
+    flex: 1,
+  },
+  previewScrollContent: {
+    paddingBottom: verticalScale(24),
+  },
+  previewCard: {
+    flex: 1,
+    backgroundColor: '#fff',
+    borderTopLeftRadius: moderateScale(16),
+    borderTopRightRadius: moderateScale(16),
+    paddingHorizontal: moderateScale(16),
+    paddingTop: moderateScale(16),
+    paddingBottom: moderateScale(8),
+    elevation: moderateScale(4),
+  },
+
+  // ── Marker-icon picker modal ──────────────────────────────────────────────
+  markerModalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(15,23,42,0.55)',
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  markerModalCard: {
+    width: '82%',
+    backgroundColor: '#ffffff',
+    borderRadius: moderateScale(16),
+    padding: moderateScale(20),
+  },
+  markerModalTitle: {
+    fontSize: moderateScale(17),
+    fontWeight: '700',
+    color: '#0f172a',
+    marginBottom: verticalScale(4),
+  },
+  markerModalSubtitle: {
+    fontSize: moderateScale(12),
+    color: '#64748b',
+    marginBottom: verticalScale(16),
+  },
+  markerModalRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+  },
+  markerOption: {
+    alignItems: 'center',
+    paddingVertical: verticalScale(14),
+    paddingHorizontal: moderateScale(18),
+    borderRadius: moderateScale(12),
+    borderWidth: 2,
+  },
+  markerOptionLabel: {
+    marginTop: verticalScale(8),
+    fontSize: moderateScale(13),
+    fontWeight: '600',
+    textTransform: 'capitalize',
   },
 });
