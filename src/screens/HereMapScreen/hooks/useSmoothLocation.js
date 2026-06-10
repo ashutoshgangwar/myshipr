@@ -7,6 +7,11 @@ import {
   lerpBearing,
 } from '../utils/mathUtils';
 
+// GPS jitter while parked produces a small non-zero speed on both iOS and
+// Android (from device Doppler noise and from position-delta math). Anything
+// below this threshold is treated as stationary so the HUD reads 0 km/h.
+const STATIONARY_SPEED_MPS = 1.0; // ~3.6 km/h
+
 export function useSmoothLocation() {
   const smoothPos = useRef({lat: 0, lng: 0, bearing: 0, speed: 0});
   const targetPos = useRef({lat: 0, lng: 0, bearing: 0, speed: 0});
@@ -95,6 +100,11 @@ export function useSmoothLocation() {
         if (!(typeof overrideSpeed === 'number' && isFinite(overrideSpeed))) {
           speed = distMeters / dtSec;
         }
+      }
+      // Clamp sub-walking-pace noise to a hard 0 so a stationary device never
+      // shows a phantom km/h reading.
+      if (!(Number.isFinite(speed) && speed >= STATIONARY_SPEED_MPS)) {
+        speed = 0;
       }
       prevRawPos.current = {lat, lng, ts: now};
 

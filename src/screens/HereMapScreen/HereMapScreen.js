@@ -24,6 +24,9 @@ import {calculateRouteTolls} from './services/hereTruckService';
 
 import {HereMapView, HereMapModule} from './components/HereMap/index';
 import RouteGeometry from './components/HereMap/Routegeometry';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import MarkerRasterizer from './components/MarkerRasterizer';
+import MarkerPin from './components/MarkerPin';
 import {useSelector} from 'react-redux';
 import {selectLocation} from '../../redux/slices/locationSlice';
 
@@ -65,6 +68,7 @@ import {
   OFF_ROUTE_THRESHOLD,
   NAVIGATION_MARKER,
   NAVIGATION_ROUTE_WIDTH,
+  MARKER_DISPLAY_SIZE,
   ORIGIN,
   DESTINATION,
 } from './constants/navigationConstants';
@@ -191,6 +195,14 @@ export default function HereMapScreen({navigation, route}) {
   const lastTollRouteRef = useRef('');
   const [tollData, setTollData] = useState(null);
   const [tollModalVisible, setTollModalVisible] = useState(false);
+
+  // ── Marker icon selection (Truck / Car) ──────────────────────────────────
+  // The chosen shape is rasterised in JS (see MarkerRasterizer) and the PNG
+  // bytes are handed to native so source / destination / vehicle markers look
+  // identical on iOS and Android.
+  const [markerShape, setMarkerShape] = useState('truck');
+  const [markerModalVisible, setMarkerModalVisible] = useState(false);
+  const markerImagesRef = useRef(null);
   const [turnModalVisible, setTurnModalVisible] = useState(false);
   const [isTollLoading, setIsTollLoading] = useState(false);
 
@@ -327,6 +339,8 @@ export default function HereMapScreen({navigation, route}) {
   const rerouteRequestedRef = useRef(false);
   const lastRouteProgressMetersRef = useRef(0);
   const wrongWayStreakRef = useRef(0);
+  // Last GPS fix used to derive speed when the device reports none (iOS).
+  const lastSpeedSampleRef = useRef(null);
 
   // ─── smooth.subscribe ────────────────────────────────────────────────────
   useEffect(() => {
@@ -386,6 +400,7 @@ export default function HereMapScreen({navigation, route}) {
               animationDuration: NAVIGATION_MARKER_ANIMATION_MS,
               markerSize: NAVIGATION_MARKER.size,
               iconAsset: NAVIGATION_MARKER.iconAsset,
+              iconImage: markerImagesRef.current?.vehicle,
               segmentIndex: snap.segmentIndex,
             });
 
@@ -498,6 +513,7 @@ export default function HereMapScreen({navigation, route}) {
               animationDuration: NAVIGATION_MARKER_ANIMATION_MS,
               markerSize: NAVIGATION_MARKER.size,
               iconAsset: NAVIGATION_MARKER.iconAsset,
+              iconImage: markerImagesRef.current?.vehicle,
               segmentIndex: -1,
             });
 
@@ -551,6 +567,22 @@ export default function HereMapScreen({navigation, route}) {
         Alert.alert('HERE SDK Error', e.message);
       }
     })();
+  }, []);
+
+  // ── Restore the previously chosen marker shape ────────────────────────────
+  useEffect(() => {
+    (async () => {
+      try {
+        const saved = await AsyncStorage.getItem('here_marker_shape');
+        if (saved === 'truck' || saved === 'car') setMarkerShape(saved);
+      } catch (_) {}
+    })();
+  }, []);
+
+  const handleSelectMarkerShape = useCallback(shape => {
+    setMarkerShape(shape);
+    setMarkerModalVisible(false);
+    AsyncStorage.setItem('here_marker_shape', shape).catch(() => {});
   }, []);
 
   const extractRoutePolyline = useCallback(routeJson => {
@@ -641,13 +673,16 @@ export default function HereMapScreen({navigation, route}) {
     lastTrimCursorRef.current = {index: -1, fraction: 0};
     try {
       isDrawingRouteRef.current = true;
-      const displayCoords = reduceRouteCoords(coords, 1000);
+      // Draw the FULL route geometry (not a down-sampled copy) so the drawn
+      // line exactly matches the route returned by the HERE API, and so the
+      // native trim indices (which come from snapping against these same full
+      // coords) line up segment-for-segment during navigation.
       await Promise.all([
         mapRef.current?.clearPolyline(),
         mapRef.current?.clearRoute(),
       ]);
       await mapRef.current?.drawPolyline({
-        coordinates: displayCoords,
+        coordinates: coords,
         color: '#4285F4',
         width: NAVIGATION_ROUTE_WIDTH,
       });
@@ -801,6 +836,8 @@ export default function HereMapScreen({navigation, route}) {
             lat: safeSource.latitude,
             lng: safeSource.longitude,
             color: '#22C55E',
+            image: markerImagesRef.current?.source,
+            markerSize: MARKER_DISPLAY_SIZE,
           });
         }
       }
@@ -809,6 +846,8 @@ export default function HereMapScreen({navigation, route}) {
           lat: safeDest.latitude,
           lng: safeDest.longitude,
           color: '#FF3366',
+          image: markerImagesRef.current?.destination,
+          markerSize: MARKER_DISPLAY_SIZE,
         });
       }
 
@@ -916,6 +955,7 @@ export default function HereMapScreen({navigation, route}) {
     rerouteRequestedRef.current = false;
     lastRouteProgressMetersRef.current = 0;
     wrongWayStreakRef.current = 0;
+    lastSpeedSampleRef.current = null;
     setSnapSegmentIndex(-1);
     setMetersToNext(null);
     setLiveSpeedKph(0);
@@ -1040,6 +1080,7 @@ export default function HereMapScreen({navigation, route}) {
             animationDuration: 0,
             markerSize: NAVIGATION_MARKER.size,
             iconAsset: NAVIGATION_MARKER.iconAsset,
+            iconImage: markerImagesRef.current?.vehicle,
             segmentIndex: lastTrimCursorRef.current.index,
           }),
           mapRef.current?.updateNavigationCamera({
@@ -1074,6 +1115,8 @@ export default function HereMapScreen({navigation, route}) {
             lat: safeDestination.latitude,
             lng: safeDestination.longitude,
             color: '#FF3366',
+            image: markerImagesRef.current?.destination,
+            markerSize: MARKER_DISPLAY_SIZE,
           });
         }
       } else {
@@ -1090,7 +1133,32 @@ export default function HereMapScreen({navigation, route}) {
           const lat = position.latitude;
           const lng = position.longitude;
           if (!isUsableNavCoord(lat, lng)) return;
-          const liveSpeed = resolveLiveSpeedMps(position);
+          let liveSpeed = resolveLiveSpeedMps(position);
+          // iOS often reports no/invalid GPS speed; derive it from the distance
+          // between consecutive fixes so the speed HUD matches Android.
+          const nowTs = Number.isFinite(position?.timestamp)
+            ? position.timestamp
+            : Date.now();
+          if (!Number.isFinite(liveSpeed)) {
+            const prevSample = lastSpeedSampleRef.current;
+            if (prevSample) {
+              const dtSec = (nowTs - prevSample.timestamp) / 1000;
+              if (dtSec >= 0.3) {
+                const movedMeters = haversineDistanceMeters(
+                  prevSample.lat,
+                  prevSample.lng,
+                  lat,
+                  lng,
+                );
+                const computed = movedMeters / dtSec;
+                // Keep a clean 0 when idle; reject GPS jumps (>360 km/h).
+                if (Number.isFinite(computed) && computed >= 0 && computed < 100) {
+                  liveSpeed = computed;
+                }
+              }
+            }
+          }
+          lastSpeedSampleRef.current = {lat, lng, timestamp: nowTs};
           const liveHeading =
             Number.isFinite(position?.bearing) &&
             Math.abs(position.bearing) > 0.1
@@ -1120,7 +1188,7 @@ export default function HereMapScreen({navigation, route}) {
                 lat,
                 lng,
                 heading,
-                speed: resolveLiveSpeedMps(position),
+                speed: liveSpeed,
                 accuracy: position?.accuracy ?? undefined,
                 coords: routeCoordsRef.current,
                 lastIndex: lastTrimCursorRef.current?.index ?? -1,
@@ -1333,6 +1401,11 @@ export default function HereMapScreen({navigation, route}) {
     rerouteRequestedRef.current = false;
     lastRouteProgressMetersRef.current = 0;
     wrongWayStreakRef.current = 0;
+    lastSpeedSampleRef.current = null;
+    // Force the preview effect to re-run so the toll cost is re-fetched after
+    // navigation ends — otherwise an unchanged src/dst pair leaves it stuck
+    // on "Fetching..".
+    lastPreviewPairRef.current = {srcKey: null, dstKey: null};
 
     (async () => {
       try {
@@ -1427,6 +1500,44 @@ export default function HereMapScreen({navigation, route}) {
       smooth.pushLocation(currentLocation.latitude, currentLocation.longitude);
     }
   }, [currentLocation, sourceLocation, smooth]);
+
+  // ─── Center the map on the user's current location when the screen opens
+  //     or comes back into focus. Skipped while navigating or when a
+  //     destination is already set (the route preview frames the camera then).
+  // ─────────────────────────────────────────────────────────────────────────
+  useEffect(() => {
+    if (!sdkReady) return;
+
+    const centerOnCurrentLocation = async () => {
+      if (isNavigatingRef.current) return;
+      if (destinationLocationRef.current) return;
+      try {
+        const location = await getCurrentLocation({detectMock: true});
+        if (!isUsableNavCoord(location.latitude, location.longitude)) return;
+        // Re-check after the async GPS resolve in case state changed.
+        if (isNavigatingRef.current || destinationLocationRef.current) return;
+        smooth.pushLocation(location.latitude, location.longitude);
+        await mapRef.current?.showCurrentLocation({
+          lat: location.latitude,
+          lng: location.longitude,
+          bearing: 0,
+        });
+        await mapRef.current?.moveCamera({
+          lat: location.latitude,
+          lng: location.longitude,
+          zoom: 15,
+          animate: true,
+          animationDuration: 800,
+        });
+      } catch (e) {
+        console.warn('[focus] center on current location failed', e);
+      }
+    };
+
+    centerOnCurrentLocation();
+    const unsub = navigation?.addListener?.('focus', centerOnCurrentLocation);
+    return unsub;
+  }, [sdkReady, navigation, smooth]);
 
   // ─── Seed from route params ───────────────────────────────────────────────
   useEffect(() => {
@@ -1595,6 +1706,8 @@ export default function HereMapScreen({navigation, route}) {
               lat: latestSrc.latitude,
               lng: latestSrc.longitude,
               color: '#22C55E',
+              image: markerImagesRef.current?.source,
+              markerSize: MARKER_DISPLAY_SIZE,
             });
           }
         }
@@ -1606,6 +1719,8 @@ export default function HereMapScreen({navigation, route}) {
             lat: latestDst.latitude,
             lng: latestDst.longitude,
             color: '#FF3366',
+            image: markerImagesRef.current?.destination,
+            markerSize: MARKER_DISPLAY_SIZE,
           });
         }
         if (cancelled) return;
@@ -1811,6 +1926,39 @@ export default function HereMapScreen({navigation, route}) {
             <GpsIcon width={verticalScale(28)} height={verticalScale(28)} fill="#040000" />
           )}
         </TouchableOpacity>
+
+        {/* Marker-icon picker (hidden during navigation) */}
+        {!isNavigating && (
+          <TouchableOpacity
+            style={{
+              position: 'absolute',
+              right: moderateScale(14),
+              bottom: verticalScale(82),
+              width: verticalScale(48),
+              height: verticalScale(48),
+              borderRadius: verticalScale(24),
+              backgroundColor: '#ffffff',
+              alignItems: 'center',
+              justifyContent: 'center',
+              shadowColor: '#000',
+              shadowOpacity: 0.25,
+              shadowRadius: 4,
+              shadowOffset: {width: 0, height: 2},
+              elevation: 5,
+            }}
+            onPress={() => setMarkerModalVisible(true)}
+            activeOpacity={0.8}>
+            <MarkerPin iconKey={markerShape} color="#2563EB" width={verticalScale(26)} />
+          </TouchableOpacity>
+        )}
+
+        {/* Off-screen rasteriser: turns the chosen SVGs into PNG bytes for native */}
+        <MarkerRasterizer
+          vehicleShape={markerShape}
+          onReady={imgs => {
+            markerImagesRef.current = imgs;
+          }}
+        />
       </View>
 
       {/* ── Bottom area ── */}
@@ -2120,6 +2268,86 @@ export default function HereMapScreen({navigation, route}) {
                 * Shows cheapest one-way toll per booth
               </Text>
             </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* ── Marker icon picker modal ── */}
+      <Modal
+        visible={markerModalVisible}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setMarkerModalVisible(false)}>
+        <TouchableOpacity
+          style={{
+            flex: 1,
+            backgroundColor: 'rgba(15,23,42,0.55)',
+            justifyContent: 'center',
+            alignItems: 'center',
+          }}
+          activeOpacity={1}
+          onPress={() => setMarkerModalVisible(false)}>
+          <View
+            style={{
+              width: '82%',
+              backgroundColor: '#ffffff',
+              borderRadius: moderateScale(16),
+              padding: moderateScale(20),
+            }}>
+            <Text
+              style={{
+                fontSize: moderateScale(17),
+                fontWeight: '700',
+                color: '#0f172a',
+                marginBottom: verticalScale(4),
+              }}>
+              Choose vehicle icon
+            </Text>
+            <Text
+              style={{
+                fontSize: moderateScale(12),
+                color: '#64748b',
+                marginBottom: verticalScale(16),
+              }}>
+              Shown for your vehicle while navigating. Source uses a home pin and
+              destination a truck pin.
+            </Text>
+            <View style={{flexDirection: 'row', justifyContent: 'space-around'}}>
+              {['truck', 'car'].map(shape => {
+                const selected = markerShape === shape;
+                return (
+                  <TouchableOpacity
+                    key={shape}
+                    onPress={() => handleSelectMarkerShape(shape)}
+                    activeOpacity={0.85}
+                    style={{
+                      alignItems: 'center',
+                      paddingVertical: verticalScale(14),
+                      paddingHorizontal: moderateScale(18),
+                      borderRadius: moderateScale(12),
+                      borderWidth: 2,
+                      borderColor: selected ? '#2563EB' : '#e2e8f0',
+                      backgroundColor: selected ? '#eff6ff' : '#ffffff',
+                    }}>
+                    <MarkerPin
+                      iconKey={shape}
+                      color="#2563EB"
+                      width={verticalScale(46)}
+                    />
+                    <Text
+                      style={{
+                        marginTop: verticalScale(8),
+                        fontSize: moderateScale(13),
+                        fontWeight: '600',
+                        color: selected ? '#2563EB' : '#475569',
+                        textTransform: 'capitalize',
+                      }}>
+                      {shape}
+                    </Text>
+                  </TouchableOpacity>
+                );
+              })}
+            </View>
           </View>
         </TouchableOpacity>
       </Modal>

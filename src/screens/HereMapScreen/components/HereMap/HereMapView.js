@@ -62,8 +62,18 @@ const HereMapView = forwardRef(function HereMapView(
       ),
 
     // ── Markers ──
-    addMarker: ({ lat, lng, color = '#FF0000' }) =>
-      withTag(tag => HereMapModule.addMarker(tag, { lat, lng, color })),
+    // `markerSize` (px) is the on-screen size JS wants; native scales the
+    // supplied PNG to it, so the rasterised SVG can be any resolution.
+    addMarker: ({ lat, lng, color = '#FF0000', image, markerSize }) =>
+      withTag(tag =>
+        HereMapModule.addMarker(tag, {
+          lat,
+          lng,
+          color,
+          ...(image ? { image } : {}),
+          ...(markerSize != null ? { markerSize } : {}),
+        }),
+      ),
 
     clearMarkers: () => withTag(tag => HereMapModule.clearMarkers(tag)),
 
@@ -101,13 +111,14 @@ const HereMapView = forwardRef(function HereMapView(
 
     updateNavigationMarker: ({
       lat, lng, bearing = 0, animationDuration = 1000,
-      markerSize, iconAsset,
+      markerSize, iconAsset, iconImage,
     }) =>
       withTag(tag =>
         HereMapModule.updateNavigationMarker(tag, {
           lat, lng, bearing, animationDuration,
           ...(markerSize != null ? { markerSize } : {}),
           ...(iconAsset   != null ? { iconAsset }   : {}),
+          ...(iconImage   != null ? { iconImage }   : {}),
         }),
       ),
 

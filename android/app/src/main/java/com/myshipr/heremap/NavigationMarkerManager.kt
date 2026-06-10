@@ -2,9 +2,11 @@ package com.myshipr.heremap
 
 import android.animation.ValueAnimator
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.graphics.Canvas
 import android.graphics.Paint
 import android.graphics.Color
+import android.util.Base64
 import android.util.LruCache
 import android.util.Log
 import android.view.animation.LinearInterpolator
@@ -73,6 +75,11 @@ class NavigationMarkerManager(private val mapView: MapView) {
     private val imageCache = LruCache<Int, MapImage>(180)
     private var truckSvg: SVG? = null
 
+    // Optional JS-rasterised vehicle icon. When set it is used as-is (no
+    // rotation) instead of the bundled SVG, so the marker matches iOS.
+    private var customBitmap: Bitmap? = null
+    private var customBitmapKey: String? = null
+
     // ─────────────────────────────────────────────────────────────────────────
     // PUBLIC API
     // ─────────────────────────────────────────────────────────────────────────
@@ -81,7 +88,8 @@ class NavigationMarkerManager(private val mapView: MapView) {
         lat: Double, lng: Double, bearing: Double,
         durationMs: Int,
         markerSize: Int? = null, iconAsset: String? = null,
-        segmentIndex: Int = lastKnownSegmentIndex
+        segmentIndex: Int = lastKnownSegmentIndex,
+        iconImageBase64: String? = null
     ) {
         val newSize  = markerSize ?: DEFAULT_MARKER_SIZE_PX
         val newAsset = iconAsset  ?: DEFAULT_SVG_ASSET
@@ -89,6 +97,15 @@ class NavigationMarkerManager(private val mapView: MapView) {
             markerSizePx = newSize; svgAsset = newAsset
             truckSvg = null; imageCache.evictAll()
             lastRenderedBearing = Int.MIN_VALUE
+        }
+        // Swap in / out the JS-supplied icon when it changes.
+        if (iconImageBase64 != customBitmapKey) {
+            customBitmapKey = iconImageBase64
+            customBitmap = decodeBase64(iconImageBase64)
+            imageCache.evictAll()
+            lastRenderedBearing = Int.MIN_VALUE
+            marker?.let { mapView.mapScene.removeMapMarker(it) }
+            marker = null
         }
         if (segmentIndex >= 0) lastKnownSegmentIndex = segmentIndex
 
@@ -163,10 +180,12 @@ class NavigationMarkerManager(private val mapView: MapView) {
 
     private fun placeMarker(lat: Double, lng: Double, bearing: Double) {
         marker?.let { mapView.mapScene.removeMapMarker(it) }
+        // Custom teardrop pin anchors at its bottom tip; the drawn arrow centres.
+        val anchorV = if (customBitmap != null) 1.0 else ANCHOR_V
         val m = MapMarker(
             GeoCoordinates(lat, lng),
             getOrCreateImage(bearing),
-            Anchor2D(ANCHOR_H, ANCHOR_V)
+            Anchor2D(ANCHOR_H, anchorV)
         )
         mapView.mapScene.addMapMarker(m)
         marker = m
@@ -184,9 +203,28 @@ class NavigationMarkerManager(private val mapView: MapView) {
     }
 
     private fun getOrCreateImage(bearing: Double): MapImage {
+        // JS-supplied icon: one image for all bearings (no rotation), cached at key 0.
+        // Scale to the native marker size so the on-screen size is decided here,
+        // not by the resolution of the rasterised PNG handed over from JS.
+        customBitmap?.let { bmp ->
+            return imageCache.get(0)
+                ?: MapImageFactory.fromBitmap(HereMapView.scaleToMarkerSize(bmp, markerSizePx))
+                    .also { imageCache.put(0, it) }
+        }
         val key = roundBearing(bearing)
         return imageCache.get(key)
             ?: createTruckImage(key.toDouble()).also { imageCache.put(key, it) }
+    }
+
+    private fun decodeBase64(b64: String?): Bitmap? {
+        if (b64.isNullOrEmpty()) return null
+        return try {
+            val clean = b64.substringAfter(",", b64)
+            val bytes = Base64.decode(clean, Base64.DEFAULT)
+            BitmapFactory.decodeByteArray(bytes, 0, bytes.size)
+        } catch (e: Exception) {
+            Log.e(TAG, "decodeBase64 failed: ${e.message}"); null
+        }
     }
 
     private fun roundBearing(b: Double): Int =

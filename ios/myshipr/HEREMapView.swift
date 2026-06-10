@@ -14,6 +14,15 @@ class HereMapView: UIView {
     // Raw coords kept for trimPolyline
     private var currentPolylineCoords: [[Double]] = []
 
+    // ── Native-controlled marker size ───────────────────────────────────────
+    // On-screen pixel size for every JS-supplied marker image (source /
+    // destination pins and the navigation truck). The rasterised PNG is scaled
+    // to this on the native side, so the marker size is decided here — NOT by
+    // whatever resolution the PNG happened to be captured at. Tune this single
+    // value to make markers bigger / smaller (kept in sync with Android's
+    // HereMapView.MARKER_IMAGE_SIZE_PX).
+    private static let markerImageSizePx: CGFloat = 100
+
     // Markers
     private var sourceMarker:      MapMarker?
     private var destinationMarker: MapMarker?
@@ -25,6 +34,19 @@ class HereMapView: UIView {
 
     // Navigation state
     private var isNavigating = false
+
+    // Optional JS-provided PNG bytes for the live vehicle marker (rasterised
+    // from the user-selected SVG icon). When nil we fall back to the drawn arrow.
+    private var navigationIconData: Data?
+    // On-screen size (px) JS requested for the navigation truck marker.
+    private var navigationIconSize: CGFloat?
+
+    // Scene-load gating: HERE's mapScene.loadScene is async. Any draw/marker/camera
+    // call that arrives before the scene is ready (e.g. the route preview that fires
+    // right after the screen mounts) must be queued and replayed once it loads,
+    // otherwise the SDK silently drops it and nothing renders.
+    private var isSceneLoaded = false
+    private var pendingSceneOps: [() -> Void] = []
 
 #else
     private let placeholderView: UIView = {
@@ -90,17 +112,44 @@ class HereMapView: UIView {
                 point: GeoCoordinates(latitude: 28.4595, longitude: 77.0266),
                 zoom: distance
             )
+
+            // Scene is ready — flush any operations queued while it was loading
+            // (in FIFO order so a queued clear → draw stays consistent).
+            self.isSceneLoaded = true
+            let ops = self.pendingSceneOps
+            self.pendingSceneOps.removeAll()
+            ops.forEach { $0() }
+        }
+    }
+
+    /// Runs `block` immediately if the map scene has finished loading, otherwise
+    /// queues it to run (in order) once `loadScene` completes.
+    private func whenSceneReady(_ block: @escaping () -> Void) {
+        if isSceneLoaded {
+            block()
+        } else {
+            pendingSceneOps.append(block)
         }
     }
 
     // MARK: - Camera
 
-    func moveCamera(lat: Double, lng: Double, distanceMeters: Double = 1000) {
-        let distance = MapMeasure(kind: .distanceInMeters, value: distanceMeters)
-        mapView.camera.lookAt(
-            point: GeoCoordinates(latitude: lat, longitude: lng),
-            zoom: distance
-        )
+    func moveCamera(lat: Double, lng: Double, zoom: Double? = nil, distanceMeters: Double? = nil) {
+        whenSceneReady { [weak self] in
+            guard let self = self else { return }
+            // A zoom level frames the route the way the JS camera-fit expects;
+            // a distance is the legacy fallback for callers that don't send zoom.
+            let measure: MapMeasure
+            if let zoom = zoom {
+                measure = MapMeasure(kind: .zoomLevel, value: zoom)
+            } else {
+                measure = MapMeasure(kind: .distanceInMeters, value: distanceMeters ?? 1000)
+            }
+            self.mapView.camera.lookAt(
+                point: GeoCoordinates(latitude: lat, longitude: lng),
+                zoom: measure
+            )
+        }
     }
 
     /// Tilt + head camera to follow the nav arrow during navigation
@@ -144,44 +193,47 @@ class HereMapView: UIView {
     func drawRoutePolyline(coords: [[Double]],
                            color: UIColor? = nil,
                            widthPixels: Double = 10.0) {
-        clearPolylines()
-        currentPolylineCoords = coords
+        whenSceneReady { [weak self] in
+            guard let self = self else { return }
+            self.clearPolylinesRaw()
+            self.currentPolylineCoords = coords
 
-        let geoCoords = coords.compactMap { pair -> GeoCoordinates? in
-            guard pair.count >= 2 else { return nil }
-            return GeoCoordinates(latitude: pair[0], longitude: pair[1])
-        }
+            let geoCoords = coords.compactMap { pair -> GeoCoordinates? in
+                guard pair.count >= 2 else { return nil }
+                return GeoCoordinates(latitude: pair[0], longitude: pair[1])
+            }
 
-        guard geoCoords.count >= 2,
-              let geoPolyline = try? GeoPolyline(vertices: geoCoords) else {
-            print("[HereMapView] drawRoutePolyline: invalid coords (count=\(geoCoords.count))")
-            return
-        }
+            guard geoCoords.count >= 2,
+                  let geoPolyline = try? GeoPolyline(vertices: geoCoords) else {
+                print("[HereMapView] drawRoutePolyline: invalid coords (count=\(geoCoords.count))")
+                return
+            }
 
-        let lineColor = color ?? UIColor(red: 0.25, green: 0.47, blue: 1.0, alpha: 1.0)
-        let mapPolyline: MapPolyline
-        do {
-            let lineWidth = try MapMeasureDependentRenderSize(
-                sizeUnit: RenderSize.Unit.pixels,
-                size: widthPixels
-            )
-            let representation = try MapPolyline.SolidRepresentation(
-                lineWidth: lineWidth,
-                color: lineColor,
-                capShape: LineCap.round
-            )
-            mapPolyline = try MapPolyline(
-                geometry: geoPolyline,
-                representation: representation
-            )
-        } catch {
-            print("[HereMapView] drawRoutePolyline: failed to build polyline — \(error)")
-            return
+            let lineColor = color ?? UIColor(red: 0.25, green: 0.47, blue: 1.0, alpha: 1.0)
+            let mapPolyline: MapPolyline
+            do {
+                let lineWidth = try MapMeasureDependentRenderSize(
+                    sizeUnit: RenderSize.Unit.pixels,
+                    size: widthPixels
+                )
+                let representation = try MapPolyline.SolidRepresentation(
+                    lineWidth: lineWidth,
+                    color: lineColor,
+                    capShape: LineCap.round
+                )
+                mapPolyline = try MapPolyline(
+                    geometry: geoPolyline,
+                    representation: representation
+                )
+            } catch {
+                print("[HereMapView] drawRoutePolyline: failed to build polyline — \(error)")
+                return
+            }
+            self.mapView.mapScene.addMapPolyline(mapPolyline)
+            self.allMapPolylines.append(mapPolyline)
+            self.routePolylineObject = mapPolyline
+            self.fitCameraToPolyline(coords: geoCoords)
         }
-        mapView.mapScene.addMapPolyline(mapPolyline)
-        allMapPolylines.append(mapPolyline)
-        routePolylineObject = mapPolyline
-        fitCameraToPolyline(coords: geoCoords)
     }
 
     /// Removes already-driven segments (called during navigation progress)
@@ -192,6 +244,12 @@ class HereMapView: UIView {
     }
 
     func clearPolylines() {
+        whenSceneReady { [weak self] in self?.clearPolylinesRaw() }
+    }
+
+    /// Synchronous polyline removal — safe only once the scene is loaded.
+    /// Used internally by `drawRoutePolyline` (already inside a scene-ready block).
+    private func clearPolylinesRaw() {
         for p in allMapPolylines { mapView.mapScene.removeMapPolyline(p) }
         allMapPolylines.removeAll()
         routePolylineObject = nil
@@ -219,58 +277,94 @@ class HereMapView: UIView {
     // MARK: - Markers
 
     func setSourceMarker(lat: Double, lng: Double) {
-        replaceMarker(&sourceMarker,
-                      with: makeMarker(lat: lat, lng: lng,
-                                       color: UIColor(red: 0.13, green: 0.77, blue: 0.37, alpha: 1),
-                                       label: "A"))
+        whenSceneReady { [weak self] in
+            guard let self = self else { return }
+            self.replaceMarker(&self.sourceMarker,
+                          with: self.makeMarker(lat: lat, lng: lng,
+                                           color: UIColor(red: 0.13, green: 0.77, blue: 0.37, alpha: 1),
+                                           label: "A"))
+        }
     }
 
     func setDestinationMarker(lat: Double, lng: Double) {
-        replaceMarker(&destinationMarker,
-                      with: makeMarker(lat: lat, lng: lng,
-                                       color: UIColor(red: 0.93, green: 0.26, blue: 0.26, alpha: 1),
-                                       label: "B"))
+        whenSceneReady { [weak self] in
+            guard let self = self else { return }
+            self.replaceMarker(&self.destinationMarker,
+                          with: self.makeMarker(lat: lat, lng: lng,
+                                           color: UIColor(red: 0.93, green: 0.26, blue: 0.26, alpha: 1),
+                                           label: "B"))
+        }
     }
 
     func addGenericMarker(lat: Double, lng: Double) {
-        let marker = makeMarker(lat: lat, lng: lng,
-                                color: UIColor(red: 0.6, green: 0.2, blue: 0.9, alpha: 1),
-                                label: "•")
-        mapView.mapScene.addMapMarker(marker)
-        genericMarkers.append(marker)
+        whenSceneReady { [weak self] in
+            guard let self = self else { return }
+            let marker = self.makeMarker(lat: lat, lng: lng,
+                                    color: UIColor(red: 0.6, green: 0.2, blue: 0.9, alpha: 1),
+                                    label: "•")
+            self.mapView.mapScene.addMapMarker(marker)
+            self.genericMarkers.append(marker)
+        }
     }
 
     /// Generic colored pin — used by the JS `addMarker({ lat, lng, color })` bridge.
     func addColoredMarker(lat: Double, lng: Double, color: UIColor, label: String = "•") {
-        let marker = makeMarker(lat: lat, lng: lng, color: color, label: label)
-        mapView.mapScene.addMapMarker(marker)
-        genericMarkers.append(marker)
+        whenSceneReady { [weak self] in
+            guard let self = self else { return }
+            let marker = self.makeMarker(lat: lat, lng: lng, color: color, label: label)
+            self.mapView.mapScene.addMapMarker(marker)
+            self.genericMarkers.append(marker)
+        }
+    }
+
+    /// Image pin from JS-supplied PNG bytes (the rasterised SVG marker). The
+    /// teardrop is anchored at its bottom-centre tip so it points at the coord.
+    func addImageMarker(lat: Double, lng: Double, pngData: Data, sizePx: CGFloat? = nil) {
+        whenSceneReady { [weak self] in
+            guard let self = self else { return }
+            let target = sizePx ?? HereMapView.markerImageSizePx
+            let mapImage = MapImage(pixelData: self.scaledMarkerPng(pngData, maxDimension: target), imageFormat: ImageFormat.png)
+            let anchor   = Anchor2D(horizontal: 0.5, vertical: 1.0)
+            let marker   = MapMarker(
+                at: GeoCoordinates(latitude: lat, longitude: lng),
+                image: mapImage,
+                anchor: anchor
+            )
+            self.mapView.mapScene.addMapMarker(marker)
+            self.genericMarkers.append(marker)
+        }
     }
 
     func clearMarkers() {
-        [sourceMarker, destinationMarker].compactMap { $0 }.forEach {
-            mapView.mapScene.removeMapMarker($0)
+        whenSceneReady { [weak self] in
+            guard let self = self else { return }
+            [self.sourceMarker, self.destinationMarker].compactMap { $0 }.forEach {
+                self.mapView.mapScene.removeMapMarker($0)
+            }
+            self.sourceMarker      = nil
+            self.destinationMarker = nil
+            self.genericMarkers.forEach { self.mapView.mapScene.removeMapMarker($0) }
+            self.genericMarkers.removeAll()
         }
-        sourceMarker      = nil
-        destinationMarker = nil
-        genericMarkers.forEach { mapView.mapScene.removeMapMarker($0) }
-        genericMarkers.removeAll()
     }
 
     // MARK: - Location Dot
 
     func showCurrentLocation(lat: Double, lng: Double) {
-        let coord = GeoCoordinates(latitude: lat, longitude: lng)
-        if let existing = locationMarker {
-            existing.coordinates = coord
-            return
+        whenSceneReady { [weak self] in
+            guard let self = self else { return }
+            let coord = GeoCoordinates(latitude: lat, longitude: lng)
+            if let existing = self.locationMarker {
+                existing.coordinates = coord
+                return
+            }
+            let image    = self.drawLocationDotImage()
+            let mapImage = MapImage(pixelData: image.pngData()!, imageFormat: ImageFormat.png)
+            let anchor   = Anchor2D(horizontal: 0.5, vertical: 0.5)
+            let marker   = MapMarker(at: coord, image: mapImage, anchor: anchor)
+            self.mapView.mapScene.addMapMarker(marker)
+            self.locationMarker = marker
         }
-        let image    = drawLocationDotImage()
-        let mapImage = MapImage(pixelData: image.pngData()!, imageFormat: ImageFormat.png)
-        let anchor   = Anchor2D(horizontal: 0.5, vertical: 0.5)
-        let marker   = MapMarker(at: coord, image: mapImage, anchor: anchor)
-        mapView.mapScene.addMapMarker(marker)
-        locationMarker = marker
     }
 
     func hideCurrentLocation() {
@@ -282,13 +376,34 @@ class HereMapView: UIView {
 
     // MARK: - Navigation Marker (live GPS)
 
-    func updateNavigationMarker(lat: Double, lng: Double, bearing: Double) {
+    func updateNavigationMarker(lat: Double, lng: Double, bearing: Double, iconPngData: Data? = nil, sizePx: CGFloat? = nil) {
+        // Detect whether the JS-supplied icon (or its on-screen size) changed
+        // since the last call. The first GPS updates can arrive before the JS
+        // marker rasteriser has produced the vehicle PNG, so the icon shows up
+        // only on a later call. When it does we must REBUILD the marker image,
+        // not just move it — otherwise it stays stuck on the fallback arrow it
+        // was first created with (matches Android's icon-swap in
+        // NavigationMarkerManager).
+        var iconChanged = false
+        if let data = iconPngData, data != navigationIconData {
+            navigationIconData = data
+            iconChanged = true
+        }
+        if let sizePx = sizePx, sizePx != navigationIconSize {
+            navigationIconSize = sizePx
+            iconChanged = true
+        }
         let coord = GeoCoordinates(latitude: lat, longitude: lng)
-        if let existing = navigationMarker {
+        if let existing = navigationMarker, !iconChanged {
             existing.coordinates = coord
             // Bearing rotation: if your HERE SDK version supports it via
             // MapMarker orientation, apply here. Otherwise re-draw the image.
         } else {
+            // First placement, or the JS icon just arrived/changed → (re)create
+            // the marker so the new image is actually rendered.
+            if let existing = navigationMarker {
+                mapView.mapScene.removeMapMarker(existing)
+            }
             let marker = makeNavigationMarker(lat: lat, lng: lng)
             mapView.mapScene.addMapMarker(marker)
             navigationMarker = marker
@@ -318,6 +433,35 @@ class HereMapView: UIView {
 
     // MARK: - Marker Helpers
 
+    /// Resizes a JS-supplied PNG so the marker renders at a fixed on-screen size,
+    /// preserving aspect ratio and giving the native side full control over size.
+    ///
+    /// [maxDimension] is the size JS sends (the same value Android uses). This is a
+    /// 1:1 port of Android's `HereMapView.scaleToMarkerSize`: the longest side is
+    /// scaled to exactly `maxDimension` PIXELS — NO `UIScreen.scale` division. HERE
+    /// renders `MapImage(pixelData:)` at the same 1px-on-screen ratio on both
+    /// platforms, so handing iOS the identical target pixel size makes the marker
+    /// the same on-screen size as Android on every device density.
+    private func scaledMarkerPng(
+        _ data: Data,
+        maxDimension: CGFloat = HereMapView.markerImageSizePx
+    ) -> Data {
+        guard let image = UIImage(data: data), let cg = image.cgImage else { return data }
+        let w = CGFloat(cg.width)
+        let h = CGFloat(cg.height)
+        let maxDim = max(w, h)
+        guard maxDim > 0, maxDim != maxDimension else { return data }
+        let factor = maxDimension / maxDim             // scale to exactly target px (like Android)
+        let newSize = CGSize(width: max(1, w * factor), height: max(1, h * factor))
+        // scale 1.0 → output PNG pixel size equals the point size we draw into,
+        // so the rendered PNG is exactly `newSize` pixels.
+        UIGraphicsBeginImageContextWithOptions(newSize, false, 1.0)
+        image.draw(in: CGRect(origin: .zero, size: newSize))
+        let resized = UIGraphicsGetImageFromCurrentImageContext()
+        UIGraphicsEndImageContext()
+        return resized?.pngData() ?? data
+    }
+
     private func replaceMarker(_ slot: inout MapMarker?, with newMarker: MapMarker) {
         if let old = slot { mapView.mapScene.removeMapMarker(old) }
         mapView.mapScene.addMapMarker(newMarker)
@@ -336,9 +480,19 @@ class HereMapView: UIView {
     }
 
     private func makeNavigationMarker(lat: Double, lng: Double) -> MapMarker {
-        let image    = drawNavArrowImage()
-        let mapImage = MapImage(pixelData: image.pngData()!, imageFormat: ImageFormat.png)
-        let anchor   = Anchor2D(horizontal: 0.5, vertical: 0.5)
+        // Prefer the JS-supplied icon (teardrop pin, bottom-anchored); otherwise
+        // fall back to the drawn directional arrow (centre-anchored).
+        let mapImage: MapImage
+        let anchor: Anchor2D
+        if let data = navigationIconData {
+            let target = navigationIconSize ?? HereMapView.markerImageSizePx
+            mapImage = MapImage(pixelData: scaledMarkerPng(data, maxDimension: target), imageFormat: ImageFormat.png)
+            anchor   = Anchor2D(horizontal: 0.5, vertical: 1.0)
+        } else {
+            let image = drawNavArrowImage()
+            mapImage = MapImage(pixelData: image.pngData()!, imageFormat: ImageFormat.png)
+            anchor   = Anchor2D(horizontal: 0.5, vertical: 0.5)
+        }
         return MapMarker(
             at: GeoCoordinates(latitude: lat, longitude: lng),
             image: mapImage,

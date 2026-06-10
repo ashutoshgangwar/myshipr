@@ -121,9 +121,13 @@ class HereMapModule(
         val lng = markerMap.getDouble("lng")
         val color = if (markerMap.hasKey("color")) markerMap.getString("color") ?: "#FF0000"
                     else "#FF0000"
+        // Optional JS-rasterised PNG (base64) for the marker icon.
+        val image = if (markerMap.hasKey("image")) markerMap.getString("image") else null
+        // Optional on-screen size (px) the JS side wants this marker drawn at.
+        val markerSize = if (markerMap.hasKey("markerSize")) markerMap.getInt("markerSize") else null
 
         runOnView(viewTag, promise) { view ->
-            view.addMarker(lat, lng, color)
+            view.addMarker(lat, lng, color, image, markerSize)
             promise.resolve(null)
         }
     }
@@ -224,9 +228,10 @@ class HereMapModule(
         val durationMs = if (options.hasKey("animationDuration")) options.getInt("animationDuration") else 1000
         val markerSize = if (options.hasKey("markerSize")) options.getInt("markerSize") else null
         val iconAsset  = if (options.hasKey("iconAsset"))  options.getString("iconAsset")  else null
+        val iconImage  = if (options.hasKey("iconImage"))  options.getString("iconImage")  else null
 
         runOnView(viewTag, promise) { view ->
-            view.updateNavigationMarker(lat, lng, bearing, durationMs, markerSize, iconAsset)
+            view.updateNavigationMarker(lat, lng, bearing, durationMs, markerSize, iconAsset, -1, iconImage)
             promise.resolve(null)
         }
     }

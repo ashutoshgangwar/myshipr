@@ -63,9 +63,13 @@ class HereMapModule: NSObject {
             reject("BAD_ARGS", "moveCamera requires lat and lng", nil)
             return
         }
-        let distance = Self.double(options["distanceMeters"]) ?? 1000.0
+        // Honor `zoom` (a zoom level) when provided — the JS camera-fit helper
+        // sends a computed zoom so the whole source→destination route frames
+        // in view. Fall back to `distanceMeters` only when no zoom is given.
+        let zoom = Self.double(options["zoom"])
+        let distance = Self.double(options["distanceMeters"])
         DispatchQueue.main.async {
-            self.findHereMapView()?.moveCamera(lat: lat, lng: lng, distanceMeters: distance)
+            self.findHereMapView()?.moveCamera(lat: lat, lng: lng, zoom: zoom, distanceMeters: distance)
             resolve(nil)
         }
     }
@@ -91,9 +95,18 @@ class HereMapModule: NSObject {
         }
         let type  = options["type"] as? String
         let color = (options["color"] as? String).flatMap { UIColor(hexString: $0) }
+        let imageData = Self.dataFromBase64(options["image"] as? String)
+        // Optional on-screen size (px) the JS side wants this marker drawn at.
+        let markerSize = (options["markerSize"] as? NSNumber).map { CGFloat(truncating: $0) }
         DispatchQueue.main.async {
             guard let mapView = self.findHereMapView() else {
                 reject("NO_MAP", "HereMapView not found", nil)
+                return
+            }
+            // JS-supplied marker image takes precedence over the native pins.
+            if let imageData = imageData {
+                mapView.addImageMarker(lat: lat, lng: lng, pngData: imageData, sizePx: markerSize)
+                resolve(nil)
                 return
             }
             switch type {
@@ -269,8 +282,12 @@ class HereMapModule: NSObject {
             let lng = Self.double(options["lng"] ?? options["longitude"])
         else { return }
         let bearing = Self.double(options["bearing"]) ?? 0.0
+        let iconData = Self.dataFromBase64(options["iconImage"] as? String)
+        let markerSize = (options["markerSize"] as? NSNumber).map { CGFloat(truncating: $0) }
         DispatchQueue.main.async {
-            self.findHereMapView()?.updateNavigationMarker(lat: lat, lng: lng, bearing: bearing)
+            self.findHereMapView()?.updateNavigationMarker(
+                lat: lat, lng: lng, bearing: bearing, iconPngData: iconData, sizePx: markerSize
+            )
         }
     }
 
@@ -378,6 +395,15 @@ class HereMapModule: NSObject {
         if let n = value as? NSNumber { return n.doubleValue }
         if let s = value as? String  { return Double(s) }
         return nil
+    }
+
+    /// Decodes a base64 PNG string (with or without a `data:` URI prefix) into Data.
+    private static func dataFromBase64(_ value: String?) -> Data? {
+        guard var str = value, !str.isEmpty else { return nil }
+        if str.hasPrefix("data:"), let comma = str.range(of: ",") {
+            str = String(str[comma.upperBound...])
+        }
+        return Data(base64Encoded: str, options: .ignoreUnknownCharacters)
     }
 
     /// Normalises a JS coordinate list into `[[lat, lng]]`.

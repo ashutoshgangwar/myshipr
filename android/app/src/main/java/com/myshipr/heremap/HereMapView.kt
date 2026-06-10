@@ -1,8 +1,12 @@
 package com.myshipr.heremap
 
 import android.content.Context
+import android.graphics.Bitmap
+import android.graphics.BitmapFactory
+import android.util.Base64
 import android.widget.FrameLayout
 import android.util.Log
+import com.here.sdk.core.Anchor2D
 import com.here.sdk.core.Color as HereColor
 import com.here.sdk.core.GeoCoordinates
 import com.here.sdk.core.GeoCoordinatesUpdate
@@ -37,6 +41,24 @@ class HereMapView(context: Context) : FrameLayout(context) {
         private const val DEFAULT_ZOOM = 14.0
         // Fixed pixel width for native drawRoute fallback
         private const val DEFAULT_ROUTE_WIDTH_PX = 26.0
+
+        // ── Native-controlled marker size ────────────────────────────────────
+        // On-screen pixel size for every JS-supplied marker image (source /
+        // destination pins and the navigation truck). The rasterised PNG is
+        // scaled to this on the native side, so the marker size is decided here
+        // — NOT by whatever resolution the PNG happened to be captured at.
+        // Tune this single value to make markers bigger / smaller.
+        const val MARKER_IMAGE_SIZE_PX = 100
+
+        /** Scales [src] so its longest side equals [target], preserving aspect ratio. */
+        fun scaleToMarkerSize(src: Bitmap, target: Int = MARKER_IMAGE_SIZE_PX): Bitmap {
+            val maxDim = maxOf(src.width, src.height)
+            if (maxDim <= 0 || maxDim == target) return src
+            val scale = target.toFloat() / maxDim
+            val w = maxOf(1, Math.round(src.width * scale))
+            val h = maxOf(1, Math.round(src.height * scale))
+            return Bitmap.createScaledBitmap(src, w, h, true)
+        }
     }
 
     val mapView: MapView = MapView(context)
@@ -149,13 +171,39 @@ class HereMapView(context: Context) : FrameLayout(context) {
     // Markers
     // ─────────────────────────────────────────────────────────────────────────
 
-    fun addMarker(lat: Double, lng: Double, colorHex: String = "#FF0000") {
-        val m = MapMarker(
-            GeoCoordinates(lat, lng),
-            MapImageFactory.fromResource(context.resources, android.R.drawable.ic_menu_mylocation)
-        )
+    fun addMarker(
+        lat: Double, lng: Double,
+        colorHex: String = "#FF0000",
+        imageBase64: String? = null,
+        markerSizePx: Int? = null
+    ) {
+        val customImage = decodeMarkerImage(imageBase64, markerSizePx)
+        val m = if (customImage != null) {
+            // JS-supplied teardrop pin → anchor at the bottom-centre tip.
+            MapMarker(GeoCoordinates(lat, lng), customImage, Anchor2D(0.5, 1.0))
+        } else {
+            MapMarker(
+                GeoCoordinates(lat, lng),
+                MapImageFactory.fromResource(context.resources, android.R.drawable.ic_menu_mylocation)
+            )
+        }
         mapView.mapScene.addMapMarker(m)
         markers.add(m)
+    }
+
+    /** Decodes a base64 PNG (optionally data-URI prefixed) into a HERE MapImage. */
+    private fun decodeMarkerImage(base64: String?, markerSizePx: Int? = null): MapImage? {
+        if (base64.isNullOrEmpty()) return null
+        return try {
+            val clean = base64.substringAfter(",", base64)
+            val bytes = Base64.decode(clean, Base64.DEFAULT)
+            val bmp = BitmapFactory.decodeByteArray(bytes, 0, bytes.size) ?: return null
+            // Honor the JS-requested size; fall back to the native default.
+            val target = markerSizePx ?: MARKER_IMAGE_SIZE_PX
+            MapImageFactory.fromBitmap(scaleToMarkerSize(bmp, target))
+        } catch (e: Exception) {
+            Log.e(TAG, "decodeMarkerImage failed: ${e.message}"); null
+        }
     }
 
     fun clearMarkers() {
@@ -249,10 +297,10 @@ class HereMapView(context: Context) : FrameLayout(context) {
     fun updateNavigationMarker(
         lat: Double, lng: Double, bearing: Double, durationMs: Int,
         markerSize: Int? = null, iconAsset: String? = null,
-        segmentIndex: Int = -1
+        segmentIndex: Int = -1, iconImageBase64: String? = null
     ) {
         if (locationIndicator != null) { locationIndicator!!.disable(); locationIndicator = null }
-        navMarkers().update(lat, lng, bearing, durationMs, markerSize, iconAsset, segmentIndex)
+        navMarkers().update(lat, lng, bearing, durationMs, markerSize, iconAsset, segmentIndex, iconImageBase64)
     }
 
     fun updateNavigationCamera(

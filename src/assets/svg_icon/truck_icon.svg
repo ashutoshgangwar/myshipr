@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg"
+     width="100%"
+     height="100%"
+     viewBox="0 0 128 256"
+     preserveAspectRatio="xMidYMid meet">
+
+  <defs>
+    <linearGradient id="redBody" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#ff6b6b"/>
+      <stop offset="50%" stop-color="#d32f2f"/>
+      <stop offset="100%" stop-color="#9a0007"/>
+    </linearGradient>
+
+    <linearGradient id="glass" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#4f5b62"/>
+      <stop offset="100%" stop-color="#111"/>
+    </linearGradient>
+
+    <filter id="shadow">
+      <feDropShadow dx="0" dy="3" stdDeviation="3"
+                    flood-opacity="0.3"/>
+    </filter>
+  </defs>
+
+  <g filter="url(#shadow)">
+
+    <!-- Cab -->
+    <path d="
+      M32 18
+      Q32 8 42 8
+      L86 8
+      Q96 8 96 18
+      L100 34
+      Q102 42 96 48
+      L32 48
+      Q26 42 28 34
+      Z"
+      fill="url(#redBody)"/>
+
+    <!-- Windshield -->
+    <rect x="26" y="34" width="76" height="22" rx="5" fill="url(#glass)"/>
+
+    <!-- Mirrors -->
+    <rect x="18" y="42" width="8" height="18" rx="3" fill="#222"/>
+    <rect x="102" y="42" width="8" height="18" rx="3" fill="#222"/>
+
+    <!-- Connection -->
+    <rect x="28" y="60" width="72" height="10" rx="2" fill="#666"/>
+
+    <!-- Trailer -->
+    <rect x="18" y="74" width="92" height="162" rx="4" fill="url(#redBody)"/>
+
+    <!-- Trailer border -->
+    <rect x="22" y="78" width="84" height="154" rx="2" fill="none"
+          stroke="#ffcdd2" stroke-width="1.5"/>
+
+    <!-- Trailer ribs -->
+    <g stroke="#b71c1c" stroke-width="1">
+      <line x1="30" y1="82" x2="30" y2="228"/>
+      <line x1="40" y1="82" x2="40" y2="228"/>
+      <line x1="50" y1="82" x2="50" y2="228"/>
+      <line x1="60" y1="82" x2="60" y2="228"/>
+      <line x1="70" y1="82" x2="70" y2="228"/>
+      <line x1="80" y1="82" x2="80" y2="228"/>
+      <line x1="90" y1="82" x2="90" y2="228"/>
+    </g>
+
+    <!-- mySHIPR branding — centered on trailer -->
+    <text x="64"
+          y="155"
+          text-anchor="middle"
+          dominant-baseline="middle"
+          font-family="Arial, Helvetica, sans-serif"
+          font-size="22"
+          font-weight="900"
+          letter-spacing="0"
+          fill="#FFFFFF"
+          stroke="#B71C1C"
+          stroke-width="0.4"
+          transform="rotate(-90 64 155)">
+      mySHIPR
+    </text>
+
+    <!-- Wheels -->
+    <rect x="8" y="100" width="8" height="22" rx="2" fill="#111"/>
+    <rect x="112" y="100" width="8" height="22" rx="2" fill="#111"/>
+
+    <rect x="8" y="136" width="8" height="22" rx="2" fill="#111"/>
+    <rect x="112" y="136" width="8" height="22" rx="2" fill="#111"/>
+
+    <rect x="8" y="172" width="8" height="22" rx="2" fill="#111"/>
+    <rect x="112" y="172" width="8" height="22" rx="2" fill="#111"/>
+
+    <rect x="8" y="208" width="8" height="22" rx="2" fill="#111"/>
+    <rect x="112" y="208" width="8" height="22" rx="2" fill="#111"/>
+
+  </g>
+</svg>
