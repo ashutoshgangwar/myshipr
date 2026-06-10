@@ -20,6 +20,7 @@ import {
   clearWatchLocation,
   getCurrentLocation,
   watchCurrentLocation,
+  useLocation,
 } from '../../services/LocationService';
 import {calculateRouteTolls} from './services/hereTruckService';
 
@@ -28,8 +29,6 @@ import RouteGeometry from './components/HereMap/Routegeometry';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import MarkerRasterizer from './components/MarkerRasterizer';
 import MarkerPin from './components/MarkerPin';
-import {useSelector} from 'react-redux';
-import {selectLocation} from '../../redux/slices/locationSlice';
 
 import {
   useSmoothLocation,
@@ -154,7 +153,9 @@ async function fitCameraToCoords(mapRef, coords) {
 export default function HereMapScreen({navigation, route}) {
   const mapRef = useRef(null);
   const [sdkReady, setSdkReady] = useState(false);
-  const currentLocation = useSelector(selectLocation);
+  // Seed location from the shared LocationService cache (cache-first, no extra
+  // GPS prompt). The live navigation watch below owns the continuous fixes.
+  const {location: currentLocation} = useLocation({fetchOnMount: false});
 
   const sourceRef = useRef(null);
   const destinationRef = useRef(null);

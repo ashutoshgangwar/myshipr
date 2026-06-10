@@ -14,13 +14,7 @@ import Truck_Icon from '../../assets/svg_icon/truck-icon.svg';
 
 import MapView, {Marker, Polyline, PROVIDER_GOOGLE} from 'react-native-maps';
 import MapViewDirections from 'react-native-maps-directions';
-import {
-  getCurrentLocation,
-  watchCurrentLocation,
-  clearWatchLocation,
-} from '../../services/LocationService';
-import {useDispatch, useSelector} from 'react-redux';
-import {selectLocation, setLocation} from '../../redux/slices/locationSlice';
+import {useLocation, getCachedLocation} from '../../services/LocationService';
 import {GOOGLE_MAPS_API_KEY} from '@env';
 
 import {
@@ -36,8 +30,9 @@ import { colors } from '../../theme/colors';
 
 const NavigationScreen = () => {
   const isAndroid = Platform.OS === 'android';
-  const dispatch = useDispatch();
-  const cachedLocation = useSelector(selectLocation);
+  // Live location comes from the single LocationService hook (cache-first watch).
+  const {location: liveLocation} = useLocation({watch: true});
+  const cachedLocation = getCachedLocation();
   const hasCachedLocation =
     Number.isFinite(cachedLocation?.latitude) &&
     Number.isFinite(cachedLocation?.longitude);
@@ -131,73 +126,26 @@ const NavigationScreen = () => {
     outputRange: [0.45, 0.1],
   });
 
+  // Mirror the LocationService hook's live fix into the screen's region state.
+  // The watch (and its teardown) is owned by useLocation, so there's no manual
+  // watch/clear to manage here anymore.
   useEffect(() => {
-    let watcher;
-    const startWatching = async () => {
-      try {
-        if (hasCachedLocation) {
-          setCurrentLocation({
-            latitude: cachedLocation.latitude,
-            longitude: cachedLocation.longitude,
-            latitudeDelta: 0.05,
-            longitudeDelta: 0.05,
-          });
-          setHasLocation(true);
-          setLoading(false);
-        } else {
-          const initialLocation = await getCurrentLocation();
-          setCurrentLocation({
-            latitude: initialLocation.latitude,
-            longitude: initialLocation.longitude,
-            latitudeDelta: 0.05,
-            longitudeDelta: 0.05,
-          });
-          dispatch(
-            setLocation({
-              latitude: initialLocation.latitude,
-              longitude: initialLocation.longitude,
-            }),
-          );
-          setHasLocation(true);
-          setLoading(false);
-        }
-
-        watcher = await watchCurrentLocation(
-          position => {
-            const {latitude, longitude} = position.coords;
-            setCurrentLocation({
-              latitude,
-              longitude,
-              latitudeDelta: 0.05,
-              longitudeDelta: 0.05,
-            });
-            dispatch(setLocation({latitude, longitude}));
-            setHasLocation(true);
-          },
-          error => {
-            console.log('Location error:', error);
-          },
-          {
-            enableHighAccuracy: true,
-            distanceFilter: 10,
-            interval: 5000,
-            fastestInterval: 2000,
-          },
-        );
-      } catch (error) {
-        console.log('Failed to get location:', error);
-        setLoading(false);
-      }
-    };
-
-    startWatching();
-
-    return () => {
-      if (watcher) {
-        clearWatchLocation(watcher);
-      }
-    };
-  }, []);
+    if (
+      !liveLocation ||
+      !Number.isFinite(liveLocation.latitude) ||
+      !Number.isFinite(liveLocation.longitude)
+    ) {
+      return;
+    }
+    setCurrentLocation({
+      latitude: liveLocation.latitude,
+      longitude: liveLocation.longitude,
+      latitudeDelta: 0.05,
+      longitudeDelta: 0.05,
+    });
+    setHasLocation(true);
+    setLoading(false);
+  }, [liveLocation]);
 
   const centerOnCurrentLocation = async () => {
     if (activeInput) {

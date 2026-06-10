@@ -1,5 +1,6 @@
 import React, {useEffect, useRef, useState} from 'react';
 import {
+  ActivityIndicator,
   Animated,
   Image,
   PanResponder,
@@ -12,7 +13,6 @@ import {
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
-import {useDispatch} from 'react-redux';
 import MapView, {Marker} from 'react-native-maps';
 import styles from './HomeScreen.styles';
 import StatusBar from '../../component/StatusBar/StatusBar';
@@ -22,11 +22,10 @@ import Double_Arrow_Icon from './../../assets/svg_icon/arrow-double.svg';
 import Gps_Icon from './../../assets/svg_icon/gps-svg.svg';
 import Mechanic_call_Icon from './../../assets/svg_icon/mechanic_call.svg';
 import AppText from '../../theme/AppText';
-import {setLocation} from '../../redux/slices/locationSlice';
 import ReceiverSignaturePad, {
   SIGNATURE_STORAGE_KEY,
 } from '../../component/ReceiverSignaturePad/ReceiverSignaturePad';
-import {useCurrentLocation, LOCATION_ERRORS} from '../../services/Uselocation';
+import {useLocation} from '../../services/LocationService';
 
 
 const INITIAL_REGION = {
@@ -75,7 +74,6 @@ const HomeScreen = () => {
   const isAndroid = Platform.OS === 'android';
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
-  const dispatch = useDispatch();
 
   const [isVerified, setIsVerified] = useState(true);
   const [isMapExpanded, setIsMapExpanded] = useState(false);
@@ -90,12 +88,12 @@ const HomeScreen = () => {
   const miniMapPan = useRef(new Animated.ValueXY({x: 12, y: 12})).current;
 
   const {
-    location, 
-    loading,   
-    error,     
-    refresh,   
-  } = useCurrentLocation({
-    fetchOnMount: true,  
+    location,
+    loading,
+    error,
+    refresh,
+  } = useLocation({
+    fetchOnMount: true,
   });
 
 
@@ -107,16 +105,6 @@ const HomeScreen = () => {
         longitudeDelta: 0.01,
       }
     : null;
-
-  useEffect(() => {
-    if (!location) return;
-    dispatch(
-      setLocation({
-        latitude:  location.latitude,
-        longitude: location.longitude,
-      }),
-    );
-  }, [location, dispatch]);
 
   useEffect(() => {
     if (!currentLocation) return;
@@ -271,6 +259,28 @@ const HomeScreen = () => {
           </Marker>
         )}
       </MapView>
+
+      {/* Location status overlay — only while we have no location yet. */}
+      {!currentLocation && loading && (
+        <View style={styles.locationStatusOverlay} pointerEvents="none">
+          <ActivityIndicator size="small" color={colors.primary || '#22C55E'} />
+          <AppText style={styles.locationStatusText}>Fetching location…</AppText>
+        </View>
+      )}
+
+      {!currentLocation && !loading && error && (
+        <View style={styles.locationStatusOverlay}>
+          <AppText style={styles.locationStatusText}>
+            Unable to fetch location
+          </AppText>
+          <TouchableOpacity
+            style={styles.locationRetryBtn}
+            onPress={refresh}
+            activeOpacity={0.8}>
+            <AppText style={styles.locationRetryText}>Retry</AppText>
+          </TouchableOpacity>
+        </View>
+      )}
 
       {isExpandedView && (
         <View style={[styles.mapExpandedHeader, {top: fullscreenTopPadding}]}>

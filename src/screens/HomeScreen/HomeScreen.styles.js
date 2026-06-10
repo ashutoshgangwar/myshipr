@@ -329,6 +329,35 @@ progressFill: {
     fontWeight: '700',
   },
 
+  locationStatusOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    flexDirection: 'row',
+    gap: moderateScale(8),
+    backgroundColor: 'rgba(255, 255, 255, 0.55)',
+  },
+  locationStatusText: {
+    color: '#0F172A',
+    fontSize: moderateScale(13),
+    fontWeight: '600',
+  },
+  locationRetryBtn: {
+    backgroundColor: '#00033E',
+    paddingHorizontal: moderateScale(16),
+    paddingVertical: verticalScale(7),
+    borderRadius: moderateScale(20),
+  },
+  locationRetryText: {
+    color: '#FFFFFF',
+    fontSize: moderateScale(13),
+    fontWeight: '700',
+  },
+
   mapExpandedHeader: {
     position: 'absolute',
     top: moderateScale(12),
