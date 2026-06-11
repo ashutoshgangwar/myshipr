@@ -43,14 +43,14 @@ const ACTION_COLOR = {
   default:        '#94A3B8',
 };
 
-function resolveIcon(step) {
+export function resolveIcon(step) {
   if (!step) return '↑';
   const base = ACTION_ICON[step.action];
   if (base !== undefined && base !== null) return base;
   if (step.direction) return DIR_ICON[step.direction] ?? '↑';
   return '↑';
 }
-function resolveColor(action) {
+export function resolveColor(action) {
   return ACTION_COLOR[action] ?? ACTION_COLOR.default;
 }
 function formatDist(m) {
@@ -76,7 +76,7 @@ function formatDur(s) {
 // FIX: isApproaching must only fire when nextActionIdx > activeActionIdx
 //      (i.e. there actually IS a distinct next step to preview).
 //      When activeActionIdx === nextActionIdx (clamped at last step) never approach.
-function computeIndices(actions, snapSegmentIndex, metersToNext) {
+export function computeIndices(actions, snapSegmentIndex, metersToNext) {
   if (!actions.length) {
     return {activeActionIdx: 0, nextActionIdx: 0, isApproaching: false};
   }

@@ -53,6 +53,7 @@ import {
   NavigationControls,
 } from './components/NavigationControls';
 import TurnByTurnPanel from './utils/Turnbyturnpanel';
+import NextManeuverHud from './utils/NextManeuverHud';
 
 import {
   NAVIGATION_CAMERA_DURATION_MS,
@@ -81,13 +82,6 @@ const SHEET_COLLAPSED = verticalScale(48);
 const hasHereCredentials = Boolean(
   HERE_ACCESS_KEY_ID && HERE_ACCESS_KEY_SECRET,
 );
-
-function bearingToDirection(bearing) {
-  if (!Number.isFinite(bearing)) return '—';
-  const dirs = ['N', 'NE', 'E', 'SE', 'S', 'SW', 'W', 'NW'];
-  const idx = Math.round((((bearing % 360) + 360) % 360) / 45) % 8;
-  return dirs[idx];
-}
 
 function formatTollTotal(tollData) {
   if (!tollData) return '—';
@@ -209,7 +203,6 @@ export default function HereMapScreen({navigation, route}) {
   const [isTollLoading, setIsTollLoading] = useState(false);
 
   const [liveSpeedKph, setLiveSpeedKph] = useState(0);
-  const [liveBearing, setLiveBearing] = useState(null);
 
   // Live map orientation (degrees, 0 = north-up). Polled from native so the
   // compass reset-to-north button can appear only when the user has rotated the
@@ -351,6 +344,11 @@ export default function HereMapScreen({navigation, route}) {
   const wrongWayStreakRef = useRef(0);
   // Last GPS fix used to derive speed when the device reports none (iOS).
   const lastSpeedSampleRef = useRef(null);
+  // Timestamp of the last GPS fix delivered to the navigation watch. The watch
+  // uses distanceFilter:1, so when the vehicle stops the OS stops emitting fixes
+  // entirely — the watchdog below uses this to drop the live speed to 0 instead
+  // of leaving the HUD frozen on the last moving value.
+  const lastFixAtRef = useRef(0);
 
   // ─── smooth.subscribe ────────────────────────────────────────────────────
   useEffect(() => {
@@ -362,7 +360,6 @@ export default function HereMapScreen({navigation, route}) {
           setLiveSpeedKph(
             Number.isFinite(pos.speed) ? Math.round(pos.speed * 3.6) : 0,
           );
-          setLiveBearing(Number.isFinite(pos.bearing) ? pos.bearing : null);
         }
 
         if (isNavigatingRef.current) {
@@ -581,6 +578,23 @@ export default function HereMapScreen({navigation, route}) {
   useEffect(() => {
     return () => smooth.cleanup();
   }, [smooth]);
+
+  // ─── Stale-fix speed watchdog ──────────────────────────────────────────────
+  // distanceFilter:1 means the OS stops delivering fixes the moment the vehicle
+  // stops, so the last fix (and its non-zero speed) would otherwise stay on the
+  // HUD forever. While navigating, if no fix has arrived for STALE_FIX_MS we
+  // treat the vehicle as stopped and force the live speed to 0 in real time.
+  useEffect(() => {
+    if (!isNavigating) return undefined;
+    const STALE_FIX_MS = 2000;
+    const id = setInterval(() => {
+      const last = lastFixAtRef.current;
+      if (last && Date.now() - last > STALE_FIX_MS) {
+        setLiveSpeedKph(prev => (prev === 0 ? prev : 0));
+      }
+    }, 500);
+    return () => clearInterval(id);
+  }, [isNavigating]);
 
   useEffect(() => {
     (async () => {
@@ -995,10 +1009,10 @@ export default function HereMapScreen({navigation, route}) {
     lastRouteProgressMetersRef.current = 0;
     wrongWayStreakRef.current = 0;
     lastSpeedSampleRef.current = null;
+    lastFixAtRef.current = 0;
     setSnapSegmentIndex(-1);
     setMetersToNext(null);
     setLiveSpeedKph(0);
-    setLiveBearing(null);
 
     try {
       const tollResponse = await calculateRouteTolls(
@@ -1173,6 +1187,9 @@ export default function HereMapScreen({navigation, route}) {
           const lat = position.latitude;
           const lng = position.longitude;
           if (!isUsableNavCoord(lat, lng)) return;
+          // Mark this fix's arrival so the stale-fix watchdog knows the vehicle
+          // is still moving (it zeroes the speed once fixes stop coming in).
+          lastFixAtRef.current = Date.now();
           let liveSpeed = resolveLiveSpeedMps(position);
           // iOS often reports no/invalid GPS speed; derive it from the distance
           // between consecutive fixes so the speed HUD matches Android.
@@ -1429,7 +1446,6 @@ export default function HereMapScreen({navigation, route}) {
     setIsCameraFree(false);
     setTollData(null);
     setLiveSpeedKph(0);
-    setLiveBearing(null);
     setTurnModalVisible(false);
 
     if (sourceRef.current)
@@ -1449,6 +1465,7 @@ export default function HereMapScreen({navigation, route}) {
     lastRouteProgressMetersRef.current = 0;
     wrongWayStreakRef.current = 0;
     lastSpeedSampleRef.current = null;
+    lastFixAtRef.current = 0;
     // Force the preview effect to re-run so the toll cost is re-fetched after
     // navigation ends — otherwise an unchanged src/dst pair leaves it stuck
     // on "Fetching..".
@@ -1915,30 +1932,16 @@ export default function HereMapScreen({navigation, route}) {
           </View>
         )}
 
-        {/* ── Speed + Direction HUD (top-left, navigating only) ── */}
+        {/* ── Next-maneuver HUD (top, navigating only) ──
+            Google-Maps-style turn arrow + live countdown to the upcoming
+            maneuver, driven by the HERE turn-by-turn `actions` data. */}
         {isNavigating && (
-          <View style={styles.speedHud}>
-            <View style={styles.speedHudCard}>
-              <Text
-                style={[
-                  styles.speedHudArrow,
-                  {
-                    transform: [
-                      {
-                        rotate: `${
-                          Number.isFinite(liveBearing) ? liveBearing : 0
-                        }deg`,
-                      },
-                    ],
-                  },
-                ]}>
-                ⬆
-              </Text>
-              <Text style={styles.speedHudDir}>
-                {bearingToDirection(liveBearing)}
-              </Text>
-            </View>
-          </View>
+          <NextManeuverHud
+            routeResponse={routeResponseForPanel}
+            isNavigating={isNavigating}
+            snapSegmentIndex={snapSegmentIndex}
+            metersToNext={metersToNext}
+          />
         )}
 
         {/* Compass — visible in preview/idle mode (hidden while navigating).
