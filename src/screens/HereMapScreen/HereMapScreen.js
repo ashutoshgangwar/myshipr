@@ -1466,9 +1466,6 @@ export default function HereMapScreen({navigation, route}) {
     wrongWayStreakRef.current = 0;
     lastSpeedSampleRef.current = null;
     lastFixAtRef.current = 0;
-    // Force the preview effect to re-run so the toll cost is re-fetched after
-    // navigation ends — otherwise an unchanged src/dst pair leaves it stuck
-    // on "Fetching..".
     lastPreviewPairRef.current = {srcKey: null, dstKey: null};
 
     (async () => {
@@ -1541,10 +1538,6 @@ export default function HereMapScreen({navigation, route}) {
     } catch (_) {}
   }, []);
 
-  // Poll the native camera bearing so the compass button can show only when the
-  // map is rotated away from north. Runs in preview/idle mode only — during
-  // navigation the map is intentionally heading-up and the Re-center button
-  // governs the camera instead.
   useEffect(() => {
     if (!sdkReady || isNavigating) {
       setMapBearing(0);
@@ -1597,10 +1590,6 @@ export default function HereMapScreen({navigation, route}) {
     }
   }, [currentLocation, sourceLocation, smooth]);
 
-  // ─── Center the map on the user's current location when the screen opens
-  //     or comes back into focus. Skipped while navigating or when a
-  //     destination is already set (the route preview frames the camera then).
-  // ─────────────────────────────────────────────────────────────────────────
   useEffect(() => {
     if (!sdkReady) return;
 
@@ -1698,14 +1687,7 @@ export default function HereMapScreen({navigation, route}) {
         }
       } catch (_) {}
     }
-    // NOTE: No longer manually setting shouldFetchPreviewRef here.
-    // The previewKey useEffect above automatically detects the new pair.
   }, [route?.params]);
-
-  // ─── Preview useEffect — fires exactly once per new src+dst pair ──────────
-  // Depends on previewKey (incremented only when a genuinely new pair arrives)
-  // and sdkReady. Reads the latest locations via refs to avoid stale closures.
-  // ─────────────────────────────────────────────────────────────────────────
   const previewDebounceRef = useRef(null);
 
   useEffect(() => {
@@ -1867,10 +1849,7 @@ export default function HereMapScreen({navigation, route}) {
       cancelled = true;
       if (previewDebounceRef.current) clearTimeout(previewDebounceRef.current);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sdkReady, previewKey]);
-  // ^^^ ONLY sdkReady and previewKey — not sourceLocation/destinationLocation.
-  //     This prevents double-firing when both states update in the same cycle.
 
   useEffect(() => {
     return () => {
@@ -1932,9 +1911,6 @@ export default function HereMapScreen({navigation, route}) {
           </View>
         )}
 
-        {/* ── Next-maneuver HUD (top, navigating only) ──
-            Google-Maps-style turn arrow + live countdown to the upcoming
-            maneuver, driven by the HERE turn-by-turn `actions` data. */}
         {isNavigating && (
           <NextManeuverHud
             routeResponse={routeResponseForPanel}
