@@ -371,7 +371,10 @@ export default function HereMapScreen({navigation, route}) {
           const truckBearing = isFinite(pos.bearing) ? pos.bearing : 0;
 
           if (geo && hasReal) {
-            const snap = geo.snapToRoute(pos.lat, pos.lng);
+            // Feed the smoothed travel bearing so the snap won't hop onto the
+            // wrong leg at a flyover / roundabout / junction (see RouteGeometry).
+            const snapHint = Number.isFinite(pos.bearing) ? pos.bearing : null;
+            const snap = geo.snapToRoute(pos.lat, pos.lng, snapHint);
             if (!isValidCoord(snap.lat, snap.lng)) return;
 
             const rawBearing = isFinite(snap.bearing)
@@ -1211,7 +1214,13 @@ export default function HereMapScreen({navigation, route}) {
           const hasReal = hasRealGeometryRef.current;
 
           if (geo && hasReal) {
-            let rawSnap = geo.snapToRoute(lat, lng);
+            // Pass the live heading so the base snap already prefers the leg we
+            // are travelling on before directionAwareSnap refines it.
+            let rawSnap = geo.snapToRoute(
+              lat,
+              lng,
+              Number.isFinite(liveHeading) ? liveHeading : null,
+            );
             try {
               const heading =
                 Number.isFinite(position?.bearing) &&

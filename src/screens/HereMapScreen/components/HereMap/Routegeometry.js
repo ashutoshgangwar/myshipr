@@ -31,6 +31,25 @@ function projectOntoSegment(pLat, pLng, aLat, aLng, bLat, bLng) {
   return t;
 }
 
+// ── Snap tuning ──────────────────────────────────────────────────────────────
+// A flyover ("bridge cut"), roundabout ("cut circle") or busy junction makes the
+// route pass close to a DIFFERENT part of itself: the entrance and exit of a
+// roundabout are metres apart on screen but far apart ALONG the route, and an
+// overpass runs right above the road it crosses. A pure nearest-point snap will
+// happily leap onto that wrong leg, dragging the marker and the trimmed polyline
+// with it. We bias the snap with two soft, additive penalties (measured in
+// "equivalent metres of distance-from-line") so the geometrically-correct leg
+// keeps winning:
+//   • progress penalty — punishes jumping far forward/backward along the route
+//     in a single fix (the across-the-loop leap).
+//   • bearing penalty — punishes snapping onto a segment heading a very
+//     different way than we are travelling (the return leg under an overpass).
+const PROGRESS_FORWARD_BAND_M = 70; // free forward travel allowed per fix
+const PROGRESS_BACK_BAND_M = 25; // GPS-wobble + smoothed-marker-trails slack
+const PROGRESS_PENALTY_PER_M = 0.5; // cost added per excess metre of jump
+const BEARING_FREE_DEG = 60; // heading mismatch tolerated for free
+const BEARING_PENALTY_M = 50; // max cost for a fully-reversed segment
+
 export default class RouteGeometry {
   /**
    * @param {Array<{lat: number, lng: number}>} coords
@@ -57,9 +76,12 @@ export default class RouteGeometry {
       );
     }
     this._lastIndex = 0;
+    // Cumulative metres travelled at the last snap. -1 = unset (no bias yet).
+    this._lastProgressDist = -1;
   }
   resetLastIndex() {
     this._lastIndex = 0;
+    this._lastProgressDist = -1;
   }
 
   /**
@@ -71,10 +93,13 @@ export default class RouteGeometry {
    *
    * @param {number} lat
    * @param {number} lng
-   * @param {number} [searchRadius=15] 
+   * @param {number|null} [hintBearing=null] direction of travel (deg). When
+   *        provided, segments heading the opposite way are penalised so the
+   *        marker won't hop onto the return leg under an overpass / roundabout.
+   * @param {number} [searchRadius=30]
    * @returns {{ segmentIndex, fraction, lat, lng, bearing, progress, distFromRoute }}
    */
-  snapToRoute(lat, lng, searchRadius = 30) {
+  snapToRoute(lat, lng, hintBearing = null, searchRadius = 30) {
     if (this.segmentCount === 0) {
       return {
         segmentIndex: 0,
@@ -87,6 +112,13 @@ export default class RouteGeometry {
       };
     }
 
+    const useBearing = Number.isFinite(hintBearing);
+    const haveProgress = this._lastProgressDist >= 0;
+
+    // Cost = raw distance-from-segment + progress penalty + bearing penalty.
+    // Tracking bestDist separately from bestCost lets the off-route fallback
+    // below trigger on the TRUE geometric distance, not the penalised cost.
+    let bestCost = Infinity;
     let bestDist = Infinity;
     let bestIdx = this._lastIndex;
     let bestT = 0;
@@ -101,12 +133,40 @@ export default class RouteGeometry {
       const sLng = a.lng + (b.lng - a.lng) * t;
       const dist = haversineDistance(lat, lng, sLat, sLng);
 
-      if (dist < bestDist) {
+      let cost = dist;
+
+      if (haveProgress) {
+        const segLen = haversineDistance(a.lat, a.lng, b.lat, b.lng);
+        const candProgress = this.cumDist[i] + segLen * t;
+        const ahead = candProgress - this._lastProgressDist;
+        if (ahead > PROGRESS_FORWARD_BAND_M) {
+          cost += (ahead - PROGRESS_FORWARD_BAND_M) * PROGRESS_PENALTY_PER_M;
+        } else if (ahead < -PROGRESS_BACK_BAND_M) {
+          cost += (-ahead - PROGRESS_BACK_BAND_M) * PROGRESS_PENALTY_PER_M;
+        }
+      }
+
+      if (useBearing) {
+        let bd = Math.abs(hintBearing - this.segmentBearings[i]);
+        if (bd > 180) bd = 360 - bd;
+        if (bd > BEARING_FREE_DEG) {
+          cost +=
+            ((bd - BEARING_FREE_DEG) / (180 - BEARING_FREE_DEG)) *
+            BEARING_PENALTY_M;
+        }
+      }
+
+      if (cost < bestCost) {
+        bestCost = cost;
         bestDist = dist;
         bestIdx = i;
         bestT = t;
       }
     }
+
+    // Genuinely off the line (>100 m) — e.g. a tunnel exit or a big GPS jump.
+    // Progress is no longer trustworthy, so do a pure nearest-point full scan to
+    // re-acquire the route; a reroute is already requested upstream in this case.
     if (bestDist > 100) {
       for (let i = 0; i < this.segmentCount; i++) {
         const a = this.coords[i];
@@ -133,6 +193,7 @@ export default class RouteGeometry {
     const segDist = haversineDistance(a.lat, a.lng, b.lat, b.lng);
     const progressDist = this.cumDist[bestIdx] + segDist * bestT;
     const progress = progressDist / this.totalDistance;
+    this._lastProgressDist = progressDist;
 
     return {
       segmentIndex: bestIdx,

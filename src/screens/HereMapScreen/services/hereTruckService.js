@@ -142,7 +142,7 @@ export async function calculateRouteTolls(
 ) {
   if (!origin || !destination) return null;
 
-  console.log("🚛 vehicle params received:", JSON.stringify(vehicle));
+  console.log("vehicle params received:", JSON.stringify(vehicle));
 
   const originCoords = normalizeLocationCoords(origin);
   const destCoords = normalizeLocationCoords(destination);
@@ -166,7 +166,7 @@ export async function calculateRouteTolls(
 
   const url = `https://router.hereapi.com/v8/routes?${params.toString()}`;
 
-  console.log('🚚 Toll URL:', url);
+  console.log('Toll URL:', url);
 
   try {
     const {data} = await axios.get(url);
@@ -197,7 +197,7 @@ export async function calculateRouteTolls(
       JSON.stringify(normalized),
     );
 
-    console.log('✅ Route Toll Result', {
+    console.log('Route Toll Result', {
       total: normalized.total,
       distanceMeters: normalized.distanceMeters,
       travelTimeSeconds: normalized.travelTimeSeconds,
