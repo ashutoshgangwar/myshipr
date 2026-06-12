@@ -15,7 +15,7 @@ import {
 import DeviceInfo from 'react-native-device-info';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
-import styles from './Login.styles';
+import makeStyles from './Login.styles';
 import {useNavigation} from '@react-navigation/native';
 import Button from '../../component/Button/Button';
 import {colors} from '../../theme/colors';
@@ -25,39 +25,23 @@ import TruckIcon from '../../assets/svg_icon/Frame.svg';
 import StatusBar from '../../component/StatusBar/StatusBar';
 import AppText from '../../theme/AppText';
 import {ms, vs} from '../../theme/scale';
-import React, { useState, useRef } from 'react';
-import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { useState, useRef, useMemo } from 'react';
 import BiometricLoginButton from '../../component/BiometricLoginButton/BiometricLoginButton';
-import useBiometricAutoLogin from '../../hooks/useBiometricAutoLogin';
+import useDeviceType from '../../hooks/useDeviceType';
 
 const Login = () => {
-    // Biometric auto-login
-    const [biometricPrompted, setBiometricPrompted] = useState(false);
-    const [biometricLoading, setBiometricLoading] = useState(false);
-    const [biometricError, setBiometricError] = useState(null);
-
-    // Auto biometric login on app open
-    useBiometricAutoLogin(
-      () => {
-        navigation.reset({ index: 0, routes: [{ name: 'MainApp' }] });
-      },
-      (err) => {
-        setBiometricPrompted(true);
-        if (err && err !== 'Biometric not available') setBiometricError(err);
-      }
-    );
+  const {isTablet} = useDeviceType();
+  const styles = useMemo(() => makeStyles(isTablet), [isTablet]);
   const [deviceId, setDeviceId] = useState('');
   const [deviceName, setDeviceName] = useState('');
   const navigation = useNavigation();
   const [email, setEmail] = useState('');
-  const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const passwordRef = useRef(null);
-  const phoneRef = useRef(null);
   const isLoginDisabled =
-    loading || (!email.trim() && !phone.trim()) || !password.trim();
+    loading || !email.trim() || !password.trim();
 
 
     console.log('device name', deviceName);
@@ -97,18 +81,22 @@ const Login = () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const phoneRegex = /^\+?\d{10,15}$/;
 
-    if (!email.trim() && !phone.trim()) {
+    const identifier = email.trim();
+
+    if (!identifier) {
       Alert.alert('Required Field', 'Please enter email or mobile number');
       return;
     }
 
-    if (email.trim() && !emailRegex.test(email.trim())) {
-      Alert.alert('Invalid Email', 'Please enter a valid email address');
-      return;
-    }
-
-    if (phone.trim() && !phoneRegex.test(phone.trim())) {
-      Alert.alert('Invalid Number', 'Please enter a valid mobile number');
+    // The single field accepts either an email or a phone number.
+    const isEmail = identifier.includes('@');
+    if (isEmail) {
+      if (!emailRegex.test(identifier)) {
+        Alert.alert('Invalid Email', 'Please enter a valid email address');
+        return;
+      }
+    } else if (!phoneRegex.test(identifier)) {
+      Alert.alert('Invalid Input', 'Please enter a valid email or mobile number');
       return;
     }
 
@@ -126,34 +114,13 @@ const Login = () => {
     setLoading(true);
 
     // Simulate API call
-    setTimeout(async () => {
+    setTimeout(() => {
       setLoading(false);
       // TODO: Replace with real authentication logic
       navigation.reset({
         index: 0,
         routes: [{ name: 'MainApp' }],
       });
-      // Ask to enable biometrics after successful login
-      const biometricPref = await AsyncStorage.getItem('biometric_enabled');
-      if (biometricPref !== 'true') {
-        setTimeout(() => {
-          Alert.alert(
-            'Enable biometric login?',
-            'Enable biometric login for future sign-ins?',
-            [
-              {
-                text: 'No',
-                style: 'cancel',
-                onPress: () => AsyncStorage.setItem('biometric_enabled', 'false'),
-              },
-              {
-                text: 'Yes',
-                onPress: () => AsyncStorage.setItem('biometric_enabled', 'true'),
-              },
-            ]
-          );
-        }, 500);
-      }
     }, 1000);
   };
   const handleForgotPassword = () => {
@@ -232,40 +199,19 @@ const Login = () => {
               <View
                 style={styles.card}
                 accessibilityLabel="Login form">
-                <AppText style={styles.label}>Email</AppText>
+                <AppText style={styles.label}>Phone Number or Email Address</AppText>
                 <TextInput
-                  placeholder="Enter your email"
+                  placeholder="Enter your phone number or email"
                   placeholderTextColor={colors.placeholder || '#9CA3AF'}
                   keyboardType="email-address"
                   autoCapitalize="none"
                   autoCorrect={false}
                   value={email}
                   onChangeText={setEmail}
-                  onSubmitEditing={() => phoneRef.current?.focus()}
-                  returnKeyType="next"
-                  style={[styles.input, loading && styles.disabledInput]}
-                  accessibilityLabel="Email input"
-                  editable={!loading}
-                />
-
-                <AppText style={styles.altLoginText}>
-                  Or Login with
-                </AppText>
-
-                <AppText style={styles.label}>Mobile Number</AppText>
-                <TextInput
-                  ref={phoneRef}
-                  placeholder="Enter your mobile number"
-                  placeholderTextColor={colors.placeholder || '#9CA3AF'}
-                  keyboardType="phone-pad"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  value={phone}
-                  onChangeText={setPhone}
                   onSubmitEditing={() => passwordRef.current?.focus()}
                   returnKeyType="next"
                   style={[styles.input, loading && styles.disabledInput]}
-                  accessibilityLabel="Mobile number input"
+                  accessibilityLabel="Email input"
                   editable={!loading}
                 />
 
@@ -318,9 +264,9 @@ const Login = () => {
                   </AppText>
                 </TouchableOpacity>
 
-
+           <View style={styles.buttonContainer}>
                 {loading ? (
-                  <View style={[styles.button, styles.loadingButton]}>
+                  <View style={[styles.primaryButton, styles.loadingButton]}>
                     <ActivityIndicator
                       color={colors.button_color}
                       size="small"
@@ -340,9 +286,13 @@ const Login = () => {
                     disabled={isLoginDisabled}
                   />
                 )}
-
+              <AppText style={styles.altLogin}>Or</AppText>
                 {/* Biometric Login Button */}
                 <BiometricLoginButton
+                  buttonStyle={styles.biometricButton}
+                  textStyle={styles.biometricButtonText}
+                  iconColor={colors.primary}
+                  loaderColor={colors.primary}
                   onSuccess={() => {
                     navigation.reset({ index: 0, routes: [{ name: 'MainApp' }] });
                   }}
@@ -350,36 +300,8 @@ const Login = () => {
                     if (err) Alert.alert('Biometric Login Failed', err);
                   }}
                 />
-
-                <AppText style={styles.altLogin}>Or Login With</AppText>
-
-                <Button
-                  title="Sign In with Google"
-                  onPress={handleGoogleLogin}
-                  backgroundColor={colors.white}
-                  textColor={colors.textOnLightStrong}
-                  borderColor={colors.primary}
-                  icon={require('../../assets/Image/google_icon.png')}
-                  style={[
-                    styles.googleButton,
-                    loading && styles.disabledButton,
-                  ]}
-                  textStyle={styles.googleText}
-                  disabled={loading}
-                />
-
-                <View style={styles.signupRow}>
-                  <AppText style={styles.signupText}>
-                    Don’t have an account?
-                  </AppText>
-                  <TouchableOpacity
-                    onPress={handleCreateAccount}
-                    disabled={loading}
-                    activeOpacity={0.7}>
-                    <AppText style={styles.signupAction}> Sign Up</AppText>
-                  </TouchableOpacity>
-                </View>
               </View>
+                   </View>
             </View>
           </ScrollView>
         </SafeAreaView>

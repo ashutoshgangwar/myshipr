@@ -1,7 +1,9 @@
 import {TouchableOpacity, Image, Platform} from 'react-native';
-import React from 'react';
-import styles from './Button.styles';
+import React, {useMemo} from 'react';
+import { moderateScale} from 'react-native-size-matters';
+import makeStyles from './Button.styles';
 import AppText from '../../theme/AppText';
+import useDeviceType from '../../hooks/useDeviceType';
 
 
 const Button = ({
@@ -11,7 +13,7 @@ const Button = ({
   textColor = '#fff',
   icon,
   IconComponent,
-  iconSize = 20,
+  iconSize = moderateScale(20),
   borderColor,
   disabled = false,
   style,
@@ -19,6 +21,8 @@ const Button = ({
   activeOpacity,
   platformType,
 }) => {
+  const {isTablet} = useDeviceType();
+  const styles = useMemo(() => makeStyles(isTablet), [isTablet]);
   const resolvedPlatform = platformType || Platform.OS;
   const isIOS = resolvedPlatform === 'ios';
   const resolvedActiveOpacity = activeOpacity ?? (isIOS ? 0.75 : 0.85);
