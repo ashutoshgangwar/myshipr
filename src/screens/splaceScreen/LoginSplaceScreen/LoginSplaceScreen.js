@@ -5,6 +5,7 @@ import {
   TouchableOpacity,
   ScrollView,
   useWindowDimensions,
+  Alert,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {scale} from 'react-native-size-matters';
@@ -14,8 +15,8 @@ import {colors} from '../../../theme/colors';
 import Button from '../../../component/Button/Button';
 import AppText from '../../../theme/AppText';
 import StatusBar from '../../../component/StatusBar/StatusBar';
-import FaceIdIcon from '../../../assets/svg_icon/faceid.svg';
 import useDeviceType from '../../../hooks/useDeviceType';
+import BiometricLoginButton from '../../../component/BiometricLoginButton/BiometricLoginButton';
 
 const HERO_IMAGES = [
   require('../../../assets/Image/bg_image_login.jpg'),
@@ -54,8 +55,12 @@ const LoginSplashScreen = ({navigation}) => {
     heroSliderRef.current?.scrollTo({x: index * width, animated: true});
   };
 
-  const handleFaceIdPress = () => {
-    navigation.navigate('LoginScreen');
+  const handleBiometricSuccess = () => {
+    navigation.reset({index: 0, routes: [{name: 'MainApp'}]});
+  };
+
+  const handleBiometricError = err => {
+    if (err) Alert.alert('Biometric Login Failed', err);
   };
 
   const handleCredentialsPress = () => {
@@ -145,16 +150,16 @@ const LoginSplashScreen = ({navigation}) => {
             <AppText style={styles.subtitle_line2}>
              way with live shipment tacking..
             </AppText>
-            <Button
-              title="Log in with Face ID"
-              onPress={handleFaceIdPress}
-              IconComponent={FaceIdIcon}
-              iconSize={scale(20)}
-              backgroundColor={colors.white}
-              textColor={colors.splashBorder}
-              borderColor={colors.white}
-              style={styles.faceIdButton}
-              textStyle={styles.faceIdButtonText}
+            <BiometricLoginButton
+              onSuccess={handleBiometricSuccess}
+              onError={handleBiometricError}
+              buttonStyle={[
+                styles.faceIdButton,
+                {backgroundColor: colors.white, marginTop: 0},
+              ]}
+              textStyle={[styles.faceIdButtonText, {color: colors.splashBorder}]}
+              iconColor={colors.splashBorder}
+              loaderColor={colors.splashBorder}
             />
 
             <Button

@@ -1,10 +1,13 @@
 // src/utils/biometricAuth.js
 import ReactNativeBiometrics from 'react-native-biometrics';
-import { Platform } from 'react-native';
 
 let rnBiometrics = null;
 try {
-  rnBiometrics = new ReactNativeBiometrics();
+  // allowDeviceCredentials: lets the prompt fall back to the device PIN/pattern/passcode.
+  // This is required on Android because many phones' face unlock is a "weak" (Class 2)
+  // biometric, which the library's default STRONG-only check rejects as "none enrolled".
+  // With the fallback enabled, a face-only (or PIN) user can still authenticate.
+  rnBiometrics = new ReactNativeBiometrics({ allowDeviceCredentials: true });
 } catch (e) {
   rnBiometrics = null;
 }
@@ -15,16 +18,25 @@ try {
  */
 export async function checkBiometricAvailability() {
   if (!rnBiometrics) {
-    return { available: false, biometryType: null, error: 'Biometric module not available. Please rebuild the app.' };
+    return { available: false, biometryType: null, error: 'Biometric module not available. Please rebuild the app.', code: 'UNAVAILABLE' };
   }
   try {
-    const { available, biometryType } = await rnBiometrics.isSensorAvailable();
+    const { available, biometryType, error } = await rnBiometrics.isSensorAvailable();
     if (!available) {
-      return { available: false, biometryType: null, error: 'Biometric authentication not supported on this device.' };
+      // Distinguish "no biometric enrolled" from "no hardware" so the UI can guide the user.
+      const notEnrolled = /not enrolled|none enrolled|NONE_ENROLLED/i.test(error || '');
+      return {
+        available: false,
+        biometryType: biometryType || null,
+        error: notEnrolled
+          ? 'No biometrics are set up on this device. Add a fingerprint or Face ID in your device settings.'
+          : 'Biometric authentication is not supported on this device.',
+        code: notEnrolled ? 'NOT_ENROLLED' : 'NO_HARDWARE',
+      };
     }
     return { available, biometryType };
   } catch (e) {
-    return { available: false, biometryType: null, error: e.message || 'Error checking biometric availability.' };
+    return { available: false, biometryType: null, error: e.message || 'Error checking biometric availability.', code: 'ERROR' };
   }
 }
 
@@ -35,20 +47,34 @@ export async function checkBiometricAvailability() {
  */
 export async function authenticateWithBiometric(promptMessage = 'Authenticate with Biometrics') {
   if (!rnBiometrics) {
-    return { success: false, error: 'Biometric module not available. Please rebuild the app.' };
+    return { success: false, error: 'Biometric module not available. Please rebuild the app.', code: 'UNAVAILABLE' };
+  }
+  // Re-check enrollment right before prompting. isSensorAvailable() can report
+  // available:true on some devices even when nothing is enrolled, so guard here
+  // to give a clear message instead of a generic "Authentication failed".
+  const { available, error: availabilityError, code: availabilityCode } = await checkBiometricAvailability();
+  if (!available) {
+    return { success: false, error: availabilityError, code: availabilityCode || 'NOT_ENROLLED' };
   }
   try {
     const { success } = await rnBiometrics.simplePrompt({ promptMessage });
     if (success) {
       return { success: true };
-    } else {
-      return { success: false, error: 'Authentication failed.' };
     }
+    // success:false here means the user dismissed the prompt — treat as cancel, not failure.
+    return { success: false, error: 'Authentication cancelled.', code: 'CANCELLED' };
   } catch (e) {
-    if (e.name === 'UserCancel' || e.message?.includes('User cancel')) {
-      return { success: false, error: 'Authentication cancelled by user.' };
+    const msg = e.message || '';
+    if (e.name === 'UserCancel' || /user cancel/i.test(msg)) {
+      return { success: false, error: 'Authentication cancelled.', code: 'CANCELLED' };
     }
-    return { success: false, error: e.message || 'Biometric authentication error.' };
+    if (/not enrolled|none enrolled|no.*enrolled|NONE_ENROLLED/i.test(msg)) {
+      return { success: false, error: 'No biometrics are set up on this device. Add a fingerprint or Face ID in your device settings.', code: 'NOT_ENROLLED' };
+    }
+    if (/lockout|too many/i.test(msg)) {
+      return { success: false, error: 'Too many attempts. Please try again later or use your credentials.', code: 'LOCKOUT' };
+    }
+    return { success: false, error: msg || 'Biometric authentication error.', code: 'ERROR' };
   }
 }
 
