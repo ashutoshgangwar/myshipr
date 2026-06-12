@@ -1187,12 +1187,8 @@ export default function HereMapScreen({navigation, route}) {
           const lat = position.latitude;
           const lng = position.longitude;
           if (!isUsableNavCoord(lat, lng)) return;
-          // Mark this fix's arrival so the stale-fix watchdog knows the vehicle
-          // is still moving (it zeroes the speed once fixes stop coming in).
           lastFixAtRef.current = Date.now();
           let liveSpeed = resolveLiveSpeedMps(position);
-          // iOS often reports no/invalid GPS speed; derive it from the distance
-          // between consecutive fixes so the speed HUD matches Android.
           const nowTs = Number.isFinite(position?.timestamp)
             ? position.timestamp
             : Date.now();
@@ -1208,7 +1204,6 @@ export default function HereMapScreen({navigation, route}) {
                   lng,
                 );
                 const computed = movedMeters / dtSec;
-                // Keep a clean 0 when idle; reject GPS jumps (>360 km/h).
                 if (Number.isFinite(computed) && computed >= 0 && computed < 100) {
                   liveSpeed = computed;
                 }

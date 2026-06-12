@@ -1,8 +1,50 @@
 import axios from 'axios';
+import {Platform} from 'react-native';
 import {HERE_API_KEY} from '@env';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const HERE_KEY = HERE_API_KEY;
+
+// Surfaces the real cause of HERE failures (esp. iOS, where errors were
+// previously swallowed). If the key is missing the bundle never got the
+// @env value at build time -> rebuild after clearing Metro cache.
+if (!HERE_KEY) {
+  console.warn(
+    `[HERE] HERE_API_KEY is undefined on ${Platform.OS}. ` +
+      `@env was not injected into this build — rebuild after ` +
+      `\`npm start --reset-cache\`. All HERE requests will 401.`,
+  );
+}
+
+function logHereError(fnName, e) {
+  console.warn(
+    `[HERE:${fnName}] failed on ${Platform.OS} —`,
+    'status:', e?.response?.status,
+    'code:', e?.code,
+    'data:', e?.response?.data || e?.message,
+    'keyPresent:', !!HERE_KEY,
+  );
+}
+
+// A bare "Network Error" means no HTTP response was received (connection-level
+// failure / timeout / debugger proxy choking on a large response). Retry once
+// for those transient cases; a real HTTP error (has e.response) is not retried.
+async function hereGet(url, {timeout = 20000, retries = 1} = {}) {
+  let lastErr;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      return await axios.get(url, {timeout});
+    } catch (e) {
+      lastErr = e;
+      if (e?.response) throw e; // server replied with an error — don't retry
+      console.warn(
+        `[HERE] network attempt ${attempt + 1}/${retries + 1} failed on ` +
+          `${Platform.OS} (code: ${e?.code || 'n/a'}) — retrying`,
+      );
+    }
+  }
+  throw lastErr;
+}
 
 export async function autosuggest(query, coords = null, limit = 5) {
   if (!query || query.trim().length === 0) return [];
@@ -36,6 +78,7 @@ export async function autosuggest(query, coords = null, limit = 5) {
 
     return items;
   } catch (e) {
+    logHereError('autosuggest', e);
     return [];
   }
 }
@@ -52,6 +95,7 @@ export async function lookup(placeId) {
 
     return res.data;
   } catch (e) {
+    logHereError('lookup', e);
     return null;
   }
 }
@@ -130,6 +174,7 @@ export async function findSequence(params) {
     const res = await axios.get(url);
     return res.data;
   } catch (e) {
+    logHereError('findSequence', e);
     throw new Error('WPS findsequence failed');
   }
 }
@@ -169,7 +214,7 @@ export async function calculateRouteTolls(
   console.log('Toll URL:', url);
 
   try {
-    const {data} = await axios.get(url);
+    const {data} = await hereGet(url);
 
     const route = data?.routes?.[0];
     const section = route?.sections?.[0];
@@ -207,7 +252,10 @@ export async function calculateRouteTolls(
   } catch (e) {
     console.error(
       '❌ HERE Toll Error',
-      e?.response?.data || e?.message,
+      'status:', e?.response?.status,
+      'code:', e?.code,
+      'data:', e?.response?.data || e?.message,
+      'keyPresent:', !!HERE_KEY,
     );
 
     throw new Error(
