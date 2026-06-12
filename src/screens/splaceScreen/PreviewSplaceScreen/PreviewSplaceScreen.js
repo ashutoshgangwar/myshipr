@@ -36,7 +36,7 @@ const PreviewSplaceScreen = ({navigation}) => {
   useEffect(() => {
     const timer = setTimeout(() => {
       navigation.replace('LoginSplashScreen');
-    }, 3500000);
+    }, 3500);
 
     return () => clearTimeout(timer);
   }, [navigation]);

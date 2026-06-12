@@ -7,12 +7,14 @@ import {
   useWindowDimensions,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
+import {scale} from 'react-native-size-matters';
 import publicIP from 'react-native-public-ip';
 import styles from './LoginSplaceScreen.styles';
 import {colors} from '../../../theme/colors';
 import Button from '../../../component/Button/Button';
 import AppText from '../../../theme/AppText';
 import StatusBar from '../../../component/StatusBar/StatusBar';
+import FaceIdIcon from '../../../assets/svg_icon/faceid.svg';
 
 const HERO_IMAGES = [
   require('../../../assets/Image/bg_image_login.jpg'),
@@ -44,12 +46,12 @@ const LoginSplashScreen = ({navigation}) => {
     heroSliderRef.current?.scrollTo({x: index * width, animated: true});
   };
 
-  const handleLoginPress = () => {
+  const handleFaceIdPress = () => {
     navigation.navigate('LoginScreen');
   };
 
-  const handleSignupPress = () => {
-    navigation.navigate('SignupScreen');
+  const handleCredentialsPress = () => {
+    navigation.navigate('LoginScreen');
   };
   
   // To fetch the public IP address
@@ -120,32 +122,35 @@ const LoginSplashScreen = ({navigation}) => {
               ))}
             </View>
             <View style={styles.contentText}>
-              <AppText style={styles.title}>
-                Smart Shipping Made Simple.
-              </AppText>
+              <AppText style={styles.title}>Smart Shipping Made Simple.</AppText>
             </View>
 
             <AppText style={styles.subtitle}>
-              Stay updated every step of the way with live shipment tracking.
+             Stay updated every step of the 
+            </AppText>
+            <AppText style={styles.subtitle_line2}>
+             way with live shipment tacking..
             </AppText>
             <Button
-              title="Login"
-              onPress={handleLoginPress}
-              backgroundColor={colors.splashText}
+              title="Log in with Face ID"
+              onPress={handleFaceIdPress}
+              IconComponent={FaceIdIcon}
+              iconSize={scale(20)}
+              backgroundColor={colors.white}
               textColor={colors.splashBorder}
-              borderColor={colors.splashBorder}
-              style={styles.loginButton}
-              textStyle={styles.loginButtonText}
+              borderColor={colors.white}
+              style={styles.faceIdButton}
+              textStyle={styles.faceIdButtonText}
             />
 
             <Button
-              title="Sign Up"
-              onPress={handleSignupPress}
+              title="Log in with Credentials"
+              onPress={handleCredentialsPress}
               backgroundColor="transparent"
-              textColor={colors.splashText}
-              borderColor={colors.splashText}
-              style={styles.signupButton}
-              textStyle={styles.signupButtonText}
+              textColor={colors.white}
+              borderColor={colors.onDarkLow}
+              style={styles.credentialsButton}
+              textStyle={styles.credentialsButtonText}
             />
           </LinearGradient>
           </View>

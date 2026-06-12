@@ -10,6 +10,8 @@ const Button = ({
   backgroundColor = '#000',
   textColor = '#fff',
   icon,
+  IconComponent,
+  iconSize = 20,
   borderColor,
   disabled = false,
   style,
@@ -38,7 +40,11 @@ const Button = ({
       disabled={disabled}
       accessibilityRole="button"
     >
-      {icon && <Image source={icon} style={styles.icon} />}
+      {IconComponent ? (
+        <IconComponent width={iconSize} height={iconSize} style={styles.icon} />
+      ) : (
+        icon && <Image source={icon} style={styles.icon} />
+      )}
       <AppText style={[styles.text, {color: textColor}, textStyle]}>{title}</AppText>
     </TouchableOpacity>
   );

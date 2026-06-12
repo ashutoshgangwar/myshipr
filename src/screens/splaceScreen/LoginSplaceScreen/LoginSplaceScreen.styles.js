@@ -95,64 +95,63 @@ export default StyleSheet.create({
   },
 
   contentText: {
-    minHeight: verticalScale(96),
+    minHeight: verticalScale(60),
     width: Platform.OS === 'ios' ? '92%' : '100%',
     alignSelf: 'center',
   },
   title: {
-    fontSize: moderateScale(36),
+    fontSize: moderateScale(30),
+    textAlignVertical: 'center',
+    textAlign: 'center',
     color: colors.white,
-    fontWeight: '400',
-    lineHeight: moderateScale(48),
-    textAlign: 'left',
+    fontWeight: '800',
+    lineHeight: moderateScale(38),
   },
 
   subtitle: {
-    marginTop: verticalScale(1),
+    marginTop: verticalScale(10),
     color: colors.splashSubtitle,
     fontSize: moderateScale(14),
     fontWeight: '400',
     lineHeight: moderateScale(20),
     width: Platform.OS === 'ios' ? '92%' : '100%',
     alignSelf: 'center',
-    textAlign: 'left',
-    marginBottom: Platform.OS === 'ios' ? verticalScale(10) : verticalScale(20),
+    textAlign: 'center',
+    // marginBottom: Platform.OS === 'ios' ? verticalScale(20) : verticalScale(28),
   },
 
-  loginButton: {
+  subtitle_line2: {
+    marginTop: verticalScale(1),
+    color: colors.splashSubtitle,
+    fontSize: moderateScale(14),
+    fontWeight: '400',
+    width: Platform.OS === 'ios' ? '92%' : '100%',
+    alignSelf: 'center',
+    textAlign: 'center',
+    marginBottom: Platform.OS === 'ios' ? verticalScale(20) : verticalScale(28),
+  },
+
+  faceIdButton: {
     height: verticalScale(48),
     width: Platform.OS === 'ios' ? '92%' : '100%',
     alignSelf: 'center',
-    borderRadius: moderateScale(12),
-    borderWidth: moderateScale(1),
-    borderColor: colors.splashBorder,
-    backgroundColor: colors.white,
-    justifyContent: 'center',
-    alignItems: 'center',
     marginBottom: verticalScale(14),
   },
 
-  loginButtonText: {
-    color: colors.splashBorder,
-    fontSize: moderateScale(14),
-    fontWeight: '800',
+  faceIdButtonText: {
+    fontSize: moderateScale(15),
+    fontWeight: '700',
   },
 
-  signupButton: {
+  credentialsButton: {
     height: verticalScale(48),
     width: Platform.OS === 'ios' ? '92%' : '100%',
     alignSelf: 'center',
-    borderRadius: moderateScale(12),
-    borderWidth: moderateScale(1),
-    borderColor: colors.white,
-    justifyContent: 'center',
-    alignItems: 'center', 
   },
 
-  signupButtonText: {
-    color: colors.white,
-    fontSize: moderateScale(24 / 2),
-    fontWeight: '700',
+  credentialsButtonText: {
+    fontSize: moderateScale(15),
+    fontWeight: '600',
   },
 
   homeIndicator: {
