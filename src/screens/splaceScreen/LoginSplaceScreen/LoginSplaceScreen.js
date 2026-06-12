@@ -8,16 +8,16 @@ import {
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import publicIP from 'react-native-public-ip';
-import styles from './splaceScreen.styles';
-import AppText from '../../theme/AppText';
-import {colors} from '../../theme/colors';
-import StatusBar from '../../component/StatusBar/StatusBar';
-import Button from '../../component/Button/Button';
+import styles from './LoginSplaceScreen.styles';
+import {colors} from '../../../theme/colors';
+import Button from '../../../component/Button/Button';
+import AppText from '../../../theme/AppText';
+import StatusBar from '../../../component/StatusBar/StatusBar';
 
 const HERO_IMAGES = [
-  require('../../assets/Image/bg_image_login.jpg'),
-  require('../../assets/Image/truck_image.jpg'),
-  require('../../assets/Image/bg_image_login.jpg'),
+  require('../../../assets/Image/bg_image_login.jpg'),
+  require('../../../assets/Image/truck_image.jpg'),
+  require('../../../assets/Image/bg_image_login.jpg'),
 ];
 
 const BLEND_COLORS = [
@@ -27,7 +27,7 @@ const BLEND_COLORS = [
 ];
 const BLEND_LOCATIONS = [0, 0.5, 1];
 
-const SplashScreen = ({navigation}) => {
+const LoginSplashScreen = ({navigation}) => {
   const {width} = useWindowDimensions();
   const heroSliderRef = useRef(null);
   const [activeSlide, setActiveSlide] = useState(0);
@@ -155,4 +155,4 @@ const SplashScreen = ({navigation}) => {
   );
 };
 
-export default SplashScreen;
+export default LoginSplashScreen;

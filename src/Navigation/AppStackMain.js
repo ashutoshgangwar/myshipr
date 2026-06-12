@@ -2,7 +2,6 @@ import React from 'react';
 import { createNativeStackNavigator } from '@react-navigation/native-stack';
 
 import Login from '../screens/Login/Login';
-import SplashScreen from '../screens/splaceScreen/splaceScreen';
 import AppBottomTabs from './AppBottomTabs';
 import Profile from '../screens/Profile/Profile';
 import NavigationScreen from '../screens/NavigationScreen/NavigationScreen';
@@ -15,19 +14,23 @@ import Signup from '../screens/Signup/Signup';
 import SignatureCaptureScreen from '../screens/SignatureCaptureScreen/SignatureCaptureScreen';
 import HereMapScreen from '../screens/HereMapScreen/HereMapScreen';
 import HereSearchScreen from '../screens/HereMapScreen/HereSearchScreen';
+import PreviewSplaceScreen from '../screens/splaceScreen/PreviewSplaceScreen/PreviewSplaceScreen';
+import LoginSplashScreen from '../screens/splaceScreen/LoginSplaceScreen/LoginSplaceScreen';
 
 const Stack = createNativeStackNavigator();
 
 export default function AppStackMain() {
   return (
     <Stack.Navigator
-      initialRouteName="Splash"
+      initialRouteName="PreviewSplashScreen"
       screenOptions={{ headerShown: false }}
     >
       {/* Splash */}
-      <Stack.Screen name="Splash" component={SplashScreen} />
+  
+      <Stack.Screen name="PreviewSplashScreen" component={PreviewSplaceScreen} />
 
       {/* Auth */}
+      <Stack.Screen name="LoginSplashScreen" component={LoginSplashScreen} />
       <Stack.Screen name="LoginScreen" component={Login} />
       <Stack.Screen name="SignupScreen" component={Signup} />
       <Stack.Screen name="ResetPassword" component={ResetPassword} />

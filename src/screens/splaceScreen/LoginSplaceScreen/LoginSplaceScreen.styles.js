@@ -1,6 +1,6 @@
 import {StyleSheet, Platform} from 'react-native';
 import {moderateScale, scale, verticalScale} from 'react-native-size-matters';
-import {colors} from '../../theme/colors';
+import {colors} from '../../../theme/colors';
 
 export default StyleSheet.create({
   screen: {
