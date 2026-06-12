@@ -13,6 +13,7 @@ import {colors} from '../../../theme/colors';
 import StatusBar from '../../../component/StatusBar/StatusBar';
 import Button from '../../../component/Button/Button';
 import AppText from '../../../theme/AppText';
+import useDeviceType from '../../../hooks/useDeviceType';
 
 const HERO_IMAGES = [
   require('../../../assets/Image/bg_image_login.jpg'),
@@ -28,9 +29,14 @@ const BLEND_COLORS = [
 const BLEND_LOCATIONS = [0, 0.5, 1];
 
 const PreviewSplaceScreen = ({navigation}) => {
-  const {width} = useWindowDimensions();
+  const {width, height} = useWindowDimensions();
+  const {isTablet} = useDeviceType();
   const heroSliderRef = useRef(null);
   const [activeSlide, setActiveSlide] = useState(0);
+
+  // On tablets the hero fills more of the larger screen instead of staying a
+  // fixed scaled height that leaves a big empty band below it.
+  const heroHeight = isTablet ? Math.round(height * 0.82) : undefined;
 
   // Auto-navigate to the login splash screen after 3.5 seconds
   useEffect(() => {
@@ -90,7 +96,7 @@ const PreviewSplaceScreen = ({navigation}) => {
         />
 
         <View style={styles.container}>
-          <View style={styles.heroWrap}>
+          <View style={[styles.heroWrap, heroHeight && {height: heroHeight}]}>
             <ScrollView
               ref={heroSliderRef}
               horizontal
@@ -103,7 +109,7 @@ const PreviewSplaceScreen = ({navigation}) => {
                 <ImageBackground
                   key={index}
                   source={imageSource}
-                  style={[styles.heroImage, {width}]}
+                  style={[styles.heroImage, {width}, heroHeight && {height: heroHeight}]}
                   imageStyle={styles.heroImageStyle}>
                   <LinearGradient
                     colors={BLEND_COLORS}

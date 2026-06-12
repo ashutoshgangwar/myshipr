@@ -1,4 +1,4 @@
-import React, {useRef, useState} from 'react';
+import React, {useRef, useState, useMemo} from 'react';
 import {
   View,
   ImageBackground,
@@ -9,12 +9,13 @@ import {
 import LinearGradient from 'react-native-linear-gradient';
 import {scale} from 'react-native-size-matters';
 import publicIP from 'react-native-public-ip';
-import styles from './LoginSplaceScreen.styles';
+import makeStyles from './LoginSplaceScreen.styles';
 import {colors} from '../../../theme/colors';
 import Button from '../../../component/Button/Button';
 import AppText from '../../../theme/AppText';
 import StatusBar from '../../../component/StatusBar/StatusBar';
 import FaceIdIcon from '../../../assets/svg_icon/faceid.svg';
+import useDeviceType from '../../../hooks/useDeviceType';
 
 const HERO_IMAGES = [
   require('../../../assets/Image/bg_image_login.jpg'),
@@ -30,9 +31,16 @@ const BLEND_COLORS = [
 const BLEND_LOCATIONS = [0, 0.5, 1];
 
 const LoginSplashScreen = ({navigation}) => {
-  const {width} = useWindowDimensions();
+  const {width, height} = useWindowDimensions();
+  const {isTablet} = useDeviceType();
+  const styles = useMemo(() => makeStyles(isTablet), [isTablet]);
   const heroSliderRef = useRef(null);
   const [activeSlide, setActiveSlide] = useState(0);
+
+  const heroHeight = isTablet ? Math.round(height * 0.55) : undefined;
+  const tabletContent = isTablet
+    ? {maxWidth: scale(420), width: '100%', alignSelf: 'center'}
+    : null;
 
   const onHeroScrollEnd = event => {
     const nextSlide = Math.round(event.nativeEvent.contentOffset.x / width);
@@ -95,7 +103,7 @@ const LoginSplashScreen = ({navigation}) => {
               <ImageBackground
                 key={index}
                 source={imageSource}
-                style={[styles.heroImage, {width}]}
+                style={[styles.heroImage, {width}, heroHeight && {height: heroHeight}]}
                 imageStyle={styles.heroImageStyle}>
                 <LinearGradient
                   colors={BLEND_COLORS}
@@ -109,7 +117,7 @@ const LoginSplashScreen = ({navigation}) => {
           <LinearGradient
             colors={BLEND_COLORS}
             locations={BLEND_LOCATIONS}
-            style={styles.contentWrapper}>
+            style={[styles.contentWrapper, tabletContent]}>
             <View style={styles.dotsRow}>
               {HERO_IMAGES.map((_, index) => (
                 <TouchableOpacity
@@ -122,7 +130,13 @@ const LoginSplashScreen = ({navigation}) => {
               ))}
             </View>
             <View style={styles.contentText}>
-              <AppText style={styles.title}>Smart Shipping Made Simple.</AppText>
+              <AppText
+                style={styles.title}
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.6}>
+                Smart Shipping Made Simple.
+              </AppText>
             </View>
 
             <AppText style={styles.subtitle}>

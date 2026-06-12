@@ -2,165 +2,180 @@ import {StyleSheet, Platform} from 'react-native';
 import {moderateScale, scale, verticalScale} from 'react-native-size-matters';
 import {colors} from '../../../theme/colors';
 
-export default StyleSheet.create({
-  screen: {
-    flex: 1,
-    backgroundColor: colors.splashBackground,
-  },
+const isIOS = Platform.OS === 'ios';
 
-  safeArea: {
-    flex: 1,
-  },
+const makeStyles = (isTablet = false) => {
+  const controlHeight = isTablet ? moderateScale(50) : verticalScale(48);
+  const fieldWidth = isTablet ? '100%' : isIOS ? '92%' : '100%';
 
-  scrollView: {
-    flex: 1,
-  },
+  return StyleSheet.create({
+    screen: {
+      flex: 1,
+      backgroundColor: colors.splashBackground,
+    },
 
-  scrollContent: {
-    flexGrow: 1,
-    paddingVertical: verticalScale(14),
-  
-  },
+    safeArea: {
+      flex: 1,
+    },
 
-  container: {
-    minHeight: '100%',
-    backgroundColor: colors.splashBackground,
-    overflow: 'hidden',
-  },
+    scrollView: {
+      flex: 1,
+    },
 
-  heroPager: {
-    width: '100%',
-  },
+    scrollContent: {
+      flexGrow: 1,
+      paddingVertical: verticalScale(14),
+    },
 
-  heroImage: {
-    height: verticalScale(350),
-    borderTopLeftRadius: moderateScale(34),
-    borderTopRightRadius: moderateScale(34),
-    overflow: 'hidden',
-  },
+    container: {
+      minHeight: '100%',
+      backgroundColor: colors.splashBackground,
+      overflow: 'hidden',
+    },
 
-  heroImageStyle: {
-    borderTopLeftRadius: moderateScale(34),
-    borderTopRightRadius: moderateScale(34),
-  },
+    heroPager: {
+      width: '100%',
+    },
 
-  heroBottomFade: {
-    position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
-    height: verticalScale(120),
-  },
-  buttonWraper: {
-    padding: moderateScale(1),
-  },
+    heroImage: {
+      height: verticalScale(350),
+      borderTopLeftRadius: moderateScale(34),
+      borderTopRightRadius: moderateScale(34),
+      overflow: 'hidden',
+    },
 
-  contentWrapper: {
-    flex: 1,
-    justifyContent: 'flex-end',
-    marginTop: verticalScale(15),
-    paddingHorizontal: Platform.OS === 'ios' ? scale(3) : scale(16),
-    paddingTop: verticalScale(-100),
-    paddingBottom: Platform.OS === 'ios' ? verticalScale(25) : verticalScale(20),
-    marginBottom: Platform.OS === 'ios' ? verticalScale(20) : verticalScale(20),
-  },
+    heroImageStyle: {
+      borderTopLeftRadius: moderateScale(34),
+      borderTopRightRadius: moderateScale(34),
+    },
 
-  dotsRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    alignSelf: 'center',
-    marginBottom: verticalScale(18),
-  },
+    heroBottomFade: {
+      position: 'absolute',
+      left: 0,
+      right: 0,
+      bottom: 0,
+      height: verticalScale(120),
+    },
+    buttonWraper: {
+      padding: moderateScale(1),
+    },
 
-  dot: {
-    width: scale(8),
-    height: scale(8),
-    borderRadius: moderateScale(99),
-    backgroundColor: colors.onDarkLow,
-  },
+    contentWrapper: {
+      flex: 1,
+      justifyContent: 'flex-end',
+      marginTop: verticalScale(15),
+      paddingHorizontal: isTablet
+        ? moderateScale(24)
+        : isIOS
+        ? scale(3)
+        : scale(16),
+      paddingTop: verticalScale(-100),
+      paddingBottom: isTablet
+        ? verticalScale(28)
+        : isIOS
+        ? verticalScale(25)
+        : verticalScale(20),
+      marginBottom: verticalScale(20),
+    },
 
-  dotTapArea: {
-    paddingHorizontal: scale(5),
-    paddingVertical: verticalScale(6),
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
+    dotsRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'center',
+      alignSelf: 'center',
+      marginBottom: verticalScale(18),
+    },
 
-  activeDot: {
-    width: scale(24),
-    height: scale(8),
-    borderRadius: moderateScale(99),
-    backgroundColor: colors.white,
-  },
+    dot: {
+      width: scale(8),
+      height: scale(8),
+      borderRadius: moderateScale(99),
+      backgroundColor: colors.onDarkLow,
+    },
 
-  contentText: {
-    minHeight: verticalScale(60),
-    width: Platform.OS === 'ios' ? '92%' : '100%',
-    alignSelf: 'center',
-  },
-  title: {
-    fontSize: moderateScale(30),
-    textAlignVertical: 'center',
-    textAlign: 'center',
-    color: colors.white,
-    fontWeight: '800',
-    lineHeight: moderateScale(38),
-  },
+    dotTapArea: {
+      paddingHorizontal: scale(5),
+      paddingVertical: verticalScale(6),
+      justifyContent: 'center',
+      alignItems: 'center',
+    },
 
-  subtitle: {
-    marginTop: verticalScale(10),
-    color: colors.splashSubtitle,
-    fontSize: moderateScale(14),
-    fontWeight: '400',
-    lineHeight: moderateScale(20),
-    width: Platform.OS === 'ios' ? '92%' : '100%',
-    alignSelf: 'center',
-    textAlign: 'center',
-    // marginBottom: Platform.OS === 'ios' ? verticalScale(20) : verticalScale(28),
-  },
+    activeDot: {
+      width: scale(24),
+      height: scale(8),
+      borderRadius: moderateScale(99),
+      backgroundColor: colors.white,
+    },
 
-  subtitle_line2: {
-    marginTop: verticalScale(1),
-    color: colors.splashSubtitle,
-    fontSize: moderateScale(14),
-    fontWeight: '400',
-    width: Platform.OS === 'ios' ? '92%' : '100%',
-    alignSelf: 'center',
-    textAlign: 'center',
-    marginBottom: Platform.OS === 'ios' ? verticalScale(20) : verticalScale(28),
-  },
+    contentText: {
+      minHeight: verticalScale(40),
+      width: fieldWidth,
+      alignSelf: 'center',
+    },
+    title: {
+      fontSize: isTablet ? moderateScale(26) : moderateScale(30),
+      textAlignVertical: 'center',
+      textAlign: 'center',
+      color: colors.white,
+      fontWeight: '800',
+      lineHeight: isTablet ? moderateScale(34) : moderateScale(38),
+    },
 
-  faceIdButton: {
-    height: verticalScale(48),
-    width: Platform.OS === 'ios' ? '92%' : '100%',
-    alignSelf: 'center',
-    marginBottom: verticalScale(14),
-  },
+    subtitle: {
+      marginTop: isTablet ? verticalScale(10) :  verticalScale(10),
+      color: colors.splashSubtitle,
+      fontSize: isTablet ? moderateScale(15) : moderateScale(14),
+      fontWeight: '400',
+      lineHeight: moderateScale(20),
+      width: fieldWidth,
+      alignSelf: 'center',
+      textAlign: 'center',
+    },
 
-  faceIdButtonText: {
-    fontSize: moderateScale(15),
-    fontWeight: '700',
-  },
+    subtitle_line2: {
+      marginTop: verticalScale(1),
+      color: colors.splashSubtitle,
+      fontSize: isTablet ? moderateScale(15) : moderateScale(14),
+      fontWeight: '400',
+      width: fieldWidth,
+      alignSelf: 'center',
+      textAlign: 'center',
+      marginBottom: isIOS ? verticalScale(20) : verticalScale(28),
+    },
 
-  credentialsButton: {
-    height: verticalScale(48),
-    width: Platform.OS === 'ios' ? '92%' : '100%',
-    alignSelf: 'center',
-  },
+    faceIdButton: {
+      height: controlHeight,
+      width: fieldWidth,
+      alignSelf: 'center',
+      marginBottom: verticalScale(14),
+    },
 
-  credentialsButtonText: {
-    fontSize: moderateScale(15),
-    fontWeight: '600',
-  },
+    faceIdButtonText: {
+      fontSize: isTablet ? moderateScale(16) : moderateScale(15),
+      fontWeight: '700',
+    },
 
-  homeIndicator: {
-    width: scale(90),
-    height: verticalScale(5),
-    borderRadius: 99,
-    backgroundColor: colors.onDarkHigh,
-    alignSelf: 'center',
-    marginTop: 'auto',
-    marginBottom: verticalScale(2),
-  },
-});
+    credentialsButton: {
+      height: controlHeight,
+      width: fieldWidth,
+      alignSelf: 'center',
+    },
+
+    credentialsButtonText: {
+      fontSize: isTablet ? moderateScale(16) : moderateScale(15),
+      fontWeight: '600',
+    },
+
+    homeIndicator: {
+      width: scale(90),
+      height: verticalScale(5),
+      borderRadius: 99,
+      backgroundColor: colors.onDarkHigh,
+      alignSelf: 'center',
+      marginTop: 'auto',
+      marginBottom: verticalScale(2),
+    },
+  });
+};
+
+export default makeStyles;
