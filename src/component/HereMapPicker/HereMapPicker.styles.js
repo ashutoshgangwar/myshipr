@@ -93,16 +93,23 @@ const styles = StyleSheet.create({
   },
 
   centerPinLift: {
-    // Lift the icon so its tip (bottom) lands on the exact map center.
-    marginBottom: verticalScale(28),
+    // Lift the icon a full icon-height so its tip (bottom) sits on the dot,
+    // which is pinned to the exact map center below.
+    marginBottom: verticalScale(32),
     alignItems: 'center',
   },
 
   centerPinDot: {
+    // Pinned to the exact center of the wrap; the icon tip points here.
+    position: 'absolute',
+    top: '50%',
+    left: '50%',
     width: scale(8),
     height: scale(8),
+    marginTop: scale(-4),
+    marginLeft: scale(-4),
     borderRadius: scale(4),
-    backgroundColor: 'rgba(0,3,62,0.25)',
+    backgroundColor: 'rgba(79, 86, 225, 0.25)',
   },
 
   /* GPS recenter button */
