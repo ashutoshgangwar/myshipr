@@ -25,7 +25,6 @@ const styles = StyleSheet.create({
 
   scrollContent: {
     flexGrow: 1,
-    paddingBottom: verticalScale(28),
   },
 
   /* Hero header */
@@ -87,7 +86,8 @@ const styles = StyleSheet.create({
     flexGrow: 1,
     backgroundColor: colors.white,
     marginTop: -verticalScale(15),
-    borderRadius: moderateScale(20),
+    borderTopLeftRadius: moderateScale(20),
+    borderTopRightRadius: moderateScale(20),
     paddingHorizontal: scale(16),
     paddingTop: verticalScale(18),
     paddingBottom: verticalScale(18),
@@ -245,7 +245,7 @@ const styles = StyleSheet.create({
     paddingVertical: IS_TABLET ? verticalScale(7) : verticalScale(15),
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: verticalScale(6),
+    marginTop: verticalScale(16),
   },
 
   confirmBtnDisabled: {
