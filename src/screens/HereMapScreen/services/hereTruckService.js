@@ -83,6 +83,35 @@ export async function autosuggest(query, coords = null, limit = 5) {
   }
 }
 
+// Turn a {latitude, longitude} into a human address label. Used by the map
+// picker so panning the map (center pin) shows the street under the crosshair.
+export async function reverseGeocode(coords) {
+  if (
+    !coords ||
+    !Number.isFinite(coords.latitude) ||
+    !Number.isFinite(coords.longitude)
+  ) {
+    return null;
+  }
+
+  const url = `https://revgeocode.search.hereapi.com/v1/revgeocode?at=${coords.latitude},${coords.longitude}&lang=en-US&apiKey=${HERE_KEY}`;
+
+  try {
+    const res = await axios.get(url);
+    const item = res.data?.items?.[0];
+    if (!item) return null;
+    return {
+      title: item.title,
+      address: item.address?.label || item.title,
+      latitude: item.position?.lat ?? coords.latitude,
+      longitude: item.position?.lng ?? coords.longitude,
+    };
+  } catch (e) {
+    logHereError('reverseGeocode', e);
+    return null;
+  }
+}
+
 export async function lookup(placeId) {
   if (!placeId) return null;
 
@@ -268,6 +297,7 @@ export async function calculateRouteTolls(
 
 export default {
   autosuggest,
+  reverseGeocode,
   lookup,
   findSequence,
   calculateRouteTolls,

@@ -11,12 +11,11 @@ import {useNavigation} from '@react-navigation/native';
 import styles, {ICON_SIZE} from './FavoriteDestination.styles';
 import Location_Icon from '../../assets/svg_icon/location.svg';
 import Manual_icon_Icon from '../../assets/svg_icon/Manual_icon.svg';
-import Search_Icon_Icon from '../../assets/svg_icon/Search_Icon.svg';
 import TruckIcon from '../../assets/svg_icon/Frame.svg';
 import {colors} from '../../theme/colors';
 import AppText from '../../theme/AppText';
 import StatusBar from '../../component/StatusBar/StatusBar';
-import MapSection from '../../component/MapSection/MapSection';
+import HereMapPicker from '../../component/HereMapPicker/HereMapPicker';
 import Button from '../../component/Button/Button';
 import {ms, vs} from '../../theme/scale';
 
@@ -34,8 +33,7 @@ const FavoriteDestination = () => {
   const navigation = useNavigation();
 
   const [mode, setMode] = useState('map'); // 'map' | 'manual'
-  const [search, setSearch] = useState('');
-  const [picked, setPicked] = useState(null); // {latitude, longitude}
+  const [picked, setPicked] = useState(null); // {latitude, longitude, description}
   const [form, setForm] = useState(EMPTY_FORM);
   const [errors, setErrors] = useState({});
 
@@ -85,8 +83,9 @@ const FavoriteDestination = () => {
   };
 
   const selectedLabel = picked
-    ? `Selected: ${picked.latitude.toFixed(5)}, ${picked.longitude.toFixed(5)}`
-    : search.trim() || 'Tap on the map to select a location';
+    ? picked.description?.trim() ||
+      `Selected: ${picked.latitude.toFixed(5)}, ${picked.longitude.toFixed(5)}`
+    : 'Move the map to select a location';
 
   return (
     <View style={styles.safe}>
@@ -172,29 +171,11 @@ const FavoriteDestination = () => {
 
           {mode === 'map' ? (
             <>
-              {/* Search */}
-              <View style={styles.searchBox}>
-                <Search_Icon_Icon
-                  width={ICON_SIZE.search}
-                  height={ICON_SIZE.search}
-                  color="#9CA3AF"
-                />
-                <TextInput
-                  style={styles.searchInput}
-                  placeholder="Search a location"
-                  placeholderTextColor={colors.primaryLight}
-                  value={search}
-                  onChangeText={setSearch}
-                  returnKeyType="search"
-                />
-              </View>
-
-              {/* Map */}
-              <MapSection
-                style={styles.mapCard}
+              {/* HERE SDK search + map picker */}
+              <HereMapPicker
+                mapStyle={styles.mapCard}
                 pickedLocation={picked}
-                pickedLabel="Destination"
-                onMapPress={setPicked}
+                onPick={setPicked}
               />
 
               {/* Selected location */}
