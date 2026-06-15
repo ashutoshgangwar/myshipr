@@ -8,6 +8,7 @@ import AppText from '../../theme/AppText';
 import {useLocation} from '../../services/LocationService';
 import Double_Arrow_Icon from '../../assets/svg_icon/arrow-double.svg';
 import Gps_Icon from '../../assets/svg_icon/gps-svg.svg';
+import { IS_TABLET } from '../../utils/device';
 
 const DEFAULT_INITIAL_REGION = {
   latitude: 27.55,
@@ -239,7 +240,7 @@ const MapSection = ({
           isExpandedView && {bottom: fullscreenBottomPadding + 18},
         ]}
         onPress={() => centerOnCurrentLocation(isExpandedView)}>
-        <Gps_Icon width={20} height={20} />
+        <Gps_Icon width={IS_TABLET ? 28 : 18} height={IS_TABLET ? 28 : 18} />
       </TouchableOpacity>
     </View>
   );

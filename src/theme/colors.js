@@ -12,6 +12,7 @@ export const colors = {
   splashSubtitle: '#B4B4B4',
 
   primary: '#00033E',
+  primaryLight: '#999AB2',
   button_color: '#F57C00',
   text_color_button: '#000',
   text_color: '#FFFFFF',

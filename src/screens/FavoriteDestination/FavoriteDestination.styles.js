@@ -1,10 +1,17 @@
 import {StyleSheet, Platform} from 'react-native';
 import {scale, verticalScale, moderateScale} from 'react-native-size-matters';
-import {colors} from '../theme/colors';
-import {select} from '../utils/device';
+import { colors } from '../../theme/colors';
+import {IS_TABLET, select} from '../../utils/device';
 
 // Cap the form column on tablets so inputs/buttons don't stretch edge-to-edge.
-const CONTENT_MAX_WIDTH = select({phone: undefined, tablet: scale(460)});
+const CONTENT_MAX_WIDTH = select({phone: undefined, tablet: scale(380)});
+
+// Icon sizes bump up on tablets so they stay in proportion with the scaled text.
+export const ICON_SIZE = {
+  tab: select({phone: moderateScale(18), tablet: moderateScale(22)}),
+  search: select({phone: moderateScale(18), tablet: moderateScale(22)}),
+  selected: select({phone: moderateScale(16), tablet: moderateScale(20)}),
+};
 
 const styles = StyleSheet.create({
   safe: {
@@ -19,7 +26,7 @@ const styles = StyleSheet.create({
   /* Hero header */
   hero: {
     width: '100%',
-    height: verticalScale(170),
+    height: verticalScale(200),
     backgroundColor: colors.primary,
     overflow: 'hidden',
     justifyContent: 'flex-end',
@@ -36,7 +43,7 @@ const styles = StyleSheet.create({
 
   heroContent: {
     paddingHorizontal: scale(20),
-    paddingBottom: verticalScale(18),
+    paddingBottom: verticalScale(30),
   },
 
   heroTitle: {
@@ -73,15 +80,14 @@ const styles = StyleSheet.create({
   /* Body card */
   card: {
     backgroundColor: colors.white,
-    marginTop: -verticalScale(18),
-    marginHorizontal: scale(12),
+    marginTop: -verticalScale(15),
     borderRadius: moderateScale(20),
     paddingHorizontal: scale(16),
     paddingTop: verticalScale(18),
     paddingBottom: verticalScale(18),
     maxWidth: CONTENT_MAX_WIDTH,
-    width: CONTENT_MAX_WIDTH ? '100%' : undefined,
-    alignSelf: CONTENT_MAX_WIDTH ? 'center' : 'stretch',
+    width: IS_TABLET ? '100%' : undefined,
+    alignSelf: IS_TABLET ? 'center' : 'stretch',
     shadowColor: '#000',
     shadowOffset: {width: 0, height: 6},
     shadowOpacity: 0.08,
@@ -92,9 +98,9 @@ const styles = StyleSheet.create({
   /* Tabs */
   tabContainer: {
     flexDirection: 'row',
-    backgroundColor: '#EEF1F6',
+    backgroundColor: colors.primaryLight,
     borderRadius: moderateScale(14),
-    padding: moderateScale(4),
+    padding: IS_TABLET ? verticalScale(3) : verticalScale(4),
     marginBottom: verticalScale(16),
   },
 
@@ -102,7 +108,7 @@ const styles = StyleSheet.create({
     flex: 1,
     flexDirection: 'row',
     gap: scale(6),
-    paddingVertical: verticalScale(9),
+    paddingVertical: IS_TABLET ? verticalScale(5) : verticalScale(9),
     borderRadius: moderateScale(11),
     alignItems: 'center',
     justifyContent: 'center',
@@ -110,17 +116,12 @@ const styles = StyleSheet.create({
 
   tabActive: {
     backgroundColor: colors.white,
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.08,
-    shadowRadius: moderateScale(5),
-    elevation: 2,
   },
 
   tabText: {
-    fontSize: moderateScale(13),
-    fontWeight: '600',
-    color: '#6B7280',
+    fontSize: moderateScale(12),
+    fontWeight: '400',
+    color: colors.splashText,
   },
 
   tabTextActive: {
@@ -131,14 +132,21 @@ const styles = StyleSheet.create({
   searchBox: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: scale(8),
+    gap: scale(10),
     borderWidth: 1,
     borderColor: colors.border_Color,
     backgroundColor: '#F8FAFC',
     borderRadius: moderateScale(12),
     paddingHorizontal: scale(12),
-    paddingVertical: Platform.OS === 'ios' ? verticalScale(11) : verticalScale(4),
+    paddingVertical: IS_TABLET
+      ? verticalScale(8)
+      : Platform.OS === 'ios'
+      ? verticalScale(13)
+      : verticalScale(12),
     marginBottom: verticalScale(12),
+    width: '100%',
+    maxWidth: CONTENT_MAX_WIDTH,
+    alignSelf: IS_TABLET ? 'center' : 'stretch',
   },
 
   searchInput: {
@@ -164,7 +172,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#F8FAFC',
     borderRadius: moderateScale(12),
     paddingHorizontal: scale(12),
-    paddingVertical: verticalScale(12),
+    paddingVertical:IS_TABLET ? verticalScale(7) :  verticalScale(12),
     marginTop: verticalScale(14),
   },
 
@@ -228,7 +236,7 @@ const styles = StyleSheet.create({
   confirmBtn: {
     backgroundColor: colors.primary,
     borderRadius: moderateScale(14),
-    paddingVertical: verticalScale(15),
+    paddingVertical: IS_TABLET ? verticalScale(7) : verticalScale(15),
     alignItems: 'center',
     justifyContent: 'center',
     marginTop: verticalScale(6),

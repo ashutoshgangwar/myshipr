@@ -3,21 +3,24 @@ import {
   View,
   ImageBackground,
   ScrollView,
-  SafeAreaView,
   TextInput,
   TouchableOpacity,
   Alert,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
-import styles from './FavoriteDestination.styles';
-import {colors} from '../theme/colors';
-import AppText from '../theme/AppText';
-import StatusBar from '../component/StatusBar/StatusBar';
-import MapSection from '../component/MapSection/MapSection';
-import Location_Icon from '../assets/svg_icon/location.svg';
-import Truck_Icon from '../assets/svg_icon/truck-icon.svg';
+import styles, {ICON_SIZE} from './FavoriteDestination.styles';
+import Location_Icon from '../../assets/svg_icon/location.svg';
+import Manual_icon_Icon from '../../assets/svg_icon/Manual_icon.svg';
+import Search_Icon_Icon from '../../assets/svg_icon/Search_Icon.svg';
+import TruckIcon from '../../assets/svg_icon/Frame.svg';
+import {colors} from '../../theme/colors';
+import AppText from '../../theme/AppText';
+import StatusBar from '../../component/StatusBar/StatusBar';
+import MapSection from '../../component/MapSection/MapSection';
+import Button from '../../component/Button/Button';
+import {ms, vs} from '../../theme/scale';
 
-const HERO_IMAGE = require('../assets/Image/truck_image.jpg');
+const HERO_IMAGE = require('../../assets/Image/bg_image_login.jpg');
 
 const EMPTY_FORM = {
   street: '',
@@ -70,7 +73,10 @@ const FavoriteDestination = () => {
     }
 
     if (!picked) {
-      Alert.alert('Pick a destination', 'Tap the map to drop a destination pin.');
+      Alert.alert(
+        'Pick a destination',
+        'Tap the map to drop a destination pin.',
+      );
       return;
     }
     navigation.navigate('MainApp', {
@@ -83,12 +89,12 @@ const FavoriteDestination = () => {
     : search.trim() || 'Tap on the map to select a location';
 
   return (
-    <SafeAreaView style={styles.safe}>
+    <View style={styles.safe}>
       <StatusBar
-        backgroundColor={colors.primary}
-        barStyle="light-content"
-        translucent={false}
-      />
+          backgroundColor="transparent"
+          barStyle="light-content"
+          translucent={true}
+        />
 
       <ScrollView
         showsVerticalScrollIndicator={false}
@@ -101,13 +107,23 @@ const FavoriteDestination = () => {
           imageStyle={styles.heroImage}>
           <View style={styles.heroOverlay} />
           <View style={styles.heroContent}>
-            <AppText style={styles.heroTitle}>Pick Your Favourite Destination</AppText>
-            <AppText style={styles.heroSubtitle}>
+            <AppText
+              style={styles.heroTitle}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.7}>
+              Pick Your Favourite Destination
+            </AppText>
+            <AppText
+              style={styles.heroSubtitle}
+              numberOfLines={1}
+              adjustsFontSizeToFit
+              minimumFontScale={0.7}>
               Pick your destination on the map or enter the address manually.
             </AppText>
             <View style={styles.roleBadge}>
               <AppText style={styles.roleBadgeText}>CARRIER</AppText>
-              <Truck_Icon width={14} height={14} />
+               <TruckIcon width={ms(20)} height={ms(20)} />
             </View>
           </View>
         </ImageBackground>
@@ -121,12 +137,15 @@ const FavoriteDestination = () => {
               onPress={() => setMode('map')}
               activeOpacity={0.9}>
               <Location_Icon
-                width={14}
-                height={14}
-                color={mode === 'map' ? colors.primary : '#6B7280'}
+                width={ICON_SIZE.tab}
+                height={ICON_SIZE.tab}
+                color={mode === 'map' ? colors.textOnLightStrong : colors.splashText}
               />
               <AppText
-                style={[styles.tabText, mode === 'map' && styles.tabTextActive]}>
+                style={[
+                  styles.tabText,
+                  mode === 'map' && styles.tabTextActive,
+                ]}>
                 Pick on Map
               </AppText>
             </TouchableOpacity>
@@ -135,9 +154,17 @@ const FavoriteDestination = () => {
               style={[styles.tab, mode === 'manual' && styles.tabActive]}
               onPress={() => setMode('manual')}
               activeOpacity={0.9}>
+              <Manual_icon_Icon
+                width={ICON_SIZE.tab}
+                height={ICON_SIZE.tab}
+                color={mode === 'manual' ? colors.textOnLightStrong : colors.splashText}
+              />
               <AppText
-                style={[styles.tabText, mode === 'manual' && styles.tabTextActive]}>
-                ✎ Enter Manually
+                style={[
+                  styles.tabText,
+                  mode === 'manual' && styles.tabTextActive,
+                ]}>
+                Enter Manually
               </AppText>
             </TouchableOpacity>
           </View>
@@ -146,11 +173,15 @@ const FavoriteDestination = () => {
             <>
               {/* Search */}
               <View style={styles.searchBox}>
-                <AppText style={{color: '#9CA3AF'}}>🔍</AppText>
+                <Search_Icon_Icon
+                  width={ICON_SIZE.search}
+                  height={ICON_SIZE.search}
+                  color="#9CA3AF"
+                />
                 <TextInput
                   style={styles.searchInput}
                   placeholder="Search a location"
-                  placeholderTextColor="#9CA3AF"
+                  placeholderTextColor={colors.primaryLight}
                   value={search}
                   onChangeText={setSearch}
                   returnKeyType="search"
@@ -167,7 +198,11 @@ const FavoriteDestination = () => {
 
               {/* Selected location */}
               <View style={styles.selectedRow}>
-                <Location_Icon width={16} height={16} color={colors.primary} />
+                <Location_Icon
+                  width={ICON_SIZE.selected}
+                  height={ICON_SIZE.selected}
+                  color={colors.primary}
+                />
                 <AppText
                   style={[
                     styles.selectedText,
@@ -240,15 +275,18 @@ const FavoriteDestination = () => {
           )}
 
           {/* Confirm */}
-          <TouchableOpacity
-            style={[styles.confirmBtn, !canConfirm && styles.confirmBtnDisabled]}
+          <Button
+            title="Confirm Destination"
             onPress={handleConfirm}
-            activeOpacity={0.9}>
-            <AppText style={styles.confirmBtnText}>Confirm Destination</AppText>
-          </TouchableOpacity>
+            disabled={!canConfirm}
+            backgroundColor={canConfirm ? colors.primary : '#A9AEC4'}
+            textColor={colors.white}
+            style={styles.confirmBtn}
+            textStyle={styles.confirmBtnText}
+          />
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </View>
   );
 };
 

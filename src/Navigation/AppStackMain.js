@@ -16,7 +16,8 @@ import HereMapScreen from '../screens/HereMapScreen/HereMapScreen';
 import HereSearchScreen from '../screens/HereMapScreen/HereSearchScreen';
 import PreviewSplaceScreen from '../screens/splaceScreen/PreviewSplaceScreen/PreviewSplaceScreen';
 import LoginSplashScreen from '../screens/splaceScreen/LoginSplaceScreen/LoginSplaceScreen';
-import FavoriteDestination from '../FavoriteDestination/FavoriteDestination';
+import FavoriteDestination from '../screens/FavoriteDestination/FavoriteDestination';
+
 
 const Stack = createNativeStackNavigator();
 
