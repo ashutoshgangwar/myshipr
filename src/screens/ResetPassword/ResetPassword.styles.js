@@ -16,12 +16,28 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: 'transparent',
   },
+  scroll: {
+    flex: 1,
+    backgroundColor: colors.white,
+  },
+
   container: {
     flexGrow: 1,
     justifyContent: 'flex-start',
     minHeight: '100%',
     backgroundColor: colors.white,
     // paddingBottom: Platform.OS === 'ios' ? verticalScale(20) : verticalScale(14),
+  },
+
+  footer: {
+    backgroundColor: colors.white,
+    paddingHorizontal: Platform.OS === 'ios' ? scale(20) : scale(24),
+    paddingTop: verticalScale(8),
+    paddingBottom: Platform.OS === 'ios' ? verticalScale(20) : verticalScale(16),
+  },
+
+  footerButton: {
+    marginTop: 0,
   },
 
   screenShell: {
@@ -384,7 +400,7 @@ const styles = StyleSheet.create({
 
   bottomButton: {
     marginTop: 'auto',
-    marginBottom: Platform.OS === 'ios' ? -verticalScale(20) : 0,
+    marginBottom: Platform.OS === 'ios' ? verticalScale(20) : 0,
   },
 
   loadingButton: {

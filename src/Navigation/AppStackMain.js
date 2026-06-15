@@ -16,6 +16,7 @@ import HereMapScreen from '../screens/HereMapScreen/HereMapScreen';
 import HereSearchScreen from '../screens/HereMapScreen/HereSearchScreen';
 import PreviewSplaceScreen from '../screens/splaceScreen/PreviewSplaceScreen/PreviewSplaceScreen';
 import LoginSplashScreen from '../screens/splaceScreen/LoginSplaceScreen/LoginSplaceScreen';
+import FavoriteDestination from '../FavoriteDestination/FavoriteDestination';
 
 const Stack = createNativeStackNavigator();
 
@@ -39,6 +40,8 @@ export default function AppStackMain() {
 
       {/* Main App with Bottom Tabs */}
       <Stack.Screen name="MainApp" component={AppBottomTabs} />
+
+      <Stack.Screen name="FavoriteDestination" component={FavoriteDestination} />
 
       {/* Extra flows (no bottom tab) */}
       <Stack.Screen name="Profile" component={Profile} />

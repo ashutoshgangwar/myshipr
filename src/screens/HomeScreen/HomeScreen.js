@@ -1,31 +1,23 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useState} from 'react';
 import {
-  ActivityIndicator,
-  Animated,
   Image,
-  PanResponder,
-  Platform,
   View,
   SafeAreaView,
   ScrollView,
   TouchableOpacity,
 } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {useFocusEffect, useNavigation} from '@react-navigation/native';
-import MapView, {Marker} from 'react-native-maps';
 import styles from './HomeScreen.styles';
 import StatusBar from '../../component/StatusBar/StatusBar';
 import {colors} from '../../theme/colors';
 import SOS_Icon from './../../assets/svg_icon/sos.svg';
-import Double_Arrow_Icon from './../../assets/svg_icon/arrow-double.svg';
-import Gps_Icon from './../../assets/svg_icon/gps-svg.svg';
 import Mechanic_call_Icon from './../../assets/svg_icon/mechanic_call.svg';
 import AppText from '../../theme/AppText';
+import MapSection from '../../component/MapSection/MapSection';
 import ReceiverSignaturePad, {
   SIGNATURE_STORAGE_KEY,
 } from '../../component/ReceiverSignaturePad/ReceiverSignaturePad';
-import {useLocation} from '../../services/LocationService';
 
 
 const INITIAL_REGION = {
@@ -71,86 +63,11 @@ const UPCOMING_STOPS = [
 
 
 const HomeScreen = () => {
-  const isAndroid = Platform.OS === 'android';
-  const insets = useSafeAreaInsets();
   const navigation = useNavigation();
 
-  const [isVerified, setIsVerified] = useState(true);
-  const [isMapExpanded, setIsMapExpanded] = useState(false);
   const [isJobStarted, setIsJobStarted] = useState(false);
   const [isSignaturePadVisible, setIsSignaturePadVisible] = useState(false);
   const [receiverSignature, setReceiverSignature] = useState(null);
-
-  const mapCardRef = useRef(null);
-  const mapFullRef = useRef(null);
-  const skipNextOverviewFitRef = useRef(false);
-
-  const miniMapPan = useRef(new Animated.ValueXY({x: 12, y: 12})).current;
-
-  const {
-    location,
-    loading,
-    error,
-    refresh,
-  } = useLocation({
-    fetchOnMount: true,
-  });
-
-
-  const currentLocation = location
-    ? {
-        latitude:      location.latitude,
-        longitude:     location.longitude,
-        latitudeDelta: 0.01,
-        longitudeDelta: 0.01,
-      }
-    : null;
-
-  useEffect(() => {
-    if (!currentLocation) return;
-
-    if (!isMapExpanded) {
-      if (skipNextOverviewFitRef.current) {
-        skipNextOverviewFitRef.current = false;
-        return;
-      }
-
-      const overviewCoordinates = [
-        ...UPCOMING_STOPS.map(s => s.coordinate),
-        {latitude: currentLocation.latitude, longitude: currentLocation.longitude},
-      ];
-
-      requestAnimationFrame(() => {
-        mapCardRef.current?.fitToCoordinates(overviewCoordinates, {
-          edgePadding: {top: 50, right: 50, bottom: 50, left: 50},
-          animated: true,
-        });
-      });
-      return;
-    }
-
-    mapFullRef.current?.animateToRegion(currentLocation, 800);
-  }, [currentLocation, isMapExpanded]);
-
-  const miniMapResponder = useRef(
-    PanResponder.create({
-      onMoveShouldSetPanResponder: () => true,
-      onPanResponderGrant: () => {
-        miniMapPan.setOffset({
-          x: miniMapPan.x.__getValue(),
-          y: miniMapPan.y.__getValue(),
-        });
-        miniMapPan.setValue({x: 0, y: 0});
-      },
-      onPanResponderMove: Animated.event(
-        [null, {dx: miniMapPan.x, dy: miniMapPan.y}],
-        {useNativeDriver: false},
-      ),
-      onPanResponderRelease: () => {
-        miniMapPan.flattenOffset();
-      },
-    }),
-  ).current;
 
   const loadSavedSignature = async () => {
     try {
@@ -171,145 +88,12 @@ const HomeScreen = () => {
     setReceiverSignature(signaturePayload);
   };
 
-
-  const centerOnCurrentLocation = async isExpandedView => {
-    if (!isExpandedView) {
-      skipNextOverviewFitRef.current = true;
-    }
-
-    if (currentLocation) {
-      const activeMapRef = isExpandedView ? mapFullRef.current : mapCardRef.current;
-      activeMapRef?.animateToRegion(
-        {...currentLocation, latitudeDelta: 0.004, longitudeDelta: 0.004},
-        700,
-      );
-    }
-
-    await refresh();
-  };
-
-  const handlePendingVerification = () => {
-    if (loading || isVerified) return;
-    navigation.navigate('CreateAccount');
-  };
-
-  const openMap_navigation = () => navigation.navigate('NavigationScreen');
-  const openMap            = () => navigation.navigate('NavigationScreen');
-    const openMap_Here            = () => navigation.navigate('HereSearchScreen');
+  const openMap_Here = () => navigation.navigate('HereSearchScreen');
 
   const openSignatureCapture  = () => setIsSignaturePadVisible(true);
   const closeSignatureCapture = () => setIsSignaturePadVisible(false);
 
   const toggleJobStatus = () => setIsJobStarted(prev => !prev);
-
-  const fullscreenTopPadding = Math.max(
-    insets.top + 8,
-    Platform.OS === 'android' ? 16 : 10,
-  );
-  const fullscreenBottomPadding = Math.max(insets.bottom + 10, 12);
-
-  const renderMapSection = (containerStyle, isExpandedView = false) => (
-    <View style={containerStyle}>
-      <MapView
-        ref={isExpandedView ? mapFullRef : mapCardRef}
-        style={styles.mainMap}
-        initialRegion={isExpandedView ? FULLSCREEN_REGION : INITIAL_REGION}>
-
-        {UPCOMING_STOPS.map(stop => (
-          <Marker
-            key={stop.id}
-            coordinate={stop.coordinate}
-            title={`${stop.label} • ${stop.place}`}
-            description={stop.dateTime}
-            anchor={{x: 0.5, y: 1}}
-            tracksViewChanges={false}>
-            <View style={styles.stopMarkerWrap} collapsable={false}>
-              <View
-                style={[
-                  styles.stopMarkerBadge,
-                  stop.type === 'pickup'   && styles.stopMarkerPickup,
-                  stop.type === 'service'  && styles.stopMarkerService,
-                  stop.type === 'delivery' && styles.stopMarkerDelivery,
-                ]}>
-                <AppText style={styles.stopMarkerLabel}>{stop.label}</AppText>
-                <AppText style={styles.stopMarkerDate}>{stop.dateTime}</AppText>
-              </View>
-              <View
-                style={[
-                  styles.stopMarkerPin,
-                  stop.type === 'pickup'   && styles.stopMarkerPinPickup,
-                  stop.type === 'service'  && styles.stopMarkerPinService,
-                  stop.type === 'delivery' && styles.stopMarkerPinDelivery,
-                ]}
-              />
-            </View>
-          </Marker>
-        ))}
-
-        {currentLocation && (
-          <Marker
-            coordinate={currentLocation}
-            title="Current Location"
-            anchor={{x: 0.5, y: 0.5}}
-            tracksViewChanges={isAndroid}>
-            <View style={styles.currentMarkerContainer} collapsable={false}>
-              <View style={styles.currentMarkerOuter} />
-              <View style={styles.currentMarkerInner} />
-            </View>
-          </Marker>
-        )}
-      </MapView>
-
-      {/* Location status overlay — only while we have no location yet. */}
-      {!currentLocation && loading && (
-        <View style={styles.locationStatusOverlay} pointerEvents="none">
-          <ActivityIndicator size="small" color={colors.primary || '#22C55E'} />
-          <AppText style={styles.locationStatusText}>Fetching location…</AppText>
-        </View>
-      )}
-
-      {!currentLocation && !loading && error && (
-        <View style={styles.locationStatusOverlay}>
-          <AppText style={styles.locationStatusText}>
-            Unable to fetch location
-          </AppText>
-          <TouchableOpacity
-            style={styles.locationRetryBtn}
-            onPress={refresh}
-            activeOpacity={0.8}>
-            <AppText style={styles.locationRetryText}>Retry</AppText>
-          </TouchableOpacity>
-        </View>
-      )}
-
-      {isExpandedView && (
-        <View style={[styles.mapExpandedHeader, {top: fullscreenTopPadding}]}>
-          <AppText style={styles.mapExpandedTitle}>Live Tracking Map</AppText>
-          <AppText style={styles.mapExpandedHint}>
-            Tap the icon again to return normal size
-          </AppText>
-        </View>
-      )}
-
-      <TouchableOpacity
-        style={[
-          styles.mapToggleBtn,
-          isExpandedView && {top: fullscreenTopPadding},
-        ]}
-        onPress={() => setIsMapExpanded(!isExpandedView)}>
-        <Double_Arrow_Icon width={18} height={18} />
-      </TouchableOpacity>
-
-      <TouchableOpacity
-        style={[
-          styles.mapLocationBtn,
-          isExpandedView && {bottom: fullscreenBottomPadding + 18},
-        ]}
-        onPress={() => centerOnCurrentLocation(isExpandedView)}>
-        <Gps_Icon width={20} height={20} />
-      </TouchableOpacity>
-    </View>
-  );
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -349,7 +133,13 @@ const HomeScreen = () => {
           <AppText style={styles.sectionTitle}>Live Map</AppText>
         </View>
 
-        {renderMapSection(styles.mapCard, false)}
+        <MapSection
+          stops={UPCOMING_STOPS}
+          expandable
+          style={styles.mapCard}
+          initialRegion={INITIAL_REGION}
+          fullscreenRegion={FULLSCREEN_REGION}
+        />
 
         <View style={styles.mapHintRow}>
           <TouchableOpacity
@@ -462,13 +252,6 @@ const HomeScreen = () => {
         </View>
 
       </ScrollView>
-
-      {/* FULLSCREEN MAP OVERLAY */}
-      {isMapExpanded && (
-        <View style={styles.mapFullscreenOverlay}>
-          {renderMapSection(styles.mapFullscreenCard, true)}
-        </View>
-      )}
 
       {/* SIGNATURE PAD */}
       <ReceiverSignaturePad

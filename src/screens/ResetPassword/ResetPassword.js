@@ -169,7 +169,7 @@ const ResetPassword = () => {
             translucent={true}
           />
           <ScrollView
-            style={{backgroundColor: colors.white}}
+            style={[styles.scroll, {backgroundColor: colors.white}]}
             contentContainerStyle={[styles.container, {backgroundColor: colors.white}]}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
@@ -354,58 +354,60 @@ const ResetPassword = () => {
                   </>
                 )}
 
-                {/* ── Primary action pinned to bottom ── */}
-                {loading ? (
-                  <View style={[styles.button, styles.bottomButton, styles.loadingButton]}>
-                    <ActivityIndicator color={colors.white} size="small" />
-                  </View>
-                ) : step === 1 ? (
-                  <Button
-                    title="Send OTP"
-                    onPress={handleSendOtp}
-                    backgroundColor={colors.primary}
-                    textColor={colors.white}
-                    style={[
-                      styles.primaryButton,
-                      styles.bottomButton,
-                      isSendOtpDisabled && styles.disabledButton,
-                    ]}
-                    textStyle={styles.primaryButtonText}
-                    disabled={isSendOtpDisabled}
-                  />
-                ) : step === 2 ? (
-                  <Button
-                    title="Verify"
-                    onPress={handleVerifyOtp}
-                    backgroundColor={colors.primary}
-                    textColor={colors.white}
-                    style={[
-                      styles.primaryButton,
-                      styles.bottomButton,
-                      isVerifyOtpDisabled && styles.disabledButton,
-                    ]}
-                    textStyle={styles.primaryButtonText}
-                    disabled={isVerifyOtpDisabled}
-                  />
-                ) : (
-                  <Button
-                    title="Reset Password"
-                    onPress={handleResetPassword}
-                    backgroundColor={colors.primary}
-                    textColor={colors.white}
-                    style={[
-                      styles.primaryButton,
-                      styles.bottomButton,
-                      isResetPasswordDisabled && styles.disabledButton,
-                    ]}
-                    textStyle={styles.primaryButtonText}
-                    disabled={isResetPasswordDisabled}
-                  />
-                )}
-
               </View>
             </View>
           </ScrollView>
+
+          {/* ── Primary action pinned to a fixed footer (same spot for every step) ── */}
+          <View style={styles.footer}>
+            {loading ? (
+              <View style={[styles.primaryButton, styles.footerButton, styles.loadingButton]}>
+                <ActivityIndicator color={colors.white} size="small" />
+              </View>
+            ) : step === 1 ? (
+              <Button
+                title="Send OTP"
+                onPress={handleSendOtp}
+                backgroundColor={colors.primary}
+                textColor={colors.white}
+                style={[
+                  styles.primaryButton,
+                  styles.footerButton,
+                  isSendOtpDisabled && styles.disabledButton,
+                ]}
+                textStyle={styles.primaryButtonText}
+                disabled={isSendOtpDisabled}
+              />
+            ) : step === 2 ? (
+              <Button
+                title="Verify"
+                onPress={handleVerifyOtp}
+                backgroundColor={colors.primary}
+                textColor={colors.white}
+                style={[
+                  styles.primaryButton,
+                  styles.footerButton,
+                  isVerifyOtpDisabled && styles.disabledButton,
+                ]}
+                textStyle={styles.primaryButtonText}
+                disabled={isVerifyOtpDisabled}
+              />
+            ) : (
+              <Button
+                title="Reset Password"
+                onPress={handleResetPassword}
+                backgroundColor={colors.primary}
+                textColor={colors.white}
+                style={[
+                  styles.primaryButton,
+                  styles.footerButton,
+                  isResetPasswordDisabled && styles.disabledButton,
+                ]}
+                textStyle={styles.primaryButtonText}
+                disabled={isResetPasswordDisabled}
+              />
+            )}
+          </View>
         </SafeAreaView>
       </TouchableWithoutFeedback>
     </KeyboardAvoidingView>
