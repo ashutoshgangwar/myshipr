@@ -8,7 +8,7 @@ const CONTENT_MAX_WIDTH = select({phone: undefined, tablet: scale(380)});
 
 // Icon sizes bump up on tablets so they stay in proportion with the scaled text.
 export const ICON_SIZE = {
-  tab: select({phone: moderateScale(18), tablet: moderateScale(22)}),
+  tab: select({phone: moderateScale(18), tablet: moderateScale(15)}),
   search: select({phone: moderateScale(18), tablet: moderateScale(22)}),
   selected: select({phone: moderateScale(16), tablet: moderateScale(20)}),
 };
@@ -19,7 +19,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#F1F5F9',
   },
 
+  scroll: {
+    flex: 1,
+  },
+
   scrollContent: {
+    flexGrow: 1,
     paddingBottom: verticalScale(28),
   },
 
@@ -79,6 +84,7 @@ const styles = StyleSheet.create({
 
   /* Body card */
   card: {
+    flexGrow: 1,
     backgroundColor: colors.white,
     marginTop: -verticalScale(15),
     borderRadius: moderateScale(20),
@@ -139,7 +145,7 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(12),
     paddingHorizontal: scale(12),
     paddingVertical: IS_TABLET
-      ? verticalScale(8)
+      ? verticalScale(5)
       : Platform.OS === 'ios'
       ? verticalScale(13)
       : verticalScale(12),

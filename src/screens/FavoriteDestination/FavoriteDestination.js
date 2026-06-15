@@ -97,6 +97,7 @@ const FavoriteDestination = () => {
         />
 
       <ScrollView
+        style={styles.scroll}
         showsVerticalScrollIndicator={false}
         keyboardShouldPersistTaps="handled"
         contentContainerStyle={styles.scrollContent}>
@@ -199,8 +200,8 @@ const FavoriteDestination = () => {
               {/* Selected location */}
               <View style={styles.selectedRow}>
                 <Location_Icon
-                  width={ICON_SIZE.selected}
-                  height={ICON_SIZE.selected}
+                  width={ICON_SIZE.tab}
+                  height={ICON_SIZE.tab}
                   color={colors.primary}
                 />
                 <AppText
@@ -279,7 +280,7 @@ const FavoriteDestination = () => {
             title="Confirm Destination"
             onPress={handleConfirm}
             disabled={!canConfirm}
-            backgroundColor={canConfirm ? colors.primary : '#A9AEC4'}
+            backgroundColor={canConfirm ? colors.primary : colors.primaryLight}
             textColor={colors.white}
             style={styles.confirmBtn}
             textStyle={styles.confirmBtnText}
