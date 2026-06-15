@@ -27,6 +27,16 @@ export const colors = {
   muted: '#000000eb',
   background: '#F8F9FA',
 
+  // Semantic accents used across dashboard cards
+  success: '#16A34A',
+  accentBlue: '#2563EB',
+  warning: '#F59E0B',
+  danger: '#DC2626',
+  screenBg: '#F1F5F9',
+  cardBorder: '#E2E8F0',
+  textMuted: '#64748B',
+  textStrong: '#0F172A',
+
 
   surfaceDarkPrimary: '#00033E',
   overlayDarkStartTransparent: 'rgba(12, 32, 69, 0)',

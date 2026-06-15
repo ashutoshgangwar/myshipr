@@ -1,734 +1,529 @@
-import { StyleSheet } from 'react-native';
-import { moderateScale, verticalScale } from 'react-native-size-matters';
-import { colors } from '../../theme/colors';
+import {StyleSheet} from 'react-native';
+import {ms as baseMs, vs as baseVs} from '../../theme/scale';
+import {colors} from '../../theme/colors';
+import {select} from '../../utils/device';
+
+// Single shared layout for every device: the two-column tablet dashboard.
+// The tablet view is the reference and stays pixel-for-pixel identical
+// (factor 1). Phones keep the EXACT same layout/alignment but shrink every
+// size uniformly so the narrow two columns don't overflow. No alternate
+// stacked layout is created.
+const PHONE_FACTOR = select({phone: 0.78, tablet: 1});
+const ms = n => baseMs(n) * PHONE_FACTOR;
+const vs = n => baseVs(n) * PHONE_FACTOR;
+
+const COLUMN_DIRECTION = 'row';
+const STAT_BASIS = '22%';
 
 export default StyleSheet.create({
   safe: {
     flex: 1,
-    backgroundColor: '#F8FAFC',
+    backgroundColor: colors.screenBg,
   },
 
-  /* Header */
+  scrollContent: {
+    paddingBottom: vs(28),
+  },
+
+  /* ---------- Header ---------- */
   header: {
     backgroundColor: colors.primary,
-    padding: moderateScale(20),
+    paddingHorizontal: ms(20),
+    paddingTop: vs(16),
+    paddingBottom: vs(26),
+    borderBottomLeftRadius: ms(28),
+    borderBottomRightRadius: ms(28),
+  },
+
+  headerTopRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
+    justifyContent: 'space-between',
   },
 
-  welcome: {
-    color: '#DBEAFE',
-    fontSize: moderateScale(18),
-    fontWeight: '500',
+  brandRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: ms(10),
   },
 
-  username: {
-    color: '#fff',
-    fontSize: moderateScale(24),
-    fontWeight: '700',
-  },
-
-  profileCircle: {
-    width: moderateScale(44),
-    height: moderateScale(44),
-    backgroundColor: '#fff',
-    borderRadius: moderateScale(22),
+  brandBadge: {
+    width: ms(38),
+    height: ms(38),
+    borderRadius: ms(10),
+    backgroundColor: 'rgba(255,255,255,0.12)',
     alignItems: 'center',
     justifyContent: 'center',
   },
 
-  profileIcon: {
-    fontSize: moderateScale(18),
+  brandGlyph: {
+    fontSize: ms(20),
   },
 
-/* Verification */
-verifyCard: {
-  margin: moderateScale(16),
-  backgroundColor: colors.primary,
-  borderRadius: moderateScale(16),
-  padding: moderateScale(14),
-},
-
-verifyRow: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-},
-
-verifyText: {
-  color: '#E0E7FF',
-  fontSize: moderateScale(14),
-  fontWeight: '600',
-},
-
-verifiedBadge: {
-  backgroundColor: '#22C55E',
-  paddingHorizontal: moderateScale(12),
-  paddingVertical: verticalScale(4),
-  borderRadius: moderateScale(12),
-},
-
-badgeText: {
-  color: '#fff',
-  fontWeight: '600',
-  fontSize: moderateScale(12),
-},
-
-progressTrack: {
-  height: verticalScale(16),
-  fontWeight: '600',
-},
-
-progressFill: {
-  width: '100%', // later dynamic (e.g. 72%)
-  height: '100%',
-  backgroundColor: '#FFFFFF',
-  borderRadius: moderateScale(10),
-},
-
-
-  /* Stats */
-  statsCard: {
-    backgroundColor: '#fff',
-    marginHorizontal: moderateScale(16),
-    borderRadius: moderateScale(16),
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingVertical: verticalScale(16),
+  brandText: {
+    color: colors.white,
+    fontSize: ms(20),
+    fontWeight: '800',
+    letterSpacing: 1,
   },
 
-  statItem: {
-    flex: 1,
+  dieselBadge: {
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.25)',
+    backgroundColor: 'rgba(255,255,255,0.06)',
+    borderRadius: ms(12),
+    paddingHorizontal: ms(14),
+    paddingVertical: vs(6),
     alignItems: 'center',
   },
 
-  statValue: {
-    fontSize: moderateScale(22),
+  dieselLabel: {
+    color: colors.onDarkLow,
+    fontSize: ms(11),
     fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+
+  dieselValue: {
+    color: colors.success,
+    fontSize: ms(15),
+    fontWeight: '800',
+    marginTop: vs(2),
+  },
+
+  headerLocation: {
+    color: colors.onDarkMedium,
+    fontSize: ms(15),
+    marginTop: vs(18),
+  },
+
+  headerWelcome: {
+    color: colors.white,
+    fontSize: ms(28),
+    fontWeight: '800',
+    marginTop: vs(2),
+  },
+
+  /* ---------- Stats ---------- */
+  statsRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    paddingHorizontal: ms(12),
+    paddingTop: vs(14),
+    gap: ms(10),
+  },
+
+  statCard: {
+    flexGrow: 1,
+    flexBasis: STAT_BASIS,
+    backgroundColor: colors.white,
+    borderRadius: ms(14),
+    padding: ms(14),
+    borderLeftWidth: 4,
+    borderLeftColor: colors.cardBorder,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    shadowOffset: {width: 0, height: 2},
+    elevation: 2,
   },
 
   statLabel: {
-    fontSize: moderateScale(12),
-    color: '#64748B',
+    color: colors.textMuted,
+    fontSize: ms(13),
+    fontWeight: '600',
   },
 
-  divider: {
-    width: 1,
-    backgroundColor: '#E2E8F0',
-  },
-
-  /* Sections */
-  sectionTitle: {
-    fontSize: moderateScale(20),
-    fontWeight: '700',
-    marginHorizontal: moderateScale(16),
-    marginTop: verticalScale(10),
-  },
-
-  sectionRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginHorizontal: moderateScale(10),
-    marginTop: verticalScale(1),
-  },
-
-  seeAll: {
-    color: colors.white,
+  statValue: {
+    color: colors.textStrong,
+    fontSize: ms(24),
     fontWeight: '800',
-    justifyContent: 'flex-end', 
-    textAlign:'right',
-    marginRight: moderateScale(10)
+    marginTop: vs(4),
   },
 
-  auctionCard: {   
-    backgroundColor: colors.placeholder,
-    margin: moderateScale(10),
-    borderRadius: moderateScale(10),
-    padding: moderateScale(5)
-  },
-
-  mapCard: {
-    margin: moderateScale(10),
-    borderRadius: moderateScale(16),
-    overflow: 'hidden',
-    height: verticalScale(220),
-    backgroundColor: '#fff',
-  },
-
-  mapFullscreenOverlay: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: '#fff',
-    zIndex: 50,
-    padding: 0,
-  },
-
-  mapFullscreenCard: {
-    flex: 1,
-    borderRadius: 0,
-    overflow: 'hidden',
-    backgroundColor: '#fff',
-  },
-
-  mainMap: {
-    ...StyleSheet.absoluteFillObject,
-  },
-
-  mapToggleBtn: {
-    position: 'absolute',
-    top: moderateScale(10),
-    right: moderateScale(10),
-    width: moderateScale(34),
-    height: moderateScale(34),
-    borderRadius: moderateScale(17),
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    shadowOffset: {width: 0, height: 2},
-  },
-
-  mapLocationBtn: {
-    position: 'absolute',
-    right: moderateScale(10),
-    bottom: moderateScale(14),
-    width: moderateScale(36),
-    height: moderateScale(36),
-    borderRadius: moderateScale(18),
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#FFFFFF',
-    elevation: 4,
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    shadowOffset: {width: 0, height: 2},
-  },
-
-  mapHintRow: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    marginHorizontal: moderateScale(16),
-    marginTop: verticalScale(8),
-    marginBottom: verticalScale(2),
-  },
-
-  mapNavigatorRow: {
-    marginHorizontal: moderateScale(16),
-    marginBottom: verticalScale(8),
-  },
-
-  mapNavigatorBtn: {
-    backgroundColor: colors.primary,
-    borderRadius: moderateScale(12),
-    paddingVertical: verticalScale(12),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  mapNavigatorBtnText: {
-    color: '#FFFFFF',
-    fontSize: moderateScale(14),
-    fontWeight: '700',
-  },
-
-  currentLoadHeaderRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginHorizontal: moderateScale(16),
-    marginTop: verticalScale(10),
-  },
-
-  signatureSectionHeader: {
-    marginHorizontal: moderateScale(16),
-    marginTop: verticalScale(12),
-  },
-
-  currentLoadTitle: {
-    fontSize: moderateScale(20),
-    fontWeight: '700',
-  },
-
-  signatureCard: {
-    backgroundColor: '#FFFFFF',
-    marginHorizontal: moderateScale(10),
-    marginTop: verticalScale(10),
-    borderRadius: moderateScale(16),
-    padding: moderateScale(16),
-  },
-
-  signatureInfoRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-
-  signatureTextWrap: {
-    flex: 1,
-    paddingRight: moderateScale(12),
-  },
-
-  signatureStatusTitle: {
-    fontSize: moderateScale(16),
-    fontWeight: '700',
-    color: '#0F172A',
-  },
-
-  signatureStatusSubtitle: {
-    marginTop: verticalScale(4),
-    color: '#64748B',
-    fontSize: moderateScale(13),
-    lineHeight: moderateScale(18),
-  },
-
-  signatureActionBtn: {
-    backgroundColor: colors.primary,
-    borderRadius: moderateScale(12),
-    paddingHorizontal: moderateScale(14),
-    paddingVertical: verticalScale(12),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  signatureActionBtnText: {
-    color: '#FFFFFF',
-    fontWeight: '700',
-  },
-
-  signaturePreview: {
-    width: '100%',
-    height: verticalScale(120),
-    marginTop: verticalScale(14),
-    borderRadius: moderateScale(12),
-    backgroundColor: '#F8FAFC',
-  },
-
-  currentLoadJobBtn: {
-    backgroundColor: '#16A34A',
-    borderRadius: moderateScale(999),
-    paddingHorizontal: moderateScale(18),
-    paddingVertical: verticalScale(18),
-    marginBottom: verticalScale(10),
-    elevation: 3,
-    shadowColor: '#000',
-    shadowOpacity: 0.18,
-    shadowRadius: 4,
-    shadowOffset: {width: 0, height: 2},
-  },
-
-  currentLoadJobBtnStop: {
-    backgroundColor: '#DC2626',
-  },
-
-  currentLoadJobBtnText: {
-    color: '#fff',
-    fontSize: moderateScale(20),
-    fontWeight: '700',
-  },
-
-  locationStatusOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    alignItems: 'center',
-    justifyContent: 'center',
-    flexDirection: 'row',
-    gap: moderateScale(8),
-    backgroundColor: 'rgba(255, 255, 255, 0.55)',
-  },
-  locationStatusText: {
-    color: '#0F172A',
-    fontSize: moderateScale(13),
+  statNote: {
+    fontSize: ms(11),
     fontWeight: '600',
-  },
-  locationRetryBtn: {
-    backgroundColor: '#00033E',
-    paddingHorizontal: moderateScale(16),
-    paddingVertical: verticalScale(7),
-    borderRadius: moderateScale(20),
-  },
-  locationRetryText: {
-    color: '#FFFFFF',
-    fontSize: moderateScale(13),
-    fontWeight: '700',
+    marginTop: vs(6),
   },
 
-  mapExpandedHeader: {
-    position: 'absolute',
-    top: moderateScale(12),
-    left: moderateScale(12),
-    right: moderateScale(56),
-    backgroundColor: 'rgba(15, 23, 42, 0.72)',
-    borderRadius: moderateScale(12),
-    paddingHorizontal: moderateScale(12),
-    paddingVertical: verticalScale(8),
+  /* ---------- Main grid ---------- */
+  grid: {
+    flexDirection: COLUMN_DIRECTION,
+    paddingHorizontal: ms(12),
+    paddingTop: vs(14),
+    gap: ms(12),
   },
 
-  mapExpandedTitle: {
-    color: '#fff',
-    fontSize: moderateScale(14),
-    fontWeight: '700',
+  column: {
+    flex: 1,
+    gap: ms(12),
   },
 
-  mapExpandedHint: {
-    color: '#E2E8F0',
-    fontSize: moderateScale(11),
-    marginTop: verticalScale(2),
-  },
-
-  miniMapContainer: {
-    position: 'absolute',
-    width: moderateScale(110),
-    height: moderateScale(110),
-    borderRadius: moderateScale(12),
-    overflow: 'hidden',
-    borderWidth: 2,
-    borderColor: '#fff',
-    elevation: 8,
+  card: {
+    backgroundColor: colors.white,
+    borderRadius: ms(16),
+    padding: ms(16),
     shadowColor: '#000',
-    shadowOpacity: 0.26,
+    shadowOpacity: 0.05,
     shadowRadius: 8,
-    shadowOffset: {width: 0, height: 3},
-  },
-
-  miniMap: {
-    flex: 1,
-  },
-
-  currentMarkerContainer: {
-    width: moderateScale(28),
-    height: moderateScale(28),
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  currentMarkerOuter: {
-    position: 'absolute',
-    width: moderateScale(28),
-    height: moderateScale(28),
-    borderRadius: moderateScale(14),
-    backgroundColor: 'rgba(37, 99, 235, 0.28)',
-  },
-
-  currentMarkerInner: {
-    width: moderateScale(15),
-    height: moderateScale(15),
-    borderRadius: moderateScale(7.5),
-    backgroundColor: '#2563EB',
-    borderWidth: 1.5,
-    borderColor: '#FFFFFF',
-  },
-
-  stopMarkerWrap: {
-    alignItems: 'center',
-  },
-
-  stopMarkerBadge: {
-    minWidth: moderateScale(118),
-    paddingHorizontal: moderateScale(8),
-    paddingVertical: verticalScale(5),
-    borderRadius: moderateScale(10),
-    backgroundColor: '#111827',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
     shadowOffset: {width: 0, height: 2},
-    elevation: 3,
+    elevation: 2,
   },
 
-  stopMarkerPickup: {
-    backgroundColor: '#16A34A',
+  cardHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
   },
 
-  stopMarkerService: {
-    backgroundColor: '#F59E0B',
+  cardTitle: {
+    fontSize: ms(15),
+    fontWeight: '700',
+    color: colors.textStrong,
   },
 
-  stopMarkerDelivery: {
-    backgroundColor: '#DC2626',
+  pill: {
+    paddingHorizontal: ms(10),
+    paddingVertical: vs(4),
+    borderRadius: ms(10),
+    borderWidth: 1,
   },
 
-  stopMarkerLabel: {
-    color: '#FFFFFF',
-    fontSize: moderateScale(11),
+  pillOnTime: {
+    borderColor: colors.success,
+    backgroundColor: 'rgba(22,163,74,0.08)',
+  },
+
+  pillOnTimeText: {
+    color: colors.success,
+    fontSize: ms(11),
     fontWeight: '700',
   },
 
-  stopMarkerDate: {
-    color: '#FFFFFF',
-    fontSize: moderateScale(10),
-    marginTop: verticalScale(1),
-    opacity: 0.95,
-    fontWeight: '600',
+  pillOnDuty: {
+    borderColor: colors.warning,
+    backgroundColor: 'rgba(245,158,11,0.10)',
   },
 
-  stopMarkerPin: {
-    width: moderateScale(10),
-    height: moderateScale(10),
-    borderRadius: moderateScale(5),
-    marginTop: verticalScale(3),
-    backgroundColor: '#111827',
-    borderWidth: 1,
-    borderColor: '#FFFFFF',
+  pillOnDutyText: {
+    color: colors.warning,
+    fontSize: ms(11),
+    fontWeight: '700',
   },
 
-  stopMarkerPinPickup: {
-    backgroundColor: '#16A34A',
+  /* ---------- Current Trip ---------- */
+  payoutRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: ms(8),
+    marginTop: vs(8),
   },
 
-  stopMarkerPinService: {
-    backgroundColor: '#F59E0B',
+  payoutValue: {
+    color: colors.success,
+    fontSize: ms(34),
+    fontWeight: '800',
   },
 
-  stopMarkerPinDelivery: {
-    backgroundColor: '#DC2626',
+  payoutLabel: {
+    color: colors.textMuted,
+    fontSize: ms(13),
+    marginBottom: vs(6),
   },
 
-  selectedMarkerContainer: {
+  routeBox: {
+    backgroundColor: colors.screenBg,
+    borderRadius: ms(14),
+    padding: ms(14),
+    marginTop: vs(14),
+    flexDirection: 'row',
+  },
+
+  routeTimeline: {
+    width: ms(16),
     alignItems: 'center',
+    marginRight: ms(8),
   },
 
-  selectedMarkerInner: {
-    minWidth: moderateScale(100),
-    paddingHorizontal: moderateScale(8),
-    paddingVertical: verticalScale(5),
-    borderRadius: moderateScale(10),
-    backgroundColor: '#8B5CF6',
-    alignItems: 'center',
-    shadowColor: '#000',
-    shadowOpacity: 0.2,
-    shadowRadius: 4,
-    shadowOffset: {width: 0, height: 2},
-    elevation: 3,
+  routeDotStart: {
+    width: ms(10),
+    height: ms(10),
+    borderRadius: ms(5),
+    backgroundColor: colors.textMuted,
   },
 
-  selectedMarkerPin: {
-    width: moderateScale(12),
-    height: moderateScale(12),
-    borderRadius: moderateScale(6),
-    marginTop: verticalScale(3),
-    backgroundColor: '#8B5CF6',
-    borderWidth: 2,
-    borderColor: '#FFFFFF',
+  routeLine: {
+    flex: 1,
+    width: 2,
+    backgroundColor: colors.cardBorder,
+    marginVertical: vs(4),
   },
 
-  /* Cards */
-  loadCard: {
-    backgroundColor: '#fff',
-    margin: moderateScale(10),
-    borderRadius: moderateScale(16),
-    padding: moderateScale(16),
+  routeDotEnd: {
+    width: ms(10),
+    height: ms(10),
+    borderRadius: ms(5),
+    backgroundColor: colors.accentBlue,
   },
 
-  loadHeader: {
+  routeStopLabel: {
+    color: colors.textMuted,
+    fontSize: ms(10),
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+
+  routeStopCity: {
+    color: colors.textStrong,
+    fontSize: ms(17),
+    fontWeight: '700',
+    marginBottom: vs(10),
+  },
+
+  tripStatsRow: {
+    flexDirection: 'row',
+    marginTop: vs(14),
+  },
+
+  tripStatItem: {
+    flex: 1,
+    alignItems: 'flex-start',
+  },
+
+  tripStatValue: {
+    color: colors.textStrong,
+    fontSize: ms(15),
+    fontWeight: '700',
+  },
+
+  tripStatLabel: {
+    color: colors.textMuted,
+    fontSize: ms(11),
+    marginTop: vs(2),
+  },
+
+  /* ---------- Progress bars ---------- */
+  progressHeaderRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    marginBottom: verticalScale(12),
-  },
-
-  loadId: {
-    fontSize: moderateScale(18),
-    fontWeight: '700',
-  },
-
-  loadSub: {
-    color: '#64748B',
-    marginTop: verticalScale(4),
-  },
-
-  inTransitBadge: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: moderateScale(12),
-    borderRadius: moderateScale(14),
-    justifyContent: 'center',
-  },
-
-  locationRow: {
-    flexDirection: 'row',
-    marginTop: verticalScale(12),
-  },
-
-  locationIcon: {
-    width: moderateScale(34),
-    height: moderateScale(34),
-    borderRadius: moderateScale(17),
     alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: moderateScale(12),
+    marginTop: vs(16),
+    marginBottom: vs(6),
   },
 
-  city: {
+  progressCaption: {
+    color: colors.textStrong,
+    fontSize: ms(13),
     fontWeight: '600',
   },
 
-  info: {
-    fontSize: moderateScale(12),
-    color: '#64748B',
+  progressCaptionAccent: {
+    color: colors.accentBlue,
+    fontSize: ms(13),
+    fontWeight: '700',
   },
 
- progressContainer: {
-  marginTop: verticalScale(16),
-},
-
-progressHeader: {
-  flexDirection: 'row',
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  marginBottom: verticalScale(8),
-},
-
-progressLabel: {
-  fontSize: moderateScale(14),
-  fontWeight: '500',
-  color: '#475569', // slate gray
-},
-
-progressPercent: {
-  fontSize: moderateScale(14),
-  fontWeight: '700',
-  color: '#0F172A', // dark text
-},
-
-progressBarBackground: {
-  height: verticalScale(10),
-  width: '100%',
-  backgroundColor: '#D1D5DB', // light gray
-  borderRadius: moderateScale(10),
-  overflow: 'hidden',
-},
-
-progressBarFill: {
-  height: '100%',
-  backgroundColor: '#020617', // dark navy/black
-  borderRadius: moderateScale(10),
-},
-
-
-  actionRow: {
-    flexDirection: 'row',
-    gap: moderateScale(12),
-    marginTop: verticalScale(16),
+  progressTrack: {
+    height: vs(8),
+    borderRadius: ms(8),
+    backgroundColor: colors.cardBorder,
+    overflow: 'hidden',
   },
 
+  progressFill: {
+    height: '100%',
+    borderRadius: ms(8),
+    backgroundColor: colors.accentBlue,
+  },
+
+  progressFillWarn: {
+    backgroundColor: colors.warning,
+  },
+
+  /* ---------- Buttons ---------- */
   primaryBtn: {
-    flex: 1,
-    backgroundColor: colors.primary,
-    paddingVertical: verticalScale(12),
-    borderRadius: moderateScale(12),
+    backgroundColor: colors.accentBlue,
+    borderRadius: ms(14),
+    paddingVertical: vs(14),
     alignItems: 'center',
-    marginLeft: verticalScale(10)
-  },
-  placeBtn: {
-    flex: 1,
-    backgroundColor: colors.primary,
-    paddingVertical: verticalScale(12),
-    borderRadius: moderateScale(12),
-    alignItems: 'center',
-    marginLeft: verticalScale(50)
+    marginTop: vs(18),
   },
 
   primaryBtnText: {
-    color: '#fff',
+    color: colors.white,
+    fontSize: ms(16),
+    fontWeight: '800',
+    letterSpacing: 0.5,
+  },
+
+  /* ---------- Hours of Service rows ---------- */
+  hosDrivenRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: vs(14),
+    marginBottom: vs(6),
+  },
+
+  hosDrivenText: {
+    color: colors.textStrong,
+    fontSize: ms(14),
     fontWeight: '700',
   },
 
-
-  payRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: verticalScale(14),
-    alignItems: 'center',
+  hosRemText: {
+    color: colors.textMuted,
+    fontSize: ms(13),
+    fontWeight: '600',
   },
 
-  payLabel: {
-    fontSize: moderateScale(12),
-    color: '#64748B',
-  },
-
-  payAmount: {
-    fontSize: moderateScale(22),
-    fontWeight: '700',
-    color: '#16A34A',
-  },
-
-  dateBadge: {
-    borderWidth: 1,
-    borderColor: '#E2E8F0',
-    paddingHorizontal: moderateScale(10),
-    borderRadius: moderateScale(12),
-    justifyContent: 'center',
-  },
-
-  /* Auction notification cards */
-  auctionNotifCard: {
+  detailRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    backgroundColor: '#fff',
-    marginHorizontal: moderateScale(5),
-    marginBottom: verticalScale(5),
-    marginTop: verticalScale(5),
-    borderRadius: moderateScale(14),
-    paddingHorizontal: moderateScale(10),
-    paddingVertical: verticalScale(12),
-    borderLeftWidth: 4,
-    borderLeftColor: colors.success,
+    paddingVertical: vs(12),
+    borderTopWidth: 1,
+    borderTopColor: colors.cardBorder,
   },
 
-  auctionNotifLeft: {
+  detailLabel: {
+    color: colors.textStrong,
+    fontSize: ms(14),
+    fontWeight: '600',
+  },
+
+  detailValue: {
+    color: colors.textMuted,
+    fontSize: ms(13),
+    fontWeight: '600',
+  },
+
+  detailValueStrong: {
+    color: colors.warning,
+    fontSize: ms(13),
+    fontWeight: '800',
+  },
+
+  /* ---------- Fuel Rewards (dark card) ---------- */
+  rewardsCard: {
+    backgroundColor: colors.primary,
+    borderRadius: ms(16),
+    padding: ms(18),
+  },
+
+  rewardsLabel: {
+    color: colors.onDarkMedium,
+    fontSize: ms(12),
+    fontWeight: '600',
+  },
+
+  rewardsTitle: {
+    color: colors.white,
+    fontSize: ms(22),
+    fontWeight: '800',
+    marginTop: vs(4),
+    lineHeight: ms(28),
+  },
+
+  rewardsBody: {
+    color: colors.onDarkLow,
+    fontSize: ms(12),
+    lineHeight: ms(18),
+    marginTop: vs(10),
+  },
+
+  rewardsBalanceLabel: {
+    color: colors.onDarkMedium,
+    fontSize: ms(12),
+    marginTop: vs(16),
+  },
+
+  rewardsPointsRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    flex: 1,
-    gap: moderateScale(10),
+    justifyContent: 'flex-end',
+    marginTop: vs(6),
   },
 
-  liveBadge: {
+  rewardsPoints: {
+    color: colors.success,
+    fontSize: ms(18),
+    fontWeight: '800',
+  },
+
+  rewardsTrack: {
+    height: vs(8),
+    borderRadius: ms(8),
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    overflow: 'hidden',
+    marginTop: vs(6),
+  },
+
+  rewardsFill: {
+    height: '100%',
+    borderRadius: ms(8),
     backgroundColor: colors.success,
-    paddingHorizontal: moderateScale(8),
-    paddingVertical: verticalScale(4),
-    borderRadius: moderateScale(10),
   },
 
-  auctionNotifInfo: {
-    flex: 1,
+  rewardsFooterRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: vs(8),
   },
 
-  auctionNotifId: {
-    fontSize: moderateScale(14),
+  rewardsFooterText: {
+    color: colors.onDarkLow,
+    fontSize: ms(11),
+  },
+
+  /* ---------- Upcoming loads ---------- */
+  loadRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    paddingVertical: vs(12),
+    borderTopWidth: 1,
+    borderTopColor: colors.cardBorder,
+  },
+
+  loadRowFirst: {
+    borderTopWidth: 0,
+  },
+
+  loadRoute: {
+    color: colors.textStrong,
+    fontSize: ms(15),
     fontWeight: '700',
-    color: '#0F172A',
   },
 
-  auctionNotifRoute: {
-    fontSize: moderateScale(12),
-    color: '#64748B',
-    marginTop: verticalScale(2),
+  loadPickup: {
+    color: colors.textMuted,
+    fontSize: ms(12),
+    marginTop: vs(3),
   },
 
-  auctionTimerBox: {
-    backgroundColor: '#FEF9C3',
-    borderRadius: moderateScale(10),
-    paddingHorizontal: moderateScale(10),
-    paddingVertical: verticalScale(6),
+  loadRight: {
+    alignItems: 'flex-end',
+  },
+
+  loadPay: {
+    color: colors.textStrong,
+    fontSize: ms(15),
+    fontWeight: '800',
+  },
+
+  loadMiles: {
+    color: colors.textMuted,
+    fontSize: ms(11),
+    marginTop: vs(3),
+  },
+
+  loadChevron: {
     alignItems: 'center',
+    paddingTop: vs(10),
   },
 
-  auctionTimerLabel: {
-    fontSize: moderateScale(10),
-    color: '#92400E',
-    fontWeight: '500',
-  },
-
-  auctionTimerValue: {
-    fontSize: moderateScale(14),
-    fontWeight: '700',
-    color: '#B45309',
-    marginTop: verticalScale(2),
+  loadChevronGlyph: {
+    color: colors.textMuted,
+    fontSize: ms(16),
   },
 });

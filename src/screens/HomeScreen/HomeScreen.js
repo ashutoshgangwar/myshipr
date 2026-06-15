@@ -1,99 +1,44 @@
-import React, {useState} from 'react';
-import {
-  Image,
-  View,
-  SafeAreaView,
-  ScrollView,
-  TouchableOpacity,
-} from 'react-native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import {useFocusEffect, useNavigation} from '@react-navigation/native';
+import React from 'react';
+import {View, SafeAreaView, ScrollView, TouchableOpacity} from 'react-native';
+import {useNavigation} from '@react-navigation/native';
 import styles from './HomeScreen.styles';
 import StatusBar from '../../component/StatusBar/StatusBar';
 import {colors} from '../../theme/colors';
-import SOS_Icon from './../../assets/svg_icon/sos.svg';
-import Mechanic_call_Icon from './../../assets/svg_icon/mechanic_call.svg';
 import AppText from '../../theme/AppText';
-import MapSection from '../../component/MapSection/MapSection';
-import ReceiverSignaturePad, {
-  SIGNATURE_STORAGE_KEY,
-} from '../../component/ReceiverSignaturePad/ReceiverSignaturePad';
 
-
-const INITIAL_REGION = {
-  latitude: 27.55,
-  longitude: 78.35,
-  latitudeDelta: 6,
-  longitudeDelta: 6,
-};
-
-const FULLSCREEN_REGION = {
-  latitude: 28.6139,
-  longitude: 77.209,
-  latitudeDelta: 0.045,
-  longitudeDelta: 0.045,
-};
-
-const UPCOMING_STOPS = [
-  {
-    id: 'pickup',
-    type: 'pickup',
-    label: 'Pickup',
-    place: 'Delhi, IN',
-    coordinate: {latitude: 28.6139, longitude: 77.209},
-    dateTime: '08 Apr • 10:30 AM IST',
-  },
-  {
-    id: 'service',
-    type: 'service',
-    label: 'Service',
-    place: 'Jaipur, IN',
-    coordinate: {latitude: 26.9124, longitude: 75.7873},
-    dateTime: '08 Apr • 01:45 PM IST',
-  },
-  {
-    id: 'delivery',
-    type: 'delivery',
-    label: 'Delivery',
-    place: 'Lucknow, IN',
-    coordinate: {latitude: 26.8467, longitude: 80.9462},
-    dateTime: '08 Apr • 06:15 PM IST',
-  },
+const STATS = [
+  {label: 'Miles • Week', value: '1,234', note: '↑ 8% vs last week', color: colors.success, accent: colors.warning},
+  {label: 'Earnings', value: '$1,234', note: '↓ $200 this week', color: colors.danger, accent: colors.success},
+  {label: 'Net Profit', value: '$879', note: 'after all costs', color: colors.textMuted, accent: colors.accentBlue},
+  {label: 'Fuel Saved', value: '$1,234', note: 'Route Optimization', color: colors.accentBlue, accent: colors.warning},
 ];
 
+const TRIP_STATS = [
+  {value: '245 mi', label: 'Distance'},
+  {value: '4h 10m', label: 'Est. time'},
+  {value: 'I-45 S', label: 'Route'},
+  {value: '12:10 PM', label: 'ETA'},
+];
+
+const HOS_DETAILS = [
+  {label: 'Cycle Remaining', value: '34h 10m'},
+  {label: 'Break Available In', value: '2h 10m'},
+  {label: 'Reset Available', value: 'Tomorrow 8:00 AM'},
+  {label: 'Driving Status', value: 'On DUTY', strong: true},
+];
+
+const UPCOMING_LOADS = [
+  {id: 'u1', route: 'San Jose, CA → Newark, NJ', pickup: 'Tomorrow • 6:00 AM pickup', pay: '$980', miles: '180 mil'},
+  {id: 'u2', route: 'San Jose, CA → Newark, NJ', pickup: 'Wed • 2:00 PM pickup', pay: '$980', miles: '180 mil'},
+  {id: 'u3', route: 'San Jose, CA → Newark, NJ', pickup: 'Wed • 2:00 PM pickup', pay: '$980', miles: '180 mil'},
+  {id: 'u4', route: 'San Jose, CA → Newark, NJ', pickup: 'Wed • 2:00 PM pickup', pay: '$980', miles: '180 mil'},
+  {id: 'u5', route: 'San Jose, CA → Newark, NJ', pickup: 'Wed • 2:00 PM pickup', pay: '$980', miles: '180 mil'},
+];
 
 const HomeScreen = () => {
   const navigation = useNavigation();
 
-  const [isJobStarted, setIsJobStarted] = useState(false);
-  const [isSignaturePadVisible, setIsSignaturePadVisible] = useState(false);
-  const [receiverSignature, setReceiverSignature] = useState(null);
-
-  const loadSavedSignature = async () => {
-    try {
-      const stored = await AsyncStorage.getItem(SIGNATURE_STORAGE_KEY);
-      setReceiverSignature(stored ? JSON.parse(stored) : null);
-    } catch (err) {
-      console.log('Unable to load saved signature:', err?.message || err);
-    }
-  };
-
-  useFocusEffect(
-    React.useCallback(() => {
-      loadSavedSignature();
-    }, []),
-  );
-
-  const handleSignatureSaved = signaturePayload => {
-    setReceiverSignature(signaturePayload);
-  };
-
   const openMap_Here = () => navigation.navigate('HereSearchScreen');
-
-  const openSignatureCapture  = () => setIsSignaturePadVisible(true);
-  const closeSignatureCapture = () => setIsSignaturePadVisible(false);
-
-  const toggleJobStatus = () => setIsJobStarted(prev => !prev);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -103,188 +48,192 @@ const HomeScreen = () => {
         translucent={false}
       />
 
-      <ScrollView showsVerticalScrollIndicator={false}>
-
+      <ScrollView
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}>
         {/* HEADER */}
         <View style={styles.header}>
-          <View>
-            <AppText style={styles.welcome}>Welcome back after update,</AppText>
-            <AppText style={styles.username}>Ashutosh Gangwar</AppText>
+          <View style={styles.headerTopRow}>
+            <View style={styles.brandRow}>
+              <View style={styles.brandBadge}>
+                <AppText style={styles.brandGlyph}>🚚</AppText>
+              </View>
+              <AppText style={styles.brandText}>CARRIER</AppText>
+            </View>
+
+            <View style={styles.dieselBadge}>
+              <AppText style={styles.dieselLabel}>DIESEL</AppText>
+              <AppText style={styles.dieselValue}>$3.89/gal</AppText>
+            </View>
           </View>
-          <TouchableOpacity style={styles.profileCircle}>
-            <Mechanic_call_Icon width={30} height={30} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.profileCircle}>
-            <SOS_Icon width={30} height={30} />
-          </TouchableOpacity>
+
+          <AppText style={styles.headerLocation}>Dallas, TX</AppText>
+          <AppText style={styles.headerWelcome}>Welcome Back, Ashutosh</AppText>
         </View>
 
         {/* STATS */}
-        <View style={styles.statsCard}>
-          <StatItem title="Active Loads" value="12"     color="#2563EB" />
-          <Divider />
-          <StatItem title="This Week"    value="$8,450" color="#16A34A" />
-          <Divider />
-          <StatItem title="HOS Left"     value="42h"    color="#EA580C" />
-        </View>
-
-        {/* LIVE MAP */}
-        <View style={styles.sectionRow}>
-          <AppText style={styles.sectionTitle}>Live Map</AppText>
-        </View>
-
-        <MapSection
-          stops={UPCOMING_STOPS}
-          expandable
-          style={styles.mapCard}
-          initialRegion={INITIAL_REGION}
-          fullscreenRegion={FULLSCREEN_REGION}
-        />
-
-        <View style={styles.mapHintRow}>
-          <TouchableOpacity
-            style={[
-              styles.currentLoadJobBtn,
-              isJobStarted && styles.currentLoadJobBtnStop,
-            ]}
-            onPress={toggleJobStatus}
-            activeOpacity={0.9}>
-            <AppText style={styles.currentLoadJobBtnText}>
-              {isJobStarted ? 'Stop Job' : 'Start Job'}
-            </AppText>
-          </TouchableOpacity>
-        </View>
-
-        {/* <View style={styles.mapNavigatorRow}>
-          <TouchableOpacity
-            style={styles.mapNavigatorBtn}
-            onPress={openMap}
-            activeOpacity={0.9}>
-            <AppText style={styles.mapNavigatorBtnText}>Open PTV Navigator Map</AppText>
-          </TouchableOpacity>
-        </View> */}
-
-
-        <View style={styles.mapNavigatorRow}>
-          <TouchableOpacity
-            style={styles.mapNavigatorBtn}
-            onPress={openMap_Here}
-            activeOpacity={0.9}>
-            <AppText style={styles.mapNavigatorBtnText}>Open Here Navigator Map</AppText>
-          </TouchableOpacity>
-        </View>
-
-        {/* RECEIVER SIGNATURE */}
-        <View style={styles.signatureSectionHeader}>
-          <AppText style={styles.currentLoadTitle}>Receiver Signature</AppText>
-        </View>
-
-        <View style={styles.signatureCard}>
-          <View style={styles.signatureInfoRow}>
-            <View style={styles.signatureTextWrap}>
-              <AppText style={styles.signatureStatusTitle}>
-                {receiverSignature ? 'Signature captured' : 'Signature pending'}
-              </AppText>
-              <AppText style={styles.signatureStatusSubtitle}>
-                {receiverSignature
-                  ? `${receiverSignature.receiverName} • ${new Date(
-                      receiverSignature.capturedAt,
-                    ).toLocaleString()}`
-                  : "Collect the receiving person's signature before delivery handoff."}
+        <View style={styles.statsRow}>
+          {STATS.map(stat => (
+            <View
+              key={stat.label}
+              style={[styles.statCard, {borderLeftColor: stat.accent}]}>
+              <AppText style={styles.statLabel}>{stat.label}</AppText>
+              <AppText style={styles.statValue}>{stat.value}</AppText>
+              <AppText style={[styles.statNote, {color: stat.color}]}>
+                {stat.note}
               </AppText>
             </View>
-            <TouchableOpacity
-              style={styles.signatureActionBtn}
-              onPress={openSignatureCapture}>
-              <AppText style={styles.signatureActionBtnText}>
-                {receiverSignature ? 'Retake' : 'Take Signature'}
+          ))}
+        </View>
+
+        {/* MAIN GRID */}
+        <View style={styles.grid}>
+          {/* LEFT COLUMN */}
+          <View style={styles.column}>
+            {/* Current Trip */}
+            <View style={styles.card}>
+              <View style={styles.cardHeaderRow}>
+                <AppText style={styles.cardTitle}>Current Trip</AppText>
+                <View style={[styles.pill, styles.pillOnTime]}>
+                  <AppText style={styles.pillOnTimeText}>On time</AppText>
+                </View>
+              </View>
+
+              <View style={styles.payoutRow}>
+                <AppText style={styles.payoutValue}>$1,250</AppText>
+                <AppText style={styles.payoutLabel}>load payout</AppText>
+              </View>
+
+              <View style={styles.routeBox}>
+                <View style={styles.routeTimeline}>
+                  <View style={styles.routeDotStart} />
+                  <View style={styles.routeLine} />
+                  <View style={styles.routeDotEnd} />
+                </View>
+                <View style={{flex: 1}}>
+                  <AppText style={styles.routeStopLabel}>FROM</AppText>
+                  <AppText style={styles.routeStopCity}>Dallas, TX</AppText>
+                  <AppText style={styles.routeStopLabel}>TO</AppText>
+                  <AppText style={[styles.routeStopCity, {marginBottom: 0}]}>
+                    Houston, TX
+                  </AppText>
+                </View>
+              </View>
+
+              <View style={styles.tripStatsRow}>
+                {TRIP_STATS.map(item => (
+                  <View key={item.label} style={styles.tripStatItem}>
+                    <AppText style={styles.tripStatValue}>{item.value}</AppText>
+                    <AppText style={styles.tripStatLabel}>{item.label}</AppText>
+                  </View>
+                ))}
+              </View>
+
+              <View style={styles.progressHeaderRow}>
+                <AppText style={styles.progressCaption}>Hours of Service</AppText>
+                <AppText style={styles.progressCaptionAccent}>2h 23m left</AppText>
+              </View>
+              <View style={styles.progressTrack}>
+                <View style={[styles.progressFill, {width: '60%'}]} />
+              </View>
+
+              <TouchableOpacity
+                style={styles.primaryBtn}
+                activeOpacity={0.9}
+                onPress={openMap_Here}>
+                <AppText style={styles.primaryBtnText}>START TRIP</AppText>
+              </TouchableOpacity>
+            </View>
+
+            {/* Hours of Service */}
+            <View style={styles.card}>
+              <View style={styles.cardHeaderRow}>
+                <AppText style={styles.cardTitle}>Hours of Service</AppText>
+                <View style={[styles.pill, styles.pillOnDuty]}>
+                  <AppText style={styles.pillOnDutyText}>On Duty</AppText>
+                </View>
+              </View>
+
+              <View style={styles.hosDrivenRow}>
+                <AppText style={styles.hosDrivenText}>8h 23m Driven</AppText>
+                <AppText style={styles.hosRemText}>2h 37m rem</AppText>
+              </View>
+              <View style={styles.progressTrack}>
+                <View
+                  style={[styles.progressFill, styles.progressFillWarn, {width: '77%'}]}
+                />
+              </View>
+
+              {HOS_DETAILS.map(item => (
+                <View key={item.label} style={styles.detailRow}>
+                  <AppText style={styles.detailLabel}>{item.label}</AppText>
+                  <AppText
+                    style={item.strong ? styles.detailValueStrong : styles.detailValue}>
+                    {item.value}
+                  </AppText>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* RIGHT COLUMN */}
+          <View style={styles.column}>
+            {/* Fuel Rewards */}
+            <View style={styles.rewardsCard}>
+              <AppText style={styles.rewardsLabel}>Fuel Rewards Points</AppText>
+              <AppText style={styles.rewardsTitle}>
+                Report your fuel price, earn points
               </AppText>
-            </TouchableOpacity>
-          </View>
+              <AppText style={styles.rewardsBody}>
+                Enter the diesel price at your nearest station. Every verified
+                report earns you points — redeem for bonuses & perks.
+              </AppText>
 
-          {receiverSignature?.signature ? (
-            <Image
-              source={{uri: receiverSignature.signature}}
-              style={styles.signaturePreview}
-              resizeMode="contain"
-            />
-          ) : null}
+              <AppText style={styles.rewardsBalanceLabel}>
+                Your points balance
+              </AppText>
+              <View style={styles.rewardsPointsRow}>
+                <AppText style={styles.rewardsPoints}>1234pts</AppText>
+              </View>
+              <View style={styles.rewardsTrack}>
+                <View style={[styles.rewardsFill, {width: '66%'}]} />
+              </View>
+              <View style={styles.rewardsFooterRow}>
+                <AppText style={styles.rewardsFooterText}>
+                  2983 points to next reward
+                </AppText>
+                <AppText style={styles.rewardsFooterText}>2000</AppText>
+              </View>
+            </View>
+
+            {/* Upcoming loads */}
+            <View style={styles.card}>
+              <AppText style={styles.cardTitle}>Upcoming loads</AppText>
+
+              {UPCOMING_LOADS.map((load, index) => (
+                <View
+                  key={load.id}
+                  style={[styles.loadRow, index === 0 && styles.loadRowFirst]}>
+                  <View style={{flex: 1, paddingRight: 8}}>
+                    <AppText style={styles.loadRoute}>{load.route}</AppText>
+                    <AppText style={styles.loadPickup}>{load.pickup}</AppText>
+                  </View>
+                  <View style={styles.loadRight}>
+                    <AppText style={styles.loadPay}>{load.pay}</AppText>
+                    <AppText style={styles.loadMiles}>{load.miles}</AppText>
+                  </View>
+                </View>
+              ))}
+
+              <TouchableOpacity style={styles.loadChevron} activeOpacity={0.7}>
+                <AppText style={styles.loadChevronGlyph}>⌄</AppText>
+              </TouchableOpacity>
+            </View>
+          </View>
         </View>
-
-        {/* CURRENT LOAD */}
-        <View style={styles.currentLoadHeaderRow}>
-          <AppText style={styles.currentLoadTitle}>Current Load</AppText>
-        </View>
-
-        <View style={styles.loadCard}>
-          <View style={styles.loadHeader}>
-            <View>
-              <AppText style={styles.loadId}>Load #SH-245</AppText>
-              <AppText style={styles.loadSub}>Electronics • 12,500 lbs</AppText>
-            </View>
-            <View style={styles.inTransitBadge}>
-              <AppText style={styles.badgeText}>In Transit</AppText>
-            </View>
-          </View>
-
-          <Location color="#22C55E" city="Delhi, IN"   info="Picked up 4 hours ago" />
-          <Location color="#EF4444" city="Lucknow, IN" info="ETA: 2 hours" />
-
-          <View style={styles.progressContainer}>
-            <View style={styles.progressHeader}>
-              <AppText style={styles.progressLabel}>Progress</AppText>
-              <AppText style={styles.progressPercent}>72%</AppText>
-            </View>
-            <View style={styles.progressBarBackground}>
-              <View style={[styles.progressBarFill, {width: '72%'}]} />
-            </View>
-          </View>
-
-          <View style={styles.progressTrack}>
-            <View style={[styles.progressFill, {width: '72%'}]} />
-          </View>
-
-          {/* <View style={styles.actionRow}>
-            <TouchableOpacity onPress={openMap_navigation} style={styles.primaryBtn}>
-              <AppText style={styles.primaryBtnText}>Navigation</AppText>
-            </TouchableOpacity>
-          </View> */}
-        </View>
-
       </ScrollView>
-
-      {/* SIGNATURE PAD */}
-      <ReceiverSignaturePad
-        visible={isSignaturePadVisible}
-        useModal
-        onClose={closeSignatureCapture}
-        onSaved={handleSignatureSaved}
-        initialValue={receiverSignature}
-      />
     </SafeAreaView>
   );
 };
 
 export default HomeScreen;
-
-
-const StatItem = ({title, value, color}) => (
-  <View style={styles.statItem}>
-    <AppText style={[styles.statValue, {color}]}>{value}</AppText>
-    <AppText style={styles.statLabel}>{title}</AppText>
-  </View>
-);
-
-const Divider = () => <View style={styles.divider} />;
-
-const Location = ({color, city, info}) => (
-  <View style={styles.locationRow}>
-    <View style={[styles.locationIcon, {backgroundColor: color + '22'}]}>
-      <AppText style={{color}}>📍</AppText>
-    </View>
-    <View>
-      <AppText style={styles.city}>{city}</AppText>
-      <AppText style={styles.info}>{info}</AppText>
-    </View>
-  </View>
-);
