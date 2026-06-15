@@ -149,7 +149,7 @@ const ResetPassword = () => {
     setTimeout(() => {
       setLoading(false);
       Alert.alert('Success', 'Password reset successfully!', [
-        {text: 'Login', onPress: () => navigation.navigate('Login')},
+        {text: 'Login', onPress: () => navigation.navigate('LoginScreen')},
       ]);
     }, 1000);
   };
