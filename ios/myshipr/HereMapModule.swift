@@ -29,6 +29,7 @@ class HereMapModule: NSObject {
             return
         }
         let authMode = AuthenticationMode.withKeySecret(
+          
             accessKeyId: accessKeyId,
             accessKeySecret: accessKeySecret
         )

@@ -33,8 +33,7 @@ const ResetPassword = () => {
   const navigation = useNavigation();
 
   const [step, setStep] = useState(1);
-  const [email, setEmail] = useState('');
-  const [phoneNumber, setPhoneNumber] = useState('');
+  const [identifier, setIdentifier] = useState('');
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
   const [otpVerified, setOtpVerified] = useState(false);
   const [newPassword, setNewPassword] = useState('');
@@ -45,7 +44,7 @@ const ResetPassword = () => {
 
   const otpRefs = useRef([]);
   const confirmPasswordRef = useRef(null);
-  const isSendOtpDisabled = loading || (!email.trim() && !phoneNumber.trim());
+  const isSendOtpDisabled = loading || !identifier.trim();
   const isVerifyOtpDisabled = loading || otpVerified || otp.join('').length !== 6;
   const isResetPasswordDisabled =
     loading || !newPassword.trim() || !confirmPassword.trim();
@@ -73,15 +72,18 @@ const ResetPassword = () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     const phoneRegex = /^\+?\d{10,15}$/;
 
-    if (!email.trim() && !phoneNumber.trim()) {
+    const value = identifier.trim();
+    if (!value) {
       Alert.alert('Required', 'Please enter email or phone number');
       return;
     }
-    if (email.trim() && !emailRegex.test(email.trim())) {
+
+    const looksLikeEmail = value.includes('@');
+    if (looksLikeEmail && !emailRegex.test(value)) {
       Alert.alert('Invalid Email', 'Please enter a valid email address');
       return;
     }
-    if (phoneNumber.trim() && !phoneRegex.test(phoneNumber.trim())) {
+    if (!looksLikeEmail && !phoneRegex.test(value)) {
       Alert.alert('Invalid Number', 'Please enter a valid phone number');
       return;
     }
@@ -224,54 +226,19 @@ const ResetPassword = () => {
                 {/* ── STEP 1: Email / Phone ── */}
                 {step === 1 && (
                   <>
-                    <AppText style={styles.label}>Email</AppText>
+                    <AppText style={styles.label}>Phone Number or Email Address</AppText>
                     <TextInput
-                      placeholder="Enter your email"
+                      placeholder="Enter your email or phone number"
                       placeholderTextColor={colors.placeholder || '#9CA3AF'}
                       keyboardType="email-address"
                       autoCapitalize="none"
                       autoCorrect={false}
-                      value={email}
-                      onChangeText={setEmail}
+                      value={identifier}
+                      onChangeText={setIdentifier}
                       returnKeyType="next"
                       style={[styles.input, loading && styles.disabledInput]}
                       editable={!loading}
                     />
-
-                    <AppText style={styles.orText}>Or Login With</AppText>
-
-                    <AppText style={styles.label}>Phone Number</AppText>
-                    <TextInput
-                      placeholder="Enter your phone number"
-                      placeholderTextColor={colors.placeholder || '#9CA3AF'}
-                      keyboardType="phone-pad"
-                      autoCapitalize="none"
-                      autoCorrect={false}
-                      value={phoneNumber}
-                      onChangeText={setPhoneNumber}
-                      returnKeyType="done"
-                      style={[styles.input, loading && styles.disabledInput]}
-                      editable={!loading}
-                    />
-
-                    {loading ? (
-                      <View style={[styles.button, styles.loadingButton]}>
-                        <ActivityIndicator color={colors.white} size="small" />
-                      </View>
-                    ) : (
-                      <Button
-                        title="Send OTP"
-                        onPress={handleSendOtp}
-                        backgroundColor={colors.primary}
-                        textColor={colors.white}
-                        style={[
-                          styles.primaryButton,
-                          isSendOtpDisabled && styles.disabledButton,
-                        ]}
-                        textStyle={styles.primaryButtonText}
-                        disabled={isSendOtpDisabled}
-                      />
-                    )}
                   </>
                 )}
 
@@ -307,7 +274,7 @@ const ResetPassword = () => {
                     {!otpVerified && (
                       <View style={styles.resendRow}>
                         <AppText style={styles.resendText}>
-                          Didn't receive the verification code?{' '}
+                          Didn’t received code? {' '}
                         </AppText>
                         <TouchableOpacity
                           onPress={handleResendOtp}
@@ -318,24 +285,6 @@ const ResetPassword = () => {
                       </View>
                     )}
 
-                    {loading ? (
-                      <View style={[styles.button, styles.loadingButton]}>
-                        <ActivityIndicator color={colors.white} size="small" />
-                      </View>
-                    ) : (
-                      <Button
-                        title="Verify"
-                        onPress={handleVerifyOtp}
-                        backgroundColor={colors.primary}
-                        textColor={colors.white}
-                        style={[
-                          styles.primaryButton,
-                          isVerifyOtpDisabled && styles.disabledButton,
-                        ]}
-                        textStyle={styles.primaryButtonText}
-                        disabled={isVerifyOtpDisabled}
-                      />
-                    )}
                   </>
                 )}
 
@@ -345,7 +294,7 @@ const ResetPassword = () => {
                     <AppText style={styles.label}>New Password</AppText>
                     <View style={styles.passwordContainer}>
                       <TextInput
-                        placeholder="Enter new password"
+                        placeholder="Create New Password"
                         placeholderTextColor={colors.placeholder || '#9CA3AF'}
                         secureTextEntry={!showNewPassword}
                         autoCapitalize="none"
@@ -399,29 +348,59 @@ const ResetPassword = () => {
                       </TouchableOpacity>
                     </View>
 
-                    <AppText style={styles.passwordHint}>
+                    {/* <AppText style={styles.passwordHint}>
                       Password must be at least 8 characters, including a number and a special character.
-                    </AppText>
-
-                    {loading ? (
-                      <View style={[styles.button, styles.loadingButton]}>
-                        <ActivityIndicator color={colors.white} size="small" />
-                      </View>
-                    ) : (
-                      <Button
-                        title="Reset Password"
-                        onPress={handleResetPassword}
-                        backgroundColor={colors.primary}
-                        textColor={colors.white}
-                        style={[
-                          styles.primaryButton,
-                          isResetPasswordDisabled && styles.disabledButton,
-                        ]}
-                        textStyle={styles.primaryButtonText}
-                        disabled={isResetPasswordDisabled}
-                      />
-                    )}
+                    </AppText> */}
                   </>
+                )}
+
+                {/* ── Primary action pinned to bottom ── */}
+                {loading ? (
+                  <View style={[styles.button, styles.bottomButton, styles.loadingButton]}>
+                    <ActivityIndicator color={colors.white} size="small" />
+                  </View>
+                ) : step === 1 ? (
+                  <Button
+                    title="Send OTP"
+                    onPress={handleSendOtp}
+                    backgroundColor={colors.primary}
+                    textColor={colors.white}
+                    style={[
+                      styles.primaryButton,
+                      styles.bottomButton,
+                      isSendOtpDisabled && styles.disabledButton,
+                    ]}
+                    textStyle={styles.primaryButtonText}
+                    disabled={isSendOtpDisabled}
+                  />
+                ) : step === 2 ? (
+                  <Button
+                    title="Verify"
+                    onPress={handleVerifyOtp}
+                    backgroundColor={colors.primary}
+                    textColor={colors.white}
+                    style={[
+                      styles.primaryButton,
+                      styles.bottomButton,
+                      isVerifyOtpDisabled && styles.disabledButton,
+                    ]}
+                    textStyle={styles.primaryButtonText}
+                    disabled={isVerifyOtpDisabled}
+                  />
+                ) : (
+                  <Button
+                    title="Reset Password"
+                    onPress={handleResetPassword}
+                    backgroundColor={colors.primary}
+                    textColor={colors.white}
+                    style={[
+                      styles.primaryButton,
+                      styles.bottomButton,
+                      isResetPasswordDisabled && styles.disabledButton,
+                    ]}
+                    textStyle={styles.primaryButtonText}
+                    disabled={isResetPasswordDisabled}
+                  />
                 )}
 
               </View>

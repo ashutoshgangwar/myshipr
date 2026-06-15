@@ -1,6 +1,10 @@
 import {StyleSheet, Platform} from 'react-native';
 import {scale, verticalScale, moderateScale} from 'react-native-size-matters';
 import {colors} from '../../theme/colors';
+import {IS_TABLET, select} from '../../utils/device';
+
+// Cap the form column on tablets so inputs/buttons don't stretch edge-to-edge.
+const FORM_MAX_WIDTH = select({phone: undefined, tablet: scale(380)});
 
 const styles = StyleSheet.create({
   keyboardAvoiding: {
@@ -150,8 +154,9 @@ const styles = StyleSheet.create({
     color: colors.text_dark,
     marginBottom: verticalScale(15),
     textAlign: 'left',
-    alignSelf: 'flex-start',
+    alignSelf: 'center',
     width: '100%',
+    maxWidth: FORM_MAX_WIDTH,
   },
 
   input: {
@@ -159,13 +164,15 @@ const styles = StyleSheet.create({
     borderColor: colors.border_Color,
     backgroundColor: colors.gray400,
     borderRadius: moderateScale(12),
-    paddingVertical: verticalScale(12),
+    paddingVertical: select({phone: verticalScale(12), tablet: moderateScale(9)}),
     paddingHorizontal: scale(16),
-    fontSize: moderateScale(15),
+    fontSize: select({phone: moderateScale(15), tablet: moderateScale(14)}),
     marginBottom: verticalScale(16),
     color: colors.text_dark || '#111827',
     textAlign: 'left',
     width: '100%',
+    maxWidth: FORM_MAX_WIDTH,
+    alignSelf: IS_TABLET ? 'center' : 'stretch',
   },
 
   optionalContainer: {
@@ -205,6 +212,9 @@ const styles = StyleSheet.create({
   passwordContainer: {
     position: 'relative',
     marginBottom: verticalScale(4),
+    width: '100%',
+    maxWidth: FORM_MAX_WIDTH,
+    alignSelf: IS_TABLET ? 'center' : 'stretch',
   },
 
   passwordInput: {
@@ -221,6 +231,9 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     color: colors.text_dark,
     marginBottom: verticalScale(8),
+    width: '100%',
+    maxWidth: FORM_MAX_WIDTH,
+    alignSelf: 'center',
   },
 
   otpInput: {
@@ -232,6 +245,9 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     marginBottom: verticalScale(10),
+    width: '100%',
+    maxWidth: FORM_MAX_WIDTH,
+    alignSelf: IS_TABLET ? 'center' : 'stretch',
   },
 
   otpSuccessContainer: {
@@ -242,6 +258,9 @@ const styles = StyleSheet.create({
     paddingVertical: verticalScale(10),
     paddingHorizontal: scale(12),
     marginBottom: verticalScale(18),
+    width: '100%',
+    maxWidth: FORM_MAX_WIDTH,
+    alignSelf: IS_TABLET ? 'center' : 'stretch',
   },
 
   otpSuccessText: {
@@ -258,8 +277,8 @@ const styles = StyleSheet.create({
     backgroundColor: colors.gray400,
     borderRadius: moderateScale(12),
     textAlign: 'center',
-    fontSize: moderateScale(18),
-    paddingVertical: verticalScale(12),
+    fontSize: select({phone: moderateScale(18), tablet: moderateScale(18)}),
+    paddingVertical: select({phone: verticalScale(12), tablet: moderateScale(9)}),
     marginHorizontal: scale(4),
     color: colors.text_dark || '#111827',
   },
@@ -343,7 +362,7 @@ const styles = StyleSheet.create({
   forgotPasswordContainer: {
     alignSelf: 'flex-end',
     marginBottom: verticalScale(5),
-    paddingVertical: verticalScale(2),
+    paddingVertical: verticalScale(12),
   },
 
   forgotPasswordText: {
@@ -354,10 +373,18 @@ const styles = StyleSheet.create({
 
   button: {
     backgroundColor: colors.primary,
-    paddingVertical: verticalScale(14),
+    paddingVertical: select({phone: verticalScale(14), tablet: moderateScale(11)}),
     borderRadius: moderateScale(12),
     alignItems: 'center',
     justifyContent: 'center',
+    width: '100%',
+    maxWidth: FORM_MAX_WIDTH,
+    alignSelf: IS_TABLET ? 'center' : 'stretch',
+  },
+
+  bottomButton: {
+    marginTop: 'auto',
+    marginBottom: Platform.OS === 'ios' ? -verticalScale(20) : 0,
   },
 
   loadingButton: {
@@ -377,9 +404,14 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(14),
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical:
-      Platform.OS === 'ios' ? verticalScale(16) : verticalScale(14),
+    paddingVertical: select({
+      phone: Platform.OS === 'ios' ? verticalScale(16) : verticalScale(14),
+      tablet: moderateScale(11),
+    }),
     marginTop: verticalScale(12),
+    width: '100%',
+    maxWidth: FORM_MAX_WIDTH,
+    alignSelf: IS_TABLET ? 'center' : 'stretch',
     shadowColor: colors.primary,
     shadowOffset: {width: 0, height: 4},
     shadowOpacity: 0.3,
@@ -460,9 +492,13 @@ const styles = StyleSheet.create({
   resendRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'center',
+    justifyContent: 'flex-end',
+    gap: scale(6),
     marginTop: verticalScale(6),
-    marginBottom: verticalScale(4),
+    marginBottom: verticalScale(20),
+    width: '100%',
+    maxWidth: FORM_MAX_WIDTH,
+    alignSelf: IS_TABLET ? 'center' : 'stretch',
   },
 
   resendText: {
@@ -484,6 +520,9 @@ const styles = StyleSheet.create({
     lineHeight: moderateScale(18),
     marginTop: verticalScale(4),
     marginBottom: verticalScale(8),
+    width: '100%',
+    maxWidth: FORM_MAX_WIDTH,
+    alignSelf: 'center',
   },
 });
 

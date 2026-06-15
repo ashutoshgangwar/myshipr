@@ -1,11 +1,15 @@
 import {StyleSheet, Platform} from 'react-native';
 import {moderateScale, scale, verticalScale} from 'react-native-size-matters';
 import {colors} from '../../../theme/colors';
+import {IS_TABLET, select} from '../../../utils/device';
 
 const isIOS = Platform.OS === 'ios';
 
-const makeStyles = (isTablet = false) => {
-  const controlHeight = isTablet ? moderateScale(50) : verticalScale(48);
+const makeStyles = (isTablet = IS_TABLET) => {
+  const controlHeight = select({
+    phone: verticalScale(48),
+    tablet: moderateScale(50),
+  });
   const fieldWidth = isTablet ? '100%' : isIOS ? '92%' : '100%';
 
   return StyleSheet.create({
@@ -113,18 +117,18 @@ const makeStyles = (isTablet = false) => {
       alignSelf: 'center',
     },
     title: {
-      fontSize: isTablet ? moderateScale(26) : moderateScale(30),
+      fontSize: select({phone: moderateScale(30), tablet: moderateScale(26)}),
       textAlignVertical: 'center',
       textAlign: 'center',
       color: colors.white,
       fontWeight: '800',
-      lineHeight: isTablet ? moderateScale(34) : moderateScale(38),
+      lineHeight: select({phone: moderateScale(38), tablet: moderateScale(34)}),
     },
 
     subtitle: {
-      marginTop: isTablet ? verticalScale(10) :  verticalScale(10),
+      marginTop: verticalScale(10),
       color: colors.splashSubtitle,
-      fontSize: isTablet ? moderateScale(15) : moderateScale(14),
+      fontSize: select({phone: moderateScale(14), tablet: moderateScale(15)}),
       fontWeight: '400',
       lineHeight: moderateScale(20),
       width: fieldWidth,
@@ -135,7 +139,7 @@ const makeStyles = (isTablet = false) => {
     subtitle_line2: {
       marginTop: verticalScale(1),
       color: colors.splashSubtitle,
-      fontSize: isTablet ? moderateScale(15) : moderateScale(14),
+      fontSize: select({phone: moderateScale(14), tablet: moderateScale(15)}),
       fontWeight: '400',
       width: fieldWidth,
       alignSelf: 'center',
@@ -151,7 +155,7 @@ const makeStyles = (isTablet = false) => {
     },
 
     faceIdButtonText: {
-      fontSize: isTablet ? moderateScale(16) : moderateScale(15),
+      fontSize: select({phone: moderateScale(15), tablet: moderateScale(16)}),
       fontWeight: '700',
     },
 
@@ -162,7 +166,7 @@ const makeStyles = (isTablet = false) => {
     },
 
     credentialsButtonText: {
-      fontSize: isTablet ? moderateScale(16) : moderateScale(15),
+      fontSize: select({phone: moderateScale(15), tablet: moderateScale(16)}),
       fontWeight: '600',
     },
 
