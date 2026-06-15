@@ -84,8 +84,8 @@ const HereMapView = forwardRef(function HereMapView(
     clearMarkers: () => withTag(tag => HereMapModule.clearMarkers(tag)),
 
     // ── Current location dot ──
-    showCurrentLocation: ({ lat, lng, bearing = 0 }) =>
-      withTag(tag => HereMapModule.showCurrentLocation(tag, { lat, lng, bearing })),
+    showCurrentLocation: ({ lat, lng, bearing = 0, style = 'navigation' }) =>
+      withTag(tag => HereMapModule.showCurrentLocation(tag, { lat, lng, bearing, style })),
 
     hideCurrentLocation: () =>
       withTag(tag => HereMapModule.hideCurrentLocation(tag)),

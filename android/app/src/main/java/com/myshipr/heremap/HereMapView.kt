@@ -3,6 +3,9 @@ package com.myshipr.heremap
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.Canvas
+import android.graphics.Color as AndroidColor
+import android.graphics.Paint
 import android.util.Base64
 import android.widget.FrameLayout
 import android.util.Log
@@ -66,6 +69,7 @@ class HereMapView(context: Context) : FrameLayout(context) {
     private var routingEngine:           RoutingEngine?            = null
     private var currentPolyline:         MapPolyline?              = null
     private val markers                                            = mutableListOf<MapMarker>()
+    private var blueDotMarker:           MapMarker?                = null
     private var locationIndicator:       LocationIndicator?        = null
     private var navMarkerManager:        NavigationMarkerManager?  = null
     private var polylineManager:         PolylineManager?          = null
@@ -123,6 +127,7 @@ class HereMapView(context: Context) : FrameLayout(context) {
     fun onDestroy() {
         Log.d(TAG, "onDestroy called")
         locationIndicator?.disable()
+        clearBlueDot()
         navMarkerManager?.remove()
         polylineManager?.clear()
         navigationCameraManager?.reset()
@@ -243,21 +248,72 @@ class HereMapView(context: Context) : FrameLayout(context) {
     // Location indicator
     // ─────────────────────────────────────────────────────────────────────────
 
-    fun showCurrentLocation(lat: Double, lng: Double, bearing: Double = 0.0) {
+    fun showCurrentLocation(
+        lat: Double,
+        lng: Double,
+        bearing: Double = 0.0,
+        style: String = "navigation"
+    ) {
+        // "pedestrian" → solid blue dot marker, "navigation" → green direction arrow.
+        if (style.equals("pedestrian", ignoreCase = true)) {
+            showBlueDot(lat, lng)
+            return
+        }
+
+        // NAVIGATION uses HERE's built-in arrow indicator; drop any blue dot first.
+        clearBlueDot()
         if (locationIndicator == null) {
             locationIndicator = LocationIndicator().also {
                 it.locationIndicatorStyle = LocationIndicator.IndicatorStyle.NAVIGATION
                 it.enable(mapView)
             }
+        } else {
+            locationIndicator!!.locationIndicatorStyle = LocationIndicator.IndicatorStyle.NAVIGATION
         }
         locationIndicator!!.updateLocation(Location(GeoCoordinates(lat, lng)).also {
             it.bearingInDegrees = bearing
         })
     }
 
+    /** Solid blue location dot drawn natively, shown as a centre-anchored marker. */
+    private fun showBlueDot(lat: Double, lng: Double) {
+        // The built-in NAVIGATION indicator and the blue dot are mutually exclusive.
+        locationIndicator?.disable()
+        locationIndicator = null
+
+        val coords = GeoCoordinates(lat, lng)
+        blueDotMarker?.let { it.coordinates = coords; return }
+
+        val marker = MapMarker(coords, MapImageFactory.fromBitmap(makeBlueDotBitmap()), Anchor2D(0.5, 0.5))
+        mapView.mapScene.addMapMarker(marker)
+        blueDotMarker = marker
+    }
+
+    private fun clearBlueDot() {
+        blueDotMarker?.let { mapView.mapScene.removeMapMarker(it) }
+        blueDotMarker = null
+    }
+
+    /** Draws a blue filled circle with a white ring — the classic "you are here" dot. */
+    private fun makeBlueDotBitmap(sizePx: Int = 48): Bitmap {
+        val bmp = Bitmap.createBitmap(sizePx, sizePx, Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(bmp)
+        val cx = sizePx / 2f
+        val cy = sizePx / 2f
+        val paint = Paint(Paint.ANTI_ALIAS_FLAG)
+        // White outer ring.
+        paint.color = AndroidColor.WHITE
+        canvas.drawCircle(cx, cy, sizePx * 0.5f, paint)
+        // Blue core.
+        paint.color = AndroidColor.rgb(66, 133, 244) // Google-blue #4285F4
+        canvas.drawCircle(cx, cy, sizePx * 0.38f, paint)
+        return bmp
+    }
+
     fun hideCurrentLocation() {
         locationIndicator?.disable()
         locationIndicator = null
+        clearBlueDot()
     }
 
     // ─────────────────────────────────────────────────────────────────────────

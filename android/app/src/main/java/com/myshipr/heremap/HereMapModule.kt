@@ -174,8 +174,9 @@ class HereMapModule(
         val lat = locationMap.getDouble("lat")
         val lng = locationMap.getDouble("lng")
         val bearing = if (locationMap.hasKey("bearing")) locationMap.getDouble("bearing") else 0.0
+        val style = if (locationMap.hasKey("style")) locationMap.getString("style") ?: "navigation" else "navigation"
         runOnView(viewTag, promise) { view ->
-            view.showCurrentLocation(lat, lng, bearing)
+            view.showCurrentLocation(lat, lng, bearing, style)
             promise.resolve(null)
         }
     }

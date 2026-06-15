@@ -178,7 +178,11 @@ const HereMapPicker = ({
         const loc = await getCurrentLocation({detectMock: true});
         moveTo(loc.latitude, loc.longitude, '', true);
         mapRef.current
-          ?.showCurrentLocation({lat: loc.latitude, lng: loc.longitude})
+          ?.showCurrentLocation({
+          lat: loc.latitude,
+          lng: loc.longitude,
+          style: 'pedestrian',
+        })
           .catch(() => {});
       } catch (_) {
         moveTo(DEFAULT_COORDS.latitude, DEFAULT_COORDS.longitude, '', true);
@@ -272,7 +276,11 @@ const HereMapPicker = ({
       const loc = await getCurrentLocation({detectMock: true});
       moveTo(loc.latitude, loc.longitude, '', true);
       mapRef.current
-        ?.showCurrentLocation({lat: loc.latitude, lng: loc.longitude})
+        ?.showCurrentLocation({
+          lat: loc.latitude,
+          lng: loc.longitude,
+          style: 'pedestrian',
+        })
         .catch(() => {});
     } catch (_) {
     } finally {
