@@ -1,97 +1,101 @@
 import React from 'react';
-import {Platform, Text} from 'react-native';
+import {View, StyleSheet, Platform} from 'react-native';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import {moderateScale} from 'react-native-size-matters';
 
 import HomeScreen from '../screens/HomeScreen/HomeScreen';
-import LoadsTab from '../screens/LoadsTab/LoadsTab';
-import HOSTab from '../screens/HOSTab/HOSTab';
-import Profile from '../screens/Profile/Profile';
-
-import HomeIcon from '../assets/svg_icon/home.svg';
-import LoadsIcon from '../assets/svg_icon/Loads.svg';
-import HOSIcon from '../assets/svg_icon/HOS.svg';
-import ProfileIcon from '../assets/svg_icon/profile.svg';
-
+import EarningsScreen from '../screens/EarningsScreen/EarningsScreen';
+import ScheduleScreen from '../screens/ScheduleScreen/ScheduleScreen';
+import BiddingScreen from '../screens/BiddingScreen/BiddingScreen';
+import BiddingIcon from '../assets/svg_icon/Bidding.svg';
+import HomeIcon from '../assets/svg_icon/Home.svg';
+import EarningsIcon from '../assets/svg_icon/Earnings.svg';
+import ScheduleIcon from '../assets/svg_icon/Schedule.svg';
 import {colors} from '../theme/colors';
-import AppText from '../theme/AppText';
+import {IS_TABLET, select} from '../utils/device';
 
 const Tab = createBottomTabNavigator();
 
-/* 🔹 Reusable Label Component */
-const TabLabel = ({label, focused, color}) => (
-  <AppText
-    style={{
-      fontSize: moderateScale(12),
-      fontWeight: focused ? '700' : '500',
-      color,
-    }}>
-    {label}
-  </AppText>
-);
+const ICON_SIZE = select({phone: moderateScale(24), tablet: moderateScale(28)});
 
-const TabIcon =
-  IconComponent =>
-  ({color}) =>
-    <IconComponent width={moderateScale(20)} height={moderateScale(20)} fill={color} />;
+const renderTabIcon = Icon => ({focused}) => (
+  <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
+    <Icon
+      color={focused ? colors.navy : '#9A9CB8'}
+      width={ICON_SIZE}
+      height={ICON_SIZE}
+    />
+  </View>
+);
 
 export default function AppBottomTabs() {
   return (
     <Tab.Navigator
       screenOptions={{
         headerShown: false,
-
+        tabBarActiveTintColor: colors.white,
+        tabBarInactiveTintColor: '#9A9CB8',
+        tabBarLabelPosition: 'below-icon',
         tabBarStyle: {
-          height: Platform.OS === 'ios' ? moderateScale(84) : moderateScale(64),
-          paddingBottom: Platform.OS === 'ios' ? moderateScale(24) : moderateScale(8),
-          paddingTop: moderateScale(6),
-          backgroundColor: '#FFFFFF',
-          borderTopWidth: 0.5,
-          borderTopColor: '#E5E7EB',
+          backgroundColor: colors.navy,
+          borderTopLeftRadius: moderateScale(18),
+          borderTopRightRadius: moderateScale(18),
+          borderTopWidth: 0,
+          height: select({phone: moderateScale(66), tablet: moderateScale(76)}),
+          paddingTop: moderateScale(8),
+          paddingBottom: moderateScale(8),
         },
-
-        tabBarActiveTintColor: colors.primary,
-        tabBarInactiveTintColor: '#9CA3AF',
-
         tabBarLabelStyle: {
           fontSize: moderateScale(12),
+          fontWeight: '600',
         },
       }}>
       <Tab.Screen
         name="HomeTab"
         component={HomeScreen}
         options={{
-          tabBarLabel: props => <TabLabel {...props} label="Home" />,
-          tabBarIcon: TabIcon(HomeIcon),
+          tabBarLabel: 'Home',
+          tabBarIcon: renderTabIcon(HomeIcon),
         }}
       />
-
       <Tab.Screen
-        name="LoadsTab"
-        component={LoadsTab}
+        name="EarningsTab"
+        component={EarningsScreen}
         options={{
-          tabBarLabel: props => <TabLabel {...props} label="Loads" />,
-          tabBarIcon: TabIcon(LoadsIcon),
+          tabBarLabel: 'Earnings',
+          tabBarIcon: renderTabIcon(EarningsIcon),
         }}
       />
-
       <Tab.Screen
-        name="HOSTab"
-        component={HOSTab}
+        name="ScheduleTab"
+        component={ScheduleScreen}
         options={{
-          tabBarLabel: props => <TabLabel {...props} label="HOS" />,
-          tabBarIcon: TabIcon(HOSIcon),
+          tabBarLabel: 'Schedule',
+          tabBarIcon: renderTabIcon(ScheduleIcon),
         }}
       />
-
       <Tab.Screen
-        name="DriverProfileTab"
-        component={Profile}
+        name="BiddingTab"
+        component={BiddingScreen}
         options={{
-          tabBarLabel: props => <TabLabel {...props} label="Profile" />,
-          tabBarIcon: TabIcon(ProfileIcon),
+          tabBarLabel: 'Bidding',
+          tabBarIcon: renderTabIcon(BiddingIcon),
         }}
       />
     </Tab.Navigator>
   );
 }
+
+const styles = StyleSheet.create({
+  iconWrap: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: IS_TABLET ? moderateScale(15) : Platform.OS === 'ios' ? moderateScale(14) : moderateScale(12),
+    paddingVertical:     moderateScale(5),
+    borderRadius: moderateScale(24),
+    backgroundColor: colors.navy,
+  },
+  iconWrapActive: {
+    backgroundColor: colors.white,
+  },
+});

@@ -1,10 +1,12 @@
 import React from 'react';
 import {View, SafeAreaView, ScrollView, TouchableOpacity} from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import {useNavigation} from '@react-navigation/native';
 import styles from './HomeScreen.styles';
 import StatusBar from '../../component/StatusBar/StatusBar';
 import {colors} from '../../theme/colors';
 import AppText from '../../theme/AppText';
+import TruckIcon from '../../assets/svg_icon/Frame_black.svg';
 
 const STATS = [
   {label: 'Miles • Week', value: '1,234', note: '↑ 8% vs last week', color: colors.success, accent: colors.warning},
@@ -56,7 +58,7 @@ const HomeScreen = () => {
           <View style={styles.headerTopRow}>
             <View style={styles.brandRow}>
               <View style={styles.brandBadge}>
-                <AppText style={styles.brandGlyph}>🚚</AppText>
+                <TruckIcon width={20} height={20} />
               </View>
               <AppText style={styles.brandText}>CARRIER</AppText>
             </View>

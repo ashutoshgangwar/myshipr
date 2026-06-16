@@ -1,6 +1,6 @@
 import React from 'react';
 import {moderateScale, verticalScale, scale} from 'react-native-size-matters';
-import HomeIcon from '../../../assets/svg_icon/home.svg';
+import HomeIcon from '../../../assets/svg_icon/Home.svg';
 import TruckIcon from '../../../assets/svg_icon/truck_icon.svg';
 import CarIcon from '../../../assets/svg_icon/car.svg';
 

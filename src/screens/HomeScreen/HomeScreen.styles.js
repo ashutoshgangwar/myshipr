@@ -1,4 +1,4 @@
-import {StyleSheet} from 'react-native';
+import {Platform, StyleSheet} from 'react-native';
 import {ms as baseMs, vs as baseVs} from '../../theme/scale';
 import {colors} from '../../theme/colors';
 import {select} from '../../utils/device';
@@ -50,8 +50,8 @@ export default StyleSheet.create({
   brandBadge: {
     width: ms(38),
     height: ms(38),
-    borderRadius: ms(10),
-    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderRadius: Platform.OS === 'ios' ? ms(10) : ms(12),
+    backgroundColor: colors.white,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -63,7 +63,7 @@ export default StyleSheet.create({
   brandText: {
     color: colors.white,
     fontSize: ms(20),
-    fontWeight: '800',
+    fontWeight: '500',
     letterSpacing: 1,
   },
 
@@ -72,8 +72,8 @@ export default StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.25)',
     backgroundColor: 'rgba(255,255,255,0.06)',
     borderRadius: ms(12),
-    paddingHorizontal: ms(14),
-    paddingVertical: vs(6),
+    paddingHorizontal: ms(18),
+    paddingVertical:Platform.OS === 'ios' ? vs(8) : vs(6),
     alignItems: 'center',
   },
 
@@ -94,13 +94,14 @@ export default StyleSheet.create({
   headerLocation: {
     color: colors.onDarkMedium,
     fontSize: ms(15),
+    fontWeight: '500',
     marginTop: vs(18),
   },
 
   headerWelcome: {
     color: colors.white,
     fontSize: ms(28),
-    fontWeight: '800',
+    fontWeight: '500',
     marginTop: vs(2),
   },
 
