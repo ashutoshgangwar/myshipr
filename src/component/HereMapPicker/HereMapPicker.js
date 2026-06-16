@@ -61,6 +61,7 @@ const HereMapPicker = ({
   onPick,
   mapStyle,
   searchPlaceholder = 'Search a location',
+  showSearch = true,
 }) => {
   const mapRef = useRef(null);
   const [sdkReady, setSdkReady] = useState(false);
@@ -293,39 +294,43 @@ const HereMapPicker = ({
   return (
     <View>
       {/* Search */}
-      <View style={styles.searchWrap}>
-        <View style={styles.searchBox}>
-          <Search_Icon width={18} height={18} color="#9CA3AF" />
-          <TextInput
-            style={styles.searchInput}
-            placeholder={searchPlaceholder}
-            placeholderTextColor={colors.primaryLight}
-            value={query}
-            onChangeText={onChangeQuery}
-            returnKeyType="search"
-          />
-          {searching && <ActivityIndicator size="small" color={colors.primary} />}
-        </View>
-
-        {suggestions.length > 0 && (
-          <View style={styles.suggestionList}>
-            {suggestions.map(item => (
-              <TouchableOpacity
-                key={item.id}
-                style={styles.suggestionItem}
-                activeOpacity={0.7}
-                onPress={() => onSelectSuggestion(item)}>
-                <AppText style={styles.suggestionTitle} numberOfLines={1}>
-                  {item.title}
-                </AppText>
-                <AppText style={styles.suggestionAddress} numberOfLines={1}>
-                  {item.address}
-                </AppText>
-              </TouchableOpacity>
-            ))}
+      {showSearch && (
+        <View style={styles.searchWrap}>
+          <View style={styles.searchBox}>
+            <Search_Icon width={18} height={18} color="#9CA3AF" />
+            <TextInput
+              style={styles.searchInput}
+              placeholder={searchPlaceholder}
+              placeholderTextColor={colors.primaryLight}
+              value={query}
+              onChangeText={onChangeQuery}
+              returnKeyType="search"
+            />
+            {searching && (
+              <ActivityIndicator size="small" color={colors.primary} />
+            )}
           </View>
-        )}
-      </View>
+
+          {suggestions.length > 0 && (
+            <View style={styles.suggestionList}>
+              {suggestions.map(item => (
+                <TouchableOpacity
+                  key={item.id}
+                  style={styles.suggestionItem}
+                  activeOpacity={0.7}
+                  onPress={() => onSelectSuggestion(item)}>
+                  <AppText style={styles.suggestionTitle} numberOfLines={1}>
+                    {item.title}
+                  </AppText>
+                  <AppText style={styles.suggestionAddress} numberOfLines={1}>
+                    {item.address}
+                  </AppText>
+                </TouchableOpacity>
+              ))}
+            </View>
+          )}
+        </View>
+      )}
 
       {/* Map */}
       <View style={[styles.mapCard, mapStyle]}>

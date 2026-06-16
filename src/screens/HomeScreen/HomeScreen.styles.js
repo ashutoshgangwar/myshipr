@@ -3,11 +3,6 @@ import {ms as baseMs, vs as baseVs} from '../../theme/scale';
 import {colors} from '../../theme/colors';
 import {select} from '../../utils/device';
 
-// Single shared layout for every device: the two-column tablet dashboard.
-// The tablet view is the reference and stays pixel-for-pixel identical
-// (factor 1). Phones keep the EXACT same layout/alignment but shrink every
-// size uniformly so the narrow two columns don't overflow. No alternate
-// stacked layout is created.
 const PHONE_FACTOR = select({phone: 0.78, tablet: 1});
 const ms = n => baseMs(n) * PHONE_FACTOR;
 const vs = n => baseVs(n) * PHONE_FACTOR;
@@ -109,7 +104,7 @@ export default StyleSheet.create({
   statsRow: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    paddingHorizontal: ms(12),
+    paddingHorizontal: ms(10),
     paddingTop: vs(14),
     gap: ms(10),
   },
@@ -119,7 +114,7 @@ export default StyleSheet.create({
     flexBasis: STAT_BASIS,
     backgroundColor: colors.white,
     borderRadius: ms(14),
-    padding: ms(14),
+    padding: ms(12),
     borderLeftWidth: 4,
     borderLeftColor: colors.cardBorder,
     shadowColor: '#000',

@@ -1,9 +1,8 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {View, SafeAreaView, ScrollView, TouchableOpacity} from 'react-native';
-import LinearGradient from 'react-native-linear-gradient';
-import {useNavigation} from '@react-navigation/native';
 import styles from './HomeScreen.styles';
 import StatusBar from '../../component/StatusBar/StatusBar';
+import FloatingMap from '../../component/FloatingMap/FloatingMap';
 import {colors} from '../../theme/colors';
 import AppText from '../../theme/AppText';
 import TruckIcon from '../../assets/svg_icon/Frame_black.svg';
@@ -38,9 +37,9 @@ const UPCOMING_LOADS = [
 ];
 
 const HomeScreen = () => {
-  const navigation = useNavigation();
+  const [mapVisible, setMapVisible] = useState(false);
 
-  const openMap_Here = () => navigation.navigate('HereSearchScreen');
+  const openMap_Here = () => setMapVisible(true);
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -234,6 +233,9 @@ const HomeScreen = () => {
           </View>
         </View>
       </ScrollView>
+
+      {/* Draggable floating HERE map — movable anywhere on the screen */}
+      <FloatingMap visible={mapVisible} onClose={() => setMapVisible(false)} />
     </SafeAreaView>
   );
 };
