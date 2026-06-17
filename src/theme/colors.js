@@ -9,7 +9,7 @@ export const colors = {
   splashText: '#FFFFFF',
   splashBorder: '#171717',
   splashTitle: '#FFFFFF',
-  splashSubtitle: '#B4B4B4',
+  splashSubtitle: '#767676',
 
   primary: '#00033E',
   primaryLight: '#999AB2',

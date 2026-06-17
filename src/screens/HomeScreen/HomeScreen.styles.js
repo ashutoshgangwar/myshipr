@@ -1,7 +1,7 @@
 import {Platform, StyleSheet} from 'react-native';
 import {ms as baseMs, vs as baseVs} from '../../theme/scale';
 import {colors} from '../../theme/colors';
-import {select} from '../../utils/device';
+import {IS_TABLET, select} from '../../utils/device';
 
 const PHONE_FACTOR = select({phone: 0.78, tablet: 1});
 const ms = n => baseMs(n) * PHONE_FACTOR;
@@ -25,7 +25,7 @@ export default StyleSheet.create({
     backgroundColor: colors.primary,
     paddingHorizontal: ms(20),
     paddingTop: vs(16),
-    paddingBottom: vs(26),
+    paddingBottom: vs(44),
     borderBottomLeftRadius: ms(28),
     borderBottomRightRadius: ms(28),
   },
@@ -67,22 +67,22 @@ export default StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.25)',
     backgroundColor: 'rgba(255,255,255,0.06)',
     borderRadius: ms(12),
-    paddingHorizontal: ms(18),
-    paddingVertical:Platform.OS === 'ios' ? vs(8) : vs(6),
+    paddingHorizontal: IS_TABLET ? ms(11) : ms(10),
+    paddingVertical: IS_TABLET ? vs(2) : (Platform.OS === 'ios' ? vs(8) : vs(6)),
     alignItems: 'center',
   },
 
   dieselLabel: {
     color: colors.onDarkLow,
-    fontSize: ms(11),
-    fontWeight: '700',
+    fontSize: ms(10),
+    fontWeight: '500',
     letterSpacing: 0.5,
   },
 
   dieselValue: {
     color: colors.success,
     fontSize: ms(15),
-    fontWeight: '800',
+    fontWeight: '500',
     marginTop: vs(2),
   },
 
@@ -95,7 +95,7 @@ export default StyleSheet.create({
 
   headerWelcome: {
     color: colors.white,
-    fontSize: ms(28),
+    fontSize: IS_TABLET ? ms(20) : ms(24),
     fontWeight: '500',
     marginTop: vs(2),
   },
@@ -106,6 +106,8 @@ export default StyleSheet.create({
     flexWrap: 'wrap',
     paddingHorizontal: ms(10),
     paddingTop: vs(14),
+    marginTop: -vs(34),
+    zIndex: 2,
     gap: ms(10),
   },
 
@@ -114,7 +116,8 @@ export default StyleSheet.create({
     flexBasis: STAT_BASIS,
     backgroundColor: colors.white,
     borderRadius: ms(14),
-    padding: ms(12),
+    paddingVertical:IS_TABLET ? ms(8) : ms(10),
+    paddingHorizontal: IS_TABLET ?  ms(14) : ms(10),
     borderLeftWidth: 4,
     borderLeftColor: colors.cardBorder,
     shadowColor: '#000',
@@ -125,7 +128,7 @@ export default StyleSheet.create({
   },
 
   statLabel: {
-    color: colors.textMuted,
+    color: colors.splashSubtitle,
     fontSize: ms(13),
     fontWeight: '600',
   },
@@ -138,7 +141,7 @@ export default StyleSheet.create({
   },
 
   statNote: {
-    fontSize: ms(11),
+    fontSize: IS_TABLET ? ms(11) : Platform.OS === 'ios' ? ms(16) : ms(16),
     fontWeight: '600',
     marginTop: vs(6),
   },

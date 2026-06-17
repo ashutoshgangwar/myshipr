@@ -78,9 +78,24 @@ const HomeScreen = () => {
             <View
               key={stat.label}
               style={[styles.statCard, {borderLeftColor: stat.accent}]}>
-              <AppText style={styles.statLabel}>{stat.label}</AppText>
-              <AppText style={styles.statValue}>{stat.value}</AppText>
-              <AppText style={[styles.statNote, {color: stat.color}]}>
+              <AppText
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.8}
+                style={styles.statLabel}>
+                {stat.label}
+              </AppText>
+              <AppText
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                minimumFontScale={0.7}
+                style={styles.statValue}>
+                {stat.value}
+              </AppText>
+              <AppText
+                numberOfLines={1}
+                adjustsFontSizeToFit
+                style={[styles.statNote, {color: stat.color}]}>
                 {stat.note}
               </AppText>
             </View>
