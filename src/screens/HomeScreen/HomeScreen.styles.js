@@ -447,10 +447,8 @@ export default StyleSheet.create({
     marginTop: vs(10),
   },
   rewardsBalanceRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    flexDirection: 'column',
+    alignItems: 'stretch',
     marginTop: vs(10),
     marginBottom: vs(8),
   },
@@ -458,15 +456,15 @@ export default StyleSheet.create({
   rewardsBalanceLabel: {
     color: colors.onDarkMedium,
     fontSize: ms(12),
-    flexShrink: 1,
-    marginRight: ms(8),
+    marginBottom: vs(2),
   },
 
   rewardsPoints: {
     color: colors.success,
     fontSize: ms(18),
     fontWeight: '800',
-    flexShrink: 0,
+    alignSelf: 'flex-end',
+    textAlign: 'right',
   },
   rewardsTrack: {
     height: vs(8),
