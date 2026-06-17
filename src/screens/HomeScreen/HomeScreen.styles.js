@@ -151,18 +151,19 @@ export default StyleSheet.create({
     flexDirection: COLUMN_DIRECTION,
     paddingHorizontal: ms(12),
     paddingTop: vs(14),
-    gap: ms(12),
+    gap: ms(8),
   },
 
   column: {
     flex: 1,
-    gap: ms(12),
+    gap: ms(10),
   },
 
   card: {
     backgroundColor: colors.white,
     borderRadius: ms(16),
-    padding: ms(16),
+    paddingVertical: IS_TABLET ? ms(12) : ms(15),
+    paddingHorizontal: IS_TABLET ? ms(8) : ms(10),
     shadowColor: '#000',
     shadowOpacity: 0.05,
     shadowRadius: 8,
@@ -222,7 +223,7 @@ export default StyleSheet.create({
 
   payoutValue: {
     color: colors.success,
-    fontSize: IS_TABLET ? ms(24) : ms(30),
+    fontSize: IS_TABLET ? ms(20) : ms(25),
     fontWeight: '500',
   },
 
@@ -286,29 +287,40 @@ export default StyleSheet.create({
   tripStatsDivider: {
     height: 1,
     backgroundColor: colors.cardBorder,
-    marginTop: vs(16),
+    marginTop: vs(12),
   },
 
   tripStatsRow: {
     flexDirection: 'row',
-    marginTop: vs(14),
+    alignItems: 'flex-start',
+    marginTop: vs(12),
   },
 
   tripStatItem: {
     flex: 1,
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    paddingHorizontal: ms(2),
+  },
+
+  tripStatSeparator: {
+    width: 1,
+    alignSelf: 'stretch',
+    backgroundColor: colors.cardBorder,
   },
 
   tripStatValue: {
     color: colors.textStrong,
-    fontSize: ms(15),
-    fontWeight: '700',
+    fontSize: IS_TABLET ? ms(10) : ms(9),
+    fontWeight: '600',
+    textAlign: 'center',
   },
 
   tripStatLabel: {
     color: colors.textMuted,
-    fontSize: ms(11),
+    fontWeight: '400',
+    fontSize: IS_TABLET ? ms(11) : ms(10),
     marginTop: vs(2),
+    textAlign: 'center',
   },
 
   /* ---------- Progress bars ---------- */

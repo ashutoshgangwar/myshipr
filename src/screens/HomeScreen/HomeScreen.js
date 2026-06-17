@@ -138,11 +138,18 @@ const HomeScreen = () => {
 
               <View style={styles.tripStatsDivider} />
               <View style={styles.tripStatsRow}>
-                {TRIP_STATS.map(item => (
-                  <View key={item.label} style={styles.tripStatItem}>
-                    <AppText style={styles.tripStatValue}>{item.value}</AppText>
-                    <AppText style={styles.tripStatLabel}>{item.label}</AppText>
-                  </View>
+                {TRIP_STATS.map((item, index) => (
+                  <React.Fragment key={item.label}>
+                    {index > 0 && <View style={styles.tripStatSeparator} />}
+                    <View style={styles.tripStatItem}>
+                      <AppText style={styles.tripStatValue}>
+                        {item.value}
+                      </AppText>
+                      <AppText style={styles.tripStatLabel}>
+                        {item.label}
+                      </AppText>
+                    </View>
+                  </React.Fragment>
                 ))}
               </View>
 
