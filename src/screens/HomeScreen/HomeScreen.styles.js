@@ -43,9 +43,9 @@ export default StyleSheet.create({
   },
 
   brandBadge: {
-    width: ms(38),
-    height: ms(38),
-    borderRadius: Platform.OS === 'ios' ? ms(10) : ms(12),
+    width: IS_TABLET ? ms(28) : ms(38),
+    height: IS_TABLET ? ms(28) : ms(38),
+    borderRadius: IS_TABLET ? ms(8) : Platform.OS === 'ios' ? ms(10) : ms(12),
     backgroundColor: colors.white,
     alignItems: 'center',
     justifyContent: 'center',
@@ -418,10 +418,12 @@ export default StyleSheet.create({
     fontWeight: '400',
   },
   rewardsCard: {
-    flex: 2,
+    // No fixed flex: let the card grow to fit its text so iOS (taller
+    // line-heights) doesn't get clipped by overflow: 'hidden'.
+    alignSelf: 'stretch',
     borderRadius: ms(12),
     paddingVertical: ms(10),
-    paddingHorizontal: IS_TABLET ? ms(12) : ms(14),
+    paddingHorizontal: ms(12),
     overflow: 'hidden',
   },
 
@@ -481,15 +483,14 @@ export default StyleSheet.create({
 
   rewardsFooterRow: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
     marginTop: vs(8),
   },
   rewardsFooterText: {
     color: colors.onDarkLow,
     fontSize: ms(11),
-    flexShrink: 1,
+    flex: 1,
     marginRight: ms(8),
   },
   rewardsFooterValue: {

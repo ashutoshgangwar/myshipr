@@ -1,5 +1,11 @@
 import React, {useState} from 'react';
-import {View, SafeAreaView, ScrollView, TouchableOpacity} from 'react-native';
+import {
+  View,
+  SafeAreaView,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+} from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import styles from './HomeScreen.styles';
 import StatusBar from '../../component/StatusBar/StatusBar';
@@ -296,11 +302,13 @@ const HomeScreen = () => {
           {/* RIGHT COLUMN */}
           <View style={styles.column}>
             {/* Fuel Rewards */}
-            <LinearGradient
-              colors={PRIMARY_GRADIENT}
-              start={{x: 1, y: 1}}
-              end={{x: 0, y: 0}}
-              style={styles.rewardsCard}>
+            <View style={styles.rewardsCard}>
+              <LinearGradient
+                colors={PRIMARY_GRADIENT}
+                start={{x: 1, y: 1}}
+                end={{x: 0, y: 0}}
+                style={StyleSheet.absoluteFill}
+              />
               <AppText style={styles.rewardsLabel}>Fuel Rewards Points</AppText>
               <AppText style={styles.rewardsTitle}>
                 Report your fuel price, earn points
@@ -321,12 +329,12 @@ const HomeScreen = () => {
                 <View style={[styles.rewardsFill, {width: '66%'}]} />
               </View>
               <View style={styles.rewardsFooterRow}>
-                <AppText style={styles.rewardsFooterText} numberOfLines={1}>
+                <AppText style={styles.rewardsFooterText}>
                   2983 points to next reward
                 </AppText>
                 <AppText style={styles.rewardsFooterValue}>2000</AppText>
               </View>
-            </LinearGradient>
+            </View>
 
             {/* Upcoming loads */}
             <View style={styles.card}>
