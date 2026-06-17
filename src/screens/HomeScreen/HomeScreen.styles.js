@@ -162,13 +162,8 @@ export default StyleSheet.create({
   card: {
     backgroundColor: colors.white,
     borderRadius: ms(16),
-    paddingVertical: IS_TABLET ? ms(12) : ms(15),
-    paddingHorizontal: IS_TABLET ? ms(8) : ms(10),
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    shadowOffset: {width: 0, height: 2},
-    elevation: 2,
+    paddingVertical: IS_TABLET ? ms(10) : ms(10),
+    paddingHorizontal: IS_TABLET ? ms(5) : ms(10),
   },
 
   cardHeaderRow: {
@@ -179,7 +174,7 @@ export default StyleSheet.create({
 
   cardTitle: {
     fontSize: IS_TABLET ? ms(10) : ms(15),
-    fontWeight: '600',
+    fontWeight: '500',
     color: colors.textStrong,
   },
 
@@ -188,6 +183,7 @@ export default StyleSheet.create({
     paddingVertical: vs(4),
     borderRadius: ms(10),
     borderWidth: 1,
+    backgroundColor: colors.warningLight
   },
 
   pillOnTime: {
@@ -207,7 +203,7 @@ export default StyleSheet.create({
   },
 
   pillOnDutyText: {
-    color: colors.warning,
+    color: colors.warning_text,
     fontSize: ms(11),
     fontWeight: '700',
   },
@@ -364,7 +360,7 @@ export default StyleSheet.create({
   /* ---------- Buttons ---------- */
   primaryBtn: {
     borderRadius: ms(14),
-    paddingVertical: vs(14),
+    paddingVertical: vs(10),
     marginTop: vs(18),
   },
 
@@ -406,25 +402,26 @@ export default StyleSheet.create({
 
   detailLabel: {
     color: colors.textStrong,
-    fontSize: ms(14),
+    fontSize: ms(10),
     fontWeight: '600',
   },
 
   detailValue: {
-    color: colors.textMuted,
-    fontSize: ms(13),
-    fontWeight: '600',
+   color: colors.textMuted,
+    fontSize: ms(10),
+    fontWeight: '400',
   },
 
   detailValueStrong: {
-    color: colors.warning,
-    fontSize: ms(13),
-    fontWeight: '800',
+    color: colors.textMuted,
+    fontSize: ms(10),
+    fontWeight: '400',
   },
   rewardsCard: {
+  flex:1,
   borderRadius: ms(12),
-  paddingVertical: ms(5),
-  paddingHorizontal: IS_TABLET ? ms(10) : Platform.OS === 'ios'? ms(6) : ms(10),
+  paddingVertical: ms(10),
+  paddingHorizontal: IS_TABLET ? ms(12) : ms(14),
   overflow: 'hidden',
 },
 
@@ -439,32 +436,35 @@ rewardsTitle: {
   fontSize: ms(22),
   fontWeight: '800',
   marginTop: vs(4),
-  lineHeight: ms(28), // ✅ single value, works on both platforms
+  lineHeight: ms(28),
 },
 rewardsBody: {
   color: colors.onDarkLow,
   fontSize: ms(12),
-  lineHeight: ms(18), // ✅ single value
+  lineHeight: ms(18),
   marginTop: vs(10),
 },
 rewardsBalanceRow: {
-  flexDirection: 'row',          // ✅ side-by-side
+  flexDirection: 'row',      
+  flexWrap: 'wrap',          
   justifyContent: 'space-between',
   alignItems: 'center',
-  marginTop: vs(16),
+  marginTop: vs(10),
   marginBottom: vs(8),
 },
 
 rewardsBalanceLabel: {
   color: colors.onDarkMedium,
   fontSize: ms(12),
-  // no lineHeight
+  flexShrink: 1,   
+  marginRight: ms(8),
 },
 
  rewardsPoints: {
   color: colors.success,
   fontSize: ms(18),
   fontWeight: '800',
+  flexShrink: 0,        // ✅ value keeps its full width on iOS & Android
   // ✅ no textAlign needed — justifyContent handles positioning
   // ✅ no lineHeight — removes iOS clipping
 },
@@ -483,12 +483,21 @@ rewardsBalanceLabel: {
 
   rewardsFooterRow: {
     flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'space-between',
+    alignItems: 'center',
     marginTop: vs(8),
   },
 rewardsFooterText: {
   color: colors.onDarkLow,
   fontSize: ms(11),
+  flexShrink: 1,        // ✅ left text shrinks instead of clipping the right value
+  marginRight: ms(8),
+},
+rewardsFooterValue: {
+  color: colors.onDarkLow,
+  fontSize: ms(11),
+  flexShrink: 0,        // ✅ "2000" stays fully visible
 },
   /* ---------- Upcoming loads ---------- */
   loadRow: {
@@ -506,14 +515,15 @@ rewardsFooterText: {
 
   loadRoute: {
     color: colors.textStrong,
-    fontSize: ms(15),
-    fontWeight: '700',
+    fontSize: ms(10),
+    fontWeight: '600',
   },
 
   loadPickup: {
     color: colors.textMuted,
-    fontSize: ms(12),
+    fontSize: ms(10),
     marginTop: vs(3),
+    fontWeight: '400',
   },
 
   loadRight: {
@@ -522,14 +532,15 @@ rewardsFooterText: {
 
   loadPay: {
     color: colors.textStrong,
-    fontSize: ms(15),
-    fontWeight: '800',
+    fontSize: ms(10),
+    fontWeight: '400',
   },
 
   loadMiles: {
     color: colors.textMuted,
-    fontSize: ms(11),
+    fontSize: ms(10),
     marginTop: vs(3),
+    fontWeight: '400'
   },
 
   loadChevron: {

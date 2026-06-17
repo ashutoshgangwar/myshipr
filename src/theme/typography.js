@@ -1,6 +1,3 @@
-// 🔤 Poppins is bundled for both iOS and Android (see react-native.config.js +
-// src/assets/fonts). Custom fonts don't respond to numeric `fontWeight`, so each
-// weight maps to its own Poppins variant by PostScript / family name.
 const FONT_WEIGHT_MAP = {
   '100': 'Poppins-Regular',
   '200': 'Poppins-Regular',

@@ -8,14 +8,40 @@ import Button from '../../component/Button/Button';
 import {colors} from '../../theme/colors';
 import AppText from '../../theme/AppText';
 import TruckIcon from '../../assets/svg_icon/Frame_black.svg';
+import Strech_arrow_bottom from '../../assets/svg_icon/Strech_arrow_bottom.svg';
+
 
 const PRIMARY_GRADIENT = ['#00033E', '#0008A4'];
 
 const STATS = [
-  {label: 'Miles • Week', value: '1,234', note: '↑ 8% vs last week', color: colors.success, accent: colors.warning},
-  {label: 'Earnings', value: '$1,234', note: '↓ $200 this week', color: colors.danger, accent: colors.success},
-  {label: 'Net Profit', value: '$879', note: 'after all costs', color: colors.textMuted, accent: colors.accentBlue},
-  {label: 'Fuel Saved', value: '$1,234', note: 'Route Optimization', color: colors.accentBlue, accent: colors.warning},
+  {
+    label: 'Miles • Week',
+    value: '1,234',
+    note: '↑ 8% vs last week',
+    color: colors.success,
+    accent: colors.warning,
+  },
+  {
+    label: 'Earnings',
+    value: '$1,234',
+    note: '↓ $200 this week',
+    color: colors.danger,
+    accent: colors.success,
+  },
+  {
+    label: 'Net Profit',
+    value: '$879',
+    note: 'after all costs',
+    color: colors.textMuted,
+    accent: colors.accentBlue,
+  },
+  {
+    label: 'Fuel Saved',
+    value: '$1,234',
+    note: 'Route Optimization',
+    color: colors.accentBlue,
+    accent: colors.warning,
+  },
 ];
 
 const TRIP_STATS = [
@@ -29,15 +55,59 @@ const HOS_DETAILS = [
   {label: 'Cycle Remaining', value: '34h 10m'},
   {label: 'Break Available In', value: '2h 10m'},
   {label: 'Reset Available', value: 'Tomorrow 8:00 AM'},
-  {label: 'Driving Status', value: 'On DUTY', strong: true},
+  // {label: 'Driving Status', value: 'On DUTY', strong: true},
 ];
 
 const UPCOMING_LOADS = [
-  {id: 'u1', route: 'San Jose, CA → Newark, NJ', pickup: 'Tomorrow • 6:00 AM pickup', pay: '$980', miles: '180 mil'},
-  {id: 'u2', route: 'San Jose, CA → Newark, NJ', pickup: 'Wed • 2:00 PM pickup', pay: '$980', miles: '180 mil'},
-  {id: 'u3', route: 'San Jose, CA → Newark, NJ', pickup: 'Wed • 2:00 PM pickup', pay: '$980', miles: '180 mil'},
-  {id: 'u4', route: 'San Jose, CA → Newark, NJ', pickup: 'Wed • 2:00 PM pickup', pay: '$980', miles: '180 mil'},
-  {id: 'u5', route: 'San Jose, CA → Newark, NJ', pickup: 'Wed • 2:00 PM pickup', pay: '$980', miles: '180 mil'},
+  {
+    id: 'u1',
+    route: 'San Jose, CA → Newark, NJ',
+    pickup: 'Tomorrow • 6:00 AM pickup',
+    pay: '$980',
+    miles: '180 mil',
+  },
+  {
+    id: 'u2',
+    route: 'San Jose, CA → Newark, NJ',
+    pickup: 'Wed • 2:00 PM pickup',
+    pay: '$980',
+    miles: '180 mil',
+  },
+  {
+    id: 'u3',
+    route: 'San Jose, CA → Newark, NJ',
+    pickup: 'Wed • 2:00 PM pickup',
+    pay: '$980',
+    miles: '180 mil',
+  },
+  {
+    id: 'u4',
+    route: 'San Jose, CA → Newark, NJ',
+    pickup: 'Wed • 2:00 PM pickup',
+    pay: '$980',
+    miles: '180 mil',
+  },
+  {
+    id: 'u5',
+    route: 'San Jose, CA → Newark, NJ',
+    pickup: 'Wed • 2:00 PM pickup',
+    pay: '$980',
+    miles: '180 mil',
+  },
+  {
+    id: 'u6',
+    route: 'San Jose, CA → Newark, NJ',
+    pickup: 'Wed • 2:00 PM pickup',
+    pay: '$980',
+    miles: '180 mil',
+  },
+  {
+    id: 'u7',
+    route: 'San Jose, CA → Newark, NJ',
+    pickup: 'Wed • 2:00 PM pickup',
+    pay: '$980',
+    miles: '180 mil',
+  },
 ];
 
 const HomeScreen = () => {
@@ -61,7 +131,7 @@ const HomeScreen = () => {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}>
         {/* HEADER */}
-       <View style={styles.header}>
+        <View style={styles.header}>
           <View style={styles.headerTopRow}>
             <View style={styles.brandRow}>
               <View style={styles.brandBadge}>
@@ -162,8 +232,12 @@ const HomeScreen = () => {
               </View>
 
               <View style={styles.progressHeaderRow}>
-                <AppText style={styles.progressCaption}>Hours of Service</AppText>
-                <AppText style={styles.progressCaptionAccent}>2h 23m left</AppText>
+                <AppText style={styles.progressCaption}>
+                  Hours of Service
+                </AppText>
+                <AppText style={styles.progressCaptionAccent}>
+                  2h 23m left
+                </AppText>
               </View>
               <View style={styles.progressTrack}>
                 <View style={[styles.progressFill, {width: '60%'}]} />
@@ -172,7 +246,9 @@ const HomeScreen = () => {
               <Button
                 title={tripStarted ? 'TRIP ONGOING' : 'START TRIP'}
                 onPress={openMap_Here}
-                backgroundColor={tripStarted ? colors.warningLight : colors.accentBlue}
+                backgroundColor={
+                  tripStarted ? colors.warningLight : colors.accentBlue
+                }
                 textColor={colors.white}
                 style={styles.primaryBtn}
                 textStyle={styles.primaryBtnText}
@@ -194,7 +270,11 @@ const HomeScreen = () => {
               </View>
               <View style={styles.progressTrack}>
                 <View
-                  style={[styles.progressFill, styles.progressFillWarn, {width: '77%'}]}
+                  style={[
+                    styles.progressFill,
+                    styles.progressFillWarn,
+                    {width: '77%'},
+                  ]}
                 />
               </View>
 
@@ -202,7 +282,11 @@ const HomeScreen = () => {
                 <View key={item.label} style={styles.detailRow}>
                   <AppText style={styles.detailLabel}>{item.label}</AppText>
                   <AppText
-                    style={item.strong ? styles.detailValueStrong : styles.detailValue}>
+                    style={
+                      item.strong
+                        ? styles.detailValueStrong
+                        : styles.detailValue
+                    }>
                     {item.value}
                   </AppText>
                 </View>
@@ -238,10 +322,10 @@ const HomeScreen = () => {
                 <View style={[styles.rewardsFill, {width: '66%'}]} />
               </View>
               <View style={styles.rewardsFooterRow}>
-                <AppText style={styles.rewardsFooterText}>
+                <AppText style={styles.rewardsFooterText} numberOfLines={1}>
                   2983 points to next reward
                 </AppText>
-                <AppText style={styles.rewardsFooterText}>2000</AppText>
+                <AppText style={styles.rewardsFooterValue}>2000</AppText>
               </View>
             </LinearGradient>
 
@@ -265,7 +349,7 @@ const HomeScreen = () => {
               ))}
 
               <TouchableOpacity style={styles.loadChevron} activeOpacity={0.7}>
-                <AppText style={styles.loadChevronGlyph}>⌄</AppText>
+                <Strech_arrow_bottom width={20} height={20} />
               </TouchableOpacity>
             </View>
           </View>

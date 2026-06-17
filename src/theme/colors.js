@@ -29,10 +29,11 @@ export const colors = {
 
   // Semantic accents used across dashboard cards
   success: '#16A34A',
+   warning_text: '#DAA509' ,
   successLight: '#E4FBF3',
   accentBlue: '#2563EB',
   warning: '#F59E0B',
-  warningLight: '#DAA509',
+  warningLight: '#eacd77',
   danger: '#DC2626',
   screenBg: '#F3F4F6',
   cardBorder: '#E2E8F0',
