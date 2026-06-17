@@ -32,11 +32,13 @@ export const colors = {
   successLight: '#E4FBF3',
   accentBlue: '#2563EB',
   warning: '#F59E0B',
+  warningLight: '#DAA509',
   danger: '#DC2626',
   screenBg: '#F3F4F6',
   cardBorder: '#E2E8F0',
   textMuted: '#64748B',
   textStrong: '#000000',
+  textOnLightStrong: '#767676',
 
 
   surfaceDarkPrimary: '#00033E',

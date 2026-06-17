@@ -20,6 +20,7 @@ const Button = ({
   textStyle,
   activeOpacity,
   platformType,
+  
 }) => {
   const {isTablet} = useDeviceType();
   const styles = useMemo(() => makeStyles(isTablet), [isTablet]);

@@ -3,6 +3,7 @@ import {View, SafeAreaView, ScrollView, TouchableOpacity} from 'react-native';
 import styles from './HomeScreen.styles';
 import StatusBar from '../../component/StatusBar/StatusBar';
 import FloatingMap from '../../component/FloatingMap/FloatingMap';
+import Button from '../../component/Button/Button';
 import {colors} from '../../theme/colors';
 import AppText from '../../theme/AppText';
 import TruckIcon from '../../assets/svg_icon/Frame_black.svg';
@@ -38,8 +39,12 @@ const UPCOMING_LOADS = [
 
 const HomeScreen = () => {
   const [mapVisible, setMapVisible] = useState(false);
+  const [tripStarted, setTripStarted] = useState(false);
 
-  const openMap_Here = () => setMapVisible(true);
+  const openMap_Here = () => {
+    setTripStarted(true);
+    setMapVisible(true);
+  };
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -161,12 +166,14 @@ const HomeScreen = () => {
                 <View style={[styles.progressFill, {width: '60%'}]} />
               </View>
 
-              <TouchableOpacity
+              <Button
+                title={tripStarted ? 'TRIP ONGOING' : 'START TRIP'}
+                onPress={openMap_Here}
+                backgroundColor={tripStarted ? colors.warningLight : colors.accentBlue}
+                textColor={colors.white}
                 style={styles.primaryBtn}
-                activeOpacity={0.9}
-                onPress={openMap_Here}>
-                <AppText style={styles.primaryBtnText}>START TRIP</AppText>
-              </TouchableOpacity>
+                textStyle={styles.primaryBtnText}
+              />
             </View>
 
             {/* Hours of Service */}

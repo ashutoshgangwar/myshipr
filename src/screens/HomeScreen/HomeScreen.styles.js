@@ -333,14 +333,14 @@ export default StyleSheet.create({
   },
 
   progressCaption: {
-    color: colors.textStrong,
-    fontSize: ms(13),
-    fontWeight: '600',
+    color: colors.textOnLightStrong,
+    fontSize: IS_TABLET ? ms(12) : ms(13),
+    fontWeight: '500',
   },
 
   progressCaptionAccent: {
     color: colors.accentBlue,
-    fontSize: ms(13),
+    fontSize: IS_TABLET ? ms(12) : ms(13),
     fontWeight: '700',
   },
 
@@ -363,21 +363,14 @@ export default StyleSheet.create({
 
   /* ---------- Buttons ---------- */
   primaryBtn: {
-    backgroundColor: colors.accentBlue,
     borderRadius: ms(14),
     paddingVertical: vs(14),
-    alignItems: 'center',
     marginTop: vs(18),
-    shadowColor: colors.accentBlue,
-    shadowOpacity: 0.3,
-    shadowRadius: 10,
-    shadowOffset: {width: 0, height: 4},
-    elevation: 4,
   },
 
   primaryBtnText: {
     color: colors.white,
-    fontSize: ms(16),
+    fontSize: ms(12),
     fontWeight: '800',
     letterSpacing: 0.5,
   },
