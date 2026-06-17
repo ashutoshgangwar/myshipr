@@ -183,7 +183,7 @@ export default StyleSheet.create({
     paddingVertical: vs(4),
     borderRadius: ms(10),
     borderWidth: 1,
-    backgroundColor: colors.warningLight
+    backgroundColor: colors.warningLight,
   },
 
   pillOnTime: {
@@ -407,7 +407,7 @@ export default StyleSheet.create({
   },
 
   detailValue: {
-   color: colors.textMuted,
+    color: colors.textMuted,
     fontSize: ms(10),
     fontWeight: '400',
   },
@@ -418,67 +418,65 @@ export default StyleSheet.create({
     fontWeight: '400',
   },
   rewardsCard: {
-  flex:1,
-  borderRadius: ms(12),
-  paddingVertical: ms(10),
-  paddingHorizontal: IS_TABLET ? ms(12) : ms(14),
-  overflow: 'hidden',
-},
+    flex: 2,
+    borderRadius: ms(12),
+    paddingVertical: ms(10),
+    paddingHorizontal: IS_TABLET ? ms(12) : ms(14),
+    overflow: 'hidden',
+  },
 
- rewardsLabel: {
-  color: colors.onDarkMedium,
-  fontSize: ms(12),
-  fontWeight: '600',
-},
+  rewardsLabel: {
+    color: colors.splashSubtitle,
+    fontSize: ms(10),
+    fontWeight: '600',
+  },
 
-rewardsTitle: {
-  color: colors.white,
-  fontSize: ms(22),
-  fontWeight: '800',
-  marginTop: vs(4),
-  lineHeight: ms(28),
-},
-rewardsBody: {
-  color: colors.onDarkLow,
-  fontSize: ms(12),
-  lineHeight: ms(18),
-  marginTop: vs(10),
-},
-rewardsBalanceRow: {
-  flexDirection: 'row',      
-  flexWrap: 'wrap',          
-  justifyContent: 'space-between',
-  alignItems: 'center',
-  marginTop: vs(10),
-  marginBottom: vs(8),
-},
+  rewardsTitle: {
+    color: colors.white,
+    fontSize: IS_TABLET ?  ms(20) : ms(18),
+    fontWeight: '800',
+    marginTop: vs(4),
+    lineHeight: ms(28),
+  },
+  rewardsBody: {
+    color: colors.onDarkLow,
+    fontSize: ms(12),
+    lineHeight: ms(18),
+    marginTop: vs(10),
+  },
+  rewardsBalanceRow: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: vs(10),
+    marginBottom: vs(8),
+  },
 
-rewardsBalanceLabel: {
-  color: colors.onDarkMedium,
-  fontSize: ms(12),
-  flexShrink: 1,   
-  marginRight: ms(8),
-},
+  rewardsBalanceLabel: {
+    color: colors.onDarkMedium,
+    fontSize: ms(12),
+    flexShrink: 1,
+    marginRight: ms(8),
+  },
 
- rewardsPoints: {
-  color: colors.success,
-  fontSize: ms(18),
-  fontWeight: '800',
-  flexShrink: 0,        // ✅ value keeps its full width on iOS & Android
-  // ✅ no textAlign needed — justifyContent handles positioning
-  // ✅ no lineHeight — removes iOS clipping
-},
+  rewardsPoints: {
+    color: colors.success,
+    fontSize: ms(18),
+    fontWeight: '800',
+    flexShrink: 0,
+  },
   rewardsTrack: {
     height: vs(8),
     borderRadius: ms(8),
-    backgroundColor: 'rgba(255,255,255,0.18)',
+    backgroundColor: colors.white,
     overflow: 'hidden',
   },
 
   rewardsFill: {
     height: '100%',
     borderRadius: ms(8),
-    backgroundColor: colors.success,
+    backgroundColor: colors.success_bg,
   },
 
   rewardsFooterRow: {
@@ -488,17 +486,17 @@ rewardsBalanceLabel: {
     alignItems: 'center',
     marginTop: vs(8),
   },
-rewardsFooterText: {
-  color: colors.onDarkLow,
-  fontSize: ms(11),
-  flexShrink: 1,        // ✅ left text shrinks instead of clipping the right value
-  marginRight: ms(8),
-},
-rewardsFooterValue: {
-  color: colors.onDarkLow,
-  fontSize: ms(11),
-  flexShrink: 0,        // ✅ "2000" stays fully visible
-},
+  rewardsFooterText: {
+    color: colors.onDarkLow,
+    fontSize: ms(11),
+    flexShrink: 1,
+    marginRight: ms(8),
+  },
+  rewardsFooterValue: {
+    color: colors.onDarkLow,
+    fontSize: ms(11),
+    flexShrink: 0,
+  },
   /* ---------- Upcoming loads ---------- */
   loadRow: {
     flexDirection: 'row',
@@ -540,7 +538,7 @@ rewardsFooterValue: {
     color: colors.textMuted,
     fontSize: ms(10),
     marginTop: vs(3),
-    fontWeight: '400'
+    fontWeight: '400',
   },
 
   loadChevron: {

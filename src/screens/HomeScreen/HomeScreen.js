@@ -10,7 +10,6 @@ import AppText from '../../theme/AppText';
 import TruckIcon from '../../assets/svg_icon/Frame_black.svg';
 import Strech_arrow_bottom from '../../assets/svg_icon/Strech_arrow_bottom.svg';
 
-
 const PRIMARY_GRADIENT = ['#00033E', '#0008A4'];
 
 const STATS = [
@@ -247,7 +246,7 @@ const HomeScreen = () => {
                 title={tripStarted ? 'TRIP ONGOING' : 'START TRIP'}
                 onPress={openMap_Here}
                 backgroundColor={
-                  tripStarted ? colors.warningLight : colors.accentBlue
+                  tripStarted ? colors.warning_text : colors.accentBlue
                 }
                 textColor={colors.white}
                 style={styles.primaryBtn}
