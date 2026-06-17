@@ -29,13 +29,14 @@ export const colors = {
 
   // Semantic accents used across dashboard cards
   success: '#16A34A',
+  successLight: '#E4FBF3',
   accentBlue: '#2563EB',
   warning: '#F59E0B',
   danger: '#DC2626',
-  screenBg: '#F1F5F9',
+  screenBg: '#F3F4F6',
   cardBorder: '#E2E8F0',
   textMuted: '#64748B',
-  textStrong: '#0F172A',
+  textStrong: '#000000',
 
 
   surfaceDarkPrimary: '#00033E',

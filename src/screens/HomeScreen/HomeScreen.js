@@ -117,7 +117,7 @@ const HomeScreen = () => {
 
               <View style={styles.payoutRow}>
                 <AppText style={styles.payoutValue}>$1,250</AppText>
-                <AppText style={styles.payoutLabel}>load payout</AppText>
+                <AppText style={styles.payoutLabel}>Load payout</AppText>
               </View>
 
               <View style={styles.routeBox}>
@@ -136,6 +136,7 @@ const HomeScreen = () => {
                 </View>
               </View>
 
+              <View style={styles.tripStatsDivider} />
               <View style={styles.tripStatsRow}>
                 {TRIP_STATS.map(item => (
                   <View key={item.label} style={styles.tripStatItem}>

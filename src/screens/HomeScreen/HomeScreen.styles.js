@@ -177,8 +177,8 @@ export default StyleSheet.create({
   },
 
   cardTitle: {
-    fontSize: ms(15),
-    fontWeight: '700',
+    fontSize: IS_TABLET ? ms(10) : ms(15),
+    fontWeight: '600',
     color: colors.textStrong,
   },
 
@@ -191,7 +191,7 @@ export default StyleSheet.create({
 
   pillOnTime: {
     borderColor: colors.success,
-    backgroundColor: 'rgba(22,163,74,0.08)',
+    backgroundColor: colors.successLight,
   },
 
   pillOnTimeText: {
@@ -202,7 +202,7 @@ export default StyleSheet.create({
 
   pillOnDuty: {
     borderColor: colors.warning,
-    backgroundColor: 'rgba(245,158,11,0.10)',
+    backgroundColor: colors.warningLight,
   },
 
   pillOnDutyText: {
@@ -214,28 +214,31 @@ export default StyleSheet.create({
   /* ---------- Current Trip ---------- */
   payoutRow: {
     flexDirection: 'row',
-    alignItems: 'flex-end',
+    alignItems: 'center',
+    justifyContent: 'flex-start',
     gap: ms(8),
     marginTop: vs(8),
   },
 
   payoutValue: {
     color: colors.success,
-    fontSize: ms(34),
-    fontWeight: '800',
+    fontSize: IS_TABLET ? ms(24) : ms(30),
+    fontWeight: '500',
   },
 
   payoutLabel: {
     color: colors.textMuted,
-    fontSize: ms(13),
-    marginBottom: vs(6),
+    fontSize:IS_TABLET ? ms(13) : ms(15),
+    textAlign: 'center',
+    fontWeight: '400',
   },
 
   routeBox: {
     backgroundColor: colors.screenBg,
-    borderRadius: ms(14),
-    padding: ms(14),
-    marginTop: vs(14),
+    borderRadius: ms(10),
+    paddingVertical: IS_TABLET ? ms(8) : ms(16),
+    paddingHorizontal: IS_TABLET ? ms(1) : ms(16),
+    marginTop: vs(10),
     flexDirection: 'row',
   },
 
@@ -268,16 +271,22 @@ export default StyleSheet.create({
 
   routeStopLabel: {
     color: colors.textMuted,
-    fontSize: ms(10),
-    fontWeight: '700',
+    fontSize: IS_TABLET ? ms(6) : ms(8),
+    fontWeight: '600',
     letterSpacing: 0.5,
   },
 
   routeStopCity: {
     color: colors.textStrong,
-    fontSize: ms(17),
+    fontSize: IS_TABLET ? ms(10) : ms(12),
     fontWeight: '700',
-    marginBottom: vs(10),
+    marginBottom: vs(8),
+  },
+
+  tripStatsDivider: {
+    height: 1,
+    backgroundColor: colors.cardBorder,
+    marginTop: vs(16),
   },
 
   tripStatsRow: {
@@ -347,6 +356,11 @@ export default StyleSheet.create({
     paddingVertical: vs(14),
     alignItems: 'center',
     marginTop: vs(18),
+    shadowColor: colors.accentBlue,
+    shadowOpacity: 0.3,
+    shadowRadius: 10,
+    shadowOffset: {width: 0, height: 4},
+    elevation: 4,
   },
 
   primaryBtnText: {
