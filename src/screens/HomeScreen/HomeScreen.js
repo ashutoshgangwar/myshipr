@@ -1,5 +1,6 @@
 import React, {useState} from 'react';
 import {View, SafeAreaView, ScrollView, TouchableOpacity} from 'react-native';
+import LinearGradient from 'react-native-linear-gradient';
 import styles from './HomeScreen.styles';
 import StatusBar from '../../component/StatusBar/StatusBar';
 import FloatingMap from '../../component/FloatingMap/FloatingMap';
@@ -7,6 +8,8 @@ import Button from '../../component/Button/Button';
 import {colors} from '../../theme/colors';
 import AppText from '../../theme/AppText';
 import TruckIcon from '../../assets/svg_icon/Frame_black.svg';
+
+const PRIMARY_GRADIENT = ['#00033E', '#0008A4'];
 
 const STATS = [
   {label: 'Miles • Week', value: '1,234', note: '↑ 8% vs last week', color: colors.success, accent: colors.warning},
@@ -58,7 +61,7 @@ const HomeScreen = () => {
         contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}>
         {/* HEADER */}
-        <View style={styles.header}>
+       <View style={styles.header}>
           <View style={styles.headerTopRow}>
             <View style={styles.brandRow}>
               <View style={styles.brandBadge}>
@@ -210,7 +213,11 @@ const HomeScreen = () => {
           {/* RIGHT COLUMN */}
           <View style={styles.column}>
             {/* Fuel Rewards */}
-            <View style={styles.rewardsCard}>
+            <LinearGradient
+              colors={PRIMARY_GRADIENT}
+              start={{x: 1, y: 1}}
+              end={{x: 0, y: 0}}
+              style={styles.rewardsCard}>
               <AppText style={styles.rewardsLabel}>Fuel Rewards Points</AppText>
               <AppText style={styles.rewardsTitle}>
                 Report your fuel price, earn points
@@ -220,12 +227,13 @@ const HomeScreen = () => {
                 report earns you points — redeem for bonuses & perks.
               </AppText>
 
-              <AppText style={styles.rewardsBalanceLabel}>
-                Your points balance
-              </AppText>
-              <View style={styles.rewardsPointsRow}>
-                <AppText style={styles.rewardsPoints}>1234pts</AppText>
+              <View style={styles.rewardsBalanceRow}>
+                <AppText style={styles.rewardsBalanceLabel}>
+                  Your points balance
+                </AppText>
+                <AppText style={styles.rewardsPoints}>1234 pts</AppText>
               </View>
+              {/* points value sits on its own row below the label */}
               <View style={styles.rewardsTrack}>
                 <View style={[styles.rewardsFill, {width: '66%'}]} />
               </View>
@@ -235,7 +243,7 @@ const HomeScreen = () => {
                 </AppText>
                 <AppText style={styles.rewardsFooterText}>2000</AppText>
               </View>
-            </View>
+            </LinearGradient>
 
             {/* Upcoming loads */}
             <View style={styles.card}>

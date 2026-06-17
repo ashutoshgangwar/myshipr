@@ -1,17 +1,35 @@
 import React from 'react';
-import { Text } from 'react-native';
+import { Text, StyleSheet } from 'react-native';
 import typography from './typography';
 
-
 const AppText = ({ style, children, ...props }) => {
+  const flat = StyleSheet.flatten(style) || {};
+  const { fontWeight, fontFamily, ...rest } = flat;
+  const resolvedFamily = fontFamily || typography.fontFamilyForWeight(fontWeight);
+
   return (
-    <Text
-      {...props}
-      style={[{ fontFamily: typography.fontFamily }, style]}
-    >
+    <Text {...props} style={[rest, { fontFamily: resolvedFamily }]}>
       {children}
     </Text>
   );
 };
 
 export default AppText;
+
+// import React from 'react';
+// import { Text } from 'react-native';
+// import typography from './typography';
+
+
+// const AppText = ({ style, children, ...props }) => {
+//   return (
+//     <Text
+//       {...props}
+//       style={[{ fontFamily: typography.fontFamily }, style]}
+//     >
+//       {children}
+//     </Text>
+//   );
+// };
+
+// export default AppText;

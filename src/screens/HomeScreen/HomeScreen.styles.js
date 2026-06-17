@@ -68,7 +68,7 @@ export default StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.06)',
     borderRadius: ms(12),
     paddingHorizontal: IS_TABLET ? ms(11) : ms(10),
-    paddingVertical: IS_TABLET ? vs(2) : (Platform.OS === 'ios' ? vs(8) : vs(6)),
+    paddingVertical: IS_TABLET ? vs(2) : Platform.OS === 'ios' ? vs(8) : vs(6),
     alignItems: 'center',
   },
 
@@ -116,8 +116,8 @@ export default StyleSheet.create({
     flexBasis: STAT_BASIS,
     backgroundColor: colors.white,
     borderRadius: ms(14),
-    paddingVertical:IS_TABLET ? ms(8) : ms(10),
-    paddingHorizontal: IS_TABLET ?  ms(14) : ms(10),
+    paddingVertical: IS_TABLET ? ms(8) : ms(10),
+    paddingHorizontal: IS_TABLET ? ms(14) : ms(10),
     borderLeftWidth: 4,
     borderLeftColor: colors.cardBorder,
     shadowColor: '#000',
@@ -229,7 +229,7 @@ export default StyleSheet.create({
 
   payoutLabel: {
     color: colors.textMuted,
-    fontSize:IS_TABLET ? ms(13) : ms(15),
+    fontSize: IS_TABLET ? ms(13) : ms(15),
     textAlign: 'center',
     fontWeight: '400',
   },
@@ -421,18 +421,23 @@ export default StyleSheet.create({
     fontSize: ms(13),
     fontWeight: '800',
   },
-
-  /* ---------- Fuel Rewards (dark card) ---------- */
   rewardsCard: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.white,
     borderRadius: ms(16),
-    padding: ms(18),
+    paddingVertical: IS_TABLET ? ms(12) : ms(15),
+    paddingHorizontal: IS_TABLET ? ms(8) : ms(10),
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    shadowOffset: {width: 0, height: 2},
+    elevation: 2,
   },
 
   rewardsLabel: {
     color: colors.onDarkMedium,
     fontSize: ms(12),
     fontWeight: '600',
+    lineHeight: Platform.OS === 'ios' ? ms(12) : undefined,
   },
 
   rewardsTitle: {
@@ -440,32 +445,38 @@ export default StyleSheet.create({
     fontSize: ms(22),
     fontWeight: '800',
     marginTop: vs(4),
-    lineHeight: ms(28),
+    // Poppins-ExtraBold gets clipped on iOS when lineHeight hugs fontSize;
+    // Android adds its own padding so it renders fine there.
+    lineHeight: Platform.OS === 'ios' ? ms(32) : ms(28),
   },
 
   rewardsBody: {
     color: colors.onDarkLow,
     fontSize: ms(12),
-    lineHeight: ms(18),
+    lineHeight: Platform.OS === 'ios' ? ms(20) : ms(18),
     marginTop: vs(10),
+  },
+
+  rewardsBalanceRow: {
+    flexDirection: 'column',
+    alignItems: 'stretch',
+    marginTop: vs(16),
+    marginBottom: vs(8),
   },
 
   rewardsBalanceLabel: {
     color: colors.onDarkMedium,
     fontSize: ms(12),
-    marginTop: vs(16),
-  },
-
-  rewardsPointsRow: {
-    flexDirection: 'row',
-    justifyContent: 'flex-end',
-    marginTop: vs(6),
+    lineHeight: Platform.OS === 'ios' ? ms(18) : undefined,
   },
 
   rewardsPoints: {
     color: colors.success,
     fontSize: ms(18),
     fontWeight: '800',
+    marginTop: vs(4),
+    textAlign: 'right',
+    lineHeight: Platform.OS === 'ios' ? ms(26) : undefined,
   },
 
   rewardsTrack: {
@@ -473,7 +484,6 @@ export default StyleSheet.create({
     borderRadius: ms(8),
     backgroundColor: 'rgba(255,255,255,0.18)',
     overflow: 'hidden',
-    marginTop: vs(6),
   },
 
   rewardsFill: {
@@ -491,6 +501,7 @@ export default StyleSheet.create({
   rewardsFooterText: {
     color: colors.onDarkLow,
     fontSize: ms(11),
+    lineHeight: Platform.OS === 'ios' ? ms(16) : undefined,
   },
 
   /* ---------- Upcoming loads ---------- */
