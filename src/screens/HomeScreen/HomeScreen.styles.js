@@ -422,63 +422,52 @@ export default StyleSheet.create({
     fontWeight: '800',
   },
   rewardsCard: {
-    backgroundColor: colors.white,
-    borderRadius: ms(16),
-    paddingVertical: IS_TABLET ? ms(12) : ms(15),
-    paddingHorizontal: IS_TABLET ? ms(8) : ms(10),
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    shadowOffset: {width: 0, height: 2},
-    elevation: 2,
-  },
+  borderRadius: ms(12),
+  paddingVertical: ms(5),
+  paddingHorizontal: IS_TABLET ? ms(10) : Platform.OS === 'ios'? ms(6) : ms(10),
+  overflow: 'hidden',
+},
 
-  rewardsLabel: {
-    color: colors.onDarkMedium,
-    fontSize: ms(12),
-    fontWeight: '600',
-    lineHeight: Platform.OS === 'ios' ? ms(12) : undefined,
-  },
+ rewardsLabel: {
+  color: colors.onDarkMedium,
+  fontSize: ms(12),
+  fontWeight: '600',
+},
 
-  rewardsTitle: {
-    color: colors.white,
-    fontSize: ms(22),
-    fontWeight: '800',
-    marginTop: vs(4),
-    // Poppins-ExtraBold gets clipped on iOS when lineHeight hugs fontSize;
-    // Android adds its own padding so it renders fine there.
-    lineHeight: Platform.OS === 'ios' ? ms(32) : ms(28),
-  },
+rewardsTitle: {
+  color: colors.white,
+  fontSize: ms(22),
+  fontWeight: '800',
+  marginTop: vs(4),
+  lineHeight: ms(28), // ✅ single value, works on both platforms
+},
+rewardsBody: {
+  color: colors.onDarkLow,
+  fontSize: ms(12),
+  lineHeight: ms(18), // ✅ single value
+  marginTop: vs(10),
+},
+rewardsBalanceRow: {
+  flexDirection: 'row',          // ✅ side-by-side
+  justifyContent: 'space-between',
+  alignItems: 'center',
+  marginTop: vs(16),
+  marginBottom: vs(8),
+},
 
-  rewardsBody: {
-    color: colors.onDarkLow,
-    fontSize: ms(12),
-    lineHeight: Platform.OS === 'ios' ? ms(20) : ms(18),
-    marginTop: vs(10),
-  },
+rewardsBalanceLabel: {
+  color: colors.onDarkMedium,
+  fontSize: ms(12),
+  // no lineHeight
+},
 
-  rewardsBalanceRow: {
-    flexDirection: 'column',
-    alignItems: 'stretch',
-    marginTop: vs(16),
-    marginBottom: vs(8),
-  },
-
-  rewardsBalanceLabel: {
-    color: colors.onDarkMedium,
-    fontSize: ms(12),
-    lineHeight: Platform.OS === 'ios' ? ms(18) : undefined,
-  },
-
-  rewardsPoints: {
-    color: colors.success,
-    fontSize: ms(18),
-    fontWeight: '800',
-    marginTop: vs(4),
-    textAlign: 'right',
-    lineHeight: Platform.OS === 'ios' ? ms(26) : undefined,
-  },
-
+ rewardsPoints: {
+  color: colors.success,
+  fontSize: ms(18),
+  fontWeight: '800',
+  // ✅ no textAlign needed — justifyContent handles positioning
+  // ✅ no lineHeight — removes iOS clipping
+},
   rewardsTrack: {
     height: vs(8),
     borderRadius: ms(8),
@@ -497,13 +486,10 @@ export default StyleSheet.create({
     justifyContent: 'space-between',
     marginTop: vs(8),
   },
-
-  rewardsFooterText: {
-    color: colors.onDarkLow,
-    fontSize: ms(11),
-    lineHeight: Platform.OS === 'ios' ? ms(16) : undefined,
-  },
-
+rewardsFooterText: {
+  color: colors.onDarkLow,
+  fontSize: ms(11),
+},
   /* ---------- Upcoming loads ---------- */
   loadRow: {
     flexDirection: 'row',
