@@ -10,6 +10,10 @@ const vs = n => baseVs(n) * PHONE_FACTOR;
 const COLUMN_DIRECTION = 'row';
 const STAT_BASIS = '22%';
 
+// Vertical gap between the two cards stacked in each column (keep in sync with
+// `column.gap`). Exported so the screen can compute the loads card height.
+export const COLUMN_GAP = ms(10);
+
 export default StyleSheet.create({
   safe: {
     flex: 1,
@@ -149,6 +153,9 @@ export default StyleSheet.create({
   /* ---------- Main grid ---------- */
   grid: {
     flexDirection: COLUMN_DIRECTION,
+    // Stretch makes both columns take the height of the taller one (the left
+    // column), so the right column matches it automatically.
+    alignItems: 'stretch',
     paddingHorizontal: ms(12),
     paddingTop: vs(14),
     gap: ms(8),
@@ -497,6 +504,22 @@ export default StyleSheet.create({
     flexShrink: 0,
   },
   /* ---------- Upcoming loads ---------- */
+  // Fills the right column (stretched to the left column height). Rounded clip
+  // keeps the corners and contains the scroll content.
+  loadsCard: {
+    flex: 1,
+    minHeight: 0,
+    overflow: 'hidden',
+  },
+
+  // Sized by the card via flex; the absolute-fill ScrollView lives inside it
+  // so the list scrolls without inflating the column height.
+  loadsScrollWrap: {
+    flex: 1,
+    minHeight: 0,
+    position: 'relative',
+  },
+
   loadRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',

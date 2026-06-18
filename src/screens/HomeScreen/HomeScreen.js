@@ -113,6 +113,20 @@ const UPCOMING_LOADS = [
     pay: '$980',
     miles: '180 mil',
   },
+   {
+    id: 'u8',
+    route: 'San Jose, CA → Newark, NJ',
+    pickup: 'Wed • 2:00 PM pickup',
+    pay: '$980',
+    miles: '180 mil',
+  },
+   {
+    id: 'u9',
+    route: 'San Jose, CA → Newark, NJ',
+    pickup: 'Wed • 2:00 PM pickup',
+    pay: '$9180',
+    miles: '180 mil',
+  },
 ];
 
 const HomeScreen = () => {
@@ -337,23 +351,38 @@ const HomeScreen = () => {
             </View>
 
             {/* Upcoming loads */}
-            <View style={styles.card}>
+            <View style={[styles.card, styles.loadsCard]}>
               <AppText style={styles.cardTitle}>Upcoming loads</AppText>
 
-              {UPCOMING_LOADS.map((load, index) => (
-                <View
-                  key={load.id}
-                  style={[styles.loadRow, index === 0 && styles.loadRowFirst]}>
-                  <View style={{flex: 1, paddingRight: 8}}>
-                    <AppText style={styles.loadRoute}>{load.route}</AppText>
-                    <AppText style={styles.loadPickup}>{load.pickup}</AppText>
-                  </View>
-                  <View style={styles.loadRight}>
-                    <AppText style={styles.loadPay}>{load.pay}</AppText>
-                    <AppText style={styles.loadMiles}>{load.miles}</AppText>
-                  </View>
-                </View>
-              ))}
+              {/* flex:1 box sized by the column stretch; the absolute-fill
+                  ScrollView fills it without inflating the column height. */}
+              <View style={styles.loadsScrollWrap}>
+                <ScrollView
+                  style={StyleSheet.absoluteFill}
+                  nestedScrollEnabled
+                  bounces
+                  showsVerticalScrollIndicator={false}>
+                  {UPCOMING_LOADS.map((load, index) => (
+                    <View
+                      key={load.id}
+                      style={[
+                        styles.loadRow,
+                        index === 0 && styles.loadRowFirst,
+                      ]}>
+                      <View style={{flex: 1, paddingRight: 8}}>
+                        <AppText style={styles.loadRoute}>{load.route}</AppText>
+                        <AppText style={styles.loadPickup}>
+                          {load.pickup}
+                        </AppText>
+                      </View>
+                      <View style={styles.loadRight}>
+                        <AppText style={styles.loadPay}>{load.pay}</AppText>
+                        <AppText style={styles.loadMiles}>{load.miles}</AppText>
+                      </View>
+                    </View>
+                  ))}
+                </ScrollView>
+              </View>
 
               <TouchableOpacity style={styles.loadChevron} activeOpacity={0.7}>
                 <Strech_arrow_bottom width={20} height={20} />
