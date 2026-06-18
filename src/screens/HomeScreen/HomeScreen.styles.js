@@ -10,10 +10,6 @@ const vs = n => baseVs(n) * PHONE_FACTOR;
 const COLUMN_DIRECTION = 'row';
 const STAT_BASIS = '22%';
 
-// Vertical gap between the two cards stacked in each column (keep in sync with
-// `column.gap`). Exported so the screen can compute the loads card height.
-export const COLUMN_GAP = ms(10);
-
 export default StyleSheet.create({
   safe: {
     flex: 1,
