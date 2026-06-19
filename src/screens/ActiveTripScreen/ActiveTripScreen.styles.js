@@ -29,7 +29,7 @@ export default StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: s(14),
-    paddingTop: vs(10),
+    paddingTop: IS_TABLET?  vs(20) : vs(40),
     zIndex: 50,
   },
   circleBtn: {
