@@ -156,6 +156,15 @@ class HereMapView: UIView {
                 zoom: distance
             )
 
+            // Move the HERE watermark/logo to the vertical-centre of the map's
+            // right edge (kept in sync with Android's setWatermarkLocation). The
+            // anchor (1.0, 0.5) is the right edge mid-height; the negative-x
+            // offset pulls the logo inward so it isn't clipped off-screen.
+           self.mapView.setWatermarkLocation(
+              anchor: Anchor2D(horizontal: 1.0, vertical: 0.8),
+            offset: Point2D(x: -65, y: 0)
+           )
+
             // Scene is ready — flush any operations queued while it was loading
             // (in FIFO order so a queued clear → draw stays consistent).
             self.isSceneLoaded = true

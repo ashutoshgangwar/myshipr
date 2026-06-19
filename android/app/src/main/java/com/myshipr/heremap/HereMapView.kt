@@ -17,6 +17,7 @@ import com.here.sdk.core.GeoOrientationUpdate
 import com.here.sdk.core.GeoPolyline
 import com.here.sdk.core.LanguageCode
 import com.here.sdk.core.Location
+import com.here.sdk.core.Point2D
 import com.here.sdk.mapview.LineCap
 import com.here.sdk.mapview.MapCameraAnimationFactory
 import com.here.time.Duration
@@ -108,6 +109,16 @@ class HereMapView(context: Context) : FrameLayout(context) {
             }
             Log.d(TAG, "✅ Map scene loaded successfully")
             MapView.setPrimaryLanguage(LanguageCode.EN_US)
+
+            // Move the HERE watermark/logo to the vertical-centre of the map's
+            // right edge (kept in sync with iOS's setWatermarkLocation). The
+            // anchor (1.0, 0.5) is the right edge mid-height; the negative-x
+            // offset pulls the logo inward so it isn't clipped off-screen.
+            mapView.setWatermarkLocation(
+                Anchor2D(1.0, 0.8),
+                Point2D(-65.0, -40.0)
+            )
+
             initRoutingEngine()
         }
     }
