@@ -106,7 +106,7 @@ export default StyleSheet.create({
     flexWrap: 'wrap',
     paddingHorizontal: ms(10),
     paddingTop: vs(14),
-    marginTop: -vs(34),
+    marginTop: -vs(40),
     zIndex: 2,
     gap: ms(10),
   },
@@ -567,5 +567,40 @@ export default StyleSheet.create({
   loadChevronGlyph: {
     color: colors.textMuted,
     fontSize: ms(16),
+  },
+
+  /* ---------- Trip in Progress banner ---------- */
+  tripBanner: {
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: colors.warning_text,
+    paddingHorizontal: ms(24),
+    paddingVertical:IS_TABLET ?  vs(6) : vs(16),
+    marginBottom: vs(5),
+    borderRadius: ms(10)
+  },
+
+  tripBannerTitle: {
+    color: colors.white,
+    fontSize: ms(20),
+    fontWeight: '700',
+  },
+
+  tripBannerSubtitle: {
+    color: colors.white,
+    fontSize: ms(13),
+    marginTop: vs(2),
+    opacity: 0.9,
+  },
+
+  tripBannerArrow: {
+    color: colors.white,
+    fontSize: ms(24),
+    fontWeight: '700',
   },
 });

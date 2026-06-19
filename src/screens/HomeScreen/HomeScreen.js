@@ -12,8 +12,10 @@ import StatusBar from '../../component/StatusBar/StatusBar';
 import FloatingMap from '../../component/FloatingMap/FloatingMap';
 import Button from '../../component/Button/Button';
 import {colors} from '../../theme/colors';
+import {IS_TABLET} from '../../utils/device';
 import AppText from '../../theme/AppText';
 import TruckIcon from '../../assets/svg_icon/Frame_black.svg';
+import Right_Arrow from '../../assets/svg_icon/right_Arrow.svg';
 import Strech_arrow_bottom from '../../assets/svg_icon/Strech_arrow_bottom.svg';
 
 const PRIMARY_GRADIENT = ['#00033E', '#0008A4'];
@@ -391,6 +393,24 @@ const HomeScreen = () => {
           </View>
         </View>
       </ScrollView>
+
+      {/* Trip in Progress banner — shows once a trip is started and the
+          floating map is closed; tapping it returns to the trip map. */}
+      {tripStarted && !mapVisible && (
+        <TouchableOpacity
+          style={styles.tripBanner}
+          activeOpacity={0.85}
+          onPress={() => setMapVisible(true)}>
+          <View>
+            <AppText style={styles.tripBannerTitle}>Trip in Progress</AppText>
+            <AppText style={styles.tripBannerSubtitle}>TAP to return</AppText>
+          </View>
+          <Right_Arrow
+            width={IS_TABLET ? 32 : 20}
+            height={IS_TABLET ? 32 : 20}
+          />
+        </TouchableOpacity>
+      )}
 
       {/* Draggable floating HERE map — movable anywhere on the screen */}
       <FloatingMap visible={mapVisible} onClose={() => setMapVisible(false)} />
