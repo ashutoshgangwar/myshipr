@@ -6,6 +6,7 @@ import {
   TouchableOpacity,
   StyleSheet,
 } from 'react-native';
+import {useNavigation} from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import styles from './HomeScreen.styles';
 import StatusBar from '../../component/StatusBar/StatusBar';
@@ -132,12 +133,13 @@ const UPCOMING_LOADS = [
 ];
 
 const HomeScreen = () => {
+  const navigation = useNavigation();
   const [mapVisible, setMapVisible] = useState(false);
   const [tripStarted, setTripStarted] = useState(false);
 
   const openMap_Here = () => {
     setTripStarted(true);
-    setMapVisible(true);
+    navigation.navigate('ActiveTripScreen');
   };
 
   return (
@@ -404,7 +406,7 @@ const HomeScreen = () => {
         <TouchableOpacity
           style={styles.tripBanner}
           activeOpacity={0.85}
-          onPress={() => setMapVisible(true)}>
+          onPress={() => navigation.navigate('ActiveTripScreen')}>
           <View style={styles.tripBannerTextWrap}>
             <AppText style={styles.tripBannerTitle}>Trip in Progress</AppText>
             <AppText style={styles.tripBannerSubtitle}>TAP to return</AppText>

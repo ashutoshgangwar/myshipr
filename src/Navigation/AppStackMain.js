@@ -14,6 +14,7 @@ import Signup from '../screens/Signup/Signup';
 import SignatureCaptureScreen from '../screens/SignatureCaptureScreen/SignatureCaptureScreen';
 import HereMapScreen from '../screens/HereMapScreen/HereMapScreen';
 import HereSearchScreen from '../screens/HereMapScreen/HereSearchScreen';
+import ActiveTripScreen from '../screens/ActiveTripScreen/ActiveTripScreen';
 import PreviewSplaceScreen from '../screens/splaceScreen/PreviewSplaceScreen/PreviewSplaceScreen';
 import LoginSplashScreen from '../screens/splaceScreen/LoginSplaceScreen/LoginSplaceScreen';
 import FavoriteDestination from '../screens/FavoriteDestination/FavoriteDestination';
@@ -49,6 +50,7 @@ export default function AppStackMain() {
       <Stack.Screen name="PTVNavigatorMap" component={NavigationScreen} />
       <Stack.Screen name="HereSearchScreen" component={HereSearchScreen} />
       <Stack.Screen name="HereMapScreen" component={HereMapScreen} />
+      <Stack.Screen name="ActiveTripScreen" component={ActiveTripScreen} />
       <Stack.Screen name="NavigationScreen" component={NavigationScreen} />
       <Stack.Screen name="DeliveryConfirmation" component={DeliveryConfirmation} />
       <Stack.Screen name="AvailableLoadsScreen" component={AvailableLoadsScreen} />
