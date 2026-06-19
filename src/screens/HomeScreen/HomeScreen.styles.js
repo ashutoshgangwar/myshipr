@@ -20,6 +20,12 @@ export default StyleSheet.create({
     paddingBottom: vs(28),
   },
 
+  // Extra bottom space so the last content clears the absolutely-positioned
+  // Trip-in-Progress banner instead of hiding underneath it.
+  scrollContentWithBanner: {
+    paddingBottom: vs(90),
+  },
+
   /* ---------- Header ---------- */
   header: {
     backgroundColor: colors.primary,
@@ -582,25 +588,29 @@ export default StyleSheet.create({
     paddingHorizontal: ms(24),
     paddingVertical:IS_TABLET ?  vs(6) : vs(16),
     marginBottom: vs(5),
-    borderRadius: ms(10)
+    borderRadius: ms(10),
+  },
+
+  tripBannerTextWrap: {
+    flex: 1,
+    alignItems: 'flex-start',
+    justifyContent: 'center',
   },
 
   tripBannerTitle: {
     color: colors.white,
     fontSize: ms(20),
-    fontWeight: '700',
+    fontWeight: '600',
+    textAlign: 'left',
+    alignSelf: 'flex-start',
   },
-
   tripBannerSubtitle: {
     color: colors.white,
-    fontSize: ms(13),
+    fontSize: ms(10),
     marginTop: vs(2),
+    fontWeight: '500',
     opacity: 0.9,
-  },
-
-  tripBannerArrow: {
-    color: colors.white,
-    fontSize: ms(24),
-    fontWeight: '700',
+    textAlign: 'left',
+    alignSelf: 'flex-start',
   },
 });

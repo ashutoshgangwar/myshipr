@@ -149,8 +149,14 @@ const HomeScreen = () => {
       />
 
       <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}>
+        contentContainerStyle={[
+          styles.scrollContent,
+          tripStarted && !mapVisible && styles.scrollContentWithBanner,
+        ]}
+        showsVerticalScrollIndicator={false}
+        bounces={false}
+        alwaysBounceVertical={false}
+        overScrollMode="never">
         {/* HEADER */}
         <View style={styles.header}>
           <View style={styles.headerTopRow}>
@@ -394,14 +400,12 @@ const HomeScreen = () => {
         </View>
       </ScrollView>
 
-      {/* Trip in Progress banner — shows once a trip is started and the
-          floating map is closed; tapping it returns to the trip map. */}
       {tripStarted && !mapVisible && (
         <TouchableOpacity
           style={styles.tripBanner}
           activeOpacity={0.85}
           onPress={() => setMapVisible(true)}>
-          <View>
+          <View style={styles.tripBannerTextWrap}>
             <AppText style={styles.tripBannerTitle}>Trip in Progress</AppText>
             <AppText style={styles.tripBannerSubtitle}>TAP to return</AppText>
           </View>
