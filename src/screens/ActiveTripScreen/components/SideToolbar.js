@@ -12,7 +12,6 @@ import BiddingIcon from '../../../assets/svg_icon/Bidding_Icon.svg';
 import NavIcon from '../../../assets/svg_icon/Nav_Icon.svg';
 import DockIcon from '../../../assets/svg_icon/fuel-price-icon.svg';
 
-// Buttons revealed when the toolbar is expanded.
 const PANEL_BUTTONS = [
   {id: 'chat', Icon: ChatIcon},
   {id: 'documents', Icon: ScanIcon},
@@ -22,7 +21,6 @@ const PANEL_BUTTONS = [
 ];
 
 export default function SideToolbar({panel, onSelect}) {
-  // The toolbar opens/closes via the static collapse button.
   const [expanded, setExpanded] = useState(true);
 
   const size = ms(20);
@@ -30,7 +28,6 @@ export default function SideToolbar({panel, onSelect}) {
   const toggleExpanded = () => {
     setExpanded(prev => {
       const next = !prev;
-      // Closing the toolbar also dismisses any open centre panel.
       if (!next) {
         onSelect('collapse');
       }
@@ -40,7 +37,6 @@ export default function SideToolbar({panel, onSelect}) {
 
   return (
     <View style={styles.toolbar}>
-      {/* Static collapse toggle – flips between up (open) and down (closed). */}
       <TouchableOpacity
         style={[styles.toolBtn, styles.collapseBtn]}
         onPress={toggleExpanded}
