@@ -246,7 +246,7 @@ export default StyleSheet.create({
     backgroundColor: '#000',
     alignItems: 'center',
     justifyContent: 'flex-end',
-    paddingBottom: vs(14),
+    paddingBottom: vs(12),
   },
   captureBtn: {
     width: ms(46),
@@ -256,7 +256,21 @@ export default StyleSheet.create({
     borderWidth: ms(3),
     borderColor: 'rgba(255,255,255,0.6)',
   },
+  // Clips the native Android camera TextureView to the preview box so it
+  // doesn't render full-screen behind the panel. Anchored to the right half
+  // of the preview so the live feed shows on the right side.
+  cameraFeed: {
+    position: 'absolute',
+    top: 0,
+    bottom: 0,
+    right: 0,
+    width: '50%',
+    overflow: 'hidden',
+  },
   captureLabel: {color: colors.onDarkMedium, fontSize: ms(9), marginTop: vs(6)},
+  documentPreviewImage: {
+    ...StyleSheet.absoluteFillObject,
+  },
 
   // ── Bidding panel ─────────────────────────────────────────────────────
   biddingBody: {
