@@ -28,14 +28,14 @@ export default function SideToolbar({panel, onSelect}) {
     <View style={styles.toolbar}>
       {BUTTONS.map(({id, Icon}) => {
         const active = panel === id;
-        const tint = active ? colors.white : colors.navy;
+        const tint = active ? colors.white : colors.text_dark;
         return (
           <TouchableOpacity
             key={id}
             style={[styles.toolBtn, active && styles.toolBtnActive]}
             onPress={() => onSelect(id)}
             activeOpacity={0.8}>
-            <Icon width={size} height={size} color={tint} fill={tint} />
+            <Icon width={size} height={size} color={tint} />
           </TouchableOpacity>
         );
       })}
