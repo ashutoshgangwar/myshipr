@@ -107,7 +107,7 @@ export default StyleSheet.create({
     borderRadius: ms(10),
     alignItems: 'center',
   },
-  dutyMenuItemActive: {backgroundColor: '#EAF1FE'},
+  dutyMenuItemActive: {backgroundColor: colors.white},
   dutyMenuText: {
     color: colors.textMuted,
     fontSize: ms(13),
@@ -187,8 +187,8 @@ export default StyleSheet.create({
   },
   panelHeader: {
     backgroundColor: colors.navy,
-    paddingVertical: vs(10),
-    paddingHorizontal: s(12),
+    paddingVertical: vs(8),
+    paddingHorizontal: s(10),
     flexDirection: 'row',
     alignItems: 'center',
   },

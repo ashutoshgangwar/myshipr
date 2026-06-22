@@ -28,6 +28,7 @@ export default function ChatPanel({onClose, messages = DEFAULT_MESSAGES, onSend}
     <PanelShell
       title="Dispatcher · Alex R."
       subtitle="Online"
+      subtitleStyle={{color: colors.status}}
       onClose={onClose}
       wrapStyle={styles.chatPanelWrap}>
       <ScrollView style={styles.chatBody} keyboardShouldPersistTaps="handled">

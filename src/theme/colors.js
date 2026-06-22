@@ -29,6 +29,7 @@ export const colors = {
 
   // Semantic accents used across dashboard cards
   success: '#16A34A',
+  status: '#94A2B3',
    warning_text: '#DAA509' ,
   successLight: '#E4FBF3',
   accentBlue: '#2563EB',

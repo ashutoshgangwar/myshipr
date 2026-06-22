@@ -4,11 +4,6 @@ import AppText from '../../../theme/AppText';
 import styles from '../ActiveTripScreen.styles';
 import PanelShell from './PanelShell';
 
-/**
- * Trip documents panel with a camera preview placeholder.
- * The black box stands in for a live camera view – wire up the real
- * capture flow (react-native-image-picker / vision-camera) later.
- */
 export default function DocumentsPanel({
   onClose,
   onExpand,
