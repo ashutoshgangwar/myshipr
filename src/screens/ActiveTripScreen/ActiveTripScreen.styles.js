@@ -57,27 +57,78 @@ export default StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors.accentBlue,
     borderRadius: ms(8),
-    paddingVertical: vs(9),
-    paddingHorizontal: s(22),
+    paddingVertical: vs(6),
+    paddingHorizontal: s(15),
   },
   dutyText: {
     color: colors.white,
     fontSize: ms(13),
     fontWeight: '600',
     letterSpacing: 0.5,
-    marginRight: s(8),
+    marginRight: s(6),
+    marginLeft: s(5)
   },
   dutyChevron: {color: colors.white, fontSize: ms(11)},
+
+  // ── Duty-status dropdown ──────────────────────────────────────────────
+  dutyWrap: {alignItems: 'center'},
+  dutyBackdrop: {
+    position: 'absolute',
+    top: -vs(1000),
+    bottom: -vs(1000),
+    left: -s(1000),
+    right: -s(1000),
+    zIndex: 55,
+  },
+  dutyMenu: {
+    position: 'absolute',
+    top: vs(46),
+    left: '50%',
+    width: IS_TABLET ? ms(210) : ms(200),
+    marginLeft: -ms(115),
+    backgroundColor: colors.white,
+    borderRadius: ms(14),
+    paddingVertical: vs(6),
+    zIndex: 60,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOpacity: 0.18,
+        shadowRadius: 12,
+        shadowOffset: {width: 0, height: 6},
+      },
+      android: {elevation: 10},
+    }),
+  },
+  dutyMenuItem: {
+    paddingVertical: vs(5),
+    paddingHorizontal: s(10),
+    marginHorizontal: s(8),
+    borderRadius: ms(10),
+    alignItems: 'center',
+  },
+  dutyMenuItemActive: {backgroundColor: '#EAF1FE'},
+  dutyMenuText: {
+    color: colors.textMuted,
+    fontSize: ms(13),
+    fontWeight: '600',
+    letterSpacing: 0.3,
+  },
+  dutyMenuTextActive: {color: colors.text_dark},
 
   sosBtn: {
     backgroundColor: colors.danger,
     borderRadius: ms(8),
-    paddingVertical: vs(9),
-    paddingHorizontal: s(16),
+    paddingVertical: vs(6),
+    paddingHorizontal: s(10),
     alignItems: 'center',
     justifyContent: 'center',
   },
-  sosText: {color: colors.white, fontSize: ms(13), fontWeight: '700', letterSpacing: 0.5},
+  sosText: {color: colors.white, 
+    fontSize: ms(13), 
+    fontWeight: '600', 
+    letterSpacing: 0.5
+  },
 
   // ── Side toolbar ──────────────────────────────────────────────────────
   toolbar: {

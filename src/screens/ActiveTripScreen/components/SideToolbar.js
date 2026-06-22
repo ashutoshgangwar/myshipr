@@ -5,12 +5,12 @@ import styles from '../ActiveTripScreen.styles';
 import {colors} from '../../../theme/colors';
 
 // Placeholder SVG icons – user will replace each with the correct asset later.
-import CollapseIcon from '../../../assets/svg_icon/Strech_arrow_bottom.svg';
-import ChatIcon from '../../../assets/svg_icon/Manual_icon.svg';
-import ScanIcon from '../../../assets/svg_icon/Frame.svg';
-import BiddingIcon from '../../../assets/svg_icon/Bidding.svg';
-import NavIcon from '../../../assets/svg_icon/navigation.svg';
-import DockIcon from '../../../assets/svg_icon/dock.svg';
+import CollapseIcon from '../../../assets/svg_icon/Arrow_Up_Icon.svg';
+import ChatIcon from '../../../assets/svg_icon/Chat_Icon.svg';
+import ScanIcon from '../../../assets/svg_icon/Scan_Iocn.svg';
+import BiddingIcon from '../../../assets/svg_icon/Bidding_Icon.svg';
+import NavIcon from '../../../assets/svg_icon/Nav_Icon.svg';
+import DockIcon from '../../../assets/svg_icon/fuel-price-icon.svg';
 
 /**
  * Vertical toolbar on the left edge of the map.
