@@ -7,9 +7,9 @@ import styles from '../ActiveTripScreen.styles';
  * Floating card shell with a navy header (title + optional subtitle),
  * an optional expand icon and a close (×) button. Children render the body.
  */
-export default function PanelShell({title, subtitle, onExpand, onClose, children}) {
+export default function PanelShell({title, subtitle, onExpand, onClose, children, wrapStyle}) {
   return (
-    <View style={styles.panelWrap}>
+    <View style={[styles.panelWrap, wrapStyle]}>
       <View style={styles.panel}>
         <View style={styles.panelHeader}>
           <View style={styles.panelHeaderTexts}>

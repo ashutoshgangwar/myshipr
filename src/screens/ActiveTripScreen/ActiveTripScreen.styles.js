@@ -165,6 +165,12 @@ export default StyleSheet.create({
     width: PANEL_WIDTH,
     zIndex: 45,
   },
+  // Chat panel sits against the right edge instead of the centre.
+  chatPanelWrap: {
+    alignSelf: 'flex-end',
+    top: IS_TABLET?  vs(230) : Platform.OS === 'ios' ? vs(240) : vs(260),
+    right: s(1),
+  },
   panel: {
     borderRadius: ms(12),
     backgroundColor: colors.white,

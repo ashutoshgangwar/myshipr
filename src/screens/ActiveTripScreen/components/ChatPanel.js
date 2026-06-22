@@ -25,7 +25,11 @@ export default function ChatPanel({onClose, messages = DEFAULT_MESSAGES, onSend}
   };
 
   return (
-    <PanelShell title="Dispatcher · Alex R." subtitle="Online" onClose={onClose}>
+    <PanelShell
+      title="Dispatcher · Alex R."
+      subtitle="Online"
+      onClose={onClose}
+      wrapStyle={styles.chatPanelWrap}>
       <ScrollView style={styles.chatBody} keyboardShouldPersistTaps="handled">
         {messages.map(m => {
           const out = m.from === 'out';
