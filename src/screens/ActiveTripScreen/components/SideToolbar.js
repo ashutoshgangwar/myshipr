@@ -12,10 +12,6 @@ import BiddingIcon from '../../../assets/svg_icon/Bidding_Icon.svg';
 import NavIcon from '../../../assets/svg_icon/Nav_Icon.svg';
 import DockIcon from '../../../assets/svg_icon/fuel-price-icon.svg';
 
-/**
- * Vertical toolbar on the left edge of the map.
- * `panel` is the currently open panel id; tapping a button toggles it.
- */
 export default function SideToolbar({panel, onSelect}) {
   const BUTTONS = [
     {id: 'collapse', Icon: CollapseIcon},

@@ -1,5 +1,9 @@
 import {Platform, StyleSheet} from 'react-native';
-import {moderateScale as ms, verticalScale as vs, scale as s} from 'react-native-size-matters';
+import {
+  moderateScale as ms,
+  verticalScale as vs,
+  scale as s,
+} from 'react-native-size-matters';
 import {colors} from '../../theme/colors';
 import {IS_TABLET} from '../../utils/device';
 
@@ -29,7 +33,7 @@ export default StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: s(14),
-    paddingTop: IS_TABLET?  vs(20) : vs(40),
+    paddingTop: IS_TABLET ? vs(20) : vs(40),
     zIndex: 50,
   },
   circleBtn: {
@@ -66,7 +70,7 @@ export default StyleSheet.create({
     fontWeight: '600',
     letterSpacing: 0.5,
     marginRight: s(6),
-    marginLeft: s(5)
+    marginLeft: s(5),
   },
   dutyChevron: {color: colors.white, fontSize: ms(11)},
 
@@ -124,17 +128,18 @@ export default StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  sosText: {color: colors.white, 
-    fontSize: ms(13), 
-    fontWeight: '600', 
-    letterSpacing: 0.5
+  sosText: {
+    color: colors.white,
+    fontSize: ms(13),
+    fontWeight: '600',
+    letterSpacing: 0.5,
   },
 
   // ── Side toolbar ──────────────────────────────────────────────────────
   toolbar: {
     position: 'absolute',
     left: s(14),
-    top: IS_TABLET? vs(240) : Platform.OS ==='ios'? vs(240) : vs(260),
+    top: IS_TABLET ? vs(240) : Platform.OS === 'ios' ? vs(240) : vs(260),
     zIndex: 40,
   },
   toolBtn: {
@@ -168,7 +173,7 @@ export default StyleSheet.create({
   // Chat panel sits against the right edge instead of the centre.
   chatPanelWrap: {
     alignSelf: 'flex-end',
-    top: IS_TABLET?  vs(230) : Platform.OS === 'ios' ? vs(240) : vs(260),
+    top: IS_TABLET ? vs(230) : Platform.OS === 'ios' ? vs(240) : vs(260),
     right: s(1),
   },
   panel: {
@@ -194,12 +199,20 @@ export default StyleSheet.create({
   },
   panelHeaderTexts: {flex: 1},
   panelTitle: {color: colors.white, fontSize: ms(14), fontWeight: '700'},
-  panelSubtitle: {color: colors.onDarkMedium, fontSize: ms(10), marginTop: vs(1)},
+  panelSubtitle: {
+    color: colors.onDarkMedium,
+    fontSize: ms(10),
+    marginTop: vs(1),
+  },
   panelHeaderIcon: {paddingHorizontal: s(6)},
   panelHeaderIconGlyph: {color: colors.white, fontSize: ms(16)},
 
   // ── Chat panel ────────────────────────────────────────────────────────
-  chatBody: {maxHeight: vs(240), paddingVertical: vs(10), paddingHorizontal: s(10)},
+  chatBody: {
+    maxHeight: vs(240),
+    paddingVertical: vs(10),
+    paddingHorizontal: s(10),
+  },
   bubble: {
     maxWidth: '82%',
     borderRadius: ms(10),
@@ -207,8 +220,16 @@ export default StyleSheet.create({
     paddingHorizontal: s(10),
     marginBottom: vs(8),
   },
-  bubbleIn: {backgroundColor: '#EEF1F5', alignSelf: 'flex-start', borderTopLeftRadius: ms(2)},
-  bubbleOut: {backgroundColor: colors.accentBlue, alignSelf: 'flex-end', borderTopRightRadius: ms(2)},
+  bubbleIn: {
+    backgroundColor: '#EEF1F5',
+    alignSelf: 'flex-start',
+    borderTopLeftRadius: ms(2),
+  },
+  bubbleOut: {
+    backgroundColor: colors.accentBlue,
+    alignSelf: 'flex-end',
+    borderTopRightRadius: ms(2),
+  },
   bubbleTextIn: {color: colors.text_dark, fontSize: ms(11), lineHeight: ms(15)},
   bubbleTextOut: {color: colors.white, fontSize: ms(11), lineHeight: ms(15)},
 
@@ -279,6 +300,66 @@ export default StyleSheet.create({
   },
   biddingText: {color: colors.text_dark, fontSize: ms(14), fontWeight: '600'},
 
+  // ── Hours of Service panel (stepper) ──────────────────────────────────
+  hosBodyContent: {
+    paddingTop: vs(12),
+    paddingBottom: vs(4),
+    paddingHorizontal: s(14),
+  },
+  hosStep: {flexDirection: 'row'},
+  hosBulletCol: {alignItems: 'center', width: ms(20)},
+  hosBullet: {
+    width: ms(20),
+    height: ms(20),
+    borderRadius: ms(10),
+    borderWidth: ms(2),
+    borderColor: colors.border_Color,
+    backgroundColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  hosBulletDone: {
+    borderColor: colors.accentBlue,
+    backgroundColor: colors.accentBlue,
+  },
+  hosBulletCheck: {color: colors.white, fontSize: ms(11), fontWeight: '700'},
+  hosConnector: {
+    flex: 1,
+    width: ms(2),
+    minHeight: vs(15),
+    backgroundColor: colors.border_Color,
+    marginVertical: vs(2),
+  },
+  hosStepTexts: {flex: 1, paddingLeft: s(10), paddingBottom: vs(10)},
+  hosStepTitle: {color: colors.text_dark, fontSize: ms(13), fontWeight: '700'},
+  hosStepTitleDone: {color: colors.accentBlue},
+  hosStepDetail: {color: colors.textMuted, fontSize: ms(11), marginTop: vs(2)},
+  hosFooter: {
+    borderTopWidth: 1,
+    borderTopColor: colors.border_Color,
+    paddingHorizontal: s(14),
+    paddingVertical: vs(10),
+  },
+  hosFooterRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: vs(6),
+  },
+  hosFooterText: {color: colors.textMuted, fontSize: ms(11)},
+  hosFooterPct: {color: colors.success, fontSize: ms(12), fontWeight: '700'},
+  hosProgressTrack: {
+    height: vs(4),
+    borderRadius: ms(2),
+    backgroundColor: colors.border_Color,
+    overflow: 'hidden',
+  },
+  hosProgressFill: {
+    height: '100%',
+    borderRadius: ms(2),
+    backgroundColor: colors.success,
+  },
+
   // ── Bottom trip progress ──────────────────────────────────────────────
   bottomBar: {
     position: 'absolute',
@@ -311,7 +392,11 @@ export default StyleSheet.create({
     marginBottom: vs(8),
   },
   progressLabel: {color: colors.text_dark, fontSize: ms(13), fontWeight: '600'},
-  progressPercent: {color: colors.text_dark, fontSize: ms(13), fontWeight: '700'},
+  progressPercent: {
+    color: colors.text_dark,
+    fontSize: ms(13),
+    fontWeight: '700',
+  },
 
   track: {
     height: vs(6),
@@ -319,7 +404,11 @@ export default StyleSheet.create({
     backgroundColor: colors.border_Color,
     overflow: 'hidden',
   },
-  trackFill: {height: '100%', borderRadius: ms(3), backgroundColor: colors.accentBlue},
+  trackFill: {
+    height: '100%',
+    borderRadius: ms(3),
+    backgroundColor: colors.accentBlue,
+  },
 
   scaleRow: {
     flexDirection: 'row',
@@ -347,5 +436,9 @@ export default StyleSheet.create({
     borderColor: colors.button_color,
     marginRight: s(8),
   },
-  endTripText: {color: colors.button_color, fontSize: ms(13), fontWeight: '700'},
+  endTripText: {
+    color: colors.button_color,
+    fontSize: ms(13),
+    fontWeight: '700',
+  },
 });

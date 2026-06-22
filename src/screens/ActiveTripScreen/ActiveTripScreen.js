@@ -17,13 +17,14 @@ import SideToolbar from './components/SideToolbar';
 import ChatPanel from './components/ChatPanel';
 import DocumentsPanel from './components/DocumentsPanel';
 import BiddingPanel from './components/BiddingPanel';
+import HoursOfServicePanel from './components/HoursOfServicePanel';
 import TripProgressBar from './components/TripProgressBar';
 
 // San Francisco fallback (matches the design mock-up region).
 const DEFAULT_CENTER = {lat: 37.7599, lng: -122.4469};
 
 // Toolbar ids that open a centre panel.
-const PANEL_IDS = ['chat', 'documents', 'bidding'];
+const PANEL_IDS = ['chat', 'documents', 'bidding', 'navigate'];
 
 export default function ActiveTripScreen({navigation}) {
   const mapRef = useRef(null);
@@ -122,6 +123,7 @@ export default function ActiveTripScreen({navigation}) {
       {activePanel === 'chat' && <ChatPanel onClose={closePanel} />}
       {activePanel === 'documents' && <DocumentsPanel onClose={closePanel} />}
       {activePanel === 'bidding' && <BiddingPanel onClose={closePanel} />}
+      {activePanel === 'navigate' && <HoursOfServicePanel onClose={closePanel} />}
 
       {/* ── Bottom trip progress ── */}
       <TripProgressBar
