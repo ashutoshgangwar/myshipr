@@ -1,4 +1,4 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {View, TouchableOpacity} from 'react-native';
 import {moderateScale as ms} from 'react-native-size-matters';
 import styles from '../ActiveTripScreen.styles';
@@ -12,33 +12,61 @@ import BiddingIcon from '../../../assets/svg_icon/Bidding_Icon.svg';
 import NavIcon from '../../../assets/svg_icon/Nav_Icon.svg';
 import DockIcon from '../../../assets/svg_icon/fuel-price-icon.svg';
 
+// Buttons revealed when the toolbar is expanded.
+const PANEL_BUTTONS = [
+  {id: 'chat', Icon: ChatIcon},
+  {id: 'documents', Icon: ScanIcon},
+  {id: 'bidding', Icon: BiddingIcon},
+  {id: 'navigate', Icon: NavIcon},
+  {id: 'dock', Icon: DockIcon},
+];
+
 export default function SideToolbar({panel, onSelect}) {
-  const BUTTONS = [
-    {id: 'collapse', Icon: CollapseIcon},
-    {id: 'chat', Icon: ChatIcon},
-    {id: 'documents', Icon: ScanIcon},
-    {id: 'bidding', Icon: BiddingIcon},
-    {id: 'navigate', Icon: NavIcon},
-    {id: 'dock', Icon: DockIcon},
-  ];
+  // The toolbar opens/closes via the static collapse button.
+  const [expanded, setExpanded] = useState(true);
 
   const size = ms(20);
 
+  const toggleExpanded = () => {
+    setExpanded(prev => {
+      const next = !prev;
+      // Closing the toolbar also dismisses any open centre panel.
+      if (!next) {
+        onSelect('collapse');
+      }
+      return next;
+    });
+  };
+
   return (
     <View style={styles.toolbar}>
-      {BUTTONS.map(({id, Icon}) => {
-        const active = panel === id;
-        const tint = active ? colors.white : colors.text_dark;
-        return (
-          <TouchableOpacity
-            key={id}
-            style={[styles.toolBtn, active && styles.toolBtnActive]}
-            onPress={() => onSelect(id)}
-            activeOpacity={0.8}>
-            <Icon width={size} height={size} color={tint} />
-          </TouchableOpacity>
-        );
-      })}
+      {/* Static collapse toggle – flips between up (open) and down (closed). */}
+      <TouchableOpacity
+        style={[styles.toolBtn, styles.collapseBtn]}
+        onPress={toggleExpanded}
+        activeOpacity={0.8}>
+        <CollapseIcon
+          width={size}
+          height={size}
+          color={colors.white}
+          style={{transform: [{rotate: expanded ? '0deg' : '180deg'}]}}
+        />
+      </TouchableOpacity>
+
+      {expanded &&
+        PANEL_BUTTONS.map(({id, Icon}) => {
+          const active = panel === id;
+          const tint = active ? colors.white : colors.text_dark;
+          return (
+            <TouchableOpacity
+              key={id}
+              style={[styles.toolBtn, active && styles.toolBtnActive]}
+              onPress={() => onSelect(id)}
+              activeOpacity={0.8}>
+              <Icon width={size} height={size} color={tint} />
+            </TouchableOpacity>
+          );
+        })}
     </View>
   );
 }

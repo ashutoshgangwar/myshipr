@@ -161,6 +161,8 @@ export default StyleSheet.create({
     }),
   },
   toolBtnActive: {backgroundColor: colors.accentBlue},
+  // Collapse toggle keeps a fixed grey background regardless of state.
+  collapseBtn: {backgroundColor: colors.primaryLight},
 
   // ── Floating panel (shared shell) ─────────────────────────────────────
   panelWrap: {
