@@ -302,8 +302,8 @@ export default StyleSheet.create({
 
   // ── Hours of Service panel (stepper) ──────────────────────────────────
   hosBodyContent: {
-    paddingTop: vs(12),
-    paddingBottom: vs(4),
+    paddingTop: Platform.OS === 'android' ? vs(8) : vs(12),
+    paddingBottom: Platform.OS === 'android' ? 0 : vs(4),
     paddingHorizontal: s(14),
   },
   hosStep: {flexDirection: 'row'},
@@ -326,11 +326,15 @@ export default StyleSheet.create({
   hosConnector: {
     flex: 1,
     width: ms(2),
-    minHeight: vs(15),
+    minHeight: Platform.OS === 'android' ? vs(10) : vs(22),
     backgroundColor: colors.border_Color,
     marginVertical: vs(2),
   },
-  hosStepTexts: {flex: 1, paddingLeft: s(10), paddingBottom: vs(10)},
+  hosStepTexts: {
+    flex: 1,
+    paddingLeft: s(10),
+    paddingBottom: Platform.OS === 'android' ? vs(6) : vs(10),
+  },
   hosStepTitle: {color: colors.text_dark, fontSize: ms(13), fontWeight: '700'},
   hosStepTitleDone: {color: colors.accentBlue},
   hosStepDetail: {color: colors.textMuted, fontSize: ms(11), marginTop: vs(2)},
