@@ -242,7 +242,7 @@ export default StyleSheet.create({
 
   // ── Documents / camera panel ──────────────────────────────────────────
   cameraPreview: {
-    height: vs(190),
+    height: vs(300),
     backgroundColor: '#000',
     alignItems: 'center',
     justifyContent: 'flex-end',
@@ -257,14 +257,13 @@ export default StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.6)',
   },
   // Clips the native Android camera TextureView to the preview box so it
-  // doesn't render full-screen behind the panel. Anchored to the right half
-  // of the preview so the live feed shows on the right side.
+  // doesn't render full-screen behind the panel. Fills the whole preview area.
   cameraFeed: {
     position: 'absolute',
     top: 0,
     bottom: 0,
+    left: 0,
     right: 0,
-    width: '50%',
     overflow: 'hidden',
   },
   captureLabel: {color: colors.onDarkMedium, fontSize: ms(9), marginTop: vs(6)},

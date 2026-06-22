@@ -5,6 +5,7 @@ import AppText from '../../../theme/AppText';
 import styles from '../ActiveTripScreen.styles';
 import PanelShell from './PanelShell';
 import {requestCameraPermission} from '../../../services/PermissionService';
+import { colors } from '../../../theme/colors';
 
 export default function DocumentsPanel({
   onClose,
@@ -94,6 +95,7 @@ export default function DocumentsPanel({
     <PanelShell
       title="Trip Documents"
       subtitle={`Load ${loadId} · ${route}`}
+      subtitleStyle={{colors: colors.status}}
       onExpand={onExpand}
       onClose={onClose}
       wrapStyle={styles.chatPanelWrap}>
