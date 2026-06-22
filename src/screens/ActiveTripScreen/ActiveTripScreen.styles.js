@@ -85,7 +85,7 @@ export default StyleSheet.create({
     top: vs(46),
     left: '50%',
     width: IS_TABLET ? ms(210) : ms(200),
-    marginLeft: -ms(115),
+    marginLeft: IS_TABLET ? -ms(105) : -ms(100),
     backgroundColor: colors.white,
     borderRadius: ms(14),
     paddingVertical: vs(6),
@@ -134,7 +134,7 @@ export default StyleSheet.create({
   toolbar: {
     position: 'absolute',
     left: s(14),
-    top: vs(140),
+    top: IS_TABLET? vs(240) : Platform.OS ==='ios'? vs(240) : vs(260),
     zIndex: 40,
   },
   toolBtn: {
