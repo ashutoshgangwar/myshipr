@@ -47,8 +47,7 @@ export default StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-
-  brandText: {
+ brandText: {
     color: colors.white,
     fontSize: ms(20),
     fontWeight: '600',
