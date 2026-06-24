@@ -19,6 +19,7 @@ import PreviewSplaceScreen from '../screens/splaceScreen/PreviewSplaceScreen/Pre
 import LoginSplashScreen from '../screens/splaceScreen/LoginSplaceScreen/LoginSplaceScreen';
 import FavoriteDestination from '../screens/FavoriteDestination/FavoriteDestination';
 import RadarMapScreen from '../screens/RadarMapScreen/RadarMapScreen';
+import RadarSetupScreen from '../screens/RadarMapScreen/RadarSetupScreen';
 
 
 const Stack = createNativeStackNavigator();
@@ -45,6 +46,7 @@ export default function AppStackMain() {
       <Stack.Screen name="MainApp" component={AppBottomTabs} />
 
       <Stack.Screen name="FavoriteDestination" component={FavoriteDestination} />
+      <Stack.Screen name="RadarSetupScreen" component={RadarSetupScreen} />
       <Stack.Screen name="RadarMapScreen" component={RadarMapScreen} />
 
       {/* Extra flows (no bottom tab) */}

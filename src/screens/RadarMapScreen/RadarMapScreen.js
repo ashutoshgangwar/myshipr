@@ -21,18 +21,20 @@ import {
 } from '../../services/LocationService';
 
 import {
-  decodePolyline,
   haversineMeters,
-  extractSteps,
   bearing,
   smoothAngle,
   snapToRoute,
+  formatDistance,
+  formatDuration,
   ADVANCE_THRESHOLD_M,
   ARRIVE_THRESHOLD_M,
   OFF_ROUTE_THRESHOLD_M,
   OFF_ROUTE_FIXES,
   REROUTE_COOLDOWN_MS,
 } from './helpers/radarNav';
+import {calculateRouteTolls} from '../HereMapScreen/services/hereTruckService';
+import {decodeFlexiblePolyline} from '../HereMapScreen/utils/polylineDecoder';
 import SearchPanel from './components/SearchPanel';
 import NavBanner from './components/NavBanner';
 import ArrivedBanner from './components/ArrivedBanner';
@@ -50,27 +52,88 @@ const RADAR_STYLE_URL = `https://api.radar.io/maps/styles/radar-default-v1?publi
 
 const DEFAULT_CENTER = [-122.4194, 37.7749]; // [longitude, latitude]
 
-export default function RadarMapScreen({navigation}) {
+// Format the HERE toll total ({total, currency}) into a short price label.
+function formatToll(toll) {
+  if (!toll || toll.total == null) return null;
+  const cur = toll.currency || 'USD';
+  const symbol =
+    cur === 'USD' ? '$' : cur === 'INR' ? '₹' : cur === 'EUR' ? '€' : `${cur} `;
+  return `${symbol}${Number(toll.total).toFixed(2)}`;
+}
+
+// Map a HERE routing v8 action ({action, direction}) onto the maneuver keys the
+// NavBanner arrow lookup (MANEUVER_ICON) understands.
+function hereManeuverKey(act) {
+  const a = act?.action;
+  const d = act?.direction || '';
+  if (a === 'depart') return 'start';
+  if (a === 'arrive') return 'destination';
+  if (a === 'uTurn') return 'uturn';
+  const side = /right/i.test(d) ? 'right' : /left/i.test(d) ? 'left' : null;
+  if (a === 'turn') {
+    if (/sharply/i.test(d)) return side === 'right' ? 'sharp-right' : 'sharp-left';
+    if (/slightly/i.test(d)) return side === 'right' ? 'slight-right' : 'slight-left';
+    return side === 'right' ? 'turn-right' : side === 'left' ? 'turn-left' : 'straight';
+  }
+  if (a === 'ramp' || a === 'exit' || a === 'enterHighway' || a === 'merge') {
+    return side === 'right' ? 'ramp-right' : side === 'left' ? 'ramp-left' : 'straight';
+  }
+  if (a === 'keep') {
+    return side === 'right' ? 'stay-right' : side === 'left' ? 'stay-left' : 'straight';
+  }
+  if (side) return side;
+  return 'straight';
+}
+
+function hereRoadName(act) {
+  const road = act?.nextRoad || act?.currentRoad;
+  return road?.name?.[0]?.value || null;
+}
+function buildHereSteps(actions, coords) {
+  if (!Array.isArray(actions) || !actions.length || !coords.length) return [];
+  return actions.map((act, i) => {
+    const offset = Math.min(act?.offset ?? 0, coords.length - 1);
+    const prev = actions[i - 1];
+    const prevOffset = i > 0 ? Math.min(prev?.offset ?? 0, coords.length - 1) : 0;
+    const distMeters = i > 0 ? prev?.length ?? 0 : 0; 
+    const durSeconds = i > 0 ? prev?.duration ?? 0 : 0;
+    return {
+      banner: act?.instruction,
+      voice: act?.instruction,
+      instructions: act?.instruction,
+      maneuver: hereManeuverKey(act),
+      streetName: hereRoadName(act),
+      distance: formatDistance(distMeters),
+      duration: formatDuration(durSeconds / 60),
+      distanceValue: distMeters,
+      durationValue: durSeconds / 60,
+      start: coords[prevOffset] || null,
+      end: coords[offset] || null,
+    };
+  });
+}
+
+export default function RadarMapScreen({navigation, route: navRoute}) {
   const cameraRef = useRef(null);
+  const truckDetailsRef = useRef(navRoute?.params?.truckDetails || {});
+  const [tollInfo, setTollInfo] = useState(null); 
   const [status, setStatus] = useState('Not started');
-  const [coords, setCoords] = useState(null); // {latitude, longitude}
+  const [coords, setCoords] = useState(null); 
   const [mapStatus, setMapStatus] = useState(
     KEY_OK ? 'Loading map…' : 'Missing/invalid Radar key — reset Metro cache',
   );
-  const [route, setRoute] = useState(null); // {coordinates, distance, duration, steps}
+  const [route, setRoute] = useState(null); 
   const [matching, setMatching] = useState(false);
 
   // Live (Google-Maps-style) navigation.
   const [navActive, setNavActive] = useState(false);
   const [navStepIndex, setNavStepIndex] = useState(0);
   const [navArrived, setNavArrived] = useState(false);
-  const [navInfo, setNavInfo] = useState(null); // {distanceToManeuver, remainingDistance, remainingDuration}
+  const [navInfo, setNavInfo] = useState(null); 
   const navWatchId = useRef(null);
-  const navStepRef = useRef(0); // current step index, read inside the watch callback
-  const navStepsRef = useRef([]); // steps array, read inside the watch callback
+  const navStepRef = useRef(0); 
+  const navStepsRef = useRef([]); 
 
-  // Polyline trimming: the remaining (not-yet-driven) part of the route, fed to
-  // RouteLayers so the line shrinks behind the user as they move.
   const [remainingCoords, setRemainingCoords] = useState(null);
   const navCoordsRef = useRef([]); // full route polyline, read inside the watch callback
   const dstCoordRef = useRef(null); // destination, read inside the watch callback for re-routing
@@ -100,9 +163,30 @@ export default function RadarMapScreen({navigation}) {
     Radar.initialize(RADAR_PUBLISHABLE_KEY);
     Radar.setUserId('user-123'); // any id for this user
     Radar.setMetadata({plan: 'free'});
-    // Fetch the current location via LocationService and prefill it as the
-    // source, so the route can be calculated from where the user is standing.
-    locateMe({prefillSource: true});
+
+    // When RadarSetupScreen handed us a truck setup + source/destination, use it
+    // directly (don't overwrite the provided source with the GPS fix) and match
+    // the route straight away. Otherwise prefill the source from GPS as before.
+    const p = navRoute?.params;
+    if (p?.truckDetails) {
+      truckDetailsRef.current = p.truckDetails;
+    }
+    if (p?.srcCoord) {
+      setSrcCoord(p.srcCoord);
+      setSrcQuery(p.srcCoord.label || '');
+    }
+    if (p?.dstCoord) {
+      setDstCoord(p.dstCoord);
+      setDstQuery(p.dstCoord.label || '');
+    }
+    // Still get the current location (for map centering + autocomplete bias),
+    // but only prefill the source field when the setup screen didn't supply one.
+    locateMe({prefillSource: !p?.srcCoord});
+
+    if (p?.srcCoord && p?.dstCoord) {
+      matchRoute(p.srcCoord, p.dstCoord);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   // Reverse-geocode a coordinate to a human-readable address (best effort).
@@ -221,47 +305,51 @@ export default function RadarMapScreen({navigation}) {
     setActiveField(null);
   }
 
-  // Call Radar's directions API between two {latitude, longitude} points and
-  // return the parsed route. Shared by the initial match and live re-routing.
+  // Build a truck route via the HERE routing API (tolls + summary + turn-by-turn
+  // actions), then reshape it into the {coordinates, distance, duration, steps}
+  // contract the rest of this screen already consumes. Coordinates are returned
+  // in GeoJSON [lng, lat] order to match the polyline/marker logic.
   async function fetchDirections(src, dst) {
-    // /route/directions actually routes between two points along roads, unlike
-    // /route/match (which only snaps a recorded GPS trace).
-    const locations =
-      `${src.latitude},${src.longitude}|${dst.latitude},${dst.longitude}`;
-    const url =
-      'https://api.radar.io/v1/route/directions' +
-      `?locations=${encodeURIComponent(locations)}` +
-      '&mode=car&units=imperial&geometry=polyline6';
-    const res = await fetch(url, {
-      headers: {Authorization: RADAR_PUBLISHABLE_KEY},
-    });
-    const data = await res.json();
-    if (!res.ok) {
-      throw new Error(data?.meta?.message || `HTTP ${res.status}`);
+    const toll = await calculateRouteTolls(
+      {latitude: src.latitude, longitude: src.longitude},
+      {latitude: dst.latitude, longitude: dst.longitude},
+      truckDetailsRef.current?.currency || 'USD',
+      truckDetailsRef.current || {},
+    );
+    if (!toll) {
+      throw new Error('No route found between those points');
     }
-    const r = data?.routes?.[0];
-    const coordinates = decodePolyline(r?.geometry?.polyline);
+
+    const decoded = decodeFlexiblePolyline(
+      String(toll.polyline || '').replace(/\s+/g, ''),
+    );
+    const coordinates = decoded.map(p => [p.lng, p.lat]); // [lng, lat]
     if (!coordinates.length) {
       throw new Error('No route found between those points');
     }
+
     return {
       coordinates,
-      distance: r?.distance?.text,
-      duration: r?.duration?.text,
-      steps: extractSteps(r),
+      distance: formatDistance(toll.distanceMeters),
+      duration: formatDuration((toll.travelTimeSeconds || 0) / 60),
+      steps: buildHereSteps(toll.actions, coordinates),
+      tolls: toll, // keep the raw toll breakdown for any toll-aware UI
     };
   }
 
-  async function matchRoute() {
-    if (!srcCoord || !dstCoord) {
+  async function matchRoute(srcOverride, dstOverride) {
+    const src = srcOverride || srcCoord;
+    const dst = dstOverride || dstCoord;
+    if (!src || !dst) {
       setMapStatus('Pick a source and destination first');
       return;
     }
     setMatching(true);
     setMapStatus('Finding route…');
     try {
-      const r = await fetchDirections(srcCoord, dstCoord);
+      const r = await fetchDirections(src, dst);
       setRoute(r);
+      setTollInfo(r.tolls || null);
       setMapStatus('Route found');
 
       // Fit the camera to the route polyline.
@@ -307,6 +395,7 @@ export default function RadarMapScreen({navigation}) {
       navCoordsRef.current = r.coordinates;
       setNavStepIndex(0);
       setRoute(r);
+      setTollInfo(r.tolls || null);
       setRemainingCoords(r.coordinates);
       offRouteCountRef.current = 0;
       setMapStatus('Navigating…');
@@ -551,18 +640,32 @@ export default function RadarMapScreen({navigation}) {
           <AppText style={styles.badgeText}>{mapStatus}</AppText>
         </View>
 
+        {formatToll(tollInfo) ? (
+          <View style={styles.tollBadge}>
+            <AppText style={styles.tollBadgeLabel}>Toll</AppText>
+            <AppText style={styles.tollBadgeValue}>{formatToll(tollInfo)}</AppText>
+          </View>
+        ) : null}
+
         <NavControls
           navActive={navActive}
           navInfo={navInfo}
           matching={matching}
           canMatch={!matching && !!srcCoord && !!dstCoord}
-          canStart={!!route?.steps?.length}
-          onMatch={matchRoute}
-          onStart={startNavigation}
+          showMatch={!route}
+          onMatch={() => matchRoute()}
           onExit={stopNavigation}
         />
 
-        {route && !navActive ? <RouteCard route={route} /> : null}
+        {route && !navActive ? (
+          <RouteCard
+            route={route}
+            toll={formatToll(tollInfo)}
+            canStart={!!route?.steps?.length}
+            onStart={startNavigation}
+            onRematch={() => matchRoute()}
+          />
+        ) : null}
       </View>
     </SafeAreaView>
   );
@@ -589,5 +692,32 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: moderateScale(13),
     fontWeight: '600',
+  },
+  tollBadge: {
+    position: 'absolute',
+    top: verticalScale(46),
+    alignSelf: 'center',
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    paddingHorizontal: moderateScale(12),
+    paddingVertical: verticalScale(5),
+    borderRadius: moderateScale(16),
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.2,
+    shadowRadius: 5,
+    elevation: 4,
+  },
+  tollBadgeLabel: {
+    color: '#888',
+    fontSize: moderateScale(11),
+    fontWeight: '600',
+    marginRight: moderateScale(6),
+  },
+  tollBadgeValue: {
+    color: colors.button_color,
+    fontSize: moderateScale(14),
+    fontWeight: '800',
   },
 });

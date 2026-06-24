@@ -7,16 +7,15 @@ import {colors} from '../../../theme/colors';
 import {formatDistance, formatDuration} from '../helpers/radarNav';
 
 // The floating action controls over the map. While navigating it shows the live
-// ETA card + Exit button; otherwise the Match Route button and (once a route is
-// available) the Start navigation button.
+// ETA card + Exit button; otherwise (until a route exists and the RouteCard
+// sheet takes over) the Match Route button.
 export default function NavControls({
   navActive,
   navInfo,
   matching,
   canMatch,
-  canStart,
+  showMatch,
   onMatch,
-  onStart,
   onExit,
 }) {
   if (navActive) {
@@ -42,27 +41,18 @@ export default function NavControls({
     );
   }
 
-  return (
-    <>
-      <TouchableOpacity
-        style={[styles.matchButton, !canMatch && styles.matchButtonDisabled]}
-        onPress={onMatch}
-        disabled={!canMatch}
-        activeOpacity={0.85}>
-        <AppText style={styles.matchButtonText}>
-          {matching ? 'Matching…' : 'Match Route'}
-        </AppText>
-      </TouchableOpacity>
+  if (!showMatch) return null;
 
-      {canStart ? (
-        <TouchableOpacity
-          style={styles.startNavButton}
-          onPress={onStart}
-          activeOpacity={0.85}>
-          <AppText style={styles.matchButtonText}>▶ Start</AppText>
-        </TouchableOpacity>
-      ) : null}
-    </>
+  return (
+    <TouchableOpacity
+      style={[styles.matchButton, !canMatch && styles.matchButtonDisabled]}
+      onPress={onMatch}
+      disabled={!canMatch}
+      activeOpacity={0.85}>
+      <AppText style={styles.matchButtonText}>
+        {matching ? 'Matching…' : 'Match Route'}
+      </AppText>
+    </TouchableOpacity>
   );
 }
 
@@ -88,20 +78,6 @@ const styles = StyleSheet.create({
     color: colors.text_color_button,
     fontSize: moderateScale(14),
     fontWeight: '700',
-  },
-  startNavButton: {
-    position: 'absolute',
-    bottom: verticalScale(64),
-    right: moderateScale(16),
-    backgroundColor: '#2ecc71',
-    paddingHorizontal: moderateScale(18),
-    paddingVertical: verticalScale(10),
-    borderRadius: moderateScale(24),
-    shadowColor: '#000',
-    shadowOffset: {width: 0, height: 2},
-    shadowOpacity: 0.25,
-    shadowRadius: 4,
-    elevation: 4,
   },
   exitButton: {
     backgroundColor: '#e74c3c',

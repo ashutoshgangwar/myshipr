@@ -65,7 +65,7 @@ const LoginSplashScreen = ({navigation}) => {
 
   const handleCredentialsPress = () => {
     // navigation.reset({index: 0, routes: [{name: 'MainApp'}]});
-    navigation.navigate('RadarMapScreen');
+    navigation.navigate('RadarSetupScreen');
   };
   
   // To fetch the public IP address
