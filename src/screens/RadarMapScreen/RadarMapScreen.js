@@ -2,8 +2,6 @@ import React, {useEffect, useRef, useState} from 'react';
 import {
   View,
   StyleSheet,
-  PermissionsAndroid,
-  Platform,
   TouchableOpacity,
   ScrollView,
   TextInput,
@@ -25,7 +23,9 @@ import {RADAR_PUBLISHABLE_KEY} from '@env';
 import ScreenHeader from '../../component/ScreenHeader/ScreenHeader';
 import AppText from '../../theme/AppText';
 import {colors} from '../../theme/colors';
+import GPS_Icon from '../../assets/svg_icon/gps-svg.svg'
 import {moderateScale, verticalScale} from 'react-native-size-matters';
+import {getCurrentLocation} from '../../services/LocationService';
 
 setAccessToken(null);
 
@@ -91,36 +91,42 @@ export default function RadarMapScreen({navigation}) {
   const [dstCoord, setDstCoord] = useState(null);
   const [activeField, setActiveField] = useState(null); // 'src' | 'dst' | null
   const [searching, setSearching] = useState(false);
+  const [locating, setLocating] = useState(false);
   const searchTimer = useRef(null);
 
   useEffect(() => {
     Radar.initialize(RADAR_PUBLISHABLE_KEY);
     Radar.setUserId('user-123'); // any id for this user
     Radar.setMetadata({plan: 'free'});
-    requestAndTrack();
+    // Fetch the current location via LocationService and prefill it as the
+    // source, so the route can be calculated from where the user is standing.
+    locateMe({prefillSource: true});
   }, []);
 
-  async function requestAndTrack() {
-    if (Platform.OS === 'android') {
-      const granted = await PermissionsAndroid.request(
-        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-      );
-      if (granted !== PermissionsAndroid.RESULTS.GRANTED) {
-        setStatus('Location permission denied');
-        return;
-      }
-    } else {
-      // iOS: Radar SDK drives the CLLocationManager prompt (foreground/when-in-use).
-      const ios = await Radar.requestPermissions(false);
-      if (ios !== 'GRANTED_FOREGROUND' && ios !== 'GRANTED_BACKGROUND') {
-        setStatus('Location permission denied');
-        return;
-      }
+  // Reverse-geocode a coordinate to a human-readable address (best effort).
+  async function reverseGeocode(latitude, longitude) {
+    try {
+      const url =
+        'https://api.radar.io/v1/geocode/reverse' +
+        `?coordinates=${latitude},${longitude}`;
+      const res = await fetch(url, {
+        headers: {Authorization: RADAR_PUBLISHABLE_KEY},
+      });
+      const data = await res.json();
+      return data?.addresses?.[0]?.formattedAddress || null;
+    } catch (e) {
+      return null;
     }
+  }
+
+  // Get the current device location via LocationService (handles permissions,
+  // GPS checks, caching and the fast network/GPS race). Optionally fills the
+  // source search bar so the user can route straight from their location.
+  async function locateMe({prefillSource = false} = {}) {
+    setLocating(true);
     setStatus('Locating…');
     try {
-      const result = await Radar.trackOnce();
-      const {latitude, longitude} = result.location;
+      const {latitude, longitude} = await getCurrentLocation();
       setCoords({latitude, longitude});
       setStatus('Got location');
       cameraRef.current?.setCamera({
@@ -128,8 +134,18 @@ export default function RadarMapScreen({navigation}) {
         zoomLevel: 14,
         animationDuration: 800,
       });
+
+      if (prefillSource) {
+        const label = (await reverseGeocode(latitude, longitude)) ||
+          'Current location';
+        setSrcCoord({latitude, longitude, label});
+        setSrcQuery(label);
+        setSrcResults([]);
+      }
     } catch (e) {
-      setStatus('Error: ' + String(e));
+      setStatus('Error: ' + String(e?.message || e));
+    } finally {
+      setLocating(false);
     }
   }
 
@@ -280,6 +296,18 @@ export default function RadarMapScreen({navigation}) {
             returnKeyType="search"
           />
           {srcCoord ? <AppText style={styles.checkMark}>✓</AppText> : null}
+          <TouchableOpacity
+            style={styles.locateButton}
+            onPress={() => locateMe({prefillSource: true})}
+            disabled={locating}
+            hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}
+            activeOpacity={0.7}>
+            {locating ? (
+              <ActivityIndicator size="small" color={colors.button_color} />
+            ) : (
+              <GPS_Icon width={20} headers={10}/>
+            )}
+          </TouchableOpacity>
         </View>
 
         <View style={styles.divider} />
@@ -505,6 +533,19 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(16),
     fontWeight: '700',
     marginLeft: moderateScale(6),
+  },
+  locateButton: {
+    marginLeft: moderateScale(8),
+    width: moderateScale(32),
+    height: moderateScale(32),
+    borderRadius: moderateScale(16),
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.warning_text,
+  },
+  locateIcon: {
+    fontSize: moderateScale(1),
+    color: colors.button_color,
   },
   divider: {
     height: 1,
