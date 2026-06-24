@@ -18,3 +18,9 @@
 
 # Keep Google Maps models used via JNI
 -keep class com.google.android.gms.maps.** { *; }
+
+# The Radar SDK has an OPTIONAL Firebase Cloud Messaging integration
+# (RadarFirebaseMessagingService). We don't ship firebase-messaging, so R8 can't
+# resolve these classes during minification. We don't use FCM, so silence them.
+-dontwarn com.google.firebase.messaging.FirebaseMessaging
+-dontwarn com.google.firebase.messaging.FirebaseMessagingService

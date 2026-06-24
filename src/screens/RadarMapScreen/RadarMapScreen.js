@@ -24,8 +24,14 @@ import {
   decodePolyline,
   haversineMeters,
   extractSteps,
+  bearing,
+  smoothAngle,
+  snapToRoute,
   ADVANCE_THRESHOLD_M,
   ARRIVE_THRESHOLD_M,
+  OFF_ROUTE_THRESHOLD_M,
+  OFF_ROUTE_FIXES,
+  REROUTE_COOLDOWN_MS,
 } from './helpers/radarNav';
 import SearchPanel from './components/SearchPanel';
 import NavBanner from './components/NavBanner';
@@ -62,6 +68,21 @@ export default function RadarMapScreen({navigation}) {
   const navWatchId = useRef(null);
   const navStepRef = useRef(0); // current step index, read inside the watch callback
   const navStepsRef = useRef([]); // steps array, read inside the watch callback
+
+  // Polyline trimming: the remaining (not-yet-driven) part of the route, fed to
+  // RouteLayers so the line shrinks behind the user as they move.
+  const [remainingCoords, setRemainingCoords] = useState(null);
+  const navCoordsRef = useRef([]); // full route polyline, read inside the watch callback
+  const dstCoordRef = useRef(null); // destination, read inside the watch callback for re-routing
+
+  // Heading-up camera: smoothed compass heading + last position to derive course.
+  const headingRef = useRef(0);
+  const lastUserRef = useRef(null);
+
+  // Re-routing control (all read/written inside the watch callback).
+  const offRouteCountRef = useRef(0);
+  const rerouteInFlightRef = useRef(false);
+  const lastRerouteTsRef = useRef(0);
 
   // Place autocomplete (source + destination).
   const [srcQuery, setSrcQuery] = useState('');
@@ -200,6 +221,37 @@ export default function RadarMapScreen({navigation}) {
     setActiveField(null);
   }
 
+  // Call Radar's directions API between two {latitude, longitude} points and
+  // return the parsed route. Shared by the initial match and live re-routing.
+  async function fetchDirections(src, dst) {
+    // /route/directions actually routes between two points along roads, unlike
+    // /route/match (which only snaps a recorded GPS trace).
+    const locations =
+      `${src.latitude},${src.longitude}|${dst.latitude},${dst.longitude}`;
+    const url =
+      'https://api.radar.io/v1/route/directions' +
+      `?locations=${encodeURIComponent(locations)}` +
+      '&mode=car&units=imperial&geometry=polyline6';
+    const res = await fetch(url, {
+      headers: {Authorization: RADAR_PUBLISHABLE_KEY},
+    });
+    const data = await res.json();
+    if (!res.ok) {
+      throw new Error(data?.meta?.message || `HTTP ${res.status}`);
+    }
+    const r = data?.routes?.[0];
+    const coordinates = decodePolyline(r?.geometry?.polyline);
+    if (!coordinates.length) {
+      throw new Error('No route found between those points');
+    }
+    return {
+      coordinates,
+      distance: r?.distance?.text,
+      duration: r?.duration?.text,
+      steps: extractSteps(r),
+    };
+  }
+
   async function matchRoute() {
     if (!srcCoord || !dstCoord) {
       setMapStatus('Pick a source and destination first');
@@ -208,40 +260,13 @@ export default function RadarMapScreen({navigation}) {
     setMatching(true);
     setMapStatus('Finding route…');
     try {
-      // /route/directions actually routes between two points along roads,
-      // unlike /route/match (which only snaps a recorded GPS trace).
-      const locations =
-        `${srcCoord.latitude},${srcCoord.longitude}|` +
-        `${dstCoord.latitude},${dstCoord.longitude}`;
-      const url =
-        'https://api.radar.io/v1/route/directions' +
-        `?locations=${encodeURIComponent(locations)}` +
-        '&mode=car&units=imperial&geometry=polyline6';
-      const res = await fetch(url, {
-        headers: {Authorization: RADAR_PUBLISHABLE_KEY},
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data?.meta?.message || `HTTP ${res.status}`);
-      }
-
-      const r = data?.routes?.[0];
-      const coordinates = decodePolyline(r?.geometry?.polyline);
-      if (!coordinates.length) {
-        throw new Error('No route found between those points');
-      }
-
-      setRoute({
-        coordinates,
-        distance: r?.distance?.text,
-        duration: r?.duration?.text,
-        steps: extractSteps(r),
-      });
+      const r = await fetchDirections(srcCoord, dstCoord);
+      setRoute(r);
       setMapStatus('Route found');
 
       // Fit the camera to the route polyline.
-      const lngs = coordinates.map(c => c[0]);
-      const lats = coordinates.map(c => c[1]);
+      const lngs = r.coordinates.map(c => c[0]);
+      const lats = r.coordinates.map(c => c[1]);
       const ne = [Math.max(...lngs), Math.max(...lats)];
       const sw = [Math.min(...lngs), Math.min(...lats)];
       cameraRef.current?.fitBounds(
@@ -257,6 +282,41 @@ export default function RadarMapScreen({navigation}) {
     }
   }
 
+  // Off-route recovery: request a fresh route from the user's current position
+  // to the destination, then swap it in mid-navigation. Guarded by an in-flight
+  // flag and a cooldown so we don't spam the API on every fix.
+  async function reroute(user) {
+    if (rerouteInFlightRef.current) return;
+    const now = Date.now();
+    if (now - lastRerouteTsRef.current < REROUTE_COOLDOWN_MS) return;
+    const dst = dstCoordRef.current;
+    if (!dst) return;
+
+    rerouteInFlightRef.current = true;
+    lastRerouteTsRef.current = now;
+    setMapStatus('Rerouting…');
+    try {
+      const r = await fetchDirections(
+        {latitude: user[1], longitude: user[0]},
+        dst,
+      );
+      // Swap the live route: reset steps to the start of the new one and refresh
+      // the polyline the camera/trim logic reads.
+      navStepsRef.current = r.steps;
+      navStepRef.current = 0;
+      navCoordsRef.current = r.coordinates;
+      setNavStepIndex(0);
+      setRoute(r);
+      setRemainingCoords(r.coordinates);
+      offRouteCountRef.current = 0;
+      setMapStatus('Navigating…');
+    } catch (e) {
+      setMapStatus('Reroute failed: ' + String(e.message || e));
+    } finally {
+      rerouteInFlightRef.current = false;
+    }
+  }
+
   // Called on every GPS fix while navigating. Follows the user with the camera,
   // advances through the maneuvers as they're passed, and recomputes the
   // remaining distance/ETA — the live, Google-Maps-style part.
@@ -265,14 +325,51 @@ export default function RadarMapScreen({navigation}) {
     const steps = navStepsRef.current;
     if (!steps.length) return;
 
-    // Chase camera: center on the user, tilt, and rotate toward the heading so
-    // the road ahead points "up" like a real nav view.
+    // Snap onto the route: trim the already-driven part of the polyline so the
+    // line shrinks behind the user, and measure how far off-route we are.
+    const fullCoords = navCoordsRef.current;
+    if (fullCoords.length > 1) {
+      const snap = snapToRoute(user, fullCoords);
+      setRemainingCoords([snap.point, ...fullCoords.slice(snap.index + 1)]);
+
+      // Off-route → re-route. Require a few consecutive off-route fixes so a
+      // single noisy GPS jump doesn't trigger a needless API call.
+      if (snap.distance > OFF_ROUTE_THRESHOLD_M) {
+        offRouteCountRef.current += 1;
+        if (offRouteCountRef.current >= OFF_ROUTE_FIXES) {
+          reroute(user);
+        }
+      } else {
+        offRouteCountRef.current = 0;
+      }
+    }
+
+    // Heading-up ("bottom-to-up"): rotate the map so the direction of travel
+    // points up. Prefer the GPS heading while moving, else derive the course
+    // from the last position; smooth it so the camera glides, not shivers.
+    const prev = lastUserRef.current;
+    let target = null;
+    if (
+      Number.isFinite(pos.heading) &&
+      pos.heading >= 0 &&
+      (pos.speed == null || pos.speed > 0.5)
+    ) {
+      target = pos.heading;
+    } else if (prev && haversineMeters(prev, user) > 2) {
+      target = bearing(prev, user);
+    }
+    if (target != null) {
+      headingRef.current = smoothAngle(headingRef.current, target, 0.25);
+    }
+    lastUserRef.current = user;
+
+    // Chase camera: follow the user, tilt for the forward nav perspective, and
+    // rotate to the smoothed heading so the road ahead points up the phone.
     cameraRef.current?.setCamera({
       centerCoordinate: user,
       zoomLevel: 17,
-      heading:
-        Number.isFinite(pos.heading) && pos.heading >= 0 ? pos.heading : 0,
-      pitch: 50,
+      heading: headingRef.current,
+      pitch: 45,
       animationDuration: 900,
     });
 
@@ -324,16 +421,39 @@ export default function RadarMapScreen({navigation}) {
     }
     navStepsRef.current = route.steps;
     navStepRef.current = 0;
+    navCoordsRef.current = route.coordinates || [];
+    dstCoordRef.current = dstCoord;
+    offRouteCountRef.current = 0;
+    rerouteInFlightRef.current = false;
+    lastRerouteTsRef.current = 0;
+    headingRef.current = 0;
+    lastUserRef.current = null;
     setNavStepIndex(0);
     setNavArrived(false);
     setNavInfo(null);
+    setRemainingCoords(route.coordinates);
     setNavActive(true);
     setMapStatus('Navigating…');
+
+    // Immediately zoom into the nav view instead of waiting for the first GPS
+    // fix (which can take seconds on Android/iOS, leaving the map frozen).
+    const start = route.steps[0]?.start;
+    const center = coords
+      ? [coords.longitude, coords.latitude]
+      : start || route.coordinates?.[0] || DEFAULT_CENTER;
+    cameraRef.current?.setCamera({
+      centerCoordinate: center,
+      zoomLevel: 17,
+      pitch: 45,
+      heading: 0,
+      animationDuration: 800,
+    });
+
     try {
       const id = await watchCurrentLocation(
         onNavLocation,
         err => setMapStatus('GPS: ' + String(err?.message || err)),
-        {detectMock: false}, // allow simulator/mock fixes while testing nav
+        {detectMock: false},
       );
       navWatchId.current = id;
     } catch (e) {
@@ -348,7 +468,8 @@ export default function RadarMapScreen({navigation}) {
       navWatchId.current = null;
     }
     setNavActive(false);
-    // Re-fit the full route so the user sees the whole trip again.
+    // Restore the full (untrimmed) route so the user sees the whole trip again.
+    setRemainingCoords(null);
     if (route?.coordinates?.length) {
       cameraRef.current?.setCamera({
         pitch: 0,
@@ -419,7 +540,11 @@ export default function RadarMapScreen({navigation}) {
           />
           <UserLocation visible />
 
-          <RouteLayers coordinates={route?.coordinates} />
+          <RouteLayers
+            coordinates={
+              navActive ? remainingCoords || route?.coordinates : route?.coordinates
+            }
+          />
         </MapView>
 
         <View style={styles.badge}>

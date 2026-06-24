@@ -150,6 +150,7 @@ const LoginSplashScreen = ({navigation}) => {
             </AppText>
             <AppText style={styles.subtitle_line2}>
              way with live shipment tacking..
+             
             </AppText>
             <BiometricLoginButton
               onSuccess={handleBiometricSuccess}
