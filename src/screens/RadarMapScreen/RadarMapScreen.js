@@ -25,9 +25,71 @@ import AppText from '../../theme/AppText';
 import {colors} from '../../theme/colors';
 import GPS_Icon from '../../assets/svg_icon/gps-svg.svg'
 import {moderateScale, verticalScale} from 'react-native-size-matters';
-import {getCurrentLocation} from '../../services/LocationService';
+import {
+  getCurrentLocation,
+  watchCurrentLocation,
+  clearWatchLocation,
+} from '../../services/LocationService';
 
 setAccessToken(null);
+
+// Great-circle distance between two [lng, lat] points, in metres.
+function haversineMeters(a, b) {
+  if (!a || !b) return Infinity;
+  const toRad = d => (d * Math.PI) / 180;
+  const R = 6371000;
+  const dLat = toRad(b[1] - a[1]);
+  const dLng = toRad(b[0] - a[0]);
+  const lat1 = toRad(a[1]);
+  const lat2 = toRad(b[1]);
+  const h =
+    Math.sin(dLat / 2) ** 2 +
+    Math.cos(lat1) * Math.cos(lat2) * Math.sin(dLng / 2) ** 2;
+  return 2 * R * Math.asin(Math.min(1, Math.sqrt(h)));
+}
+
+// Imperial formatting to match the &units=imperial route response.
+function formatDistance(meters) {
+  if (!Number.isFinite(meters)) return '';
+  const feet = meters * 3.28084;
+  if (feet < 1000) return `${Math.max(0, Math.round(feet / 10) * 10)} ft`;
+  return `${(feet / 5280).toFixed(1)} mi`;
+}
+
+function formatDuration(mins) {
+  if (!Number.isFinite(mins)) return '';
+  if (mins < 1) return '<1 min';
+  return `${Math.round(mins)} min`;
+}
+
+// A glanceable arrow per Radar maneuver type for the navigation banner.
+const MANEUVER_ICON = {
+  start: '•',
+  straight: '↑',
+  left: '↰',
+  right: '↱',
+  'turn-left': '↰',
+  'turn-right': '↱',
+  'slight-left': '↖',
+  'slight-right': '↗',
+  'sharp-left': '⬅',
+  'sharp-right': '➡',
+  'stay-left': '↖',
+  'stay-right': '↗',
+  'ramp-left': '↖',
+  'ramp-right': '↗',
+  'exit-left': '↰',
+  'exit-right': '↱',
+  uturn: '↩',
+  destination: '🏁',
+  'destination-left': '🏁',
+  'destination-right': '🏁',
+};
+
+// How close (metres) the user must get to a maneuver point before we advance to
+// the next step, and how close to the final point to declare arrival.
+const ADVANCE_THRESHOLD_M = 30;
+const ARRIVE_THRESHOLD_M = 25;
 
 // Radar returns encoded polylines at precision 6 (1e6).
 function decodePolyline(encoded, precision = 6) {
@@ -81,6 +143,15 @@ export default function RadarMapScreen({navigation}) {
   );
   const [route, setRoute] = useState(null); // {coordinates, distance, roads}
   const [matching, setMatching] = useState(false);
+
+  // Live (Google-Maps-style) navigation.
+  const [navActive, setNavActive] = useState(false);
+  const [navStepIndex, setNavStepIndex] = useState(0);
+  const [navArrived, setNavArrived] = useState(false);
+  const [navInfo, setNavInfo] = useState(null); // {distanceToManeuver, remainingDistance, remainingDuration}
+  const navWatchId = useRef(null);
+  const navStepRef = useRef(0); // current step index, read inside the watch callback
+  const navStepsRef = useRef([]); // steps array, read inside the watch callback
 
   // Place autocomplete (source + destination).
   const [srcQuery, setSrcQuery] = useState('');
@@ -246,14 +317,42 @@ export default function RadarMapScreen({navigation}) {
 
       const r = data?.routes?.[0];
       const coordinates = decodePolyline(r?.geometry?.polyline);
+      console.log('decode line--', r?.geometry?.polyline)
+      console.log('poluline------', coordinates)
       if (!coordinates.length) {
         throw new Error('No route found between those points');
       }
+
+      // Flatten the turn-by-turn steps across every leg. Each step carries the
+      // banner_instructions (short, for the on-screen banner) and
+      // voice_instructions (spoken cue) straight from the Radar response, plus
+      // the maneuver point (end_location) we use to advance live navigation.
+      const steps = (r?.legs || []).flatMap(leg =>
+        (leg?.steps || []).map(s => ({
+          banner: s.banner_instructions,
+          voice: s.voice_instructions,
+          instructions: s.instructions,
+          maneuver: s.manuever, // note: Radar spells it "manuever"
+          streetName: s.street_name,
+          distance: s.distance?.text,
+          duration: s.duration?.text,
+          distanceValue: s.distance?.value ?? 0, // metres
+          durationValue: s.duration?.value ?? 0, // minutes
+          // GeoJSON order [lng, lat] so it matches the polyline coordinates.
+          start: s.start_location
+            ? [s.start_location.longitude, s.start_location.latitude]
+            : null,
+          end: s.end_location
+            ? [s.end_location.longitude, s.end_location.latitude]
+            : null,
+        })),
+      );
 
       setRoute({
         coordinates,
         distance: r?.distance?.text,
         duration: r?.duration?.text,
+        steps,
       });
       setMapStatus('Route found');
 
@@ -275,6 +374,109 @@ export default function RadarMapScreen({navigation}) {
     }
   }
 
+  // Called on every GPS fix while navigating. Follows the user with the camera,
+  // advances through the maneuvers as they're passed, and recomputes the
+  // remaining distance/ETA — the live, Google-Maps-style part.
+  function onNavLocation(pos) {
+    const user = [pos.longitude, pos.latitude];
+    const steps = navStepsRef.current;
+    if (!steps.length) return;
+
+    // Chase camera: center on the user, tilt, and rotate toward the heading so
+    // the road ahead points "up" like a real nav view.
+    cameraRef.current?.setCamera({
+      centerCoordinate: user,
+      zoomLevel: 17,
+      heading: Number.isFinite(pos.heading) && pos.heading >= 0 ? pos.heading : 0,
+      pitch: 50,
+      animationDuration: 900,
+    });
+
+    // Advance past any maneuver(s) we've already reached. The maneuver point is
+    // the end of the current step (== start of the next).
+    let idx = navStepRef.current;
+    let toManeuver = haversineMeters(user, steps[idx]?.end);
+    while (idx < steps.length - 1 && toManeuver < ADVANCE_THRESHOLD_M) {
+      idx += 1;
+      toManeuver = haversineMeters(user, steps[idx]?.end);
+    }
+    if (idx !== navStepRef.current) {
+      navStepRef.current = idx;
+      setNavStepIndex(idx);
+    }
+
+    // Remaining distance = distance to the next maneuver + every step after it.
+    // Remaining time ≈ sum of the durations of the steps still ahead.
+    let remainingDistance = toManeuver;
+    for (let i = idx + 1; i < steps.length; i++) {
+      remainingDistance += steps[i].distanceValue || 0;
+    }
+    let remainingDuration = 0;
+    for (let i = idx; i < steps.length; i++) {
+      remainingDuration += steps[i].durationValue || 0;
+    }
+    setNavInfo({
+      distanceToManeuver: toManeuver,
+      remainingDistance,
+      remainingDuration,
+    });
+
+    // Arrival: on the final step and within range of the destination.
+    const dest = steps[steps.length - 1]?.end;
+    if (idx >= steps.length - 1 && haversineMeters(user, dest) < ARRIVE_THRESHOLD_M) {
+      setNavArrived(true);
+      setMapStatus('You have arrived');
+      stopNavigation();
+    }
+  }
+
+  async function startNavigation() {
+    if (!route?.steps?.length) {
+      setMapStatus('Find a route first');
+      return;
+    }
+    navStepsRef.current = route.steps;
+    navStepRef.current = 0;
+    setNavStepIndex(0);
+    setNavArrived(false);
+    setNavInfo(null);
+    setNavActive(true);
+    setMapStatus('Navigating…');
+    try {
+      const id = await watchCurrentLocation(
+        onNavLocation,
+        err => setMapStatus('GPS: ' + String(err?.message || err)),
+        {detectMock: false}, // allow simulator/mock fixes while testing nav
+      );
+      navWatchId.current = id;
+    } catch (e) {
+      setNavActive(false);
+      setMapStatus('Could not start navigation: ' + String(e?.message || e));
+    }
+  }
+
+  function stopNavigation() {
+    if (navWatchId.current !== null) {
+      clearWatchLocation(navWatchId.current);
+      navWatchId.current = null;
+    }
+    setNavActive(false);
+    // Re-fit the full route so the user sees the whole trip again.
+    if (route?.coordinates?.length) {
+      cameraRef.current?.setCamera({pitch: 0, heading: 0, animationDuration: 400});
+    }
+  }
+
+  // Tear down the location watch if the screen unmounts mid-navigation.
+  useEffect(() => () => {
+    if (navWatchId.current !== null) {
+      clearWatchLocation(navWatchId.current);
+      navWatchId.current = null;
+    }
+  }, []);
+
+  const navStep = navActive ? route?.steps?.[navStepIndex] : null;
+
   return (
     <SafeAreaView style={styles.container} edges={['bottom']}>
       <ScreenHeader
@@ -283,6 +485,36 @@ export default function RadarMapScreen({navigation}) {
         onBack={navigation ? () => navigation.goBack() : undefined}
       />
 
+      {navStep ? (
+        <View style={styles.navBanner}>
+          <AppText style={styles.navArrow}>
+            {MANEUVER_ICON[navStep.maneuver] || '↑'}
+          </AppText>
+          <View style={styles.navBannerInfo}>
+            <AppText style={styles.navBannerText} numberOfLines={2}>
+              {navStep.banner || navStep.voice || navStep.instructions}
+            </AppText>
+            {navInfo ? (
+              <AppText style={styles.navBannerDist}>
+                {formatDistance(navInfo.distanceToManeuver)}
+                {navStep.streetName ? ` · ${navStep.streetName}` : ''}
+              </AppText>
+            ) : null}
+          </View>
+        </View>
+      ) : null}
+
+      {navArrived ? (
+        <TouchableOpacity
+          style={styles.arrivedBanner}
+          onPress={() => setNavArrived(false)}
+          activeOpacity={0.85}>
+          <AppText style={styles.arrivedText}>🏁 You have arrived</AppText>
+          <AppText style={styles.arrivedDismiss}>Tap to dismiss</AppText>
+        </TouchableOpacity>
+      ) : null}
+
+      {navActive ? null : (
       <View style={styles.searchPanel}>
         <View style={styles.inputRow}>
           <View style={[styles.fieldDot, {backgroundColor: '#2ecc71'}]} />
@@ -358,6 +590,7 @@ export default function RadarMapScreen({navigation}) {
           </View>
         ) : null}
       </View>
+      )}
 
       <View style={styles.map}>
         <MapView
@@ -420,8 +653,8 @@ export default function RadarMapScreen({navigation}) {
               <LineLayer
                 id="routeLine"
                 style={{
-                  lineColor: colors.button_color,
-                  lineWidth: 5,
+                  lineColor: colors.accentBlue,
+                  lineWidth: 8,
                   lineCap: 'round',
                   lineJoin: 'round',
                 }}
@@ -452,20 +685,52 @@ export default function RadarMapScreen({navigation}) {
           <AppText style={styles.badgeText}>{mapStatus}</AppText>
         </View>
 
-        <TouchableOpacity
-          style={[
-            styles.matchButton,
-            (matching || !srcCoord || !dstCoord) && styles.matchButtonDisabled,
-          ]}
-          onPress={matchRoute}
-          disabled={matching || !srcCoord || !dstCoord}
-          activeOpacity={0.85}>
-          <AppText style={styles.matchButtonText}>
-            {matching ? 'Matching…' : 'Match Route'}
-          </AppText>
-        </TouchableOpacity>
+        {navActive ? (
+          <>
+            {navInfo ? (
+              <View style={styles.etaCard}>
+                <AppText style={styles.etaPrimary}>
+                  {formatDuration(navInfo.remainingDuration)}
+                </AppText>
+                <AppText style={styles.etaSecondary}>
+                  {formatDistance(navInfo.remainingDistance)} left
+                </AppText>
+              </View>
+            ) : null}
+            <TouchableOpacity
+              style={[styles.matchButton, styles.exitButton]}
+              onPress={stopNavigation}
+              activeOpacity={0.85}>
+              <AppText style={styles.matchButtonText}>Exit</AppText>
+            </TouchableOpacity>
+          </>
+        ) : (
+          <>
+            <TouchableOpacity
+              style={[
+                styles.matchButton,
+                (matching || !srcCoord || !dstCoord) && styles.matchButtonDisabled,
+              ]}
+              onPress={matchRoute}
+              disabled={matching || !srcCoord || !dstCoord}
+              activeOpacity={0.85}>
+              <AppText style={styles.matchButtonText}>
+                {matching ? 'Matching…' : 'Match Route'}
+              </AppText>
+            </TouchableOpacity>
 
-        {route ? (
+            {route?.steps?.length ? (
+              <TouchableOpacity
+                style={styles.startNavButton}
+                onPress={startNavigation}
+                activeOpacity={0.85}>
+                <AppText style={styles.matchButtonText}>▶ Start</AppText>
+              </TouchableOpacity>
+            ) : null}
+          </>
+        )}
+
+        {route && !navActive ? (
           <View style={styles.routeCard}>
             <AppText style={styles.routeTitle}>Route</AppText>
             <View style={styles.routeStats}>
@@ -482,6 +747,35 @@ export default function RadarMapScreen({navigation}) {
                 </View>
               ) : null}
             </View>
+
+            {route.steps?.length ? (
+              <ScrollView
+                style={styles.stepList}
+                showsVerticalScrollIndicator={false}
+                nestedScrollEnabled>
+                {route.steps.map((step, i) => (
+                  <View key={i} style={styles.stepRow}>
+                    <View style={styles.stepDot} />
+                    <View style={styles.stepInfo}>
+                      <AppText style={styles.stepBanner} numberOfLines={2}>
+                        {step.banner || step.voice || step.instructions}
+                      </AppText>
+                      {step.voice && step.voice !== step.banner ? (
+                        <AppText style={styles.stepVoice} numberOfLines={2}>
+                          🔊 {step.voice}
+                        </AppText>
+                      ) : null}
+                      {step.distance ? (
+                        <AppText style={styles.stepMeta}>
+                          {step.distance}
+                          {step.streetName ? ` · ${step.streetName}` : ''}
+                        </AppText>
+                      ) : null}
+                    </View>
+                  </View>
+                ))}
+              </ScrollView>
+            ) : null}
           </View>
         ) : null}
       </View>
@@ -629,6 +923,101 @@ const styles = StyleSheet.create({
   matchButtonDisabled: {
     opacity: 0.6,
   },
+  startNavButton: {
+    position: 'absolute',
+    bottom: verticalScale(64),
+    right: moderateScale(16),
+    backgroundColor: '#2ecc71',
+    paddingHorizontal: moderateScale(18),
+    paddingVertical: verticalScale(10),
+    borderRadius: moderateScale(24),
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.25,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  exitButton: {
+    backgroundColor: '#e74c3c',
+  },
+  navBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#1a73e8',
+    marginHorizontal: moderateScale(12),
+    marginTop: verticalScale(8),
+    borderRadius: moderateScale(12),
+    paddingHorizontal: moderateScale(14),
+    paddingVertical: verticalScale(12),
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 4,
+    zIndex: 20,
+  },
+  navArrow: {
+    color: '#fff',
+    fontSize: moderateScale(34),
+    fontWeight: '700',
+    marginRight: moderateScale(14),
+  },
+  navBannerInfo: {
+    flex: 1,
+  },
+  navBannerText: {
+    color: '#fff',
+    fontSize: moderateScale(16),
+    fontWeight: '700',
+  },
+  navBannerDist: {
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: moderateScale(13),
+    marginTop: verticalScale(2),
+  },
+  etaCard: {
+    position: 'absolute',
+    bottom: verticalScale(16),
+    left: moderateScale(16),
+    backgroundColor: '#fff',
+    borderRadius: moderateScale(12),
+    paddingHorizontal: moderateScale(16),
+    paddingVertical: verticalScale(10),
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 5,
+  },
+  etaPrimary: {
+    fontSize: moderateScale(20),
+    fontWeight: '700',
+    color: '#2ecc71',
+  },
+  etaSecondary: {
+    fontSize: moderateScale(12),
+    color: '#888',
+    marginTop: verticalScale(1),
+  },
+  arrivedBanner: {
+    marginHorizontal: moderateScale(12),
+    marginTop: verticalScale(8),
+    backgroundColor: '#2ecc71',
+    borderRadius: moderateScale(12),
+    paddingVertical: verticalScale(12),
+    alignItems: 'center',
+    zIndex: 20,
+  },
+  arrivedText: {
+    color: '#fff',
+    fontSize: moderateScale(16),
+    fontWeight: '700',
+  },
+  arrivedDismiss: {
+    color: 'rgba(255,255,255,0.85)',
+    fontSize: moderateScale(11),
+    marginTop: verticalScale(2),
+  },
   matchButtonText: {
     color: colors.text_color_button,
     fontSize: moderateScale(14),
@@ -681,6 +1070,45 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(13),
     fontWeight: '700',
     color: colors.button_color,
+  },
+  stepList: {
+    marginTop: verticalScale(10),
+    borderTopWidth: 1,
+    borderTopColor: '#eee',
+    paddingTop: verticalScale(6),
+  },
+  stepRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    paddingVertical: verticalScale(6),
+    borderBottomWidth: 1,
+    borderBottomColor: '#f3f3f3',
+  },
+  stepDot: {
+    width: moderateScale(7),
+    height: moderateScale(7),
+    borderRadius: moderateScale(4),
+    backgroundColor: colors.button_color,
+    marginTop: verticalScale(4),
+    marginRight: moderateScale(8),
+  },
+  stepInfo: {
+    flex: 1,
+  },
+  stepBanner: {
+    fontSize: moderateScale(13),
+    color: colors.text_dark,
+    fontWeight: '600',
+  },
+  stepVoice: {
+    fontSize: moderateScale(11),
+    color: '#666',
+    marginTop: verticalScale(2),
+  },
+  stepMeta: {
+    fontSize: moderateScale(11),
+    color: '#888',
+    marginTop: verticalScale(2),
   },
   roadList: {
     flexGrow: 0,
