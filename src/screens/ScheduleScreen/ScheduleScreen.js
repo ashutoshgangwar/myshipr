@@ -58,24 +58,6 @@ export default function ScheduleScreen() {
   const listBottomGap = Platform.OS === 'ios' ? insets.bottom + 12 : 10;
 
   const featured = useMemo(() => FEATURED[selectedKey], [selectedKey]);
-
-  const renderTrip = ({item}) => (
-    <TouchableOpacity style={styles.tripRow} activeOpacity={0.85}>
-      <View style={styles.tripAccent} />
-      <View style={styles.tripLeft}>
-        <AppText style={styles.tripRoute} numberOfLines={1}>
-          {item.route}
-        </AppText>
-        <AppText style={styles.tripMeta}>{item.meta}</AppText>
-      </View>
-      <View style={styles.tripRight}>
-        <AppText style={styles.tripAmount}>{item.amount}</AppText>
-        <AppText style={styles.tripMiles}>{item.miles}</AppText>
-      </View>
-      <RightArrow width={ICON_SIZE} height={ICON_SIZE} color={colors.status} />
-    </TouchableOpacity>
-  );
-
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <StatusBar
@@ -138,8 +120,6 @@ export default function ScheduleScreen() {
                   <AppText style={styles.featuredMiles}>{featured.miles}</AppText>
                 </View>
               </View>
-
-              <View style={styles.featuredDivider} />
 
               <View style={styles.featuredBottomRow}>
                 <View style={styles.miniStatsGroup}>

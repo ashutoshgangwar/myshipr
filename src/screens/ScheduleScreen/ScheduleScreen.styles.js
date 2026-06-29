@@ -20,9 +20,9 @@ export default StyleSheet.create({
   /* ---------- Header ---------- */
   header: {
     backgroundColor: colors.primary,
-    paddingHorizontal: ms(20),
-    paddingTop: vs(16),
-    paddingBottom: vs(46),
+    paddingHorizontal: ms(18),
+    paddingTop: vs(26),
+    paddingBottom: vs(60),
     borderBottomLeftRadius: ms(28),
     borderBottomRightRadius: ms(28),
   },
@@ -81,7 +81,7 @@ export default StyleSheet.create({
   dayPill: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: vs(8),
+    paddingVertical: vs(5),
     borderRadius: ms(12),
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.18)',
@@ -127,9 +127,9 @@ export default StyleSheet.create({
   /* ---------- Featured card (overlaps header) ---------- */
   featuredCard: {
     backgroundColor: colors.white,
-    borderRadius: ms(14),
+    borderRadius: ms(8),
     marginHorizontal: ms(14),
-    marginTop: -vs(30),
+    marginTop: -vs(40),
     paddingHorizontal: ms(16),
     paddingVertical: vs(14),
     shadowColor: '#000',
@@ -188,6 +188,7 @@ export default StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+      marginVertical: vs(15),
   },
 
   miniStat: {
