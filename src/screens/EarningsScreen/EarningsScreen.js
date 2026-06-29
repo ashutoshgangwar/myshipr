@@ -43,9 +43,9 @@ const PERIOD_DATA = {
 };
 
 const STATS = [
-  {label: 'Net Profit', value: '$1,234', note: 'after $324 cost', accent: colors.warning},
-  {label: 'Miles Driven', value: '1,234', note: '$0.97/mile average', accent: colors.danger},
-  {label: 'Loads Done', value: '9', note: '$234 avg /per load', accent: colors.accentBlue},
+  {label: 'Net Profit', value: '$1,234', note: 'after $324 cost', accent: colors.warning_text},
+  {label: 'Miles Driven', value: '1,234', note: '$0.97/mile average', accent: colors.card_drive},
+  {label: 'Loads Done', value: '9', note: '$234 avg /per load', accent: colors.card_drive_load},
 ];
 
 const STATUS = {

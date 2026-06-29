@@ -49,7 +49,7 @@ export default StyleSheet.create({
   },
  brandText: {
     color: colors.white,
-    fontSize: ms(20),
+    fontSize: ms(18),
     fontWeight: '600',
     letterSpacing: 1,
   },
@@ -126,7 +126,7 @@ export default StyleSheet.create({
     color: colors.white,
     fontSize: IS_TABLET ? ms(34) : ms(38),
     fontWeight: '800',
-    marginTop: vs(16),
+    marginTop: vs(10),
   },
 
   grossLabel: {
@@ -138,14 +138,14 @@ export default StyleSheet.create({
 
   /* ---------- Bar chart ---------- */
   chartWrap: {
-    marginTop: vs(18),
+    marginTop: vs(1),
   },
 
   chartRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'space-between',
-    height: vs(120),
+    height: vs(100),
     gap: ms(6),
   },
 
@@ -186,7 +186,7 @@ export default StyleSheet.create({
     borderRadius: ms(14),
     paddingVertical: ms(12),
     paddingHorizontal: ms(12),
-    borderLeftWidth: 4,
+    borderLeftWidth: 2,
     borderLeftColor: colors.cardBorder,
     shadowColor: '#000',
     shadowOpacity: 0.05,
@@ -218,15 +218,15 @@ export default StyleSheet.create({
   /* ---------- Transactions list ---------- */
   listCard: {
     backgroundColor: colors.white,
-    borderRadius: ms(14),
+    borderRadius: ms(10),
     marginHorizontal: ms(12),
     marginTop: vs(14),
     paddingHorizontal: ms(14),
-    shadowColor: '#000',
-    shadowOpacity: 0.04,
-    shadowRadius: 6,
-    shadowOffset: {width: 0, height: 2},
-    elevation: 1,
+    // shadowColor: '#000',
+    // shadowOpacity: 0.04,
+    // shadowRadius: 6,
+    // shadowOffset: {width: 0, height: 2},
+    // elevation: 1,
   },
 
   row: {

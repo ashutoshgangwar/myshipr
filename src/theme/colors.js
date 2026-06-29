@@ -31,6 +31,8 @@ export const colors = {
   success: '#16A34A',
   status: '#94A2B3',
    warning_text: '#DAA509' ,
+   card_drive: '#FF9696',
+   card_drive_load: '#7C5BE6',
   successLight: '#E4FBF3',
   accentBlue: '#2563EB',
   warning: '#F59E0B',
