@@ -156,6 +156,7 @@ export default function RadarMapScreen({navigation, route: navRoute}) {
   const [dstCoord, setDstCoord] = useState(null);
   const [activeField, setActiveField] = useState(null); // 'src' | 'dst' | null
   const [searching, setSearching] = useState(false);
+  const [searchError, setSearchError] = useState(null);
   const [locating, setLocating] = useState(false);
   const searchTimer = useRef(null);
 
@@ -186,6 +187,27 @@ export default function RadarMapScreen({navigation, route: navRoute}) {
     if (p?.srcCoord && p?.dstCoord) {
       matchRoute(p.srcCoord, p.dstCoord);
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Probe the Radar map style URL once on mount. MapLibre's onDidFailLoadingMap
+  // gives us no HTTP reason, so we fetch the style ourselves to surface the real
+  // cause (e.g. "Payment required." when the Radar pilot has ended) on the badge.
+  useEffect(() => {
+    if (!KEY_OK) return;
+    (async () => {
+      try {
+        const res = await fetch(RADAR_STYLE_URL);
+        if (!res.ok) {
+          const data = await res.json().catch(() => null);
+          const reason = data?.meta?.message || `HTTP ${res.status}`;
+          console.log('[RadarMap] map style request failed:', res.status, reason);
+          setMapStatus(`Map unavailable: ${reason}`);
+        }
+      } catch (e) {
+        console.log('[RadarMap] map style probe error:', e?.message || e);
+      }
+    })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -273,11 +295,21 @@ export default function RadarMapScreen({navigation, route: navRoute}) {
       return;
     }
     setSearching(true);
+    setSearchError(null);
     searchTimer.current = setTimeout(async () => {
       try {
         const addresses = await fetchAutocomplete(q);
         field === 'src' ? setSrcResults(addresses) : setDstResults(addresses);
+        if (!addresses.length) {
+          setSearchError('No matches found');
+        }
       } catch (e) {
+        const msg = e?.message || String(e);
+        console.log(
+          `[RadarSearchCard] location search failed (field=${field}, query="${q}"):`,
+          msg,
+        );
+        setSearchError(msg);
         field === 'src' ? setSrcResults([]) : setDstResults([]);
       } finally {
         setSearching(false);
@@ -605,6 +637,7 @@ export default function RadarMapScreen({navigation, route: navRoute}) {
           dstResults={dstResults}
           activeField={activeField}
           searching={searching}
+          searchError={searchError}
           locating={locating}
           onChangeQuery={onChangeQuery}
           onFocusField={setActiveField}
@@ -619,10 +652,18 @@ export default function RadarMapScreen({navigation, route: navRoute}) {
           mapStyle={RADAR_STYLE_URL}
           logoEnabled
           attributionEnabled
-          onDidFinishLoadingMap={() => setMapStatus('Map loaded')}
-          onDidFailLoadingMap={() =>
-            setMapStatus('Map failed to load — check key / network')
-          }>
+          onDidFinishLoadingMap={() => {
+            console.log('[RadarMap] map loaded');
+            setMapStatus('Map loaded');
+          }}
+          onDidFailLoadingMap={() => {
+            console.log(
+              '[RadarMap] map failed to load (style:',
+              RADAR_STYLE_URL,
+              ') — likely an invalid key or an ended Radar pilot (HTTP 402)',
+            );
+            setMapStatus('Map failed to load — check key / network');
+          }}>
           <Camera
             ref={cameraRef}
             defaultSettings={{centerCoordinate: DEFAULT_CENTER, zoomLevel: 11}}

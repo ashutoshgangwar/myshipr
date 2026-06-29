@@ -88,7 +88,7 @@ export default function EarningsScreen() {
                 <EarningsIcon width={18} height={18} color={colors.primary} />
               </View>
               <View>
-                <AppText style={styles.brandText}>EARNINGS</AppText>
+                <AppText style={styles.brandText}>EARNINGS </AppText>
                 <AppText style={styles.brandSub}>{data.range}</AppText>
               </View>
             </View>

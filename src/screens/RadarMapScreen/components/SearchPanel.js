@@ -24,6 +24,7 @@ export default function SearchPanel({
   dstResults,
   activeField,
   searching,
+  searchError,
   locating,
   onChangeQuery,
   onFocusField,
@@ -102,6 +103,14 @@ export default function SearchPanel({
       {searching && activeField ? (
         <View style={styles.searchingRow}>
           <ActivityIndicator size="small" color={colors.button_color} />
+        </View>
+      ) : null}
+
+      {!searching && activeField && searchError && !results.length ? (
+        <View style={styles.searchingRow}>
+          <AppText style={styles.errorText} numberOfLines={2}>
+            {searchError}
+          </AppText>
         </View>
       ) : null}
     </View>
@@ -185,5 +194,10 @@ const styles = StyleSheet.create({
   searchingRow: {
     paddingVertical: verticalScale(8),
     alignItems: 'center',
+  },
+  errorText: {
+    color: '#e74c3c',
+    fontSize: moderateScale(12),
+    textAlign: 'center',
   },
 });
