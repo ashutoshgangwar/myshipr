@@ -13,6 +13,10 @@ export default StyleSheet.create({
     backgroundColor: colors.screenBg,
   },
 
+  page: {
+    flex: 1,
+  },
+
   scrollContent: {
     paddingBottom: vs(28),
   },
@@ -217,10 +221,12 @@ export default StyleSheet.create({
 
   /* ---------- Transactions list ---------- */
   listCard: {
+    flex: 1,
     backgroundColor: colors.white,
     borderRadius: ms(10),
     marginHorizontal: ms(12),
     marginTop: vs(14),
+    marginBottom: vs(14),
     paddingHorizontal: ms(14),
     // shadowColor: '#000',
     // shadowOpacity: 0.04,

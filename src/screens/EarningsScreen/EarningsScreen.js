@@ -1,7 +1,7 @@
 import React, {useMemo, useState} from 'react';
 import {
   View,
-  ScrollView,
+  FlatList,
   TouchableOpacity,
   Modal,
   Pressable,
@@ -61,6 +61,13 @@ const TRANSACTIONS = [
   {id: 't4', route: 'San Jose, CA → Newark, NJ', meta: 'Yesterday • 4h 10 m', amount: '$234', status: 'In-Progress'},
   {id: 't5', route: 'San Jose, CA → Newark, NJ', meta: 'Yesterday • 4h 10 m', amount: '$234', status: 'Paid'},
   {id: 't6', route: 'San Jose, CA → Newark, NJ', meta: 'Yesterday • 4h 10 m', amount: '$234', status: 'Paid'},
+  {id: 't7', route: 'San Jose, CA → Newark, NJ', meta: 'Yesterday • 4h 10 m', amount: '$234', status: 'Paid'},
+  {id: 't8', route: 'San Jose, CA → Newark, NJ', meta: 'Yesterday • 4h 10 m', amount: '$234', status: 'Paid'},
+  {id: 't9', route: 'San Jose, CA → Newark, NJ', meta: 'Yesterday • 4h 10 m', amount: '$234', status: 'Paid'},
+  {id: 't10', route: 'San Jose, CA → Newark, NJ', meta: 'Yesterday • 4h 10 m', amount: '$234', status: 'Paid'},
+  {id: 't11', route: 'San Jose, CA → Newark, NJ', meta: 'Yesterday • 4h 10 m', amount: '$234', status: 'Paid'},
+  {id: 't12', route: 'San Jose, CA → Newark, NJ', meta: 'Yesterday • 4h 10 m', amount: '$234', status: 'Paid'},
+  {id: 't13', route: 'San Jose, CA → Newark, NJ', meta: 'Yesterday • 4h 10 m', amount: '$234', status: 'Paid'},
 ];
 
 export default function EarningsScreen() {
@@ -77,9 +84,7 @@ export default function EarningsScreen() {
         translucent={false}
       />
 
-      <ScrollView
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}>
+      <View style={styles.page}>
         {/* HEADER */}
         <View style={styles.header}>
           <View style={styles.headerTopRow}>
@@ -149,10 +154,14 @@ export default function EarningsScreen() {
         </View>
 
         {/* TRANSACTIONS */}
-        <View style={styles.listCard}>
-          {TRANSACTIONS.map((tx, index) => (
+        <FlatList
+          data={TRANSACTIONS}
+          keyExtractor={tx => tx.id}
+          style={styles.listCard}
+          nestedScrollEnabled
+          showsVerticalScrollIndicator={false}
+          renderItem={({item: tx, index}) => (
             <View
-              key={tx.id}
               style={[styles.row, index === TRANSACTIONS.length - 1 && styles.rowLast]}>
               <View style={styles.rowLeft}>
                 <AppText style={styles.rowRoute}>{tx.route}</AppText>
@@ -165,9 +174,9 @@ export default function EarningsScreen() {
                 </View>
               </View>
             </View>
-          ))}
-        </View>
-      </ScrollView>
+          )}
+        />
+      </View>
 
       {/* PERIOD MENU */}
       <Modal
