@@ -19,6 +19,7 @@ import DocumentsPanel from './components/DocumentsPanel';
 import BiddingPanel from './components/BiddingPanel';
 import HoursOfServicePanel from './components/HoursOfServicePanel';
 import TripProgressBar from './components/TripProgressBar';
+import PodModal from './components/PodModal';
 
 // San Francisco fallback (matches the design mock-up region).
 const DEFAULT_CENTER = {lat: 37.7599, lng: -122.4469};
@@ -33,6 +34,9 @@ export default function ActiveTripScreen({navigation}) {
 
   // Which floating panel is open (null = none). Drives the toolbar highlight.
   const [activePanel, setActivePanel] = useState(null);
+
+  // Proof-of-Delivery flow shown after the driver taps "End Trip".
+  const [podOpen, setPodOpen] = useState(false);
 
   // Initialise the HERE SDK before mounting the native map view.
   useEffect(() => {
@@ -129,7 +133,14 @@ export default function ActiveTripScreen({navigation}) {
       <TripProgressBar
         progress={0.63}
         withCheckbox={activePanel === 'bidding'}
-        onEndTrip={() => {}}
+        onEndTrip={() => setPodOpen(true)}
+      />
+
+      {/* ── Proof-of-Delivery flow ── */}
+      <PodModal
+        visible={podOpen}
+        onClose={() => setPodOpen(false)}
+        onComplete={goBack}
       />
     </SafeAreaView>
   );

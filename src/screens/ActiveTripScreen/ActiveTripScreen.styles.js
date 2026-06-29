@@ -447,4 +447,205 @@ export default StyleSheet.create({
     fontSize: ms(13),
     fontWeight: '700',
   },
+
+  // ── Proof-of-Delivery modal ───────────────────────────────────────────
+  podOverlay: {
+    flex: 1,
+    justifyContent: 'flex-end',
+    backgroundColor: 'rgba(0,0,0,0.45)',
+  },
+  podSheet: {
+    backgroundColor: colors.white,
+    borderTopLeftRadius: ms(20),
+    borderTopRightRadius: ms(20),
+    paddingHorizontal: s(18),
+    paddingTop: vs(18),
+    paddingBottom: vs(20),
+  },
+
+  // Stepper
+  podStepper: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: vs(16),
+  },
+  podStepCircle: {
+    width: ms(26),
+    height: ms(26),
+    borderRadius: ms(13),
+    backgroundColor: colors.border_Color,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  podStepCircleActive: {backgroundColor: colors.accentBlue},
+  podStepCircleDone: {backgroundColor: colors.accentBlue},
+  podStepNum: {color: colors.textMuted, fontSize: ms(12), fontWeight: '700'},
+  podStepNumActive: {color: colors.white},
+  podStepLine: {
+    width: s(26),
+    height: vs(2),
+    backgroundColor: colors.border_Color,
+    marginHorizontal: s(2),
+  },
+  podStepLineActive: {backgroundColor: colors.accentBlue},
+
+  // Headings
+  podStepLabel: {color: colors.textMuted, fontSize: ms(11), marginBottom: vs(4)},
+  podTitle: {color: colors.text_dark, fontSize: ms(16), fontWeight: '700'},
+  podDesc: {
+    color: colors.textMuted,
+    fontSize: ms(12),
+    lineHeight: ms(17),
+    marginTop: vs(4),
+    marginBottom: vs(14),
+  },
+
+  // Location / Load info card
+  podInfoCard: {
+    flexDirection: 'row',
+    backgroundColor: colors.background,
+    borderRadius: ms(8),
+    paddingVertical: vs(10),
+    paddingHorizontal: s(14),
+    marginBottom: vs(14),
+  },
+  podInfoCol: {flex: 1},
+  podInfoLabel: {color: colors.textMuted, fontSize: ms(11), marginBottom: vs(2)},
+  podInfoValue: {color: colors.text_dark, fontSize: ms(13), fontWeight: '600'},
+
+  // Photo capture box
+  podPhotoBox: {
+    borderWidth: 1.5,
+    borderColor: colors.border_Color,
+    borderStyle: 'dashed',
+    borderRadius: ms(8),
+    height: vs(110),
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: vs(16),
+    overflow: 'hidden',
+  },
+  podRequiredBadge: {
+    position: 'absolute',
+    top: vs(8),
+    left: s(8),
+    backgroundColor: colors.background,
+    borderRadius: ms(4),
+    paddingHorizontal: s(6),
+    paddingVertical: vs(2),
+  },
+  podRequiredText: {color: colors.textMuted, fontSize: ms(9), fontWeight: '600'},
+  podPhotoIcon: {fontSize: ms(20), color: colors.textMuted},
+  podPhotoHint: {color: colors.textMuted, fontSize: ms(12), marginTop: vs(6)},
+  podPhotoImage: {...StyleSheet.absoluteFillObject},
+
+  // Success (captured) box
+  podSuccessBox: {
+    backgroundColor: colors.success_bg,
+    borderRadius: ms(8),
+    height: vs(110),
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: vs(16),
+  },
+  podSuccessText: {
+    color: colors.success,
+    fontSize: ms(13),
+    fontWeight: '700',
+  },
+  podRetake: {
+    color: colors.success,
+    fontSize: ms(11),
+    fontWeight: '600',
+    textDecorationLine: 'underline',
+    marginTop: vs(4),
+  },
+
+  // OTP
+  podOtpRow: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    marginVertical: vs(14),
+  },
+  podOtpBox: {
+    width: ms(40),
+    height: ms(46),
+    borderWidth: 1.5,
+    borderColor: colors.border_Color,
+    borderRadius: ms(8),
+    marginHorizontal: s(4),
+    textAlign: 'center',
+    fontSize: ms(18),
+    fontWeight: '700',
+    color: colors.text_dark,
+    padding: 0,
+  },
+  podOtpBoxFilled: {borderColor: colors.accentBlue},
+  podOtpExpiry: {
+    color: colors.textMuted,
+    fontSize: ms(11),
+    textAlign: 'center',
+  },
+  podResend: {
+    color: colors.text_dark,
+    fontSize: ms(11),
+    fontWeight: '600',
+    textDecorationLine: 'underline',
+    textAlign: 'center',
+    marginTop: vs(2),
+    marginBottom: vs(8),
+  },
+
+  // Confirmation summary table
+  podSummary: {
+    borderRadius: ms(8),
+    overflow: 'hidden',
+    borderWidth: 1,
+    borderColor: colors.border_Color,
+    marginBottom: vs(16),
+  },
+  podSummaryRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    paddingVertical: vs(9),
+    paddingHorizontal: s(12),
+    backgroundColor: colors.background,
+  },
+  podSummaryRowAlt: {backgroundColor: colors.white},
+  podSummaryKey: {color: colors.textMuted, fontSize: ms(12)},
+  podSummaryVal: {color: colors.text_dark, fontSize: ms(12), fontWeight: '600'},
+
+  // Action buttons
+  podPrimaryBtn: {
+    backgroundColor: colors.navy,
+    borderRadius: ms(8),
+    paddingVertical: vs(13),
+    alignItems: 'center',
+    marginBottom: vs(10),
+  },
+  podPrimaryBtnDisabled: {backgroundColor: colors.primaryLight},
+  podPrimaryText: {color: colors.white, fontSize: ms(14), fontWeight: '700'},
+  podSecondaryBtn: {
+    backgroundColor: colors.border_Color,
+    borderRadius: ms(8),
+    paddingVertical: vs(13),
+    alignItems: 'center',
+  },
+  podSecondaryBtnDisabled: {opacity: 0.6},
+  podSecondaryText: {color: colors.textMuted, fontSize: ms(14), fontWeight: '600'},
+
+  // Inline camera (over the photo box)
+  podCameraFeed: {...StyleSheet.absoluteFillObject, overflow: 'hidden'},
+  podShutter: {
+    position: 'absolute',
+    bottom: vs(8),
+    alignSelf: 'center',
+    width: ms(40),
+    height: ms(40),
+    borderRadius: ms(20),
+    backgroundColor: colors.white,
+    borderWidth: ms(3),
+    borderColor: 'rgba(255,255,255,0.6)',
+  },
 });
