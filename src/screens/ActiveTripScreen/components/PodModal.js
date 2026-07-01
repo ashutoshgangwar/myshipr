@@ -4,7 +4,6 @@ import {
   View,
   TouchableOpacity,
   TextInput,
-  Image,
   StyleSheet,
 } from 'react-native';
 import {Camera, useCameraDevice} from 'react-native-vision-camera';

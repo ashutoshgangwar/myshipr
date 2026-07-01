@@ -140,7 +140,12 @@ export default function ActiveTripScreen({navigation}) {
       <PodModal
         visible={podOpen}
         onClose={() => setPodOpen(false)}
-        onComplete={goBack}
+        onComplete={() =>
+          navigation?.navigate?.('TruckAnimationScreen', {
+            title: 'Completing your trip…',
+            subtitle: 'Finalising delivery and queuing your payout.',
+          })
+        }
       />
     </SafeAreaView>
   );
