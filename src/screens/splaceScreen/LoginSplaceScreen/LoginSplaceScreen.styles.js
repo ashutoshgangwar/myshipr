@@ -1,7 +1,7 @@
 import {StyleSheet, Platform} from 'react-native';
 import {moderateScale, scale, verticalScale} from 'react-native-size-matters';
 import {colors} from '../../../theme/colors';
-import {IS_TABLET, select} from '../../../utils/device';
+import {IS_TABLET, select} from '../../../theme/device';
 
 const isIOS = Platform.OS === 'ios';
 

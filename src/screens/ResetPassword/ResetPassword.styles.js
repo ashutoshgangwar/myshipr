@@ -1,7 +1,7 @@
 import {StyleSheet, Platform} from 'react-native';
 import {scale, verticalScale, moderateScale} from 'react-native-size-matters';
 import {colors} from '../../theme/colors';
-import {IS_TABLET, select} from '../../utils/device';
+import {IS_TABLET, select} from '../../theme/device';
 
 // Cap the form column on tablets so inputs/buttons don't stretch edge-to-edge.
 const FORM_MAX_WIDTH = select({phone: undefined, tablet: scale(380)});

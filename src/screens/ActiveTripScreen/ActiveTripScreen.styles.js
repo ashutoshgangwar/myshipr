@@ -5,7 +5,7 @@ import {
   scale as s,
 } from 'react-native-size-matters';
 import {colors} from '../../theme/colors';
-import {IS_TABLET} from '../../utils/device';
+import {IS_TABLET} from '../../theme/device';
 
 // Width of the floating panels (chat / documents / bidding) in the centre.
 const PANEL_WIDTH = IS_TABLET ? ms(300) : ms(260);

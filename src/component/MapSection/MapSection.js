@@ -8,7 +8,7 @@ import AppText from '../../theme/AppText';
 import {useLocation} from '../../services/LocationService';
 import Double_Arrow_Icon from '../../assets/svg_icon/arrow-double.svg';
 import Gps_Icon from '../../assets/svg_icon/gps-svg.svg';
-import { IS_TABLET } from '../../utils/device';
+import { IS_TABLET } from '../../theme/device';
 
 const DEFAULT_INITIAL_REGION = {
   latitude: 27.55,

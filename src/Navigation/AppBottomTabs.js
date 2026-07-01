@@ -12,7 +12,7 @@ import HomeIcon from '../assets/svg_icon/Home.svg';
 import EarningsIcon from '../assets/svg_icon/Earnings.svg';
 import ScheduleIcon from '../assets/svg_icon/Schedule.svg';
 import {colors} from '../theme/colors';
-import {IS_TABLET, select} from '../utils/device';
+import {IS_TABLET, select} from '../theme/device';
 
 const Tab = createBottomTabNavigator();
 

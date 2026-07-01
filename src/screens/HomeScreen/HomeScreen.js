@@ -13,7 +13,7 @@ import StatusBar from '../../component/StatusBar/StatusBar';
 import FloatingMap from '../../component/FloatingMap/FloatingMap';
 import Button from '../../component/Button/Button';
 import {colors} from '../../theme/colors';
-import {IS_TABLET} from '../../utils/device';
+import {IS_TABLET} from '../../theme/device';
 import AppText from '../../theme/AppText';
 import TruckIcon from '../../assets/svg_icon/Frame_black.svg';
 import Right_Arrow from '../../assets/svg_icon/right_Arrow.svg';

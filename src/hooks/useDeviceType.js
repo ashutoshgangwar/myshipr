@@ -1,6 +1,6 @@
 import {useMemo} from 'react';
 import {useWindowDimensions} from 'react-native';
-import {IS_TABLET, IS_PHONE, getDeviceType, select} from '../utils/device';
+import {IS_TABLET, IS_PHONE, getDeviceType, select} from '../theme/device';
 
 // Reactive form-factor hook. `isTablet` is stable, but exposing the live
 // window dimensions lets screens also react to orientation changes on tablets.

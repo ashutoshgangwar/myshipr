@@ -11,7 +11,7 @@ import {HERE_ACCESS_KEY_ID, HERE_ACCESS_KEY_SECRET} from '@env';
 import styles from './HereMapPicker.styles';
 import {colors} from '../../theme/colors';
 import AppText from '../../theme/AppText';
-import {IS_TABLET} from '../../utils/device';
+import {IS_TABLET} from '../../theme/device';
 
 import {
   HereMapView,

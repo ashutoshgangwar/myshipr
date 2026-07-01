@@ -1,7 +1,7 @@
 import {Dimensions, StyleSheet} from 'react-native';
 import {ms, vs} from '../../theme/scale';
 import {colors} from '../../theme/colors';
-import {select} from '../../utils/device';
+import {select} from '../../theme/device';
 
 const {width: SCREEN_W, height: SCREEN_H} = Dimensions.get('window');
 

@@ -1,7 +1,7 @@
 import {StyleSheet, Platform} from 'react-native';
 import {scale, verticalScale, moderateScale} from 'react-native-size-matters';
 import {colors} from '../../theme/colors';
-import {IS_TABLET} from '../../utils/device';
+import {IS_TABLET} from '../../theme/device';
 
 const styles = StyleSheet.create({
   /* Search */
