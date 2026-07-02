@@ -3,21 +3,10 @@ import {View, Animated, Easing, StyleSheet} from 'react-native';
 import {moderateScale as ms} from 'react-native-size-matters';
 import Success_Tick from '../../assets/svg_icon/tick_success.svg';
 
-// Pixel-confetti that FALLS from behind the badge toward the bottom of the
-// screen, then fades out. Each particle starts at the badge centre and drops
-// by `fall` while drifting sideways by `x`; sized/tinted to mimic the design.
 const TEAL = '#2FBFAE';
 const TEAL_DARK = '#1E7F79';
 const NAVY = '#00033E';
 
-// `x` is the horizontal offset from the badge centre (± = spread across) and
-// `fall` is how far BELOW the badge each particle drops (down side). Every
-// particle emanates FROM the badge icon, falls to the down side, then hides.
-//
-// Each particle owns its slice of the timeline: `start` is when (0–1 of the
-// sparkle phase) it begins, `win` is how long its fall lasts. Both vary per
-// particle so they DON'T all drop on the same schedule or for the same
-// duration — the confetti reads as a scattered, organic fall.
 const PARTICLES = [
   {x: -150, fall: 120, size: 7, color: TEAL, start: 0.06, win: 0.44},
   {x: -60, fall: 160, size: 6, color: NAVY, start: 0.20, win: 0.42},

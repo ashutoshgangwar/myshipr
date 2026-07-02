@@ -7,7 +7,10 @@ import {
   Image,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
-import {verticalScale as vs, moderateScale as ms} from 'react-native-size-matters';
+import {
+  verticalScale as vs,
+  moderateScale as ms,
+} from 'react-native-size-matters';
 import Svg, {Path, Circle} from 'react-native-svg';
 import AppText from '../../theme/AppText';
 import {colors} from '../../theme/colors';
@@ -17,7 +20,7 @@ import Drop_Pin from '../../assets/svg_icon/Drop_Pin.svg';
 import SuccessBurst from '../../component/SuccessBurst/SuccessBurst';
 import Reciept_Icon from '../../assets/svg_icon/icons_reciept.svg';
 import Info_Icon from '../../assets/svg_icon/Info_Icon.svg';
-
+import Cross_Icon from '../../assets/svg_icon/Cross_Icon.svg';
 
 export default function TripCompletedScreen({navigation, route}) {
   const {
@@ -42,19 +45,12 @@ export default function TripCompletedScreen({navigation, route}) {
         style={styles.closeBtn}
         onPress={handleClose}
         hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
-        <Svg width={ms(18)} height={ms(18)} viewBox="0 0 24 24">
-          <Path
-            d="M6 6l12 12M18 6L6 18"
-            stroke={colors.textMuted}
-            strokeWidth={2.2}
-            strokeLinecap="round"
-          />
-        </Svg>
+        <Cross_Icon  width={ms(30)} height={ms(30)}/>
       </TouchableOpacity>
 
       <View style={styles.body}>
         <SuccessBurst size={ms(72)} style={{alignSelf: 'center'}} />
-      
+
         <AppText style={styles.title}>You have completed your trip</AppText>
         <AppText style={styles.subtitle}>
           Your payout for this trip will be visible in your earnings tab
@@ -63,13 +59,8 @@ export default function TripCompletedScreen({navigation, route}) {
         {/* Pickup / Drop card */}
         <View style={styles.card}>
           <View style={styles.locRow}>
-          
-            <View style={styles.markerCol}>
-              <View style={styles.pickupOuter}>
-                {/* <View style={styles.pickupRing} /> */}
-                  <Load_DocIcon size={ms(30)} />
-              </View>
-              <View style={styles.connector} />
+            <View style={styles.markerCol_pickup}>
+              <Load_DocIcon width={ms(20)} height={ms(20)} />
             </View>
             <View style={styles.locTextCol}>
               <AppText style={styles.locLabel}>Pickup Location</AppText>
@@ -79,8 +70,8 @@ export default function TripCompletedScreen({navigation, route}) {
           </View>
 
           <View style={styles.locRow}>
-            <View style={styles.markerCol}>
-              <Drop_Pin/>
+            <View style={styles.markerCol_drop}>
+              <Drop_Pin width={ms(20)} height={ms(20)} />
             </View>
             <View style={styles.locTextCol}>
               <AppText style={styles.locLabel}>Drop Location</AppText>
@@ -124,12 +115,12 @@ const styles = StyleSheet.create({
   },
   closeBtn: {
     position: 'absolute',
-    top: vs(12),
-    right: ms(18),
+    top: vs(35),
+    right: ms(10),
     width: ms(34),
     height: ms(34),
     borderRadius: ms(17),
-    backgroundColor: colors.gray400,
+    // backgroundColor: colors.gray400,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 5,
@@ -156,16 +147,30 @@ const styles = StyleSheet.create({
   },
   card: {
     backgroundColor: colors.white,
-    borderRadius: ms(14),
+    borderRadius: ms(8),
     borderWidth: 1,
     borderColor: colors.border_Color,
     padding: ms(16),
     marginTop: vs(20),
   },
   locRow: {flexDirection: 'row'},
-  markerCol: {
-    width: ms(28),
+  markerCol_pickup: {
+    width: ms(38),
+    height: ms(38),
+    borderRadius: ms(19),
+    backgroundColor: '#D977061A',
     alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: ms(12),
+  },
+  markerCol_drop: {
+    width: ms(38),
+    height: ms(38),
+    borderRadius: ms(19),
+    backgroundColor: '#16A33D1A',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: ms(12),
   },
   pickupOuter: {
     width: ms(22),
@@ -215,7 +220,7 @@ const styles = StyleSheet.create({
   loadIconWrap: {
     width: ms(38),
     height: ms(38),
-    borderRadius: ms(10),
+    borderRadius: ms(19),
     backgroundColor: '#EEEAFB',
     alignItems: 'center',
     justifyContent: 'center',
