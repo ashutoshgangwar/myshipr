@@ -8,28 +8,30 @@ import TruckLoader from '../../component/TruckLoader/TruckLoader';
 
 /**
  * Full-screen transition shown while a trip is being finalised — a truck
- * drives across the road on a loop. Auto-advances after `holdMs` if a
- * `next` route is provided via params.
+ * drives across the road once, then advances to the `next` route (defaults
+ * to the login screen) as soon as that single animation cycle completes.
  */
 export default function TruckAnimationScreen({navigation, route}) {
   const {
     title = 'Completing your trip…',
     subtitle = 'Hang tight while we wrap things up.',
-    next,
-    holdMs = 3200,
+    next = 'TripCompletedScreen',
+    nextParams,
   } = route?.params || {};
 
-  React.useEffect(() => {
-    if (!next) return;
-    const t = setTimeout(() => navigation?.replace?.(next), holdMs);
-    return () => clearTimeout(t);
-  }, [navigation, next, holdMs]);
+  const advanced = React.useRef(false);
+
+  const handleCycleComplete = React.useCallback(() => {
+    if (advanced.current || !next) return;
+    advanced.current = true;
+    navigation?.replace?.(next, nextParams);
+  }, [navigation, next, nextParams]);
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" backgroundColor={colors.white} />
       <View style={styles.body}>
-        <TruckLoader />
+        <TruckLoader loop={false} onCycle={handleCycleComplete} />
         <AppText style={styles.title}>{title}</AppText>
         <AppText style={styles.subtitle}>{subtitle}</AppText>
       </View>

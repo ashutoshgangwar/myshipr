@@ -79,7 +79,7 @@ const Login = () => {
 
   const handleLogin = async () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const phoneRegex = /^\+?\d{10,15}$/;
+    const phoneRegex = /^\+?\d{10,15}$/; 
 
     const identifier = email.trim();
 
@@ -128,15 +128,15 @@ const Login = () => {
     navigation.navigate('ResetPassword');
   };
 
-  const handleCreateAccount = () => {
-    if (loading) return;
-    navigation.navigate('SignupScreen');
-  };
+  // const handleCreateAccount = () => {
+  //   if (loading) return;
+  //   navigation.navigate('SignupScreen');
+  // };
 
-  const handleGoogleLogin = () => {
-    if (loading) return;
-    Alert.alert('Coming Soon', 'Google login will be available soon.');
-  };
+  // const handleGoogleLogin = () => {
+  //   if (loading) return;
+  //   Alert.alert('Coming Soon', 'Google login will be available soon.');
+  // };
 
   return (
     <KeyboardAvoidingView

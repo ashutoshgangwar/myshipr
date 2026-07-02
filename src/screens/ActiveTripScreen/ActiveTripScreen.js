@@ -144,6 +144,7 @@ export default function ActiveTripScreen({navigation}) {
           navigation?.navigate?.('TruckAnimationScreen', {
             title: 'Completing your trip…',
             subtitle: 'Finalising delivery and queuing your payout.',
+            next: 'TripCompletedScreen',
           })
         }
       />

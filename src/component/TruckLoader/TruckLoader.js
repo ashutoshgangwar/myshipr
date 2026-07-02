@@ -1,23 +1,16 @@
 import React, {useEffect, useRef} from 'react';
-import {View, Animated, Easing, useWindowDimensions, StyleSheet} from 'react-native';
+import {View, Animated, Easing, Image, useWindowDimensions, StyleSheet} from 'react-native';
 import {moderateScale as ms, verticalScale as vs} from 'react-native-size-matters';
-import {colors} from '../../theme/colors';
-import SideTruck from './SideTruck';
+import MovingTruck from '../../assets/svg_icon/Moving_Truck.svg';
+import RoadImage from '../../assets/Image/Road_image.png';
 
-/**
- * Looping truck animation: a side-view truck drives across a road from the
- * left edge to off the right edge, then repeats. Drop it anywhere as a
- * loading / transition visual.
- *
- *   duration  ms for one left→right pass (default 2600)
- *   truckW    rendered truck width (default 180)
- *   loop      keep repeating (default true)
- *   onCycle   called each time the truck exits the right edge
- */
+// Moving_Truck.svg is authored at 406 × 106 → keep this aspect ratio.
+const TRUCK_ASPECT = 406 / 106;
+
 export default function TruckLoader({
-  duration = 2600,
-  truckW = ms(180),
-  truckH = ms(78),
+  duration = 8700,
+  truckW = ms(405),
+  truckH = ms(200) / TRUCK_ASPECT,
   loop = true,
   onCycle,
 }) {
@@ -46,11 +39,15 @@ export default function TruckLoader({
 
   return (
     <View style={styles.stage}>
-      {/* Road line the truck rides on */}
-      <View style={styles.road} />
+      {/* Only the asphalt road (rows ~207-240 of the 280px scene) is shown.
+          The scene is drawn tall and pushed down so the clip band exposes just
+          the road — sky/hills above and grass below are hidden. */}
+      <View style={styles.roadClip}>
+        <Image source={RoadImage} style={styles.road} resizeMode="stretch" />
+      </View>
 
       <Animated.View style={[styles.truck, {transform: [{translateX: x}]}]}>
-        <SideTruck width={truckW} height={truckH} />
+        <MovingTruck width={truckW} height={truckH} />
       </Animated.View>
     </View>
   );
@@ -63,17 +60,26 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     overflow: 'hidden',
   },
+  roadClip: {
+    // Visible window = height of the asphalt band only.
+    position: 'absolute',
+    left: 0,
+    right: 0,
+    bottom: 0,
+    height: vs(22),
+    overflow: 'hidden',
+  },
   road: {
     position: 'absolute',
     left: 0,
     right: 0,
-    bottom: vs(28),
-    height: vs(3),
-    backgroundColor: colors.textMuted,
+    bottom: -vs(27),
+    width: '100%',
+    height: vs(185),
   },
   truck: {
     position: 'absolute',
     left: 0,
-    bottom: vs(28),
+    bottom: vs(20),
   },
 });
