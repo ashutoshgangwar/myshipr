@@ -1,5 +1,5 @@
 import React, {useMemo, useState} from 'react';
-import {View, FlatList, TouchableOpacity, TextInput} from 'react-native';
+import {View, FlatList, TouchableOpacity, TextInput, ScrollView} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
 import styles from './BiddingScreen.styles';
@@ -12,12 +12,13 @@ import {colors} from '../../theme/colors';
 // icons later. Not creating any custom SVGs.
 import BiddingIcon from '../../assets/svg_icon/Bidding_Icon.svg';
 import SearchIcon from '../../assets/svg_icon/Search_Icon.svg';
-import TruckIcon from '../../assets/svg_icon/truck-icon.svg';
+import TruckIcon from '../../assets/svg_icon/Truck_Frame.svg';
 import CalendarIcon from '../../assets/svg_icon/Schedule.svg';
 import ClockIcon from '../../assets/svg_icon/Info_Icon.svg';
 import ChevronIcon from '../../assets/svg_icon/right_Arrow.svg';
-import ListViewIcon from '../../assets/svg_icon/Manual_icon.svg';
-import GridViewIcon from '../../assets/svg_icon/Scan_Iocn.svg';
+import ListViewIcon from '../../assets/svg_icon/list_grid.svg';
+import CardViewIcon from '../../assets/svg_icon/card_grid.svg';
+import Both_direction_Icon from '../../assets/svg_icon/both_direction.svg';
 
 const MODES = ['All Modes', 'FTL', 'LTL'];
 
@@ -165,6 +166,23 @@ function ModeChip({mode}) {
   );
 }
 
+function HeaderCell({label, colStyle, sortable, center}) {
+  return (
+    <View style={[styles.thCell, colStyle, center && styles.thCellCenter]}>
+      <AppText
+        style={styles.thText}
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.85}>
+        {label}
+      </AppText>
+      {sortable ? (
+        <Both_direction_Icon width={8} height={8} style={styles.thSortIcon} />
+      ) : null}
+    </View>
+  );
+}
+
 function StatusBadge({status}) {
   const s = STATUS[status] || STATUS.Open;
   return (
@@ -252,27 +270,37 @@ function ListRow({item}) {
       </View>
 
       {/* Mode */}
-      <View style={styles.colMode}>
+      <View style={[styles.colMode, styles.colCenter]}>
         <ModeChip mode={item.mode} />
       </View>
 
       {/* Pickup Time */}
-      <View style={styles.colPickup}>
-        <AppText style={styles.cellStrong}>{item.pickupTime}</AppText>
-        <AppText style={styles.cellMuted}>{item.pickupDate}</AppText>
+      <View style={[styles.colPickup, styles.colCenter]}>
+        <AppText style={styles.cellStrong} numberOfLines={1}>
+          {item.pickupTime}
+        </AppText>
+        <AppText style={styles.cellMuted} numberOfLines={1}>
+          {item.pickupDate}
+        </AppText>
       </View>
 
       {/* Indicative */}
-      <View style={styles.colIndicative}>
-        <AppText style={styles.cellStrong}>{item.indicative}</AppText>
+      <View style={[styles.colIndicative, styles.colCenter]}>
+        <AppText style={styles.cellStrong} numberOfLines={1}>
+          {item.indicative}
+        </AppText>
       </View>
 
       {/* Lowest Bid */}
-      <View style={styles.colLowest}>
+      <View style={[styles.colLowest, styles.colCenter]}>
         <AppText style={styles.lowestBidValue}>{item.lowestBid}</AppText>
         <AppText style={styles.lowestBidRank}>{item.rank}</AppText>
       </View>
-      <ChevronIcon width={14} height={14} />
+
+      {/* Chevron */}
+      <View style={styles.colChevron}>
+        <ChevronIcon width={14} height={14} />
+      </View>
     </TouchableOpacity>
   );
 }
@@ -365,7 +393,7 @@ export default function BiddingScreen() {
             activeOpacity={0.85}
             onPress={() => setGrid(true)}
             style={[styles.toggleBtn, grid && styles.toggleBtnActive]}>
-            <GridViewIcon width={16} height={16} />
+            <CardViewIcon width={16} height={16} />
           </TouchableOpacity>
         </View>
       </View>
@@ -384,22 +412,34 @@ export default function BiddingScreen() {
         />
       ) : (
         <View style={styles.tableWrap}>
-          <View style={styles.tableHeader}>
-            <AppText style={[styles.thText, styles.colLoad]}>Load</AppText>
-            <AppText style={[styles.thText, styles.colEquip]}>Equipment</AppText>
-            <AppText style={[styles.thText, styles.colMode]}>Mode</AppText>
-            <AppText style={[styles.thText, styles.colPickup]}>Pickup Time</AppText>
-            <AppText style={[styles.thText, styles.colIndicative]}>Indicative</AppText>
-            <AppText style={[styles.thText, styles.colLowest]}>Lowest Bid</AppText>
-          </View>
-          <FlatList
-            key="list"
-            data={data}
-            keyExtractor={b => b.id}
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={styles.listContent}
-            renderItem={({item}) => <ListRow item={item} />}
-          />
+          <ScrollView
+            horizontal
+            bounces={false}
+            overScrollMode="never"
+            showsHorizontalScrollIndicator={false}
+            style={styles.tableScroll}
+            contentContainerStyle={styles.tableScrollContent}>
+            <View style={styles.tableInner}>
+              <View style={styles.tableHeader}>
+                <HeaderCell label="Load" colStyle={styles.colLoad} sortable />
+                <HeaderCell label="Equipment" colStyle={styles.colEquip} sortable />
+                <HeaderCell label="Mode" colStyle={styles.colMode} sortable center />
+                <HeaderCell label="Pickup Time" colStyle={styles.colPickup} sortable center />
+                <HeaderCell label="Indicative" colStyle={styles.colIndicative} sortable center />
+                <HeaderCell label="Lowest Bid" colStyle={styles.colLowest} center />
+                <View style={styles.colChevron} />
+              </View>
+              <FlatList
+                key="list"
+                data={data}
+                keyExtractor={b => b.id}
+                showsVerticalScrollIndicator={false}
+                style={styles.tableList}
+                contentContainerStyle={styles.listContent}
+                renderItem={({item}) => <ListRow item={item} />}
+              />
+            </View>
+          </ScrollView>
         </View>
       )}
     </SafeAreaView>

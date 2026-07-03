@@ -7,6 +7,30 @@ const PHONE_FACTOR = select({phone: 0.82, tablet: 1});
 const ms = n => baseMs(n) * PHONE_FACTOR;
 const vs = n => baseVs(n) * PHONE_FACTOR;
 
+/* Fixed column widths so the table keeps a comfortable size and can scroll
+   horizontally on narrow phones while still filling a tablet. */
+const COL = {
+  load: ms(135),
+  equip: ms(102),
+  mode: ms(70),
+  pickup: ms(90),
+  indicative: ms(78),
+  lowest: ms(90),
+  chevron: ms(22),
+};
+
+const TABLE_PADDING = ms(10);
+
+export const TABLE_WIDTH =
+  COL.load +
+  COL.equip +
+  COL.mode +
+  COL.pickup +
+  COL.indicative +
+  COL.lowest +
+  COL.chevron +
+  TABLE_PADDING * 2;
+
 export default StyleSheet.create({
   safe: {
     flex: 1,
@@ -21,18 +45,18 @@ export default StyleSheet.create({
     borderRadius: ms(10),
     paddingHorizontal: ms(12),
     paddingVertical: vs(5),
-    alignItems: 'center',
+    alignItems: 'left',
   },
 
   dieselLabel: {
     color: colors.onDarkLow,
     fontSize: ms(9),
-    fontWeight: '600',
+    fontWeight: '500',
     letterSpacing: 0.5,
   },
 
   dieselValue: {
-    color: colors.white,
+    color: colors.success_bg,
     fontSize: ms(14),
     fontWeight: '700',
     marginTop: vs(1),
@@ -64,14 +88,14 @@ export default StyleSheet.create({
   },
 
   modeTabActive: {
-    backgroundColor: colors.status,
-    borderColor: colors.status,
+    backgroundColor: colors.splashSubtitle,
+    borderColor: colors.splashSubtitle,
   },
 
   modeTabText: {
     fontSize: ms(12),
     fontWeight: '600',
-    color: colors.textMuted,
+    color: colors.splashSubtitle,
   },
 
   modeTabTextActive: {
@@ -93,7 +117,7 @@ export default StyleSheet.create({
 
   searchInput: {
     flex: 1,
-    fontSize: ms(13),
+    fontSize: ms(12),
     color: colors.textStrong,
     padding: 0,
   },
@@ -115,7 +139,7 @@ export default StyleSheet.create({
   },
 
   toggleBtnActive: {
-    backgroundColor: colors.primary,
+    backgroundColor: colors.toggle_color,
   },
 
   /* ---------- Shared chips ---------- */
@@ -124,10 +148,9 @@ export default StyleSheet.create({
     alignItems: 'center',
     gap: ms(4),
     backgroundColor: '#EAF1FF',
-    borderRadius: ms(6),
+    borderRadius: ms(15),
     paddingHorizontal: ms(6),
     paddingVertical: vs(3),
-    alignSelf: 'flex-start',
   },
 
   modeChipText: {
@@ -254,8 +277,8 @@ export default StyleSheet.create({
   },
 
   cardLowestValue: {
-    fontWeight: '700',
-    color: colors.accentBlue,
+    fontWeight: '800',
+    color: colors.accentBlueDark,
   },
 
   cardRank: {
@@ -276,18 +299,54 @@ export default StyleSheet.create({
     overflow: 'hidden',
   },
 
+  tableScroll: {
+    flex: 1,
+  },
+
+  tableScrollContent: {
+    flexGrow: 1,
+  },
+
+  tableInner: {
+    minWidth: TABLE_WIDTH,
+    flexGrow: 1,
+  },
+
+  tableList: {
+    flex: 1,
+  },
+
   tableHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: colors.gray400,
+    backgroundColor: colors.gray500,
     paddingVertical: vs(9),
-    paddingHorizontal: ms(10),
+    paddingHorizontal: TABLE_PADDING,
+  },
+
+  thCell: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: ms(3),
+  },
+
+  thCellCenter: {
+    justifyContent: 'center',
+  },
+
+  colCenter: {
+    alignItems: 'center',
   },
 
   thText: {
-    fontSize: ms(11),
-    fontWeight: '700',
-    color: colors.textMuted,
+    flexShrink: 1,
+    fontSize: ms(12),
+    fontWeight: '500',
+    color: colors.nearBlack,
+  },
+
+  thSortIcon: {
+    flexShrink: 0,
   },
 
   listContent: {
@@ -302,13 +361,14 @@ export default StyleSheet.create({
     borderBottomColor: colors.border_Color,
   },
 
-  /* column widths (flex) — shared by header + rows */
-  colLoad: {flex: 2.4, paddingRight: ms(4)},
-  colEquip: {flex: 1.6, paddingRight: ms(4)},
-  colMode: {flex: 1, paddingRight: ms(4)},
-  colPickup: {flex: 1.4, paddingRight: ms(4)},
-  colIndicative: {flex: 1.2, paddingRight: ms(4)},
-  colLowest: {flex: 1.3},
+  /* fixed column widths — shared by header + rows so both scroll in sync */
+  colLoad: {width: COL.load, paddingRight: ms(4)},
+  colEquip: {width: COL.equip, paddingRight: ms(4)},
+  colMode: {width: COL.mode, paddingRight: ms(4)},
+  colPickup: {width: COL.pickup, paddingRight: ms(4)},
+  colIndicative: {width: COL.indicative, paddingRight: ms(4)},
+  colLowest: {width: COL.lowest},
+  colChevron: {width: COL.chevron, alignItems: 'center', justifyContent: 'center'},
 
   loadHeadRow: {
     flexDirection: 'row',
@@ -375,7 +435,7 @@ export default StyleSheet.create({
   lowestBidValue: {
     fontSize: ms(12),
     fontWeight: '700',
-    color: colors.accentBlue,
+    color: colors.accentBlueDark,
   },
 
   lowestBidRank: {

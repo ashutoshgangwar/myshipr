@@ -2,6 +2,7 @@ export const colors = {
   navy: '#00033E',
   nearBlack: '#171717',
   gray400: '#f2efef',
+  gray500: '#88888878',
   white: '#FFFFFF',
   placeholder: '#00000099',
 
@@ -18,6 +19,7 @@ export const colors = {
   text_color: '#FFFFFF',
   text_dark: '#111111',
   text_light: '#061e48ff',
+  toggle_color: '#a6cdf9',
 
 
   input_bg: '#FFFFFF',
@@ -35,6 +37,7 @@ export const colors = {
    card_drive_load: '#7C5BE6',
   successLight: '#E4FBF3',
   accentBlue: '#2563EB',
+  accentBlueDark: '#1F00BF',
   warning: '#F59E0B',
   warningLight: '#eacd77',
   danger: '#DC2626',
