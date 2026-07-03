@@ -4,6 +4,7 @@ import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 
 import styles from './ScheduleScreen.styles';
 import StatusBar from '../../component/StatusBar/StatusBar';
+import DashboardHeader from '../../component/DashboardHeader/DashboardHeader';
 import AppText from '../../theme/AppText';
 import {colors} from '../../theme/colors';
 import ScheduleIcon from '../../assets/svg_icon/Schedule.svg';
@@ -68,23 +69,16 @@ export default function ScheduleScreen() {
 
       <View style={styles.page}>
         {/* HEADER */}
-        <View style={styles.header}>
-          <View style={styles.headerTopRow}>
-            <View style={styles.brandRow}>
-              <View style={styles.brandBadge}>
-                <ScheduleIcon width={18} height={18} color={colors.primary} />
-              </View>
-              <View>
-                <AppText style={styles.brandText}>Schedule</AppText>
-                <AppText style={styles.brandSub}>Jun 2026 • 3 Bids</AppText>
-              </View>
-            </View>
-
+        <DashboardHeader
+          icon={<ScheduleIcon width={18} height={18} color={colors.primary} />}
+          title="Schedule"
+          subtitle="Jun 2026 • 3 Bids"
+          right={
             <TouchableOpacity style={styles.headerCalendarBtn} activeOpacity={0.8}>
               <ScheduleIcon width={20} height={20} color={colors.white} />
             </TouchableOpacity>
-          </View>
-
+          }
+          headerStyle={styles.headerPad}>
           {/* WEEK STRIP */}
           <View style={styles.weekRow}>
             {WEEK.map(d => {
@@ -104,7 +98,7 @@ export default function ScheduleScreen() {
               );
             })}
           </View>
-        </View>
+        </DashboardHeader>
 
         {/* FEATURED CARD */}
         <View style={styles.featuredCard}>

@@ -13,54 +13,7 @@ export default StyleSheet.create({
     backgroundColor: colors.screenBg,
   },
 
-  /* ---------- Header ---------- */
-  header: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: ms(16),
-    paddingTop: vs(14),
-    paddingBottom: vs(18),
-    borderBottomLeftRadius: ms(24),
-    borderBottomRightRadius: ms(24),
-  },
-
-  headerTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-
-  brandRow: {
-    flexDirection: 'column',
-  },
-
-  brandTitleRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: ms(10),
-  },
-
-  brandBadge: {
-    width: ms(32),
-    height: ms(32),
-    borderRadius: ms(8),
-    backgroundColor: colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  brandText: {
-    color: colors.white,
-    fontSize: ms(18),
-    fontWeight: '500',
-  },
-
-  brandSub: {
-    color: colors.onDarkLow,
-    fontSize: ms(11),
-    fontWeight: '500',
-    marginLeft: ms(42),
-  },
-
+  /* ---------- Header (diesel pill lives in the right slot) ---------- */
   dieselPill: {
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.25)',
@@ -85,47 +38,13 @@ export default StyleSheet.create({
     marginTop: vs(1),
   },
 
-  /* ---------- Stat cards ---------- */
-  statsRow: {
-    flexDirection: 'row',
-    marginTop: vs(16),
-    gap: ms(8),
-  },
-
-  statCard: {
-    flex: 1,
-    backgroundColor: colors.white,
-    borderRadius: ms(10),
-    paddingVertical: ms(9),
-    paddingHorizontal: ms(9),
-    borderLeftWidth: ms(4),
-  },
-
-  statLabel: {
-    fontSize: ms(11),
-    fontWeight: '700',
-  },
-
-  statValue: {
-    color: colors.textStrong,
-    fontSize: ms(20),
-    fontWeight: '800',
-    marginTop: vs(3),
-  },
-
-  statNote: {
-    color: colors.textMuted,
-    fontSize: ms(9),
-    fontWeight: '500',
-    marginTop: vs(2),
-  },
-
   /* ---------- Filter row ---------- */
   filterRow: {
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: ms(14),
-    paddingVertical: vs(12),
+    paddingTop: vs(16),
+    paddingBottom: vs(12),
     gap: ms(8),
   },
 

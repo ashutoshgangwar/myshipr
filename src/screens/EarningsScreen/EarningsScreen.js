@@ -10,6 +10,7 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 
 import styles from './EarningsScreen.styles';
 import StatusBar from '../../component/StatusBar/StatusBar';
+import DashboardHeader from '../../component/DashboardHeader/DashboardHeader';
 import AppText from '../../theme/AppText';
 import {colors} from '../../theme/colors';
 import EarningsIcon from '../../assets/svg_icon/Earnings.svg';
@@ -86,18 +87,11 @@ export default function EarningsScreen() {
 
       <View style={styles.page}>
         {/* HEADER */}
-        <View style={styles.header}>
-          <View style={styles.headerTopRow}>
-            <View style={styles.brandRow}>
-              <View style={styles.brandBadge}>
-                <EarningsIcon width={18} height={18} color={colors.primary} />
-              </View>
-              <View>
-                <AppText style={styles.brandText}>EARNINGS </AppText>
-                <AppText style={styles.brandSub}>{data.range}</AppText>
-              </View>
-            </View>
-
+        <DashboardHeader
+          icon={<EarningsIcon width={18} height={18} color={colors.primary} />}
+          title="EARNINGS"
+          subtitle={data.range}
+          right={
             <TouchableOpacity
               style={styles.periodBtn}
               activeOpacity={0.8}
@@ -105,8 +99,8 @@ export default function EarningsScreen() {
               <AppText style={styles.periodBtnText}>{period}</AppText>
               <DropdownIcon width={16} height={16} />
             </TouchableOpacity>
-          </View>
-
+          }
+          stats={STATS}>
           <AppText style={styles.grossValue}>{data.gross}</AppText>
           <AppText style={styles.grossLabel}>{data.grossLabel}</AppText>
 
@@ -132,26 +126,7 @@ export default function EarningsScreen() {
               ))}
             </View>
           </View>
-        </View>
-
-        {/* STAT CARDS */}
-        <View style={styles.statsRow}>
-          {STATS.map(stat => (
-            <View
-              key={stat.label}
-              style={[styles.statCard, {borderLeftColor: stat.accent}]}>
-              <AppText numberOfLines={1} adjustsFontSizeToFit style={styles.statLabel}>
-                {stat.label}
-              </AppText>
-              <AppText numberOfLines={1} adjustsFontSizeToFit style={styles.statValue}>
-                {stat.value}
-              </AppText>
-              <AppText numberOfLines={1} adjustsFontSizeToFit style={styles.statNote}>
-                {stat.note}
-              </AppText>
-            </View>
-          ))}
-        </View>
+        </DashboardHeader>
 
         {/* TRANSACTIONS */}
         <FlatList

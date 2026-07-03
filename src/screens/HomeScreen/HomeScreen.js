@@ -10,6 +10,7 @@ import {useNavigation} from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import styles from './HomeScreen.styles';
 import StatusBar from '../../component/StatusBar/StatusBar';
+import DashboardHeader from '../../component/DashboardHeader/DashboardHeader';
 import FloatingMap from '../../component/FloatingMap/FloatingMap';
 import Button from '../../component/Button/Button';
 import {colors} from '../../theme/colors';
@@ -26,28 +27,28 @@ const STATS = [
     label: 'Miles • Week',
     value: '1,234',
     note: '↑ 8% vs last week',
-    color: colors.success,
+    noteColor: colors.success,
     accent: colors.warning,
   },
   {
     label: 'Earnings',
     value: '$1,234',
     note: '↓ $200 this week',
-    color: colors.danger,
+    noteColor: colors.danger,
     accent: colors.success,
   },
   {
     label: 'Net Profit',
     value: '$879',
     note: 'after all costs',
-    color: colors.textMuted,
+    noteColor: colors.textMuted,
     accent: colors.accentBlue,
   },
   {
     label: 'Fuel Saved',
     value: '$1,234',
     note: 'Route Optimization',
-    color: colors.accentBlue,
+    noteColor: colors.accentBlue,
     accent: colors.warning,
   },
 ];
@@ -160,54 +161,19 @@ const HomeScreen = () => {
         alwaysBounceVertical={false}
         overScrollMode="never">
         {/* HEADER */}
-        <View style={styles.header}>
-          <View style={styles.headerTopRow}>
-            <View style={styles.brandRow}>
-              <View style={styles.brandBadge}>
-                <TruckIcon width={20} height={20} />
-              </View>
-              <AppText style={styles.brandText}>CARRIER</AppText>
-            </View>
-
+        <DashboardHeader
+          icon={<TruckIcon width={20} height={20} />}
+          title="CARRIER"
+          right={
             <View style={styles.dieselBadge}>
               <AppText style={styles.dieselLabel}>DIESEL</AppText>
               <AppText style={styles.dieselValue}>$3.89/gal</AppText>
             </View>
-          </View>
-
+          }
+          stats={STATS}>
           <AppText style={styles.headerLocation}>Dallas, TX</AppText>
           <AppText style={styles.headerWelcome}>Welcome Back, Ashutosh</AppText>
-        </View>
-
-        {/* STATS */}
-        <View style={styles.statsRow}>
-          {STATS.map(stat => (
-            <View
-              key={stat.label}
-              style={[styles.statCard, {borderLeftColor: stat.accent}]}>
-              <AppText
-                numberOfLines={1}
-                adjustsFontSizeToFit
-                minimumFontScale={0.8}
-                style={styles.statLabel}>
-                {stat.label}
-              </AppText>
-              <AppText
-                numberOfLines={1}
-                adjustsFontSizeToFit
-                minimumFontScale={0.7}
-                style={styles.statValue}>
-                {stat.value}
-              </AppText>
-              <AppText
-                numberOfLines={1}
-                adjustsFontSizeToFit
-                style={[styles.statNote, {color: stat.color}]}>
-                {stat.note}
-              </AppText>
-            </View>
-          ))}
-        </View>
+        </DashboardHeader>
 
         {/* MAIN GRID */}
         <View style={styles.grid}>

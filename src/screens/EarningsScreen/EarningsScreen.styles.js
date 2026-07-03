@@ -142,7 +142,7 @@ export default StyleSheet.create({
 
   /* ---------- Bar chart ---------- */
   chartWrap: {
-    marginTop: vs(1),
+    marginTop: -vs(15),
   },
 
   chartRow: {

@@ -4,6 +4,7 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 
 import styles from './BiddingScreen.styles';
 import StatusBar from '../../component/StatusBar/StatusBar';
+import DashboardHeader from '../../component/DashboardHeader/DashboardHeader';
 import AppText from '../../theme/AppText';
 import {colors} from '../../theme/colors';
 
@@ -21,10 +22,10 @@ import GridViewIcon from '../../assets/svg_icon/Scan_Iocn.svg';
 const MODES = ['All Modes', 'FTL', 'LTL'];
 
 const STATS = [
-  {label: 'Currently Leading', value: '1', note: 'Across Active Bids', accent: colors.warning_text},
-  {label: 'Active Bids', value: '1', note: 'in Progress', accent: colors.accentBlue},
-  {label: 'Awarded Bids', value: '1', note: '8% vs last week', accent: colors.success, up: true},
-  {label: 'Open Auction', value: '637', note: 'Across All Modes', accent: colors.card_drive_load},
+  {label: 'Currently Leading', value: '1', note: 'Across Active Bids', accent: colors.warning_text, labelColor: colors.warning_text},
+  {label: 'Active Bids', value: '1', note: 'in Progress', accent: colors.accentBlue, labelColor: colors.accentBlue},
+  {label: 'Awarded Bids', value: '1', note: '8% vs last week', accent: colors.success, labelColor: colors.success, up: true},
+  {label: 'Open Auction', value: '637', note: 'Across All Modes', accent: colors.card_drive_load, labelColor: colors.card_drive_load},
 ];
 
 const STATUS = {
@@ -307,45 +308,18 @@ export default function BiddingScreen() {
       />
 
       {/* HEADER */}
-      <View style={styles.header}>
-        <View style={styles.headerTopRow}>
-          <View style={styles.brandRow}>
-            <View style={styles.brandTitleRow}>
-              <View style={styles.brandBadge}>
-                <BiddingIcon width={20} height={20} />
-              </View>
-              <AppText style={styles.brandText}>Bidding</AppText>
-            </View>
-            <AppText style={styles.brandSub}>Live Auction</AppText>
-          </View>
-
+      <DashboardHeader
+        icon={<BiddingIcon width={20} height={20} />}
+        title="Bidding"
+        subtitle="Live Auction"
+        right={
           <View style={styles.dieselPill}>
             <AppText style={styles.dieselLabel}>DIESEL</AppText>
             <AppText style={styles.dieselValue}>$3.89/gal</AppText>
           </View>
-        </View>
-
-        {/* STAT CARDS */}
-        <View style={styles.statsRow}>
-          {STATS.map(stat => (
-            <View
-              key={stat.label}
-              style={[styles.statCard, {borderLeftColor: stat.accent}]}>
-              <AppText
-                numberOfLines={1}
-                adjustsFontSizeToFit
-                style={[styles.statLabel, {color: stat.accent}]}>
-                {stat.label}
-              </AppText>
-              <AppText style={styles.statValue}>{stat.value}</AppText>
-              <AppText numberOfLines={1} adjustsFontSizeToFit style={styles.statNote}>
-                {stat.up ? '↑ ' : ''}
-                {stat.note}
-              </AppText>
-            </View>
-          ))}
-        </View>
-      </View>
+        }
+        stats={STATS}
+      />
 
       {/* FILTER ROW */}
       <View style={styles.filterRow}>

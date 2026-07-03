@@ -18,13 +18,10 @@ export default StyleSheet.create({
   },
 
   /* ---------- Header ---------- */
-  header: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: ms(18),
-    paddingTop: vs(26),
+  // extra bottom room reserved for the floating featured card that
+  // straddles the header edge (see featuredCard marginTop)
+  headerPad: {
     paddingBottom: vs(60),
-    borderBottomLeftRadius: ms(28),
-    borderBottomRightRadius: ms(28),
   },
 
   headerTopRow: {
