@@ -15,10 +15,10 @@ import SearchIcon from '../../assets/svg_icon/Search_Icon.svg';
 import TruckIcon from '../../assets/svg_icon/Truck_Frame.svg';
 import CalendarIcon from '../../assets/svg_icon/Schedule.svg';
 import ClockIcon from '../../assets/svg_icon/Info_Icon.svg';
-import ChevronIcon from '../../assets/svg_icon/right_Arrow.svg';
 import ListViewIcon from '../../assets/svg_icon/list_grid.svg';
 import CardViewIcon from '../../assets/svg_icon/card_grid.svg';
 import Both_direction_Icon from '../../assets/svg_icon/both_direction.svg';
+import Right_arrow_Frame from '../../assets/svg_icon/right_arrow_Frame.svg';
 
 const MODES = ['All Modes', 'FTL', 'LTL'];
 
@@ -360,7 +360,7 @@ function ListRow({item}) {
 
       {/* Chevron */}
       <View style={styles.colChevron}>
-        <ChevronIcon width={14} height={14} />
+        <Right_arrow_Frame width={14} height={14} />
       </View>
     </TouchableOpacity>
   );
