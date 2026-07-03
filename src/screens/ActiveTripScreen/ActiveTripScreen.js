@@ -1,5 +1,5 @@
 import React, {useEffect, useRef, useState, useCallback} from 'react';
-import {View, ActivityIndicator, StatusBar} from 'react-native';
+import {View, ActivityIndicator, StatusBar, Animated, Easing} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
 import styles from './ActiveTripScreen.styles';
@@ -37,6 +37,37 @@ export default function ActiveTripScreen({navigation}) {
 
   // Proof-of-Delivery flow shown after the driver taps "End Trip".
   const [podOpen, setPodOpen] = useState(false);
+
+  // Circular "reveal" transition played after the driver confirms delivery:
+  // a white circle grows from the centre of the map to fill the screen, then
+  // we hand off to the truck-animation screen (its white background lines up
+  // seamlessly with the circle, so the jump is invisible).
+  const [revealing, setRevealing] = useState(false);
+  const revealScale = useRef(new Animated.Value(0)).current;
+
+  const runReveal = useCallback(() => {
+    revealScale.setValue(0);
+    setRevealing(true);
+    Animated.timing(revealScale, {
+      toValue: 1,
+      duration: 1050,
+      easing: Easing.inOut(Easing.cubic),
+      useNativeDriver: true,
+    }).start(({finished}) => {
+      if (!finished) return;
+      navigation?.navigate?.('TruckAnimationScreen', {
+        title: 'Completing your trip…',
+        subtitle: 'Finalising delivery and queuing your payout.',
+        next: 'TripCompletedScreen',
+      });
+      // Drop the overlay once the truck screen is on top of it — the user
+      // never sees it disappear, but it's cleared for the next trip.
+      setTimeout(() => {
+        setRevealing(false);
+        revealScale.setValue(0);
+      }, 400);
+    });
+  }, [navigation, revealScale]);
 
   // Initialise the HERE SDK before mounting the native map view.
   useEffect(() => {
@@ -140,14 +171,20 @@ export default function ActiveTripScreen({navigation}) {
       <PodModal
         visible={podOpen}
         onClose={() => setPodOpen(false)}
-        onComplete={() =>
-          navigation?.navigate?.('TruckAnimationScreen', {
-            title: 'Completing your trip…',
-            subtitle: 'Finalising delivery and queuing your payout.',
-            next: 'TripCompletedScreen',
-          })
-        }
+        onComplete={() => {
+          // The modal closes itself (slides out); once it's gone, grow the
+          // white circle over the map and then jump to the truck animation.
+          setTimeout(runReveal, 320);
+        }}
       />
+
+      {/* ── Circular reveal transition ── */}
+      {revealing && (
+        <Animated.View
+          pointerEvents="none"
+          style={[styles.revealCircle, {transform: [{scale: revealScale}]}]}
+        />
+      )}
     </SafeAreaView>
   );
 }

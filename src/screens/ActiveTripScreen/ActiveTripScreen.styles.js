@@ -1,4 +1,4 @@
-import {Platform, StyleSheet} from 'react-native';
+import {Platform, StyleSheet, Dimensions} from 'react-native';
 import {
   moderateScale as ms,
   verticalScale as vs,
@@ -10,8 +10,25 @@ import {IS_TABLET} from '../../theme/device';
 // Width of the floating panels (chat / documents / bidding) in the centre.
 const PANEL_WIDTH = IS_TABLET ? ms(300) : ms(260);
 
+// Reveal circle: diameter = 2× screen diagonal so it fully covers the screen
+// (from its centred origin) once scaled to 1.
+const {width: SCREEN_W, height: SCREEN_H} = Dimensions.get('window');
+const REVEAL_DIAMETER = Math.ceil(Math.hypot(SCREEN_W, SCREEN_H) * 2);
+
 export default StyleSheet.create({
   container: {flex: 1, backgroundColor: colors.navy},
+
+  // ── Circular reveal transition (grows from map centre → truck screen) ──
+  revealCircle: {
+    position: 'absolute',
+    top: SCREEN_H / 2 - REVEAL_DIAMETER / 2,
+    left: SCREEN_W / 2 - REVEAL_DIAMETER / 2,
+    width: REVEAL_DIAMETER,
+    height: REVEAL_DIAMETER,
+    borderRadius: REVEAL_DIAMETER / 2,
+    backgroundColor: colors.white,
+    zIndex: 100,
+  },
 
   // ── Map ───────────────────────────────────────────────────────────────
   map: {...StyleSheet.absoluteFillObject},
