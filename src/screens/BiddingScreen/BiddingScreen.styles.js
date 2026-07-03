@@ -200,6 +200,8 @@ export default StyleSheet.create({
 
   card: {
     flex: 1,
+    // cap at half-width so an odd/last card doesn't stretch full-width
+    maxWidth: '50%',
     backgroundColor: colors.white,
     borderRadius: ms(12),
     borderWidth: 1,
