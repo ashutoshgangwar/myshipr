@@ -492,7 +492,7 @@ export default StyleSheet.create({
 
   // Headings
   podStepLabel: {color: colors.textMuted, fontSize: ms(11), marginBottom: vs(4)},
-  podTitle: {color: colors.text_dark, fontSize: ms(16), fontWeight: '700'},
+  podTitle: {color: colors.textStrong, fontSize: ms(16), fontWeight: 'bold', marginBottom: vs(6)},
   podDesc: {
     color: colors.textMuted,
     fontSize: ms(12),
@@ -536,7 +536,6 @@ export default StyleSheet.create({
     paddingVertical: vs(2),
   },
   podRequiredText: {color: colors.textMuted, fontSize: ms(9), fontWeight: '600'},
-  podPhotoIcon: {fontSize: ms(20), color: colors.textMuted},
   podPhotoHint: {color: colors.textMuted, fontSize: ms(12), marginTop: vs(6)},
   podPhotoImage: {...StyleSheet.absoluteFillObject},
 
@@ -555,7 +554,7 @@ export default StyleSheet.create({
     fontWeight: '700',
   },
   podRetake: {
-    color: colors.success,
+    color: colors.black,
     fontSize: ms(11),
     fontWeight: '600',
     textDecorationLine: 'underline',

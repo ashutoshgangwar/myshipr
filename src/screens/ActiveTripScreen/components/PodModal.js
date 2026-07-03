@@ -1,15 +1,21 @@
-import React, {useState, useRef, useCallback} from 'react';
+import React, {useState, useRef, useCallback, useEffect} from 'react';
 import {
   Modal,
   View,
   TouchableOpacity,
   TextInput,
   StyleSheet,
+  Platform,
+  Keyboard,
+  TouchableWithoutFeedback,
+  Animated,
 } from 'react-native';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {Camera, useCameraDevice} from 'react-native-vision-camera';
 import AppText from '../../../theme/AppText';
 import styles from '../ActiveTripScreen.styles';
 import {requestCameraPermission} from '../../../services/PermissionService';
+import Uplode_Frame from '../../../assets/svg_icon/Uplode_Frame.svg'
 
 const TOTAL_STEPS = 4;
 const OTP_LENGTH = 6;
@@ -28,10 +34,41 @@ export default function PodModal({
   loadId = '#TX-8821-A',
   route = 'Dallas → Houston',
 }) {
+  const insets = useSafeAreaInsets();
+
   const [step, setStep] = useState(1);
   const [receiptPhoto, setReceiptPhoto] = useState(null);
   const [goodsPhoto, setGoodsPhoto] = useState(null);
   const [otp, setOtp] = useState(Array(OTP_LENGTH).fill(''));
+
+  // Keep the sheet pinned to the bottom and grow its bottom padding to lift
+  // the content above the keyboard on iOS, in sync with the system keyboard's
+  // own show/hide animation. Padding (not translate) means the sheet always
+  // fills down to the screen edge, so the map never shows behind it.
+  // (Android uses adjustResize.)
+  const kbPadding = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (Platform.OS !== 'ios') return;
+    const slide = (toValue, duration) =>
+      Animated.timing(kbPadding, {
+        toValue,
+        duration: duration || 250,
+        useNativeDriver: false,
+      }).start();
+    const showSub = Keyboard.addListener('keyboardWillShow', e =>
+      // The sheet's safe-area bottom padding already covers the home
+      // indicator, and the keyboard sits on top of that area — so add the
+      // keyboard height minus that inset.
+      slide(e.endCoordinates.height - insets.bottom, e.duration),
+    );
+    const hideSub = Keyboard.addListener('keyboardWillHide', e =>
+      slide(0, e.duration),
+    );
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, [kbPadding, insets.bottom]);
 
   const reset = useCallback(() => {
     setStep(1);
@@ -57,7 +94,21 @@ export default function PodModal({
       animationType="slide"
       onRequestClose={close}>
       <View style={styles.podOverlay}>
-        <View style={styles.podSheet}>
+        <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+          <View style={StyleSheet.absoluteFill} />
+        </TouchableWithoutFeedback>
+        <Animated.View
+          style={[
+            styles.podSheet,
+            {
+              paddingBottom: Animated.add(
+                kbPadding,
+                styles.podSheet.paddingBottom + insets.bottom,
+              ),
+            },
+          ]}>
+          <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>
+          <View>
           <Stepper step={step} />
 
           {step === 1 && (
@@ -110,7 +161,9 @@ export default function PodModal({
               }}
             />
           )}
-        </View>
+          </View>
+          </TouchableWithoutFeedback>
+        </Animated.View>
       </View>
     </Modal>
   );
@@ -268,7 +321,7 @@ function PhotoStep({
 
           {!cameraActive && (
             <>
-              <AppText style={styles.podPhotoIcon}>⬆</AppText>
+              <Uplode_Frame width={20} height={20} />
               <AppText style={styles.podPhotoHint}>
                 {busy ? 'Opening camera…' : 'Tap to photograph the receipt'}
               </AppText>
