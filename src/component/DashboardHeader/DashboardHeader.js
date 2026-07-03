@@ -18,6 +18,8 @@ const DashboardHeader = ({
   padding,
   paddingHorizontal,
   paddingVertical,
+  statsOffset,
+  statsStyle,
 }) => {
   const hasStats = Array.isArray(stats) && stats.length > 0;
 
@@ -28,6 +30,8 @@ const DashboardHeader = ({
     ...(paddingHorizontal != null && {paddingHorizontal}),
     ...(paddingVertical != null && {paddingVertical}),
   };
+
+  const statsRowStyle = statsOffset != null && {marginTop: statsOffset};
 
   return (
     <View style={[styles.wrap, style]}>
@@ -54,7 +58,7 @@ const DashboardHeader = ({
       </View>
 
       {hasStats && (
-        <View style={styles.statsRow}>
+        <View style={[styles.statsRow, statsRowStyle, statsStyle]}>
           {stats.map(stat => (
             <View
               key={stat.label}

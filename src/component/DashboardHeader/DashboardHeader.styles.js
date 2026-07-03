@@ -66,7 +66,7 @@ export default StyleSheet.create({
   /* ---------- Floating stat cards ---------- */
   statsRow: {
     flexDirection: 'row',
-    marginTop: -vs(30),
+    marginTop: -vs(25),
     marginHorizontal: ms(16),
     gap: ms(8),
   },

@@ -313,6 +313,7 @@ export default function BiddingScreen() {
         paddingHorizontal={14}
         paddingVertical={12}
         height={130}
+        statsOffset={-45}
         width="100%"
         title="Bidding"
         subtitle="Live Auction"
