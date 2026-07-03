@@ -185,6 +185,7 @@ function GridCard({item}) {
           <AppText style={styles.cardRef}>{item.ref}</AppText>
         </View>
         <View style={styles.cardAmountWrap}>
+          <StatusBadge status={item.status} />
           <AppText style={styles.cardAmount}>{item.amount}</AppText>
           {item.awardedAt ? (
             <AppText style={styles.cardAwardedAt}>Awarded at {item.awardedAt}</AppText>
@@ -202,7 +203,6 @@ function GridCard({item}) {
           <ClockIcon width={12} height={12} />
           <AppText style={styles.metaChipText}>{item.time}</AppText>
         </View>
-        <StatusBadge status={item.status} />
       </View>
 
       <View style={styles.cardDivider} />
@@ -310,6 +310,10 @@ export default function BiddingScreen() {
       {/* HEADER */}
       <DashboardHeader
         icon={<BiddingIcon width={20} height={20} />}
+        paddingHorizontal={14}
+        paddingVertical={12}
+        height={130}
+        width="100%"
         title="Bidding"
         subtitle="Live Auction"
         right={

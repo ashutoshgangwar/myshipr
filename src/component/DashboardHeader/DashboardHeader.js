@@ -13,12 +13,31 @@ const DashboardHeader = ({
   stats,
   style,
   headerStyle,
+  height,
+  width,
+  padding,
+  paddingHorizontal,
+  paddingVertical,
 }) => {
   const hasStats = Array.isArray(stats) && stats.length > 0;
 
+  const headerSizeStyle = {
+    ...(height != null && {height}),
+    ...(width != null && {width}),
+    ...(padding != null && {padding}),
+    ...(paddingHorizontal != null && {paddingHorizontal}),
+    ...(paddingVertical != null && {paddingVertical}),
+  };
+
   return (
     <View style={[styles.wrap, style]}>
-      <View style={[styles.header, hasStats && styles.headerWithStats, headerStyle]}>
+      <View
+        style={[
+          styles.header,
+          hasStats && styles.headerWithStats,
+          headerSizeStyle,
+          headerStyle,
+        ]}>
         <View style={styles.headerTopRow}>
           <View style={styles.brandRow}>
             <View style={styles.brandTitleRow}>

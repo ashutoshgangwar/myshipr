@@ -216,6 +216,7 @@ export default StyleSheet.create({
     fontSize: ms(15),
     fontWeight: '800',
     color: colors.textStrong,
+    marginTop: vs(4),
   },
 
   cardAwardedAt: {
