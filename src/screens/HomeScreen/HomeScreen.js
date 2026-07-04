@@ -5,6 +5,7 @@ import {
   ScrollView,
   TouchableOpacity,
   StyleSheet,
+  Image,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
@@ -19,6 +20,9 @@ import AppText from '../../theme/AppText';
 import TruckIcon from '../../assets/svg_icon/Frame_black.svg';
 import Right_Arrow from '../../assets/svg_icon/right_Arrow.svg';
 import Strech_arrow_bottom from '../../assets/svg_icon/Strech_arrow_bottom.svg';
+import StarIcon from '../../assets/svg_icon/Star_Vector.svg';
+
+const FUEL_PUMP = require('../../assets/Image/fuel_pump.png');
 
 const PRIMARY_GRADIENT = ['#00033E', '#0008A4'];
 
@@ -299,7 +303,14 @@ const HomeScreen = () => {
                 end={{x: 0, y: 0}}
                 style={StyleSheet.absoluteFill}
               />
-              <AppText style={styles.rewardsLabel}>Fuel Rewards Points</AppText>
+              <Image
+                source={FUEL_PUMP}
+                style={styles.rewardsPumpImage}
+                resizeMode="contain"
+              />
+              <View style={styles.rewardsBadge}>
+                <AppText style={styles.rewardsLabel}>Fuel Rewards</AppText>
+              </View>
               <AppText style={styles.rewardsTitle}>
                 Report your fuel price, earn points
               </AppText>
@@ -309,20 +320,36 @@ const HomeScreen = () => {
               </AppText>
 
               <View style={styles.rewardsBalanceRow}>
-                <AppText style={styles.rewardsBalanceLabel}>
-                  Your points balance
-                </AppText>
-                <AppText style={styles.rewardsPoints}>1234 pts</AppText>
+                <View style={styles.rewardsStarBadge}>
+                  <View style={styles.rewardsStarRing}>
+                    <StarIcon width={16} height={15} />
+                  </View>
+                </View>
+                <View style={styles.rewardsBalanceTextWrap}>
+                  <AppText style={styles.rewardsBalanceLabel}>
+                    Your Points Balance
+                  </AppText>
+                  <AppText style={styles.rewardsPoints}>
+                    1,234
+                    <AppText style={styles.rewardsPointsUnit}> pts</AppText>
+                  </AppText>
+                </View>
               </View>
-              {/* points value sits on its own row below the label */}
-              <View style={styles.rewardsTrack}>
-                <View style={[styles.rewardsFill, {width: '66%'}]} />
+              {/* points value sits inline beside the label icon */}
+              <View style={styles.rewardsTrackRow}>
+                <View style={styles.rewardsTrack}>
+                  <View style={[styles.rewardsFill, {width: '61%'}]} />
+                </View>
+                <View style={styles.rewardsPercentBadge}>
+                  <AppText style={styles.rewardsPercentText}>61%</AppText>
+                </View>
               </View>
               <View style={styles.rewardsFooterRow}>
                 <AppText style={styles.rewardsFooterText}>
-                  2983 points to next reward
+                  <AppText style={styles.rewardsFooterAccent}>2,983</AppText>{' '}
+                  points to next reward
                 </AppText>
-                <AppText style={styles.rewardsFooterValue}>2000</AppText>
+                <AppText style={styles.rewardsFooterValue}>2000 pts</AppText>
               </View>
             </View>
 

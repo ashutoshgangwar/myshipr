@@ -436,9 +436,27 @@ export default StyleSheet.create({
     overflow: 'hidden',
   },
 
+  rewardsPumpImage: {
+    position: 'absolute',
+    right: ms(6),
+    top: ms(6),
+    width: ms(66),
+    height: ms(66),
+  },
+
+  rewardsBadge: {
+    alignSelf: 'flex-start',
+    borderWidth: 1,
+    borderColor: 'rgba(86,255,132,0.45)',
+    backgroundColor: 'rgba(86,255,132,0.12)',
+    borderRadius: ms(20),
+    paddingHorizontal: ms(12),
+    paddingVertical: vs(5),
+  },
+
   rewardsLabel: {
-    color: colors.splashSubtitle,
-    fontSize: ms(10),
+    color: '#56FF84',
+    fontSize: ms(12),
     fontWeight: '600',
   },
 
@@ -448,61 +466,129 @@ export default StyleSheet.create({
     fontWeight: '800',
     marginTop: vs(4),
     lineHeight: ms(28),
+    // Keep the title clear of the pump image sitting in the top-right.
+    paddingRight: ms(60),
   },
   rewardsBody: {
     color: colors.onDarkLow,
-    fontSize: ms(12),
-    lineHeight: ms(18),
+    fontSize: ms(11),
+    lineHeight: ms(16),
     marginTop: vs(10),
   },
   rewardsBalanceRow: {
-    flexDirection: 'column',
-    alignItems: 'stretch',
-    marginTop: vs(10),
-    marginBottom: vs(8),
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: ms(10),
+    marginTop: vs(12),
+    marginBottom: vs(12),
+    backgroundColor: 'rgba(255,255,255,0.10)',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.08)',
+    borderRadius: ms(12),
+    paddingVertical: ms(9),
+    paddingHorizontal: ms(10),
+  },
+
+  rewardsStarBadge: {
+    width: ms(36),
+    height: ms(36),
+    borderRadius: ms(10),
+    backgroundColor: colors.success_bg_star,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor:  colors.success_bg_star,
+    justifyContent: 'center',
+  },
+
+  rewardsStarRing: {
+    width: ms(28),
+    height: ms(28),
+    borderRadius: ms(14),
+    borderWidth: ms(2),
+    borderColor: colors.sucess_border,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  rewardsBalanceTextWrap: {
+    flex: 1,
+    justifyContent: 'center',
   },
 
   rewardsBalanceLabel: {
-    color: colors.onDarkMedium,
+    color: colors.onDarkHigh,
     fontSize: ms(12),
+    fontWeight: '500',
     marginBottom: vs(2),
+    textAlign: 'left',
   },
 
   rewardsPoints: {
-    color: colors.success,
+    color: colors.white,
     fontSize: ms(18),
     fontWeight: '800',
-    alignSelf: 'flex-end',
-    textAlign: 'right',
+    textAlign: 'left',
+    alignSelf: 'flex-start',
+    includeFontPadding: false,
   },
+
+  rewardsPointsUnit: {
+    color: colors.sucess_border,
+    fontSize: ms(12),
+    fontWeight: '600',
+  },
+  rewardsTrackRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: ms(8),
+  },
+
   rewardsTrack: {
-    height: vs(8),
+    flex: 1,
+    height: vs(9),
     borderRadius: ms(8),
-    backgroundColor: colors.white,
+    backgroundColor: 'rgba(255,255,255,0.18)',
     overflow: 'hidden',
   },
 
   rewardsFill: {
     height: '100%',
     borderRadius: ms(8),
-    backgroundColor: colors.success_bg,
+    backgroundColor: colors.sucess_border,
+  },
+
+  rewardsPercentBadge: {
+    backgroundColor: 'rgba(255,255,255,0.12)',
+    borderRadius: ms(8),
+    paddingHorizontal: ms(8),
+    paddingVertical: vs(3),
+  },
+
+  rewardsPercentText: {
+    color: colors.white,
+    fontSize: ms(11),
+    fontWeight: '700',
   },
 
   rewardsFooterRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
-    marginTop: vs(8),
+    alignItems: 'center',
+    marginTop: vs(10),
   },
   rewardsFooterText: {
-    color: colors.onDarkLow,
-    fontSize: ms(11),
+    color: colors.onDarkMedium,
+    fontSize: ms(12),
     flex: 1,
     marginRight: ms(8),
   },
+  rewardsFooterAccent: {
+    color: '#56FF84',
+    fontWeight: '700',
+  },
   rewardsFooterValue: {
-    color: colors.onDarkLow,
-    fontSize: ms(11),
+    color: colors.onDarkMedium,
+    fontSize: ms(12),
     flexShrink: 0,
   },
   /* ---------- Upcoming loads ---------- */

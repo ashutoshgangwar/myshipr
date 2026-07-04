@@ -25,6 +25,8 @@ export const colors = {
   input_bg: '#FFFFFF',
   border_Color: '#E5E7EB',
   success_text: '#15803D',
+  success_bg_star: '#008926',
+  sucess_border: '#56FF84',
   success_bg: '#86EFAC',
   muted: '#000000eb',
   background: '#F8F9FA',
