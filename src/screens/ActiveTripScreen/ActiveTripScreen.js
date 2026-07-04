@@ -1,6 +1,14 @@
 import React, {useEffect, useRef, useState, useCallback} from 'react';
-import {View, ActivityIndicator, StatusBar, Animated, Easing} from 'react-native';
+import {
+  View,
+  ActivityIndicator,
+  StatusBar,
+  Animated,
+  Easing,
+  TouchableOpacity,
+} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
+import {verticalScale} from 'react-native-size-matters';
 
 import styles from './ActiveTripScreen.styles';
 import {colors} from '../../theme/colors';
@@ -9,6 +17,7 @@ import AppText from '../../theme/AppText';
 import {HereMapView, HereMapModule} from '../HereMapScreen/components/HereMap/index';
 import {HERE_ACCESS_KEY_ID, HERE_ACCESS_KEY_SECRET} from '@env';
 import {getCurrentLocation} from '../../services/LocationService';
+import GpsIcon from '../../assets/svg_icon/gps-svg.svg';
 
 const hasHereCredentials = Boolean(HERE_ACCESS_KEY_ID && HERE_ACCESS_KEY_SECRET);
 
@@ -90,23 +99,49 @@ export default function ActiveTripScreen({navigation}) {
     };
   }, []);
 
-  // Centre the map on the driver's current position when available.
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      try {
-        const pos = await getCurrentLocation({highAccuracy: false});
-        if (!cancelled && pos?.latitude && pos?.longitude) {
-          setCenter({lat: pos.latitude, lng: pos.longitude});
-        }
-      } catch (_) {
-        // Keep the default centre on failure.
+  // Whether a location fetch is currently in flight (drives the GPS button spinner).
+  const [locating, setLocating] = useState(false);
+
+  // Fetch the driver's current position, drop the HERE current-location marker
+  // there, and (optionally) glide the camera to it. Shared by the initial
+  // placement effect and the floating GPS button.
+  const showMyLocation = useCallback(async ({animate = true} = {}) => {
+    setLocating(true);
+    try {
+      const pos = await getCurrentLocation({highAccuracy: false});
+      if (!pos?.latitude || !pos?.longitude) return;
+      setCenter({lat: pos.latitude, lng: pos.longitude});
+      // Native HERE current-location marker (blue dot) at the live position.
+      await mapRef.current?.showCurrentLocation({
+        lat: pos.latitude,
+        lng: pos.longitude,
+        bearing: Number.isFinite(pos.heading) ? pos.heading : 0,
+      });
+      if (animate) {
+        await mapRef.current?.moveCamera({
+          lat: pos.latitude,
+          lng: pos.longitude,
+          zoom: 15,
+          animate: true,
+          animationDuration: 800,
+        });
       }
-    })();
-    return () => {
-      cancelled = true;
-    };
+    } catch (_) {
+      // Keep the default centre / previous marker on failure.
+    } finally {
+      setLocating(false);
+    }
   }, []);
+
+  // Centre the map on the driver's current position once the SDK is ready and
+  // the native map view has mounted, and place the current-location marker.
+  useEffect(() => {
+    if (!sdkReady) return undefined;
+    const timer = setTimeout(() => {
+      showMyLocation({animate: false});
+    }, 700);
+    return () => clearTimeout(timer);
+  }, [sdkReady, showMyLocation]);
 
   const handleToolSelect = useCallback(id => {
     if (id === 'collapse') {
@@ -159,6 +194,19 @@ export default function ActiveTripScreen({navigation}) {
       {activePanel === 'documents' && <DocumentsPanel onClose={closePanel} />}
       {activePanel === 'bidding' && <BiddingPanel onClose={closePanel} />}
       {activePanel === 'navigate' && <HoursOfServicePanel onClose={closePanel} />}
+
+      {/* ── Floating GPS re-center button ── */}
+      <TouchableOpacity
+        style={styles.gpsButton}
+        onPress={() => showMyLocation({animate: true})}
+        disabled={locating}
+        activeOpacity={0.8}>
+        {locating ? (
+          <ActivityIndicator size="small" color={colors.navy} />
+        ) : (
+          <GpsIcon width={verticalScale(26)} height={verticalScale(26)} fill={colors.navy} />
+        )}
+      </TouchableOpacity>
 
       {/* ── Bottom trip progress ── */}
       <TripProgressBar

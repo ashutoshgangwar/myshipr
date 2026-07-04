@@ -40,6 +40,29 @@ export default StyleSheet.create({
   },
   mapLoadingText: {color: colors.textMuted, fontSize: ms(13), marginTop: vs(8)},
 
+  // ── Floating GPS (re-center) button ───────────────────────────────────
+  gpsButton: {
+    position: 'absolute',
+    right: s(14),
+    bottom: vs(110),
+    width: ms(46),
+    height: ms(46),
+    borderRadius: ms(23),
+    backgroundColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 45,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#3b82f6',
+        shadowOpacity: 0.35,
+        shadowRadius: 8,
+        shadowOffset: {width: 0, height: 2},
+      },
+      android: {elevation: 6},
+    }),
+  },
+
   // ── Top bar ───────────────────────────────────────────────────────────
   topBar: {
     position: 'absolute',

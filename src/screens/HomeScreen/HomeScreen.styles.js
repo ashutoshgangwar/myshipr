@@ -155,8 +155,6 @@ export default StyleSheet.create({
   /* ---------- Main grid ---------- */
   grid: {
     flexDirection: COLUMN_DIRECTION,
-    // Stretch makes both columns take the height of the taller one (the left
-    // column), so the right column matches it automatically.
     alignItems: 'stretch',
     paddingHorizontal: ms(12),
     paddingTop: vs(14),
@@ -164,7 +162,7 @@ export default StyleSheet.create({
   },
 
   column: {
-    flex: 1,
+    flex: 1, 
     gap: ms(10),
   },
 
