@@ -43,8 +43,8 @@ export default StyleSheet.create({
   // ── Floating GPS (re-center) button ───────────────────────────────────
   gpsButton: {
     position: 'absolute',
-    right: s(14),
-    bottom: vs(110),
+    right: s(12),
+    bottom: vs(200),
     width: ms(46),
     height: ms(46),
     borderRadius: ms(23),
