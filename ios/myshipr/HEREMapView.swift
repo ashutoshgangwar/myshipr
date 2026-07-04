@@ -29,9 +29,12 @@ class HereMapView: UIView {
     private var navigationMarker:  MapMarker?
     private var genericMarkers:    [MapMarker] = []
 
-    // Location dot (blue circle). `locationBearing` is the heading the dot's
-    // direction beam currently points to — kept so the dot image is only rebuilt
-    // when the heading actually changes (moving it otherwise just re-positions).
+    // Current-location marker. We use HERE's built-in LocationIndicator with the
+    // NAVIGATION style so the marker looks IDENTICAL to Android (which uses the
+    // same LocationIndicator/NAVIGATION arrow). `locationMarker`/`locationBearing`
+    // are retained for the legacy custom-dot path but are no longer used by
+    // showCurrentLocation.
+    private var locationIndicator: LocationIndicator?
     private var locationMarker: MapMarker?
     private var locationBearing: Double = -999
 
@@ -150,6 +153,12 @@ class HereMapView: UIView {
                 print("[HereMapView] Map load error: \(String(describing: error))")
                 return
             }
+            // Force map labels (place / city / road names) to English so the map
+            // reads the same on every device regardless of the phone's system
+            // language — otherwise iOS falls back to the device locale and shows
+            // e.g. Hindi. Kept in sync with Android's MapView.setPrimaryLanguage.
+            MapView.primaryLanguage = LanguageCode.enUs
+
             let distance = MapMeasure(kind: .distanceInMeters, value: 5000)
             self.mapView.camera.lookAt(
                 point: GeoCoordinates(latitude: 28.4595, longitude: 77.0266),
@@ -560,29 +569,29 @@ class HereMapView: UIView {
     func showCurrentLocation(lat: Double, lng: Double, bearing: Double = 0) {
         whenSceneReady { [weak self] in
             guard let self = self else { return }
-            let coord = GeoCoordinates(latitude: lat, longitude: lng)
             let heading = bearing.isFinite ? bearing : 0
-            // Rebuild the dot only when the heading swings by ≥2° (otherwise the
-            // beam direction is unchanged and we just move the existing marker).
-            let bearingChanged = abs(heading - self.locationBearing) >= 2
-            if let existing = self.locationMarker, !bearingChanged {
-                existing.coordinates = coord
-                return
+            // Use HERE's built-in NAVIGATION LocationIndicator (same as Android)
+            // so the current-location marker is identical across platforms.
+            if self.locationIndicator == nil {
+                let indicator = LocationIndicator()
+                indicator.locationIndicatorStyle = .navigation
+                indicator.enable(for: self.mapView)
+                self.locationIndicator = indicator
+            } else {
+                self.locationIndicator?.locationIndicatorStyle = .navigation
             }
-            self.locationBearing = heading
-            let image    = self.drawLocationDotImage(bearing: heading)
-            let mapImage = MapImage(pixelData: image.pngData()!, imageFormat: ImageFormat.png)
-            let anchor   = Anchor2D(horizontal: 0.5, vertical: 0.5)
-            if let existing = self.locationMarker {
-                self.mapView.mapScene.removeMapMarker(existing)
-            }
-            let marker   = MapMarker(at: coord, image: mapImage, anchor: anchor)
-            self.mapView.mapScene.addMapMarker(marker)
-            self.locationMarker = marker
+            let location = Location(
+                coordinates: GeoCoordinates(latitude: lat, longitude: lng),
+                bearingInDegrees: heading
+            )
+            self.locationIndicator?.updateLocation(location)
         }
     }
 
     func hideCurrentLocation() {
+        locationIndicator?.disable()
+        locationIndicator = nil
+        // Legacy custom-dot cleanup (kept for safety in case an old path added one).
         if let loc = locationMarker {
             mapView.mapScene.removeMapMarker(loc)
             locationMarker = nil

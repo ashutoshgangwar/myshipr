@@ -4,6 +4,7 @@ import AppText from '../../../theme/AppText';
 import {colors} from '../../../theme/colors';
 import styles from '../ActiveTripScreen.styles';
 import PanelShell from './PanelShell';
+import useKeyboardShift from '../hooks/useKeyboardShift';
 
 const DEFAULT_MESSAGES = [
   {id: 1, from: 'in', text: "Hey Deeveja, you're on track.\nWeather looks clear on I-45 S."},
@@ -14,6 +15,8 @@ const DEFAULT_MESSAGES = [
 
 export default function ChatPanel({onClose, messages = DEFAULT_MESSAGES, onSend}) {
   const [draft, setDraft] = useState('');
+
+  const {keyboardShift, onPanelLayout} = useKeyboardShift();
 
   const handleSend = () => {
     const text = draft.trim();
@@ -30,7 +33,11 @@ export default function ChatPanel({onClose, messages = DEFAULT_MESSAGES, onSend}
       subtitle="Online"
       subtitleStyle={{color: colors.status}}
       onClose={onClose}
-      wrapStyle={styles.chatPanelWrap}>
+      onLayout={onPanelLayout}
+      wrapStyle={[
+        styles.chatPanelWrap,
+        {transform: [{translateY: -keyboardShift}]},
+      ]}>
       <ScrollView style={styles.chatBody} keyboardShouldPersistTaps="handled">
         {messages.map(m => {
           const out = m.from === 'out';

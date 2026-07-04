@@ -44,7 +44,7 @@ export default StyleSheet.create({
   gpsButton: {
     position: 'absolute',
     right: s(12),
-    bottom: vs(200),
+    bottom: vs(85),
     width: ms(46),
     height: ms(46),
     borderRadius: ms(23),
@@ -61,6 +61,10 @@ export default StyleSheet.create({
       },
       android: {elevation: 6},
     }),
+  },
+  // When a side panel is open the GPS button drops down so it clears the panel.
+  gpsButtonPanelOpen: {
+    bottom: vs(120),
   },
 
   // ── Top bar ───────────────────────────────────────────────────────────
@@ -204,6 +208,13 @@ export default StyleSheet.create({
   // Collapse toggle keeps a fixed grey background regardless of state.
   collapseBtn: {backgroundColor: colors.primaryLight},
 
+  // Full-screen catcher shown while the keyboard is up so a tap outside any
+  // input dismisses it. Below the panels (zIndex 45), above the map.
+  keyboardBackdrop: {
+    ...StyleSheet.absoluteFillObject,
+    zIndex: 40,
+  },
+
   // ── Floating panel (shared shell) ─────────────────────────────────────
   panelWrap: {
     position: 'absolute',
@@ -341,6 +352,100 @@ export default StyleSheet.create({
     justifyContent: 'center',
   },
   biddingText: {color: colors.text_dark, fontSize: ms(14), fontWeight: '600'},
+
+  // Bidding panel docked against the right edge (like the chat panel).
+  biddingPanelWrap: {
+    alignSelf: 'flex-end',
+    top: IS_TABLET ? vs(230) : Platform.OS === 'ios' ? vs(240) : vs(260),
+    right: s(1),
+  },
+
+  // ── Fuel-price panel ──────────────────────────────────────────────────
+  // Docked against the right edge (like the chat panel).
+  fuelPanelWrap: {
+    width: IS_TABLET ? ms(340) : ms(290),
+    alignSelf: 'flex-end',
+    top: IS_TABLET ? vs(230) : Platform.OS === 'ios' ? vs(240) : vs(260),
+    right: s(1),
+  },
+  fuelBody: {
+    paddingHorizontal: s(14),
+    paddingTop: vs(14),
+    paddingBottom: vs(16),
+  },
+  fuelSectionTitle: {
+    color: colors.text_dark,
+    fontSize: ms(15),
+    fontWeight: '700',
+    marginBottom: vs(12),
+  },
+  fuelInput: {
+    borderWidth: 1,
+    borderColor: colors.border_Color,
+    borderRadius: ms(8),
+    paddingHorizontal: s(12),
+    paddingVertical: Platform.OS === 'ios' ? vs(11) : vs(8),
+    fontSize: ms(13),
+    color: colors.text_dark,
+    marginBottom: vs(10),
+  },
+  fuelPriceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: colors.border_Color,
+    borderRadius: ms(8),
+    paddingHorizontal: s(12),
+    marginBottom: vs(12),
+  },
+  fuelPriceCurrency: {
+    color: colors.text_dark,
+    fontSize: ms(18),
+    fontWeight: '700',
+    marginRight: s(6),
+  },
+  fuelPriceInput: {
+    flex: 1,
+    paddingVertical: Platform.OS === 'ios' ? vs(11) : vs(8),
+    fontSize: ms(18),
+    fontWeight: '600',
+    color: colors.text_dark,
+  },
+  fuelPriceUnit: {
+    color: colors.textMuted,
+    fontSize: ms(12),
+    marginLeft: s(6),
+  },
+  fuelChipsRow: {
+    flexDirection: 'row',
+    marginBottom: vs(16),
+  },
+  fuelChip: {
+    borderWidth: 1,
+    borderColor: colors.border_Color,
+    borderRadius: ms(8),
+    paddingVertical: vs(7),
+    paddingHorizontal: s(12),
+    marginRight: s(8),
+  },
+  fuelChipActive: {
+    borderColor: colors.accentBlue,
+    backgroundColor: 'rgba(37,99,235,0.08)',
+  },
+  fuelChipText: {
+    color: colors.text_dark,
+    fontSize: ms(12),
+    fontWeight: '600',
+  },
+  fuelChipTextActive: {color: colors.accentBlue},
+  fuelSubmitBtn: {
+    backgroundColor: colors.navy,
+    borderRadius: ms(8),
+    paddingVertical: vs(13),
+    alignItems: 'center',
+  },
+  fuelSubmitBtnDisabled: {backgroundColor: colors.primaryLight},
+  fuelSubmitText: {color: colors.white, fontSize: ms(14), fontWeight: '700'},
 
   // ── Hours of Service panel (stepper) ──────────────────────────────────
   hosBodyContent: {

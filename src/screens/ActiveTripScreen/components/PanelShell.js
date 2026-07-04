@@ -10,9 +10,9 @@ const PRIMARY_GRADIENT = ['#00033E', '#0008A4'];
  * Floating card shell with a navy header (title + optional subtitle),
  * an optional expand icon and a close (×) button. Children render the body.
  */
-export default function PanelShell({title, subtitle, subtitleStyle, onExpand, onClose, children, wrapStyle}) {
+export default function PanelShell({title, subtitle, subtitleStyle, onExpand, onClose, children, wrapStyle, onLayout}) {
   return (
-    <View style={[styles.panelWrap, wrapStyle]}>
+    <View style={[styles.panelWrap, wrapStyle]} onLayout={onLayout}>
       <View style={styles.panel}>
         <View style={styles.panelHeader}>
           <LinearGradient

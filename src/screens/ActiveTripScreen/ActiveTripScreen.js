@@ -6,6 +6,8 @@ import {
   Animated,
   Easing,
   TouchableOpacity,
+  TouchableWithoutFeedback,
+  Keyboard,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {verticalScale} from 'react-native-size-matters';
@@ -27,6 +29,7 @@ import ChatPanel from './components/ChatPanel';
 import DocumentsPanel from './components/DocumentsPanel';
 import BiddingPanel from './components/BiddingPanel';
 import HoursOfServicePanel from './components/HoursOfServicePanel';
+import FuelPricePanel from './components/FuelPricePanel';
 import TripProgressBar from './components/TripProgressBar';
 import PodModal from './components/PodModal';
 
@@ -34,7 +37,7 @@ import PodModal from './components/PodModal';
 const DEFAULT_CENTER = {lat: 37.7599, lng: -122.4469};
 
 // Toolbar ids that open a centre panel.
-const PANEL_IDS = ['chat', 'documents', 'bidding', 'navigate'];
+const PANEL_IDS = ['chat', 'documents', 'bidding', 'navigate', 'dock'];
 
 export default function ActiveTripScreen({navigation}) {
   const mapRef = useRef(null);
@@ -46,6 +49,22 @@ export default function ActiveTripScreen({navigation}) {
 
   // Proof-of-Delivery flow shown after the driver taps "End Trip".
   const [podOpen, setPodOpen] = useState(false);
+
+  // Whether the on-screen keyboard is up — used to show a full-screen backdrop
+  // so tapping anywhere outside an input dismisses it (iOS + Android).
+  const [keyboardVisible, setKeyboardVisible] = useState(false);
+  useEffect(() => {
+    const showSub = Keyboard.addListener('keyboardDidShow', () =>
+      setKeyboardVisible(true),
+    );
+    const hideSub = Keyboard.addListener('keyboardDidHide', () =>
+      setKeyboardVisible(false),
+    );
+    return () => {
+      showSub.remove();
+      hideSub.remove();
+    };
+  }, []);
 
   // Circular "reveal" transition played after the driver confirms delivery:
   // a white circle grows from the centre of the map to fill the screen, then
@@ -189,15 +208,26 @@ export default function ActiveTripScreen({navigation}) {
       {/* ── Left toolbar ── */}
       <SideToolbar panel={activePanel} onSelect={handleToolSelect} />
 
+      {/* Tap-anywhere-outside backdrop to dismiss the keyboard. Sits above the
+          map but below the floating panels, and only while the keyboard is up. */}
+      {keyboardVisible && (
+        <TouchableWithoutFeedback accessible={false} onPress={Keyboard.dismiss}>
+          <View style={styles.keyboardBackdrop} />
+        </TouchableWithoutFeedback>
+      )}
+
       {/* ── Centre panels ── */}
       {activePanel === 'chat' && <ChatPanel onClose={closePanel} />}
       {activePanel === 'documents' && <DocumentsPanel onClose={closePanel} />}
       {activePanel === 'bidding' && <BiddingPanel onClose={closePanel} />}
       {activePanel === 'navigate' && <HoursOfServicePanel onClose={closePanel} />}
+      {activePanel === 'dock' && <FuelPricePanel onClose={closePanel} />}
 
       {/* ── Floating GPS re-center button ── */}
+      {/* When a side panel is open, drop the button lower so it sits below the
+          panel instead of floating over it. */}
       <TouchableOpacity
-        style={styles.gpsButton}
+        style={[styles.gpsButton, activePanel && styles.gpsButtonPanelOpen]}
         onPress={() => showMyLocation({animate: true})}
         disabled={locating}
         activeOpacity={0.8}>
