@@ -1,14 +1,15 @@
 import {StyleSheet} from 'react-native';
 import {ms as baseMs, vs as baseVs} from '../../theme/scale';
 import {colors} from '../../theme/colors';
-import {select} from '../../theme/device';
+import {select, IS_TABLET} from '../../theme/device';
 
 const PHONE_FACTOR = select({phone: 0.82, tablet: 1});
 const ms = n => baseMs(n) * PHONE_FACTOR;
 const vs = n => baseVs(n) * PHONE_FACTOR;
 
 /* Fixed column widths so the table keeps a comfortable size and can scroll
-   horizontally on narrow phones while still filling a tablet. */
+   horizontally on narrow phones. On tablet the columns flex to fill the width
+   so the whole table fits with no horizontal scroll. */
 const COL = {
   load: ms(135),
   equip: ms(102),
@@ -19,7 +20,15 @@ const COL = {
   chevron: ms(22),
 };
 
+/* On tablet each data column flexes (proportional to its phone width) so the
+   table fills the available width; on phone it keeps a fixed width and scrolls. */
+const col = (width, flex) => (IS_TABLET ? {flex} : {width});
+
 const TABLE_PADDING = ms(10);
+
+/* One shared height for every control in the filter row (mode tabs, search box,
+   view toggle) so they always line up, regardless of device/model. */
+const FILTER_H = vs(30);
 
 export const TABLE_WIDTH =
   COL.load +
@@ -79,11 +88,12 @@ export default StyleSheet.create({
   },
 
   modeTab: {
+    height: FILTER_H,
+    justifyContent: 'center',
     borderWidth: 1,
     borderColor: colors.border_Color,
     borderRadius: ms(8),
     paddingHorizontal: ms(10),
-    paddingVertical: vs(7),
     backgroundColor: colors.white,
   },
 
@@ -110,9 +120,9 @@ export default StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border_Color,
     borderRadius: ms(8),
-    paddingHorizontal: ms(10),
+    paddingHorizontal: ms(7),
     backgroundColor: colors.white,
-    height: vs(34),
+    height: FILTER_H,
   },
 
   searchInput: {
@@ -124,6 +134,7 @@ export default StyleSheet.create({
 
   viewToggle: {
     flexDirection: 'row',
+    height: FILTER_H,
     borderWidth: 1,
     borderColor: colors.border_Color,
     borderRadius: ms(8),
@@ -133,7 +144,6 @@ export default StyleSheet.create({
 
   toggleBtn: {
     paddingHorizontal: ms(8),
-    paddingVertical: vs(6),
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -310,7 +320,7 @@ export default StyleSheet.create({
   },
 
   tableInner: {
-    minWidth: TABLE_WIDTH,
+    ...select({phone: {minWidth: TABLE_WIDTH}, tablet: {width: '100%', flex: 1}}),
     flexGrow: 1,
   },
 
@@ -358,18 +368,20 @@ export default StyleSheet.create({
   tableRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: vs(11),
+    // shorter rows on tablet so more fit on screen
+    paddingVertical: select({phone: vs(11), tablet: vs(6)}),
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border_Color,
   },
 
-  /* fixed column widths — shared by header + rows so both scroll in sync */
-  colLoad: {width: COL.load, paddingRight: ms(4)},
-  colEquip: {width: COL.equip, paddingRight: ms(4)},
-  colMode: {width: COL.mode, paddingRight: ms(4)},
-  colPickup: {width: COL.pickup, paddingRight: ms(4)},
-  colIndicative: {width: COL.indicative, paddingRight: ms(4)},
-  colLowest: {width: COL.lowest},
+  /* column sizing — shared by header + rows so both stay in sync.
+     Phone: fixed width (table scrolls). Tablet: flex (table fills width). */
+  colLoad: {...col(COL.load, 200), paddingRight: ms(4)},
+  colEquip: {...col(COL.equip, 110), paddingRight: ms(4)},
+  colMode: {...col(COL.mode, 70), paddingRight: ms(4)},
+  colPickup: {...col(COL.pickup, 95), paddingRight: ms(4)},
+  colIndicative: {...col(COL.indicative, 80), paddingRight: ms(4)},
+  colLowest: {...col(COL.lowest, 95)},
   colChevron: {width: COL.chevron, alignItems: 'center', justifyContent: 'center'},
 
   loadHeadRow: {
@@ -379,6 +391,7 @@ export default StyleSheet.create({
   },
 
   flexShrink: {
+    flex: 1,
     flexShrink: 1,
   },
 

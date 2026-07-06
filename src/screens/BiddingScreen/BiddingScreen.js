@@ -1,5 +1,5 @@
 import React, {useMemo, useState} from 'react';
-import {View, FlatList, TouchableOpacity, TextInput, ScrollView} from 'react-native';
+import {View, FlatList, TouchableOpacity, TextInput, ScrollView, Platform} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
 import styles from './BiddingScreen.styles';
@@ -408,8 +408,13 @@ export default function BiddingScreen() {
         icon={<BiddingIcon width={20} height={20} />}
         paddingHorizontal={ms(14)}
         paddingVertical={vs(IS_TABLET ? 32 : 8)}
-        height={IS_TABLET ? vs(110) : vs(120)}
-        statsOffset={-45}
+        height={IS_TABLET ? vs(130) : Platform.OS === 'ios' ? vs(120) : vs(140)}
+        statsOffset={-vs(
+          select({
+            phone: Platform.OS === 'ios' ? 45 : 55,
+            tablet: 55,
+          }),
+        )}
         width="100%"
         title="Bidding"
         subtitle="Live Auction"
@@ -480,34 +485,46 @@ export default function BiddingScreen() {
         />
       ) : (
         <View style={styles.tableWrap}>
-          <ScrollView
-            horizontal
-            bounces={false}
-            overScrollMode="never"
-            showsHorizontalScrollIndicator={false}
-            style={styles.tableScroll}
-            contentContainerStyle={styles.tableScrollContent}>
-            <View style={styles.tableInner}>
-              <View style={styles.tableHeader}>
-                <HeaderCell label="Load" colStyle={styles.colLoad} sortable />
-                <HeaderCell label="Equipment" colStyle={styles.colEquip} sortable />
-                <HeaderCell label="Mode" colStyle={styles.colMode} sortable center />
-                <HeaderCell label="Pickup Time" colStyle={styles.colPickup} sortable center />
-                <HeaderCell label="Indicative" colStyle={styles.colIndicative} sortable center />
-                <HeaderCell label="Lowest Bid" colStyle={styles.colLowest} center />
-                <View style={styles.colChevron} />
+          {(() => {
+            const table = (
+              <View style={styles.tableInner}>
+                <View style={styles.tableHeader}>
+                  <HeaderCell label="Load" colStyle={styles.colLoad} sortable />
+                  <HeaderCell label="Equipment" colStyle={styles.colEquip} sortable />
+                  <HeaderCell label="Mode" colStyle={styles.colMode} sortable center />
+                  <HeaderCell label="Pickup Time" colStyle={styles.colPickup} sortable center />
+                  <HeaderCell label="Indicative" colStyle={styles.colIndicative} sortable center />
+                  <HeaderCell label="Lowest Bid" colStyle={styles.colLowest} center />
+                  <View style={styles.colChevron} />
+                </View>
+                <FlatList
+                  key="list"
+                  data={data}
+                  keyExtractor={b => b.id}
+                  showsVerticalScrollIndicator={false}
+                  style={styles.tableList}
+                  contentContainerStyle={styles.listContent}
+                  renderItem={({item}) => <ListRow item={item} />}
+                />
               </View>
-              <FlatList
-                key="list"
-                data={data}
-                keyExtractor={b => b.id}
-                showsVerticalScrollIndicator={false}
-                style={styles.tableList}
-                contentContainerStyle={styles.listContent}
-                renderItem={({item}) => <ListRow item={item} />}
-              />
-            </View>
-          </ScrollView>
+            );
+
+            // Tablet: the whole table fits, so render it directly (no left/right
+            // scroll). Phone: keep the horizontal ScrollView so wide columns scroll.
+            return IS_TABLET ? (
+              table
+            ) : (
+              <ScrollView
+                horizontal
+                bounces={false}
+                overScrollMode="never"
+                showsHorizontalScrollIndicator={false}
+                style={styles.tableScroll}
+                contentContainerStyle={styles.tableScrollContent}>
+                {table}
+              </ScrollView>
+            );
+          })()}
         </View>
       )}
     </SafeAreaView>

@@ -1,7 +1,7 @@
 import {StyleSheet} from 'react-native';
 import {ms as baseMs, vs as baseVs} from '../../theme/scale';
 import {colors} from '../../theme/colors';
-import {select} from '../../theme/device';
+import {IS_TABLET, select} from '../../theme/device';
 
 const PHONE_FACTOR = select({phone: 0.82, tablet: 1});
 const ms = n => baseMs(n) * PHONE_FACTOR;
