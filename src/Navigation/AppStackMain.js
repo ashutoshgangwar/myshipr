@@ -22,6 +22,7 @@ import RadarMapScreen from '../screens/RadarMapScreen/RadarMapScreen';
 import RadarSetupScreen from '../screens/RadarMapScreen/RadarSetupScreen';
 import TruckAnimationScreen from '../screens/TruckAnimationScreen/TruckAnimationScreen';
 import TripCompletedScreen from '../screens/TripCompletedScreen/TripCompletedScreen';
+import CoinTestScreen from '../screens/CoinTestScreen/CoinTestScreen';
 
 
 const Stack = createNativeStackNavigator();
@@ -59,6 +60,7 @@ export default function AppStackMain() {
       <Stack.Screen name="ActiveTripScreen" component={ActiveTripScreen} />
       <Stack.Screen name="TruckAnimationScreen" component={TruckAnimationScreen} />
       <Stack.Screen name="TripCompletedScreen" component={TripCompletedScreen} />
+      <Stack.Screen name="CoinTestScreen" component={CoinTestScreen} />
       <Stack.Screen name="NavigationScreen" component={NavigationScreen} />
       <Stack.Screen name="DeliveryConfirmation" component={DeliveryConfirmation} />
       <Stack.Screen name="AvailableLoadsScreen" component={AvailableLoadsScreen} />

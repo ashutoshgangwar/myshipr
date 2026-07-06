@@ -43,15 +43,15 @@ export default StyleSheet.create({
   // ── Floating GPS (re-center) button ───────────────────────────────────
   gpsButton: {
     position: 'absolute',
-    right: s(12),
-    bottom: vs(85),
+    left: s(12),
+    bottom:  vs(85),
     width: ms(46),
     height: ms(46),
     borderRadius: ms(23),
     backgroundColor: colors.white,
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 45,
+    zIndex: 999,
     ...Platform.select({
       ios: {
         shadowColor: '#3b82f6',
