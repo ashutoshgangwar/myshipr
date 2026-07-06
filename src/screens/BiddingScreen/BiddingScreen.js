@@ -7,6 +7,8 @@ import StatusBar from '../../component/StatusBar/StatusBar';
 import DashboardHeader from '../../component/DashboardHeader/DashboardHeader';
 import AppText from '../../theme/AppText';
 import {colors} from '../../theme/colors';
+import {IS_TABLET, select} from '../../theme/device';
+import {ms as baseMs, vs as baseVs} from '../../theme/scale';
 
 // NOTE: placeholder icons pulled from assets/svg_icon — swap to the correct
 // icons later. Not creating any custom SVGs.
@@ -19,6 +21,11 @@ import ListViewIcon from '../../assets/svg_icon/list_grid.svg';
 import CardViewIcon from '../../assets/svg_icon/card_grid.svg';
 import Both_direction_Icon from '../../assets/svg_icon/both_direction.svg';
 import Right_arrow_Frame from '../../assets/svg_icon/right_arrow_Frame.svg';
+
+
+const PHONE_FACTOR = select({phone: 0.82, tablet: 1});
+const ms = n => baseMs(n) * PHONE_FACTOR;
+const vs = n => baseVs(n) * PHONE_FACTOR;
 
 const MODES = ['All Modes', 'FTL', 'LTL'];
 
@@ -399,9 +406,9 @@ export default function BiddingScreen() {
       {/* HEADER */}
       <DashboardHeader
         icon={<BiddingIcon width={20} height={20} />}
-        paddingHorizontal={14}
-        paddingVertical={12}
-        height={130}
+        paddingHorizontal={ms(14)}
+        paddingVertical={vs(IS_TABLET ? 32 : 8)}
+        height={IS_TABLET ? vs(110) : vs(120)}
         statsOffset={-45}
         width="100%"
         title="Bidding"
