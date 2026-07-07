@@ -7,11 +7,8 @@ const PHONE_FACTOR = select({phone: 0.82, tablet: 1});
 const ms = n => baseMs(n) * PHONE_FACTOR;
 const vs = n => baseVs(n) * PHONE_FACTOR;
 
-/* Fixed column widths so the table keeps a comfortable size and can scroll
-   horizontally on narrow phones. On tablet the columns flex to fill the width
-   so the whole table fits with no horizontal scroll. */
 const COL = {
-  load: ms(135),
+  load: ms(155),
   equip: ms(102),
   mode: ms(70),
   pickup: ms(90),
@@ -20,15 +17,17 @@ const COL = {
   chevron: ms(22),
 };
 
-/* On tablet each data column flexes (proportional to its phone width) so the
-   table fills the available width; on phone it keeps a fixed width and scrolls. */
 const col = (width, flex) => (IS_TABLET ? {flex} : {width});
 
 const TABLE_PADDING = ms(10);
 
-/* One shared height for every control in the filter row (mode tabs, search box,
-   view toggle) so they always line up, regardless of device/model. */
-const FILTER_H = vs(30);
+// gap between table columns (applied to both header cells and row cells)
+const COL_GAP = ms(12);
+
+const FILTER_H = IS_TABLET ? vs(30) : vs(35);
+
+// fixed list-row height so all rows are the same size
+const ROW_H = select({phone: vs(72), tablet: vs(58)});
 
 export const TABLE_WIDTH =
   COL.load +
@@ -143,7 +142,7 @@ export default StyleSheet.create({
   },
 
   toggleBtn: {
-    paddingHorizontal: ms(8),
+    paddingHorizontal:IS_TABLET ? ms(8) : ms(10),
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -351,8 +350,10 @@ export default StyleSheet.create({
   },
 
   thText: {
-    flexShrink: 1,
-    fontSize: ms(12),
+    // don't let the label shrink/compress — it stays on one line at full size
+    // and is never truncated with an ellipsis.
+    flexShrink: 0,
+    fontSize: ms(9),
     fontWeight: '500',
     color: colors.nearBlack,
   },
@@ -362,26 +363,30 @@ export default StyleSheet.create({
   },
 
   listContent: {
-    paddingHorizontal: ms(10),
+    // must match tableHeader's paddingHorizontal (TABLE_PADDING) so the header
+    // cells and row cells line up in the same columns.
+    paddingHorizontal: TABLE_PADDING,
   },
 
   tableRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    // shorter rows on tablet so more fit on screen
-    paddingVertical: select({phone: vs(11), tablet: vs(6)}),
+    // uniform row size, but allowed to grow so wrapped text is never clipped
+    minHeight: ROW_H,
+    paddingVertical: select({phone: vs(8), tablet: vs(6)}),
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border_Color,
   },
 
   /* column sizing — shared by header + rows so both stay in sync.
-     Phone: fixed width (table scrolls). Tablet: flex (table fills width). */
-  colLoad: {...col(COL.load, 200), paddingRight: ms(4)},
-  colEquip: {...col(COL.equip, 110), paddingRight: ms(4)},
-  colMode: {...col(COL.mode, 70), paddingRight: ms(4)},
-  colPickup: {...col(COL.pickup, 95), paddingRight: ms(4)},
-  colIndicative: {...col(COL.indicative, 80), paddingRight: ms(4)},
-  colLowest: {...col(COL.lowest, 95)},
+     Phone: fixed width (table scrolls). Tablet: flex (table fills width).
+     COL_GAP adds breathing room between columns. */
+  colLoad: {...col(COL.load, 215), paddingRight: COL_GAP},
+  colEquip: {...col(COL.equip, 105), paddingRight: COL_GAP},
+  colMode: {...col(COL.mode, 60), paddingRight: COL_GAP},
+  colPickup: {...col(COL.pickup, 115), paddingRight: COL_GAP},
+  colIndicative: {...col(COL.indicative, 105), paddingRight: COL_GAP},
+  colLowest: {...col(COL.lowest, 110)},
   colChevron: {width: COL.chevron, alignItems: 'center', justifyContent: 'center'},
 
   loadHeadRow: {
@@ -403,13 +408,13 @@ export default StyleSheet.create({
   },
 
   loadRoute: {
-    fontSize: ms(12),
+    fontSize: ms(10),
     fontWeight: '700',
     color: colors.textStrong,
   },
 
   loadRouteDest: {
-    fontSize: ms(12),
+    fontSize: ms(10),
     fontWeight: '700',
     color: colors.textStrong,
   },

@@ -7,7 +7,6 @@ import {
   Platform,
   ScrollView,
   ActivityIndicator,
-  Alert,
   Keyboard,
   TouchableWithoutFeedback,
 } from 'react-native';
@@ -28,9 +27,13 @@ import {ms, vs} from '../../theme/scale';
 import React, { useState, useRef, useMemo } from 'react';
 import BiometricLoginButton from '../../component/BiometricLoginButton/BiometricLoginButton';
 import useDeviceType from '../../hooks/useDeviceType';
+import { loginWithPassword } from '../../services/api/AuthService';
+import ErrorModal from '../../component/ErrorModal/ErrorModal';
+import useErrorModal from '../../hooks/useErrorModal';
 
 const Login = () => {
   const {isTablet} = useDeviceType();
+  const {modalProps, showError, showMessage} = useErrorModal();
   const styles = useMemo(() => makeStyles(isTablet), [isTablet]);
   const [deviceId, setDeviceId] = useState('');
   const [deviceName, setDeviceName] = useState('');
@@ -84,7 +87,11 @@ const Login = () => {
     const identifier = email.trim();
 
     if (!identifier) {
-      Alert.alert('Required Field', 'Please enter email or mobile number');
+      showMessage({
+        variant: 'warning',
+        title: 'Required Field',
+        message: 'Please enter email or mobile number',
+      });
       return;
     }
 
@@ -92,36 +99,54 @@ const Login = () => {
     const isEmail = identifier.includes('@');
     if (isEmail) {
       if (!emailRegex.test(identifier)) {
-        Alert.alert('Invalid Email', 'Please enter a valid email address');
+        showMessage({
+          variant: 'warning',
+          title: 'Invalid Email',
+          message: 'Please enter a valid email address',
+        });
         return;
       }
     } else if (!phoneRegex.test(identifier)) {
-      Alert.alert('Invalid Input', 'Please enter a valid email or mobile number');
+      showMessage({
+        variant: 'warning',
+        title: 'Invalid Input',
+        message: 'Please enter a valid email or mobile number',
+      });
       return;
     }
 
     if (!password) {
-      Alert.alert('Required Field', 'Please enter your password');
+      showMessage({
+        variant: 'warning',
+        title: 'Required Field',
+        message: 'Please enter your password',
+      });
       return;
     }
 
     if (password.length < 4) {
-      Alert.alert('Invalid Password', 'Password must be at least 4 characters');
+      showMessage({
+        variant: 'warning',
+        title: 'Invalid Password',
+        message: 'Password must be at least 4 characters',
+      });
       return;
     }
 
     Keyboard.dismiss();
     setLoading(true);
 
-    // Simulate API call
-    setTimeout(() => {
-      setLoading(false);
-      // TODO: Replace with real authentication logic
+    try {
+      await loginWithPassword({ identifier, password, role: 'DRIVER' });
       navigation.reset({
         index: 0,
         routes: [{ name: 'MainApp' }],
       });
-    }, 1000);
+    } catch (err) {
+      showError(err, {title: 'Login Failed', confirmText: 'Retry', onConfirm: handleLogin});
+    } finally {
+      setLoading(false);
+    }
   };
   const handleForgotPassword = () => {
     if (loading) return;
@@ -297,13 +322,14 @@ const Login = () => {
                     navigation.reset({ index: 0, routes: [{ name: 'MainApp' }] });
                   }}
                   onError={(err) => {
-                    if (err) Alert.alert('Biometric Login Failed', err);
+                    if (err) showError(err, {title: 'Biometric Login Failed'});
                   }}
                 />
               </View>
                    </View>
             </View>
           </ScrollView>
+          <ErrorModal {...modalProps} />
         </SafeAreaView>
       </TouchableWithoutFeedback>
     </KeyboardAvoidingView>

@@ -60,13 +60,13 @@ const LoginSplashScreen = ({navigation}) => {
   };
 
   const handleBiometricError = err => {
-    if (err) Alert.alert('Biometric Login Failed', err);
+    if (err) showError(err, {title: 'Biometric Login Failed'});
   };
 
   const handleCredentialsPress = () => {
     navigation.reset({index: 0, routes: [{name: 'MainApp'}]});
-    // navigation.navigate('CoinTestScreen');
-    // navigation.navigate('TruckAnimationScreen');
+    // navigation.navigate('LoginScreen');
+    // navigation.navigate('FavoriteDestination');
   };
   
   // To fetch the public IP address

@@ -10,8 +10,7 @@ import {colors} from '../../theme/colors';
 import {IS_TABLET, select} from '../../theme/device';
 import {ms as baseMs, vs as baseVs} from '../../theme/scale';
 
-// NOTE: placeholder icons pulled from assets/svg_icon — swap to the correct
-// icons later. Not creating any custom SVGs.
+// NOTE: placeholder icons pulled from assets/svg_icon — swap to the correct.
 import BiddingIcon from '../../assets/svg_icon/Bidding_Icon.svg';
 import SearchIcon from '../../assets/svg_icon/Search_Icon.svg';
 import TruckIcon from '../../assets/svg_icon/Truck_Frame.svg';
@@ -26,6 +25,9 @@ import Right_arrow_Frame from '../../assets/svg_icon/right_arrow_Frame.svg';
 const PHONE_FACTOR = select({phone: 0.82, tablet: 1});
 const ms = n => baseMs(n) * PHONE_FACTOR;
 const vs = n => baseVs(n) * PHONE_FACTOR;
+
+// sort caret next to sortable header labels — small so it doesn't crowd the text
+const SORT_ICON = select({phone: 8, tablet: 10});
 
 const MODES = ['All Modes', 'FTL', 'LTL'];
 
@@ -237,15 +239,15 @@ function ModeChip({mode}) {
 function HeaderCell({label, colStyle, sortable, center}) {
   return (
     <View style={[styles.thCell, colStyle, center && styles.thCellCenter]}>
-      <AppText
-        style={styles.thText}
-        numberOfLines={1}
-        adjustsFontSizeToFit
-        minimumFontScale={0.85}>
+      <AppText style={styles.thText} numberOfLines={1}>
         {label}
       </AppText>
       {sortable ? (
-        <Both_direction_Icon width={8} height={8} style={styles.thSortIcon} />
+        <Both_direction_Icon
+          width={SORT_ICON}
+          height={SORT_ICON}
+          style={styles.thSortIcon}
+        />
       ) : null}
     </View>
   );
@@ -313,10 +315,8 @@ function ListRow({item}) {
         <View style={styles.loadHeadRow}>
           <View style={styles.greenDot} />
           <View style={styles.flexShrink}>
-            <AppText style={styles.loadRoute} numberOfLines={1}>
-              {item.origin}
-            </AppText>
-            <AppText style={styles.loadRouteDest} numberOfLines={1}>
+            <AppText style={styles.loadRoute}>{item.origin}</AppText>
+            <AppText style={styles.loadRouteDest}>
               <AppText style={styles.arrowSmall}>→ </AppText>
               {item.dest}
             </AppText>
