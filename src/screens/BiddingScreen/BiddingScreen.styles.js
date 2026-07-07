@@ -19,9 +19,6 @@ const FILTER_H = IS_TABLET ? vs(30) : vs(34);
 const TABLE_PADDING = ms(10);
 const ROW_MIN_H = select({phone: vs(66), tablet: vs(56)});
 
-// Phone: fixed, comfortable column widths — the table is wider than the screen
-// and scrolls left/right, so headers/values get real spacing and never clip.
-// Tablet: columns are flex and fit the capped width (no horizontal scroll).
 const COL = {
   load: ms(100),
   mode: ms(72),
@@ -441,10 +438,13 @@ export default StyleSheet.create({
   cardChipsRow: {
     flexDirection: 'row',
     alignItems: 'center',
+    flexWrap: 'wrap',
     gap: ms(6),
     marginTop: vs(10),
   },
 
+  // right-aligns the status badge in the chips row; with flexWrap it drops to
+  // its own line (still inside the card) when the row is too narrow.
   cardStatusPush: {
     marginLeft: 'auto',
   },

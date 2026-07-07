@@ -292,7 +292,7 @@ function GridCard({item}) {
     <TouchableOpacity style={styles.card} activeOpacity={0.85}>
       <View style={styles.cardTopRow}>
         <View style={styles.cardRouteWrap}>
-          <AppText style={styles.cardRoute} numberOfLines={1}>
+          <AppText style={styles.cardRoute}>
             {item.origin} <AppText style={styles.arrow}>→</AppText> {item.dest}
           </AppText>
           <AppText style={styles.cardRef}>{item.ref}</AppText>
