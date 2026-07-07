@@ -7,7 +7,7 @@ import {
   StyleSheet,
   Image,
 } from 'react-native';
-import {useNavigation} from '@react-navigation/native';
+import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import styles from './HomeScreen.styles';
 import StatusBar from '../../component/StatusBar/StatusBar';
@@ -146,6 +146,15 @@ const HomeScreen = () => {
     setTripStarted(true);
     navigation.navigate('ActiveTripScreen');
   };
+
+  // When the user comes back to Home while a trip is ongoing, float the map.
+  useFocusEffect(
+    React.useCallback(() => {
+      if (tripStarted) {
+        setMapVisible(true);
+      }
+    }, [tripStarted]),
+  );
 
   return (
     <SafeAreaView style={styles.safe}>

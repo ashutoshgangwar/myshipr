@@ -20,8 +20,6 @@ export default StyleSheet.create({
     paddingBottom: vs(28),
   },
 
-  // Extra bottom space so the last content clears the absolutely-positioned
-  // Trip-in-Progress banner instead of hiding underneath it.
   scrollContentWithBanner: {
     paddingBottom: vs(90),
   },
