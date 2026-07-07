@@ -10,7 +10,6 @@ import {colors} from '../../theme/colors';
 import {IS_TABLET, select} from '../../theme/device';
 import {ms as baseMs, vs as baseVs} from '../../theme/scale';
 
-// NOTE: placeholder icons pulled from assets/svg_icon — swap to the correct.
 import BiddingIcon from '../../assets/svg_icon/Bidding_Icon.svg';
 import SearchIcon from '../../assets/svg_icon/Search_Icon.svg';
 import TruckIcon from '../../assets/svg_icon/Truck_Frame.svg';
@@ -21,20 +20,19 @@ import CardViewIcon from '../../assets/svg_icon/card_grid.svg';
 import Both_direction_Icon from '../../assets/svg_icon/both_direction.svg';
 import Right_arrow_Frame from '../../assets/svg_icon/right_arrow_Frame.svg';
 
-
 const PHONE_FACTOR = select({phone: 0.82, tablet: 1});
 const ms = n => baseMs(n) * PHONE_FACTOR;
 const vs = n => baseVs(n) * PHONE_FACTOR;
 
-// sort caret next to sortable header labels — small so it doesn't crowd the text
-const SORT_ICON = select({phone: 8, tablet: 10});
+// sort caret next to sortable header labels
+const SORT_ICON = select({phone: 9, tablet: 12});
 
 const MODES = ['All Modes', 'FTL', 'LTL'];
 
 const STATS = [
-  {label: 'Currently Leading', value: '1', note: 'Across Active Bids', accent: colors.warning_text, labelColor: colors.warning_text},
-  {label: 'Active Bids', value: '1', note: 'in Progress', accent: colors.accentBlue, labelColor: colors.accentBlue},
-  {label: 'Awarded Bids', value: '1', note: '8% vs last week', accent: colors.success, labelColor: colors.success, up: true},
+  {label: 'Currently Leading', value: '2', note: 'Across Active Bids', accent: colors.warning_text, labelColor: colors.warning_text},
+  {label: 'Active Bids', value: '6', note: 'in Progress', accent: colors.accentBlue, labelColor: colors.accentBlue},
+  {label: 'Awarded Bids', value: '1', note: '8% vs last week', accent: colors.success, labelColor: colors.success, noteColor: colors.success, up: true},
   {label: 'Open Auction', value: '637', note: 'Across All Modes', accent: colors.card_drive_load, labelColor: colors.card_drive_load},
 ];
 
@@ -46,31 +44,27 @@ const STATUS = {
 const BIDS = [
   {
     id: 'b1',
-    origin: 'Houston TX',
-    dest: 'San Antonio TX',
+    origin: 'San Jose CA',
+    dest: 'Newark NJ',
     ref: 'FTL – 09010',
-    equipment: '53 dry Van',
-    weight: '41000 Lbs',
-    mode: 'LTL',
+    mode: 'FTL',
     date: 'Feb, 28',
     time: '6:00 PM',
     pickupTime: '6.00Pm',
     pickupDate: '28th July',
     indicative: '$4567',
     amount: '$1100',
-    lowestBid: '$900',
-    rank: '#1 you',
+    lowestBid: '$4567',
+    rank: '#4 you',
     bids: 2,
     status: 'Awarded',
     awardedAt: '$900',
   },
   {
     id: 'b2',
-    origin: 'Houston TX',
-    dest: 'San Antonio TX',
+    origin: 'San Jose CA',
+    dest: 'Newark NJ',
     ref: 'FTL – 09010',
-    equipment: '53 dry Van',
-    weight: '41000 Lbs',
     mode: 'FTL',
     date: 'Feb, 28',
     time: '6:00 PM',
@@ -78,39 +72,17 @@ const BIDS = [
     pickupDate: '28th July',
     indicative: '$4567',
     amount: '$1100',
-    lowestBid: '$1100',
-    rank: '#4 you',
+    lowestBid: '$4567',
+    rank: null,
     bids: 2,
     status: 'Open',
     awardedAt: null,
   },
   {
     id: 'b3',
-    origin: 'Houston TX',
-    dest: 'San Antonio TX',
+    origin: 'San Jose CA',
+    dest: 'Newark NJ',
     ref: 'FTL – 09010',
-    equipment: '53 dry Van',
-    weight: '41000 Lbs',
-    mode: 'LTL',
-    date: 'Feb, 28',
-    time: '6:00 PM',
-    pickupTime: '6.00Pm',
-    pickupDate: '28th July',
-    indicative: '$4567',
-    amount: '$1100',
-    lowestBid: '$900',
-    rank: '#1 you',
-    bids: 2,
-    status: 'Awarded',
-    awardedAt: '$900',
-  },
-  {
-    id: 'b4',
-    origin: 'Houston TX',
-    dest: 'San Antonio TX',
-    ref: 'FTL – 09010',
-    equipment: '53 dry Van',
-    weight: '41000 Lbs',
     mode: 'FTL',
     date: 'Feb, 28',
     time: '6:00 PM',
@@ -118,19 +90,35 @@ const BIDS = [
     pickupDate: '28th July',
     indicative: '$4567',
     amount: '$1100',
-    lowestBid: '$1100',
-    rank: '#4 you',
+    lowestBid: '$4567',
+    rank: null,
+    bids: 2,
+    status: 'Open',
+    awardedAt: null,
+  },
+  {
+    id: 'b4',
+    origin: 'San Jose CA',
+    dest: 'Newark NJ',
+    ref: 'FTL – 09010',
+    mode: 'FTL',
+    date: 'Feb, 28',
+    time: '6:00 PM',
+    pickupTime: '6.00Pm',
+    pickupDate: '28th July',
+    indicative: '$4567',
+    amount: '$1100',
+    lowestBid: '$4567',
+    rank: null,
     bids: 2,
     status: 'Open',
     awardedAt: null,
   },
   {
     id: 'b5',
-    origin: 'Houston TX',
-    dest: 'San Antonio TX',
+    origin: 'San Jose CA',
+    dest: 'Newark NJ',
     ref: 'FTL – 09010',
-    equipment: '53 dry Van',
-    weight: '41000 Lbs',
     mode: 'FTL',
     date: 'Feb, 28',
     time: '6:00 PM',
@@ -138,19 +126,17 @@ const BIDS = [
     pickupDate: '28th July',
     indicative: '$4567',
     amount: '$1100',
-    lowestBid: '$1100',
-    rank: '#4 you',
+    lowestBid: '$4567',
+    rank: null,
     bids: 2,
     status: 'Open',
     awardedAt: null,
   },
   {
     id: 'b6',
-    origin: 'Houston TX',
-    dest: 'San Antonio TX',
+    origin: 'San Jose CA',
+    dest: 'Newark NJ',
     ref: 'FTL – 09010',
-    equipment: '53 dry Van',
-    weight: '41000 Lbs',
     mode: 'FTL',
     date: 'Feb, 28',
     time: '6:00 PM',
@@ -158,19 +144,17 @@ const BIDS = [
     pickupDate: '28th July',
     indicative: '$4567',
     amount: '$1100',
-    lowestBid: '$1100',
-    rank: '#4 you',
+    lowestBid: '$4567',
+    rank: null,
     bids: 2,
     status: 'Open',
     awardedAt: null,
   },
-   {
+  {
     id: 'b7',
-    origin: 'Houston TX',
-    dest: 'San Antonio TX',
+    origin: 'San Jose CA',
+    dest: 'Newark NJ',
     ref: 'FTL – 09010',
-    equipment: '53 dry Van',
-    weight: '41000 Lbs',
     mode: 'FTL',
     date: 'Feb, 28',
     time: '6:00 PM',
@@ -178,19 +162,17 @@ const BIDS = [
     pickupDate: '28th July',
     indicative: '$4567',
     amount: '$1100',
-    lowestBid: '$1100',
-    rank: '#4 you',
+    lowestBid: '$4567',
+    rank: null,
     bids: 2,
     status: 'Open',
     awardedAt: null,
   },
-   {
+  {
     id: 'b8',
-    origin: 'Houston TX',
-    dest: 'San Antonio TX',
+    origin: 'San Jose CA',
+    dest: 'Newark NJ',
     ref: 'FTL – 09010',
-    equipment: '53 dry Van',
-    weight: '41000 Lbs',
     mode: 'FTL',
     date: 'Feb, 28',
     time: '6:00 PM',
@@ -198,33 +180,12 @@ const BIDS = [
     pickupDate: '28th July',
     indicative: '$4567',
     amount: '$1100',
-    lowestBid: '$1100',
-    rank: '#4 you',
+    lowestBid: '$4567',
+    rank: null,
     bids: 2,
     status: 'Open',
     awardedAt: null,
   },
-   {
-    id: 'b9',
-    origin: 'Houston TX',
-    dest: 'San Antonio TX',
-    ref: 'FTL – 09010',
-    equipment: '53 dry Van',
-    weight: '41000 Lbs',
-    mode: 'FTL',
-    date: 'Feb, 28',
-    time: '6:00 PM',
-    pickupTime: '6.00Pm',
-    pickupDate: '28th July',
-    indicative: '$4567',
-    amount: '$1100',
-    lowestBid: '$1100',
-    rank: '#4 you',
-    bids: 2,
-    status: 'Open',
-    awardedAt: null,
-  },
-
 ];
 
 function ModeChip({mode}) {
@@ -239,6 +200,8 @@ function ModeChip({mode}) {
 function HeaderCell({label, colStyle, sortable, center}) {
   return (
     <View style={[styles.thCell, colStyle, center && styles.thCellCenter]}>
+      {/* No adjustsFontSizeToFit — every header renders at the same fixed size;
+          the columns are sized wide enough to fit each label on one line. */}
       <AppText style={styles.thText} numberOfLines={1}>
         {label}
       </AppText>
@@ -262,6 +225,68 @@ function StatusBadge({status}) {
   );
 }
 
+function ListRow({item}) {
+  return (
+    <TouchableOpacity style={styles.tableRow} activeOpacity={0.85}>
+      {/* Load */}
+      <View style={styles.colLoad}>
+        <View style={styles.loadHeadRow}>
+          <View style={styles.greenDot} />
+          <View style={styles.loadTextWrap}>
+            <AppText style={styles.loadRoute} numberOfLines={1}>
+              {item.origin}
+            </AppText>
+            <AppText style={styles.loadRouteDest} numberOfLines={1}>
+              <AppText style={styles.arrowSmall}>→ </AppText>
+              {item.dest}
+            </AppText>
+          </View>
+        </View>
+        <View style={styles.bidsBadge}>
+          <AppText style={styles.bidsBadgeText}>{item.bids} BIDS</AppText>
+        </View>
+      </View>
+
+      {/* Mode */}
+      <View style={styles.colMode}>
+        <ModeChip mode={item.mode} />
+      </View>
+
+      {/* Pickup Time */}
+      <View style={styles.colPickup}>
+        <AppText style={styles.cellStrong} numberOfLines={1}>
+          {item.pickupTime}
+        </AppText>
+        <AppText style={styles.cellMuted} numberOfLines={1}>
+          {item.pickupDate}
+        </AppText>
+      </View>
+
+      {/* Indicative */}
+      <View style={styles.colIndicative}>
+        <AppText style={styles.indicativeValue} numberOfLines={1}>
+          {item.indicative}
+        </AppText>
+      </View>
+
+      {/* Lowest Bid */}
+      <View style={styles.colLowest}>
+        <AppText style={styles.lowestBidValue} numberOfLines={1}>
+          {item.lowestBid}
+        </AppText>
+        <AppText style={styles.lowestBidRank} numberOfLines={1}>
+          {item.rank || '-'}
+        </AppText>
+      </View>
+
+      {/* Chevron */}
+      <View style={styles.colChevron}>
+        <Right_arrow_Frame width={14} height={14} />
+      </View>
+    </TouchableOpacity>
+  );
+}
+
 function GridCard({item}) {
   return (
     <TouchableOpacity style={styles.card} activeOpacity={0.85}>
@@ -273,7 +298,6 @@ function GridCard({item}) {
           <AppText style={styles.cardRef}>{item.ref}</AppText>
         </View>
         <View style={styles.cardAmountWrap}>
-          <StatusBadge status={item.status} />
           <AppText style={styles.cardAmount}>{item.amount}</AppText>
           {item.awardedAt ? (
             <AppText style={styles.cardAwardedAt}>Awarded at {item.awardedAt}</AppText>
@@ -291,6 +315,9 @@ function GridCard({item}) {
           <ClockIcon width={12} height={12} />
           <AppText style={styles.metaChipText}>{item.time}</AppText>
         </View>
+        <View style={styles.cardStatusPush}>
+          <StatusBadge status={item.status} />
+        </View>
       </View>
 
       <View style={styles.cardDivider} />
@@ -299,75 +326,7 @@ function GridCard({item}) {
         <AppText style={styles.cardLowestLabel}>
           Lowest bid : <AppText style={styles.cardLowestValue}>{item.lowestBid}</AppText>
         </AppText>
-        <AppText style={styles.cardRank}>
-          {item.status === 'Awarded' ? item.rank : '-'}
-        </AppText>
-      </View>
-    </TouchableOpacity>
-  );
-}
-
-function ListRow({item}) {
-  return (
-    <TouchableOpacity style={styles.tableRow} activeOpacity={0.85}>
-      {/* Load */}
-      <View style={styles.colLoad}>
-        <View style={styles.loadHeadRow}>
-          <View style={styles.greenDot} />
-          <View style={styles.flexShrink}>
-            <AppText style={styles.loadRoute}>{item.origin}</AppText>
-            <AppText style={styles.loadRouteDest}>
-              <AppText style={styles.arrowSmall}>→ </AppText>
-              {item.dest}
-            </AppText>
-          </View>
-        </View>
-        <View style={styles.bidsBadge}>
-          <AppText style={styles.bidsBadgeText}>{item.bids} BIDS</AppText>
-        </View>
-      </View>
-
-      {/* Equipment */}
-      <View style={styles.colEquip}>
-        <AppText style={styles.cellStrong} numberOfLines={1}>
-          {item.equipment}
-        </AppText>
-        <AppText style={styles.cellMuted} numberOfLines={1}>
-          {item.weight}
-        </AppText>
-      </View>
-
-      {/* Mode */}
-      <View style={[styles.colMode, styles.colCenter]}>
-        <ModeChip mode={item.mode} />
-      </View>
-
-      {/* Pickup Time */}
-      <View style={[styles.colPickup, styles.colCenter]}>
-        <AppText style={styles.cellStrong} numberOfLines={1}>
-          {item.pickupTime}
-        </AppText>
-        <AppText style={styles.cellMuted} numberOfLines={1}>
-          {item.pickupDate}
-        </AppText>
-      </View>
-
-      {/* Indicative */}
-      <View style={[styles.colIndicative, styles.colCenter]}>
-        <AppText style={styles.cellStrong} numberOfLines={1}>
-          {item.indicative}
-        </AppText>
-      </View>
-
-      {/* Lowest Bid */}
-      <View style={[styles.colLowest, styles.colCenter]}>
-        <AppText style={styles.lowestBidValue}>{item.lowestBid}</AppText>
-        <AppText style={styles.lowestBidRank}>{item.rank}</AppText>
-      </View>
-
-      {/* Chevron */}
-      <View style={styles.colChevron}>
-        <Right_arrow_Frame width={14} height={14} />
+        <AppText style={styles.cardRank}>{item.rank || '-'}</AppText>
       </View>
     </TouchableOpacity>
   );
@@ -490,11 +449,10 @@ export default function BiddingScreen() {
               <View style={styles.tableInner}>
                 <View style={styles.tableHeader}>
                   <HeaderCell label="Load" colStyle={styles.colLoad} sortable />
-                  <HeaderCell label="Equipment" colStyle={styles.colEquip} sortable />
                   <HeaderCell label="Mode" colStyle={styles.colMode} sortable center />
                   <HeaderCell label="Pickup Time" colStyle={styles.colPickup} sortable center />
                   <HeaderCell label="Indicative" colStyle={styles.colIndicative} sortable center />
-                  <HeaderCell label="Lowest Bid" colStyle={styles.colLowest} center />
+                  <HeaderCell label="Lowest Bid" colStyle={styles.colLowest} sortable center />
                   <View style={styles.colChevron} />
                 </View>
                 <FlatList
@@ -509,8 +467,8 @@ export default function BiddingScreen() {
               </View>
             );
 
-            // Tablet: the whole table fits, so render it directly (no left/right
-            // scroll). Phone: keep the horizontal ScrollView so wide columns scroll.
+            // Tablet: the table fits the width, render directly. Phone: fixed
+            // column widths that are wider than the screen, so scroll L/R.
             return IS_TABLET ? (
               table
             ) : (

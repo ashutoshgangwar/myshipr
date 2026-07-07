@@ -7,36 +7,37 @@ const PHONE_FACTOR = select({phone: 0.82, tablet: 1});
 const ms = n => baseMs(n) * PHONE_FACTOR;
 const vs = n => baseVs(n) * PHONE_FACTOR;
 
-const COL = {
-  load: ms(155),
-  equip: ms(102),
-  mode: ms(70),
-  pickup: ms(90),
-  indicative: ms(78),
-  lowest: ms(90),
-  chevron: ms(22),
-};
+const CONTENT_MAX = ms(720);
+const centered = IS_TABLET
+  ? {width: '100%', maxWidth: CONTENT_MAX, alignSelf: 'center'}
+  : null;
 
-const col = (width, flex) => (IS_TABLET ? {flex} : {width});
+const CHEVRON_W = ms(22);
+const COL_GAP = ms(8);
 
+const FILTER_H = IS_TABLET ? vs(30) : vs(34);
 const TABLE_PADDING = ms(10);
+const ROW_MIN_H = select({phone: vs(66), tablet: vs(56)});
 
-// gap between table columns (applied to both header cells and row cells)
-const COL_GAP = ms(12);
-
-const FILTER_H = IS_TABLET ? vs(30) : vs(35);
-
-// fixed list-row height so all rows are the same size
-const ROW_H = select({phone: vs(72), tablet: vs(58)});
+// Phone: fixed, comfortable column widths — the table is wider than the screen
+// and scrolls left/right, so headers/values get real spacing and never clip.
+// Tablet: columns are flex and fit the capped width (no horizontal scroll).
+const COL = {
+  load: ms(100),
+  mode: ms(72),
+  pickup: ms(100),
+  indicative: ms(90),
+  lowest: ms(100),
+};
+const col = (width, flex) => (IS_TABLET ? {flex} : {width});
 
 export const TABLE_WIDTH =
   COL.load +
-  COL.equip +
   COL.mode +
   COL.pickup +
   COL.indicative +
   COL.lowest +
-  COL.chevron +
+  CHEVRON_W +
   TABLE_PADDING * 2;
 
 export default StyleSheet.create({
@@ -45,7 +46,7 @@ export default StyleSheet.create({
     backgroundColor: colors.screenBg,
   },
 
-  /* ---------- Header (diesel pill lives in the right slot) ---------- */
+  /* ---------- Header (diesel pill in the right slot) ---------- */
   dieselPill: {
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.25)',
@@ -53,7 +54,7 @@ export default StyleSheet.create({
     borderRadius: ms(10),
     paddingHorizontal: ms(12),
     paddingVertical: vs(5),
-    alignItems: 'left',
+    alignItems: 'flex-start',
   },
 
   dieselLabel: {
@@ -72,6 +73,7 @@ export default StyleSheet.create({
 
   /* ---------- Filter row ---------- */
   filterRow: {
+    ...centered,
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: ms(14),
@@ -92,7 +94,7 @@ export default StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border_Color,
     borderRadius: ms(8),
-    paddingHorizontal: ms(10),
+    paddingHorizontal: ms(12),
     backgroundColor: colors.white,
   },
 
@@ -119,7 +121,7 @@ export default StyleSheet.create({
     borderWidth: 1,
     borderColor: colors.border_Color,
     borderRadius: ms(8),
-    paddingHorizontal: ms(7),
+    paddingHorizontal: ms(10),
     backgroundColor: colors.white,
     height: FILTER_H,
   },
@@ -142,7 +144,7 @@ export default StyleSheet.create({
   },
 
   toggleBtn: {
-    paddingHorizontal:IS_TABLET ? ms(8) : ms(10),
+    paddingHorizontal: ms(9),
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -158,7 +160,7 @@ export default StyleSheet.create({
     gap: ms(4),
     backgroundColor: '#EAF1FF',
     borderRadius: ms(15),
-    paddingHorizontal: ms(6),
+    paddingHorizontal: ms(7),
     paddingVertical: vs(3),
   },
 
@@ -196,8 +198,185 @@ export default StyleSheet.create({
     fontWeight: '700',
   },
 
-  /* ---------- Grid view ---------- */
+  /* ---------- Table / list view ---------- */
+  tableWrap: {
+    ...centered,
+    flex: 1,
+    backgroundColor: colors.white,
+    marginHorizontal: IS_TABLET ? 0 : ms(12),
+    marginBottom: vs(12),
+    borderRadius: ms(12),
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    overflow: 'hidden',
+  },
+
+  // Phone: horizontal scroll wrapper so the fixed-width table can slide L/R.
+  tableScroll: {
+    flex: 1,
+  },
+
+  tableScrollContent: {
+    flexGrow: 1,
+  },
+
+  // Phone: min width forces horizontal scroll. Tablet: fills the capped width.
+  tableInner: {
+    ...select({phone: {minWidth: TABLE_WIDTH}, tablet: {width: '100%', flex: 1}}),
+    flexGrow: 1,
+  },
+
+  tableHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.gray500,
+    paddingVertical: vs(10),
+    paddingHorizontal: TABLE_PADDING,
+  },
+
+  thCell: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: ms(4),
+  },
+
+  thCellCenter: {
+    justifyContent: 'center',
+  },
+
+  thText: {
+    flexShrink: 1,
+    // uniform size for every header; small enough that all labels fit on one
+    // line so none are cut and the Load column keeps room for its city text.
+    fontSize: ms(10),
+    fontWeight: '600',
+    color: colors.nearBlack,
+  },
+
+  thSortIcon: {
+    flexShrink: 0,
+  },
+
+  tableList: {
+    flex: 1,
+  },
+
+  listContent: {
+    paddingHorizontal: TABLE_PADDING,
+  },
+
+  tableRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    minHeight: ROW_MIN_H,
+    paddingVertical: vs(10),
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border_Color,
+  },
+
+  /* Column sizing — shared by header + rows so they stay in sync.
+     Load is left-aligned; the rest are centered. */
+  colLoad: {...col(COL.load, 18), paddingRight: COL_GAP},
+  colMode: {...col(COL.mode, 15), alignItems: 'center'},
+  colPickup: {...col(COL.pickup, 23), alignItems: 'center'},
+  colIndicative: {...col(COL.indicative, 22), alignItems: 'center'},
+  colLowest: {...col(COL.lowest, 23), alignItems: 'center'},
+  colChevron: {width: CHEVRON_W, alignItems: 'center', justifyContent: 'center'},
+
+  /* Load cell */
+  loadHeadRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: ms(6),
+  },
+
+  greenDot: {
+    width: ms(8),
+    height: ms(8),
+    borderRadius: ms(4),
+    backgroundColor: colors.success,
+    marginTop: vs(3),
+  },
+
+  loadTextWrap: {
+    flex: 1,
+    flexShrink: 1,
+  },
+
+  loadRoute: {
+    fontSize: ms(11),
+    fontWeight: '700',
+    color: colors.textStrong,
+  },
+
+  loadRouteDest: {
+    fontSize: ms(11),
+    fontWeight: '700',
+    color: colors.textStrong,
+    marginTop: vs(1),
+  },
+
+  arrowSmall: {
+    color: colors.textMuted,
+  },
+
+  bidsBadge: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.warningLight,
+    borderRadius: ms(5),
+    paddingHorizontal: ms(7),
+    paddingVertical: vs(2),
+    marginTop: vs(6),
+    marginLeft: ms(14),
+  },
+
+  bidsBadgeText: {
+    fontSize: ms(9),
+    fontWeight: '700',
+    color: colors.warning_text,
+  },
+
+  /* Generic centered cell text */
+  cellStrong: {
+    fontSize: ms(11),
+    fontWeight: '600',
+    color: colors.textStrong,
+    textAlign: 'center',
+  },
+
+  cellMuted: {
+    fontSize: ms(10),
+    fontWeight: '500',
+    color: colors.textMuted,
+    marginTop: vs(2),
+    textAlign: 'center',
+  },
+
+  indicativeValue: {
+    fontSize: ms(12),
+    fontWeight: '600',
+    color: colors.textStrong,
+    textAlign: 'center',
+  },
+
+  lowestBidValue: {
+    fontSize: ms(12),
+    fontWeight: '700',
+    color: colors.accentBlueDark,
+    textAlign: 'center',
+  },
+
+  lowestBidRank: {
+    fontSize: ms(10),
+    fontWeight: '500',
+    color: colors.textMuted,
+    marginTop: vs(2),
+    textAlign: 'center',
+  },
+
+  /* ---------- Grid / card view ---------- */
   gridContent: {
+    ...centered,
     paddingHorizontal: ms(12),
     paddingBottom: vs(16),
   },
@@ -209,7 +388,6 @@ export default StyleSheet.create({
 
   card: {
     flex: 1,
-    // cap at half-width so an odd/last card doesn't stretch full-width
     maxWidth: '50%',
     backgroundColor: colors.white,
     borderRadius: ms(12),
@@ -263,9 +441,12 @@ export default StyleSheet.create({
   cardChipsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    flexWrap: 'wrap',
     gap: ms(6),
     marginTop: vs(10),
+  },
+
+  cardStatusPush: {
+    marginLeft: 'auto',
   },
 
   cardDivider: {
@@ -296,172 +477,5 @@ export default StyleSheet.create({
     fontSize: ms(11),
     fontWeight: '700',
     color: colors.textMuted,
-  },
-
-  /* ---------- Table / list view ---------- */
-  tableWrap: {
-    flex: 1,
-    backgroundColor: colors.white,
-    marginHorizontal: ms(12),
-    marginBottom: vs(12),
-    borderRadius: ms(10),
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    overflow: 'hidden',
-  },
-
-  tableScroll: {
-    flex: 1,
-  },
-
-  tableScrollContent: {
-    flexGrow: 1,
-  },
-
-  tableInner: {
-    ...select({phone: {minWidth: TABLE_WIDTH}, tablet: {width: '100%', flex: 1}}),
-    flexGrow: 1,
-  },
-
-  tableList: {
-    flex: 1,
-  },
-
-  tableHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: colors.gray500,
-    paddingVertical: vs(9),
-    paddingHorizontal: TABLE_PADDING,
-  },
-
-  thCell: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: ms(3),
-  },
-
-  thCellCenter: {
-    justifyContent: 'center',
-  },
-
-  colCenter: {
-    alignItems: 'center',
-  },
-
-  thText: {
-    // don't let the label shrink/compress — it stays on one line at full size
-    // and is never truncated with an ellipsis.
-    flexShrink: 0,
-    fontSize: ms(9),
-    fontWeight: '500',
-    color: colors.nearBlack,
-  },
-
-  thSortIcon: {
-    flexShrink: 0,
-  },
-
-  listContent: {
-    // must match tableHeader's paddingHorizontal (TABLE_PADDING) so the header
-    // cells and row cells line up in the same columns.
-    paddingHorizontal: TABLE_PADDING,
-  },
-
-  tableRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    // uniform row size, but allowed to grow so wrapped text is never clipped
-    minHeight: ROW_H,
-    paddingVertical: select({phone: vs(8), tablet: vs(6)}),
-    borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border_Color,
-  },
-
-  /* column sizing — shared by header + rows so both stay in sync.
-     Phone: fixed width (table scrolls). Tablet: flex (table fills width).
-     COL_GAP adds breathing room between columns. */
-  colLoad: {...col(COL.load, 215), paddingRight: COL_GAP},
-  colEquip: {...col(COL.equip, 105), paddingRight: COL_GAP},
-  colMode: {...col(COL.mode, 60), paddingRight: COL_GAP},
-  colPickup: {...col(COL.pickup, 115), paddingRight: COL_GAP},
-  colIndicative: {...col(COL.indicative, 105), paddingRight: COL_GAP},
-  colLowest: {...col(COL.lowest, 110)},
-  colChevron: {width: COL.chevron, alignItems: 'center', justifyContent: 'center'},
-
-  loadHeadRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: ms(6),
-  },
-
-  flexShrink: {
-    flex: 1,
-    flexShrink: 1,
-  },
-
-  greenDot: {
-    width: ms(7),
-    height: ms(7),
-    borderRadius: ms(4),
-    backgroundColor: colors.success,
-  },
-
-  loadRoute: {
-    fontSize: ms(10),
-    fontWeight: '700',
-    color: colors.textStrong,
-  },
-
-  loadRouteDest: {
-    fontSize: ms(10),
-    fontWeight: '700',
-    color: colors.textStrong,
-  },
-
-  arrowSmall: {
-    color: colors.textMuted,
-  },
-
-  bidsBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: colors.warningLight,
-    borderRadius: ms(4),
-    paddingHorizontal: ms(6),
-    paddingVertical: vs(2),
-    marginTop: vs(6),
-    marginLeft: ms(13),
-  },
-
-  bidsBadgeText: {
-    fontSize: ms(9),
-    fontWeight: '700',
-    color: colors.warning_text,
-  },
-
-  cellStrong: {
-    fontSize: ms(11),
-    fontWeight: '600',
-    color: colors.textStrong,
-  },
-
-  cellMuted: {
-    fontSize: ms(10),
-    fontWeight: '500',
-    color: colors.textMuted,
-    marginTop: vs(2),
-  },
-
-  lowestBidValue: {
-    fontSize: ms(12),
-    fontWeight: '700',
-    color: colors.accentBlueDark,
-  },
-
-  lowestBidRank: {
-    fontSize: ms(10),
-    fontWeight: '500',
-    color: colors.textMuted,
-    marginTop: vs(2),
   },
 });
