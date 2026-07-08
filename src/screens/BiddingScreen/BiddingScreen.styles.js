@@ -9,7 +9,7 @@ const vs = n => baseVs(n) * PHONE_FACTOR;
 
 const CONTENT_MAX = ms(720);
 const centered = IS_TABLET
-  ? {width: '100%', maxWidth: CONTENT_MAX, alignSelf: 'center'}
+  ? {width: '95%', maxWidth: CONTENT_MAX, alignSelf: 'center'}
   : null;
 
 const CHEVRON_W = ms(22);
@@ -73,7 +73,7 @@ export default StyleSheet.create({
     ...centered,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: ms(14),
+    paddingHorizontal: IS_TABLET ? ms(8) : ms(14),
     paddingTop: vs(16),
     paddingBottom: vs(12),
     gap: ms(8),
@@ -200,7 +200,7 @@ export default StyleSheet.create({
     ...centered,
     flex: 1,
     backgroundColor: colors.white,
-    marginHorizontal: IS_TABLET ? 0 : ms(12),
+    marginHorizontal: IS_TABLET ? ms(30) : ms(12),
     marginBottom: vs(12),
     borderRadius: ms(12),
     borderWidth: 1,
@@ -266,8 +266,8 @@ export default StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     minHeight: ROW_MIN_H,
-    paddingVertical: vs(10),
-    borderBottomWidth: StyleSheet.hairlineWidth,
+    paddingVertical: vs(8),
+    // borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border_Color,
   },
 

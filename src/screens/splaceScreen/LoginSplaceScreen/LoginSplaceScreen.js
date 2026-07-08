@@ -64,9 +64,9 @@ const LoginSplashScreen = ({navigation}) => {
   };
 
   const handleCredentialsPress = () => {
-    navigation.reset({index: 0, routes: [{name: 'MainApp'}]});
+    // navigation.reset({index: 0, routes: [{name: 'MainApp'}]});
     // navigation.navigate('LoginScreen');
-    // navigation.navigate('FavoriteDestination');
+    navigation.navigate('FavoriteDestination');
   };
   
   // To fetch the public IP address
