@@ -9,15 +9,13 @@ import { colors } from '../../../theme/colors';
 
 export default function DocumentsPanel({
   onClose,
-  onExpand,
   onCapture,
   loadId = '#TX-8821',
   route = 'Dallas → Houston',
 }) {
+  const [expanded, setExpanded] = useState(false);
+  const toggleExpand = useCallback(() => setExpanded(prev => !prev), []);
   const cameraRef = useRef(null);
-  // On Android the device list is only populated after the CAMERA permission
-  // is granted, and a 'back'-only lookup can come back undefined on some
-  // hardware — fall back to any external/front device so the preview attaches.
   const backDevice = useCameraDevice('back');
   const frontDevice = useCameraDevice('front');
   const device = backDevice ?? frontDevice;
@@ -96,10 +94,12 @@ export default function DocumentsPanel({
       title="Trip Documents"
       subtitle={`Load ${loadId} · ${route}`}
       subtitleStyle={{colors: colors.status}}
-      onExpand={onExpand}
+      onExpand={toggleExpand}
       onClose={onClose}
-      wrapStyle={styles.chatPanelWrap}>
-      <View style={styles.cameraPreview}>
+      fullscreen={expanded}
+      wrapStyle={expanded ? styles.panelWrapFullscreen : styles.chatPanelWrap}
+      panelStyle={expanded ? styles.panelFullscreen : null}>
+      <View style={[styles.cameraPreview, expanded && styles.cameraPreviewFullscreen]}>
         {cameraActive && device && (
           <View style={styles.cameraFeed} pointerEvents="none">
             <Camera

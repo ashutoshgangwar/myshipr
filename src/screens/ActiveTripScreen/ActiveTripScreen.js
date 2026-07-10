@@ -224,10 +224,9 @@ export default function ActiveTripScreen({navigation}) {
       {activePanel === 'dock' && <FuelPricePanel onClose={closePanel} />}
 
       {/* ── Floating GPS re-center button ── */}
-      {/* When a side panel is open, drop the button lower so it sits below the
-          panel instead of floating over it. */}
+      {/* Sits behind the panels (low zIndex), so it stays put when one opens. */}
       <TouchableOpacity
-        style={[styles.gpsButton, activePanel && styles.gpsButtonPanelOpen]}
+        style={styles.gpsButton}
         onPress={() => showMyLocation({animate: true})}
         disabled={locating}
         activeOpacity={0.8}>

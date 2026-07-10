@@ -8,7 +8,7 @@ import RoadImage from '../../assets/Image/Road_image.png';
 const TRUCK_ASPECT = 406 / 106;
 
 export default function TruckLoader({
-  duration = 8700,
+  duration = 3000,
   truckW = ms(405),
   truckH = ms(200) / TRUCK_ASPECT,
   loop = true,

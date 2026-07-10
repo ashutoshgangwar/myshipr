@@ -28,6 +28,9 @@ export default StyleSheet.create({
     borderRadius: REVEAL_DIAMETER / 2,
     backgroundColor: colors.white,
     zIndex: 100,
+    // Android stacks by elevation, not zIndex — keep this above the GPS
+    // button (elevation 6) so the reveal covers it during the animation.
+    elevation: 30,
   },
 
   // ── Map ───────────────────────────────────────────────────────────────
@@ -51,7 +54,10 @@ export default StyleSheet.create({
     backgroundColor: colors.white,
     alignItems: 'center',
     justifyContent: 'center',
-    zIndex: 999,
+    // Sit below the side toolbar (40), panels (45), top bar (50) and the
+    // ride-complete reveal animation (100) so those layers cover the GPS
+    // button instead of it floating on top of them.
+    zIndex: 30,
     ...Platform.select({
       ios: {
         shadowColor: '#3b82f6',
@@ -62,11 +68,6 @@ export default StyleSheet.create({
       android: {elevation: 6},
     }),
   },
-  // When a side panel is open the GPS button drops down so it clears the panel.
-  gpsButtonPanelOpen: {
-    bottom: vs(120),
-  },
-
   // ── Top bar ───────────────────────────────────────────────────────────
   topBar: {
     position: 'absolute',
@@ -229,6 +230,27 @@ export default StyleSheet.create({
     top: IS_TABLET ? vs(230) : Platform.OS === 'ios' ? vs(240) : vs(260),
     right: s(1),
   },
+  // Stretched panel — fills the whole screen (documents "expand" action).
+  panelWrapFullscreen: {
+    top: 0,
+    bottom: 0,
+    left: 0,
+    right: 0,
+    width: '100%',
+    alignSelf: 'stretch',
+    // Above the floating GPS button (zIndex 999 / elevation 6) so it can't
+    // float over the full-screen camera.
+    zIndex: 1000,
+    elevation: 20,
+  },
+  panelFullscreen: {
+    flex: 1,
+    borderRadius: 0,
+  },
+  cameraPreviewFullscreen: {
+    flex: 1,
+    height: undefined,
+  },
   panel: {
     borderRadius: ms(12),
     backgroundColor: colors.white,
@@ -257,7 +279,15 @@ export default StyleSheet.create({
     fontSize: ms(10),
     marginTop: vs(1),
   },
-  panelHeaderIcon: {paddingHorizontal: s(6)},
+  panelHeaderIcon: {
+    width: ms(30),
+    height: ms(30),
+    borderRadius: ms(8),
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: s(8),
+  },
   panelHeaderIconGlyph: {color: colors.white, fontSize: ms(16)},
 
   // ── Chat panel ────────────────────────────────────────────────────────
