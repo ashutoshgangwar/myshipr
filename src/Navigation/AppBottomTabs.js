@@ -1,6 +1,7 @@
 import React from 'react';
 import {View, StyleSheet, Platform} from 'react-native';
 import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {moderateScale} from 'react-native-size-matters';
 
 import HomeScreen from '../screens/HomeScreen/HomeScreen';
@@ -29,6 +30,13 @@ const renderTabIcon = Icon => ({focused}) => (
 );
 
 export default function AppBottomTabs() {
+  // RN 0.83 draws Android edge-to-edge, so the tab bar renders under the system
+  // nav/gesture bar (and, on tablets, the persistent taskbar). Add the bottom
+  // safe-area inset so the icons + labels always sit above the system bar
+  // instead of being overlapped/clipped.
+  const insets = useSafeAreaInsets();
+  const bottomInset = Math.max(insets.bottom, moderateScale(8));
+
   return (
     <Tab.Navigator
       screenOptions={{
@@ -41,9 +49,9 @@ export default function AppBottomTabs() {
           borderTopLeftRadius: moderateScale(18),
           borderTopRightRadius: moderateScale(18),
           borderTopWidth: 0,
-          height: select({phone: moderateScale(66), tablet: moderateScale(76)}),
+          height: select({phone: moderateScale(60), tablet: moderateScale(64)}) + bottomInset,
           paddingTop: moderateScale(8),
-          paddingBottom: moderateScale(8),
+          paddingBottom: bottomInset,
         },
         tabBarLabelStyle: {
           fontSize: moderateScale(12),

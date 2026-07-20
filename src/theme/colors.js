@@ -39,6 +39,7 @@ export const colors = {
    card_drive_load: '#7C5BE6',
   successLight: '#E4FBF3',
   accentBlue: '#2563EB',
+  accentBlueLight: '#1883FF',
   accentBlueDark: '#1F00BF',
   warning: '#F59E0B',
   warningLight: '#eacd77',
@@ -48,6 +49,8 @@ export const colors = {
   textMuted: '#64748B',
   textStrong: '#000000',
   textOnLightStrong: '#767676',
+  lightbg_gray: '#8888884D',
+  lightbg_gray2: '#606060',
 
 
   surfaceDarkPrimary: '#00033E',

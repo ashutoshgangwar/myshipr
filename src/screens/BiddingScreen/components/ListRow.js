@@ -1,5 +1,6 @@
 import React from 'react';
 import {View, TouchableOpacity} from 'react-native';
+import {useNavigation} from '@react-navigation/native';
 
 import styles from '../BiddingScreen.styles';
 import ModeChip from './ModeChip';
@@ -7,8 +8,12 @@ import AppText from '../../../theme/AppText';
 import Right_arrow_Frame from '../../../assets/svg_icon/right_arrow_Frame.svg';
 
 export default function ListRow({item}) {
+  const navigation = useNavigation();
   return (
-    <TouchableOpacity style={styles.tableRow} activeOpacity={0.85}>
+    <TouchableOpacity
+      style={styles.tableRow}
+      activeOpacity={0.85}
+      onPress={() => navigation.navigate('ActiveBidding', {item})}>
       {/* Load */}
       <View style={styles.colLoad}>
         <View style={styles.loadHeadRow}>

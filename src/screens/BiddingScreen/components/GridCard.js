@@ -1,5 +1,6 @@
 import React from 'react';
 import {View, TouchableOpacity} from 'react-native';
+import {useNavigation} from '@react-navigation/native';
 
 import styles from '../BiddingScreen.styles';
 import ModeChip from './ModeChip';
@@ -9,8 +10,12 @@ import CalendarIcon from '../../../assets/svg_icon/Schedule.svg';
 import ClockIcon from '../../../assets/svg_icon/Info_Icon.svg';
 
 export default function GridCard({item}) {
+  const navigation = useNavigation();
   return (
-    <TouchableOpacity style={styles.card} activeOpacity={0.85}>
+    <TouchableOpacity
+      style={styles.card}
+      activeOpacity={0.85}
+      onPress={() => navigation.navigate('ActiveBidding', {item})}>
       <View style={styles.cardTopRow}>
         <View style={styles.cardRouteWrap}>
           <AppText style={styles.cardRoute}>
