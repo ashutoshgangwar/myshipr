@@ -3,7 +3,7 @@ import {View, FlatList, Platform} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
 import styles from './BiddingScreen.styles';
-import {BIDS, STATS, ms, vs} from './constants';
+import {BIDS, BUCKETS, STATS, ms, vs} from './constants';
 import FilterRow from './components/FilterRow';
 import BidTable from './components/BidTable';
 import GridCard from './components/GridCard';
@@ -19,9 +19,12 @@ export default function BiddingScreen() {
   const [mode, setMode] = useState('All Modes');
   const [search, setSearch] = useState('');
   const [grid, setGrid] = useState(false);
+  // which header card is driving the list — defaults to Currently Leading
+  const [bucket, setBucket] = useState(BUCKETS.leading);
+  const [sort, setSort] = useState(null);
 
   const data = useMemo(() => {
-    let list = BIDS;
+    let list = BIDS.filter(b => b.categories.includes(bucket));
     if (mode !== 'All Modes') {
       list = list.filter(b => b.mode === mode);
     }
@@ -29,13 +32,20 @@ export default function BiddingScreen() {
       const q = search.trim().toLowerCase();
       list = list.filter(
         b =>
-          b.origin.toLowerCase().includes(q) ||
-          b.dest.toLowerCase().includes(q) ||
+          b.stops.some(s => s.city.toLowerCase().includes(q)) ||
           b.ref.toLowerCase().includes(q),
       );
     }
+    if (sort) {
+      const by = {
+        pickup: b => b.pickupTime,
+        lowest: b => Number(String(b.lowestBid).replace(/[^0-9.]/g, '')) || 0,
+        stops: b => b.stops.length,
+      }[sort];
+      list = [...list].sort((a, b) => (by(a) > by(b) ? 1 : by(a) < by(b) ? -1 : 0));
+    }
     return list;
-  }, [mode, search]);
+  }, [bucket, mode, search, sort]);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -67,6 +77,8 @@ export default function BiddingScreen() {
           </View>
         }
         stats={STATS}
+        activeStat={bucket}
+        onStatPress={setBucket}
       />
 
       {/* FILTER ROW */}
@@ -77,6 +89,8 @@ export default function BiddingScreen() {
         onSearchChange={setSearch}
         grid={grid}
         onGridChange={setGrid}
+        sort={sort}
+        onSortChange={setSort}
       />
 
       {/* LIST / GRID */}

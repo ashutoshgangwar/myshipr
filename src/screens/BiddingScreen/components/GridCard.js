@@ -5,12 +5,15 @@ import {useNavigation} from '@react-navigation/native';
 import styles from '../BiddingScreen.styles';
 import ModeChip from './ModeChip';
 import StatusBadge from './StatusBadge';
+import StopList from './StopList';
 import AppText from '../../../theme/AppText';
 import CalendarIcon from '../../../assets/svg_icon/Schedule.svg';
 import ClockIcon from '../../../assets/svg_icon/Info_Icon.svg';
 
 export default function GridCard({item}) {
   const navigation = useNavigation();
+  const closed = item.status === 'Closed';
+
   return (
     <TouchableOpacity
       style={styles.card}
@@ -18,9 +21,8 @@ export default function GridCard({item}) {
       onPress={() => navigation.navigate('ActiveBidding', {item})}>
       <View style={styles.cardTopRow}>
         <View style={styles.cardRouteWrap}>
-          <AppText style={styles.cardRoute}>
-            {item.origin} <AppText style={styles.arrow}>→</AppText> {item.dest}
-          </AppText>
+          {/* every stop on the load, same treatment as the table's Load column */}
+          <StopList stops={item.stops} textStyle={styles.cardStopCity} />
           <AppText style={styles.cardRef}>{item.ref}</AppText>
         </View>
         <View style={styles.cardAmountWrap}>
@@ -41,6 +43,11 @@ export default function GridCard({item}) {
           <ClockIcon width={12} height={12} />
           <AppText style={styles.metaChipText}>{item.time}</AppText>
         </View>
+        {item.rank && !closed ? (
+          <View style={styles.metaChip}>
+            <AppText style={styles.cardLeadChipText}>{item.rank}</AppText>
+          </View>
+        ) : null}
         <View style={styles.cardStatusPush}>
           <StatusBadge status={item.status} />
         </View>
@@ -52,7 +59,9 @@ export default function GridCard({item}) {
         <AppText style={styles.cardLowestLabel}>
           Lowest bid : <AppText style={styles.cardLowestValue}>{item.lowestBid}</AppText>
         </AppText>
-        <AppText style={styles.cardRank}>{item.rank || '-'}</AppText>
+        <AppText style={styles.cardRank}>
+          {closed ? 'Closed' : item.rank || '-'}
+        </AppText>
       </View>
     </TouchableOpacity>
   );

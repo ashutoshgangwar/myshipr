@@ -23,7 +23,7 @@ const COL = {
   load: ms(100),
   mode: ms(72),
   pickup: ms(100),
-  indicative: ms(90),
+  drop: ms(90),
   lowest: ms(100),
 };
 const col = (width, flex) => (IS_TABLET ? {flex} : {width});
@@ -32,7 +32,7 @@ export const TABLE_WIDTH =
   COL.load +
   COL.mode +
   COL.pickup +
-  COL.indicative +
+  COL.drop +
   COL.lowest +
   CHEVRON_W +
   TABLE_PADDING * 2;
@@ -276,61 +276,46 @@ export default StyleSheet.create({
   colLoad: {...col(COL.load, 18), paddingRight: COL_GAP},
   colMode: {...col(COL.mode, 15), alignItems: 'center'},
   colPickup: {...col(COL.pickup, 23), alignItems: 'center'},
-  colIndicative: {...col(COL.indicative, 22), alignItems: 'center'},
+  colDrop: {...col(COL.drop, 22), alignItems: 'center'},
   colLowest: {...col(COL.lowest, 23), alignItems: 'center'},
   colChevron: {width: CHEVRON_W, alignItems: 'center', justifyContent: 'center'},
 
-  /* Load cell */
-  loadHeadRow: {
+  /* Load cell — one dotted line per stop, then the pickup/drop summary */
+  stopRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     gap: ms(6),
+    marginTop: vs(1),
   },
 
-  greenDot: {
+  stopDot: {
     width: ms(8),
     height: ms(8),
     borderRadius: ms(4),
+    backgroundColor: colors.accentBlue,
+  },
+
+  stopDotDrop: {
     backgroundColor: colors.success,
-    marginTop: vs(3),
   },
 
-  loadTextWrap: {
-    flex: 1,
+  stopCity: {
     flexShrink: 1,
-  },
-
-  loadRoute: {
     fontSize: ms(11),
     fontWeight: '700',
     color: colors.textStrong,
   },
 
-  loadRouteDest: {
-    fontSize: ms(11),
-    fontWeight: '700',
-    color: colors.textStrong,
-    marginTop: vs(1),
+  stopSummary: {
+    fontSize: ms(9),
+    fontWeight: '500',
+    color: colors.textMuted,
+    marginTop: vs(4),
+    marginLeft: ms(14),
   },
 
   arrowSmall: {
     color: colors.textMuted,
-  },
-
-  bidsBadge: {
-    alignSelf: 'flex-start',
-    backgroundColor: colors.warningLight,
-    borderRadius: ms(5),
-    paddingHorizontal: ms(7),
-    paddingVertical: vs(2),
-    marginTop: vs(6),
-    marginLeft: ms(14),
-  },
-
-  bidsBadgeText: {
-    fontSize: ms(9),
-    fontWeight: '700',
-    color: colors.warning_text,
   },
 
   /* Generic centered cell text */
@@ -349,11 +334,63 @@ export default StyleSheet.create({
     textAlign: 'center',
   },
 
-  indicativeValue: {
-    fontSize: ms(12),
-    fontWeight: '600',
+  /* ---------- Filter button + sort sheet ---------- */
+  filterBtn: {
+    height: FILTER_H,
+    width: FILTER_H,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.border_Color,
+    borderRadius: ms(8),
+    backgroundColor: colors.white,
+  },
+
+  filterBtnActive: {
+    backgroundColor: colors.toggle_color,
+    borderColor: colors.toggle_color,
+  },
+
+  sortBackdrop: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.35)',
+    justifyContent: 'flex-end',
+  },
+
+  sortSheet: {
+    backgroundColor: colors.white,
+    borderTopLeftRadius: ms(16),
+    borderTopRightRadius: ms(16),
+    paddingHorizontal: ms(18),
+    paddingTop: vs(16),
+    paddingBottom: vs(28),
+  },
+
+  sortTitle: {
+    fontSize: ms(13),
+    fontWeight: '700',
     color: colors.textStrong,
-    textAlign: 'center',
+    marginBottom: vs(6),
+  },
+
+  sortOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingVertical: vs(11),
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border_Color,
+  },
+
+  sortOptionText: {
+    fontSize: ms(12),
+    fontWeight: '500',
+    color: colors.textStrong,
+  },
+
+  sortOptionTextActive: {
+    color: colors.accentBlue,
+    fontWeight: '700',
   },
 
   lowestBidValue: {
@@ -410,11 +447,21 @@ export default StyleSheet.create({
     color: colors.textStrong,
   },
 
+  cardStopCity: {
+    fontSize: ms(12),
+  },
+
   cardRef: {
     fontSize: ms(10),
     fontWeight: '500',
     color: colors.textMuted,
     marginTop: vs(2),
+  },
+
+  cardLeadChipText: {
+    fontSize: ms(10),
+    fontWeight: '700',
+    color: colors.accentBlueDark,
   },
 
   cardAmountWrap: {

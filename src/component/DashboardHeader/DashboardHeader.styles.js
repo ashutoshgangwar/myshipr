@@ -104,4 +104,9 @@ export default StyleSheet.create({
     fontWeight: '500',
     marginTop: vs(2),
   },
+
+  // applied last so it wins over the per-stat label/note colours
+  statTextActive: {
+    color: colors.white,
+  },
 });

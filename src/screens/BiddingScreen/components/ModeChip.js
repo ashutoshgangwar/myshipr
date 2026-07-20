@@ -5,11 +5,19 @@ import styles from '../BiddingScreen.styles';
 import AppText from '../../../theme/AppText';
 import TruckIcon from '../../../assets/svg_icon/Truck_Frame.svg';
 
+// Multileg gets its own tint so it reads apart from the FTL/LTL chips.
+const TINT = {
+  Multileg: {bg: '#EFE9FF', text: '#5B3FD6'},
+};
+
 export default function ModeChip({mode}) {
+  const tint = TINT[mode];
   return (
-    <View style={styles.modeChip}>
+    <View style={[styles.modeChip, tint && {backgroundColor: tint.bg}]}>
       <TruckIcon width={12} height={12} />
-      <AppText style={styles.modeChipText}>{mode}</AppText>
+      <AppText style={[styles.modeChipText, tint && {color: tint.text}]}>
+        {mode}
+      </AppText>
     </View>
   );
 }

@@ -4,33 +4,22 @@ import {useNavigation} from '@react-navigation/native';
 
 import styles from '../BiddingScreen.styles';
 import ModeChip from './ModeChip';
+import StopList from './StopList';
 import AppText from '../../../theme/AppText';
 import Right_arrow_Frame from '../../../assets/svg_icon/right_arrow_Frame.svg';
 
 export default function ListRow({item}) {
   const navigation = useNavigation();
+  const closed = item.status === 'Closed';
+
   return (
     <TouchableOpacity
       style={styles.tableRow}
       activeOpacity={0.85}
       onPress={() => navigation.navigate('ActiveBidding', {item})}>
-      {/* Load */}
+      {/* Load — one line per stop */}
       <View style={styles.colLoad}>
-        <View style={styles.loadHeadRow}>
-          <View style={styles.greenDot} />
-          <View style={styles.loadTextWrap}>
-            <AppText style={styles.loadRoute} numberOfLines={1}>
-              {item.origin}
-            </AppText>
-            <AppText style={styles.loadRouteDest} numberOfLines={1}>
-              <AppText style={styles.arrowSmall}>→ </AppText>
-              {item.dest}
-            </AppText>
-          </View>
-        </View>
-        <View style={styles.bidsBadge}>
-          <AppText style={styles.bidsBadgeText}>{item.bids} BIDS</AppText>
-        </View>
+        <StopList stops={item.stops} />
       </View>
 
       {/* Mode */}
@@ -48,20 +37,23 @@ export default function ListRow({item}) {
         </AppText>
       </View>
 
-      {/* Indicative */}
-      <View style={styles.colIndicative}>
-        <AppText style={styles.indicativeValue} numberOfLines={1}>
-          {item.indicative}
+      {/* Drop Time */}
+      <View style={styles.colDrop}>
+        <AppText style={styles.cellStrong} numberOfLines={1}>
+          {item.dropTime}
+        </AppText>
+        <AppText style={styles.cellMuted} numberOfLines={1}>
+          {item.dropDate}
         </AppText>
       </View>
 
-      {/* Lowest Bid */}
+      {/* Lowest Bid — past auctions show "Closed" instead of a live rank */}
       <View style={styles.colLowest}>
         <AppText style={styles.lowestBidValue} numberOfLines={1}>
           {item.lowestBid}
         </AppText>
         <AppText style={styles.lowestBidRank} numberOfLines={1}>
-          {item.rank || '-'}
+          {closed ? 'Closed' : item.rank || '-'}
         </AppText>
       </View>
 

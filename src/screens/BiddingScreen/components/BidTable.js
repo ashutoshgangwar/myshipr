@@ -13,7 +13,7 @@ export default function BidTable({data}) {
         <HeaderCell label="Load" colStyle={styles.colLoad} sortable />
         <HeaderCell label="Mode" colStyle={styles.colMode} sortable center />
         <HeaderCell label="Pickup Time" colStyle={styles.colPickup} sortable center />
-        <HeaderCell label="Indicative" colStyle={styles.colIndicative} sortable center />
+        <HeaderCell label="Drop Time" colStyle={styles.colDrop} sortable center />
         <HeaderCell label="Lowest Bid" colStyle={styles.colLowest} sortable center />
         <View style={styles.colChevron} />
       </View>
