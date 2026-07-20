@@ -121,8 +121,14 @@ export default function ActiveBidding({navigation, route}) {
             styles.rankBanner,
             leading ? styles.rankLead : styles.rankBehind,
           ]}>
-          <View style={styles.rankBadge}>
-            <AppText style={styles.rankBadgeText}>#{data.rank}</AppText>
+          <View style={[styles.rankBadge, leading && styles.rankBadgeLead]}>
+            <AppText
+              style={[
+                styles.rankBadgeText,
+                leading && styles.rankBadgeTextLead,
+              ]}>
+              #{data.rank}
+            </AppText>
           </View>
           <View style={styles.rankTextWrap}>
             <AppText style={styles.rankKicker}>YOUR LIVE POSITION</AppText>

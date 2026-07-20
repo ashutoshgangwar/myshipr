@@ -42,6 +42,7 @@ export default function AutoBidModal({visible, min, onClose, onSave}) {
         <View style={styles.modalOverlay}>
           <TouchableWithoutFeedback>
             <KeyboardAvoidingView
+              style={styles.modalKav}
               behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
               <View style={styles.modalCard}>
                 <View style={styles.modalHeader}>

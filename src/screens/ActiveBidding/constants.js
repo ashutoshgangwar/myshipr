@@ -29,7 +29,7 @@ export const AUCTION = {
   timeRemaining: '03:04:47',
 
   // Your live standing in the auction.
-  rank: 4,
+  rank: 1,
   yourBid: 953,
   lowest: 723,
 

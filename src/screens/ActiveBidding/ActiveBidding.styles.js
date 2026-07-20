@@ -163,15 +163,19 @@ export default StyleSheet.create({
     height: ms(38),
     borderRadius: ms(19),
     backgroundColor: colors.white,
+    borderWidth: ms(1.5),
+    borderColor: colors.accentBlue,
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: ms(12),
   },
+  rankBadgeLead: {borderColor: colors.warning_text},
   rankBadgeText: {
     fontSize: ms(16),
     color: colors.accentBlue,
     fontWeight: '700',
   },
+  rankBadgeTextLead: {color: colors.warning_text},
   rankTextWrap: {flex: 1},
   rankKicker: {
     fontSize: ms(11),
@@ -525,6 +529,10 @@ export default StyleSheet.create({
     justifyContent: 'center',
     paddingHorizontal: ms(24),
   },
+  modalKav: {
+    width: '100%',
+    maxWidth: ms(420),
+  },
   modalCard: {
     backgroundColor: colors.white,
     borderRadius: ms(12),
@@ -582,7 +590,7 @@ export default StyleSheet.create({
   saveBtn: {
     backgroundColor: colors.primary,
     borderRadius: ms(8),
-    paddingVertical: vs(12),
+    paddingVertical: IS_TABLET ? vs(8) : vs(14),
     alignItems: 'center',
     marginTop: vs(16),
   },
