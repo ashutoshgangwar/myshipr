@@ -299,17 +299,14 @@ export default StyleSheet.create({
     justifyContent: 'center',
   },
 
+
   stopsWrap: {
     position: 'relative',
   },
 
   stopConnector: {
     position: 'absolute',
-    left: ms(11) / 2,
-    width: 0,
-    borderLeftWidth: 1,
-    borderLeftColor: colors.primaryLight,
-    borderStyle: 'dashed',
+    left: ms(11) / 2 - 1,
   },
 
   stopRow: {
