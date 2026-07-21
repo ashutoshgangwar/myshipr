@@ -2,7 +2,7 @@ import React, {useMemo, useState} from 'react';
 import {View, FlatList, Platform} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
-import styles from './BiddingScreen.styles';
+import styles, {GRID_COLS} from './BiddingScreen.styles';
 import {BIDS, BUCKETS, STATS, ms, vs} from './constants';
 import FilterRow from './components/FilterRow';
 import BidTable from './components/BidTable';
@@ -95,12 +95,14 @@ export default function BiddingScreen() {
 
       {/* LIST / GRID */}
       {grid ? (
+        // one card per row on phones: two columns leaves the card too narrow
+        // for the mode/date/type/distance strip to fit on a single line.
         <FlatList
           key="grid"
           data={data}
           keyExtractor={b => b.id}
-          numColumns={2}
-          columnWrapperStyle={styles.gridColumn}
+          numColumns={GRID_COLS}
+          columnWrapperStyle={GRID_COLS > 1 ? styles.gridColumn : undefined}
           contentContainerStyle={styles.gridContent}
           showsVerticalScrollIndicator={false}
           renderItem={({item}) => <GridCard item={item} />}

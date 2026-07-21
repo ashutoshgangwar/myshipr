@@ -4,15 +4,15 @@ import {useNavigation} from '@react-navigation/native';
 
 import styles from '../BiddingScreen.styles';
 import ModeChip from './ModeChip';
-import StatusBadge from './StatusBadge';
 import StopList from './StopList';
 import AppText from '../../../theme/AppText';
+import {select} from '../../../theme/device';
 import CalendarIcon from '../../../assets/svg_icon/Schedule.svg';
-import ClockIcon from '../../../assets/svg_icon/Info_Icon.svg';
+
+const CHIP_ICON = select({phone: 12, tablet: 15});
 
 export default function GridCard({item}) {
   const navigation = useNavigation();
-  const closed = item.status === 'Closed';
 
   return (
     <TouchableOpacity
@@ -23,45 +23,46 @@ export default function GridCard({item}) {
         <View style={styles.cardRouteWrap}>
           {/* every stop on the load, same treatment as the table's Load column */}
           <StopList stops={item.stops} textStyle={styles.cardStopCity} />
-          <AppText style={styles.cardRef}>{item.ref}</AppText>
         </View>
-        <View style={styles.cardAmountWrap}>
-          <AppText style={styles.cardAmount}>{item.amount}</AppText>
-          {item.awardedAt ? (
-            <AppText style={styles.cardAwardedAt}>Awarded at {item.awardedAt}</AppText>
-          ) : null}
-        </View>
+        <AppText style={styles.cardAmount}>{item.amount}</AppText>
       </View>
 
-      <View style={styles.cardChipsRow}>
-        <ModeChip mode={item.mode} />
-        <View style={styles.metaChip}>
-          <CalendarIcon width={12} height={12} />
-          <AppText style={styles.metaChipText}>{item.date}</AppText>
-        </View>
-        <View style={styles.metaChip}>
-          <ClockIcon width={12} height={12} />
-          <AppText style={styles.metaChipText}>{item.time}</AppText>
-        </View>
-        {item.rank && !closed ? (
-          <View style={styles.metaChip}>
-            <AppText style={styles.cardLeadChipText}>{item.rank}</AppText>
+      {/* pinned to the bottom of the card so the divider sits on the same line
+          as the neighbouring card's, whatever each one's stop count is */}
+      <View style={styles.cardFooter}>
+        <View style={styles.cardChipsRow}>
+          <ModeChip
+            mode={item.mode}
+            style={styles.cardChip}
+            textStyle={styles.cardChipText}
+            iconSize={CHIP_ICON}
+          />
+          <View style={[styles.metaChip, styles.cardChip]}>
+            <CalendarIcon width={CHIP_ICON} height={CHIP_ICON} />
+            <AppText style={styles.cardChipMuted} numberOfLines={1}>
+              {item.date}
+            </AppText>
           </View>
-        ) : null}
-        <View style={styles.cardStatusPush}>
-          <StatusBadge status={item.status} />
+          <View style={[styles.pillSoft, styles.cardChip]}>
+            <AppText style={styles.cardChipSoft} numberOfLines={1}>
+              {item.auctionType}
+            </AppText>
+          </View>
+          <AppText style={[styles.cardDistance, styles.cardChip]} numberOfLines={1}>
+            {item.tripDistance}
+          </AppText>
         </View>
-      </View>
 
-      <View style={styles.cardDivider} />
+        <View style={styles.cardDivider} />
 
-      <View style={styles.cardBottomRow}>
-        <AppText style={styles.cardLowestLabel}>
-          Lowest bid : <AppText style={styles.cardLowestValue}>{item.lowestBid}</AppText>
-        </AppText>
-        <AppText style={styles.cardRank}>
-          {closed ? 'Closed' : item.rank || '-'}
-        </AppText>
+        <View style={styles.cardBottomRow}>
+          <AppText style={styles.cardTimeLabel} >
+            Pickup Time : {item.pickupClock}
+          </AppText>
+          <AppText style={styles.cardTimeLabel}>
+            Drop Time : {item.dropClock}
+          </AppText>
+        </View>
       </View>
     </TouchableOpacity>
   );

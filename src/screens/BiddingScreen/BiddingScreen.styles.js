@@ -12,30 +12,32 @@ const centered = IS_TABLET
   ? {width: '95%', maxWidth: CONTENT_MAX, alignSelf: 'center'}
   : null;
 
-const CHEVRON_W = ms(22);
 const COL_GAP = ms(8);
 
 const FILTER_H = IS_TABLET ? vs(30) : vs(34);
 const TABLE_PADDING = ms(10);
 const ROW_MIN_H = select({phone: vs(66), tablet: vs(56)});
 
-const COL = {
-  load: ms(100),
-  mode: ms(72),
-  pickup: ms(100),
-  drop: ms(90),
-  lowest: ms(100),
-};
-const col = (width, flex) => (IS_TABLET ? {flex} : {width});
+/* Frozen first column ("Load"). Everything else scrolls horizontally beside it. */
+export const LOAD_COL_W = ms(112);
+export const HEADER_H = vs(30);
 
-export const TABLE_WIDTH =
-  COL.load +
-  COL.mode +
-  COL.pickup +
-  COL.drop +
-  COL.lowest +
-  CHEVRON_W +
-  TABLE_PADDING * 2;
+/* Rows are explicitly sized so the frozen column and the scrolling column —
+   which live in separate scroll containers — stay on the same baseline. */
+export const STOP_LINE_H = vs(19);
+const STOP_SUMMARY_H = vs(14);
+const ROW_PAD_V = vs(8);
+
+/* Card grid is two-up everywhere; phones get tighter chip padding and type so
+   the mode/date/type/distance strip still fits on one line. */
+export const GRID_COLS = 2;
+
+const CHIP_PAD = select({phone: ms(5), tablet: ms(4)});
+const CHIP_PAD_V = select({phone: vs(3), tablet: vs(2)});
+const CHIP_FONT = select({phone: ms(8), tablet: ms(8)});
+
+export const rowHeight = stopCount =>
+  Math.max(ROW_MIN_H, ROW_PAD_V * 2 + stopCount * STOP_LINE_H + STOP_SUMMARY_H);
 
 export default StyleSheet.create({
   safe: {
@@ -171,10 +173,15 @@ export default StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     gap: ms(4),
+     backgroundColor:'#F4F5F8',
+    borderRadius: ms(5),
+    paddingHorizontal: ms(20),
+    paddingVertical: vs(3),
+    borderRadius: ms(15),
   },
 
   metaChipText: {
-    fontSize: ms(10),
+    fontSize: ms(8),
     fontWeight: '500',
     color: colors.textMuted,
   },
@@ -208,26 +215,54 @@ export default StyleSheet.create({
     overflow: 'hidden',
   },
 
-  // Phone: horizontal scroll wrapper so the fixed-width table can slide L/R.
-  tableScroll: {
-    flex: 1,
-  },
-
-  tableScrollContent: {
-    flexGrow: 1,
-  },
-
-  // Phone: min width forces horizontal scroll. Tablet: fills the capped width.
-  tableInner: {
-    ...select({phone: {minWidth: TABLE_WIDTH}, tablet: {width: '100%', flex: 1}}),
-    flexGrow: 1,
+  // header band: frozen "Load" head + the scrolling heads, kept in lockstep
+  tableHeaderRow: {
+    flexDirection: 'row',
+    backgroundColor: colors.gray500,
   },
 
   tableHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    height: HEADER_H,
     backgroundColor: colors.gray500,
-    paddingVertical: vs(10),
+  },
+
+  // vertical scroller holding both columns' bodies
+  tableBody: {
+    flex: 1,
+  },
+
+  tableBodyRow: {
+    flexDirection: 'row',
+  },
+
+  // the frozen first column — sits outside the horizontal scroller
+  frozenCol: {
+    width: LOAD_COL_W,
+    paddingLeft: TABLE_PADDING,
+    borderRightWidth: StyleSheet.hairlineWidth,
+    borderRightColor: colors.border_Color,
+    backgroundColor: colors.white,
+  },
+
+  frozenHead: {
+    width: LOAD_COL_W,
+    paddingLeft: TABLE_PADDING,
+    justifyContent: 'center',
+    height: HEADER_H,
+    borderRightWidth: StyleSheet.hairlineWidth,
+    borderRightColor: colors.border_Color,
+  },
+
+  // horizontal scrollers must claim the space left over by the frozen column
+  hScroll: {
+    flex: 1,
+  },
+
+  scrollCells: {
+    flexDirection: 'row',
+    alignItems: 'center',
     paddingHorizontal: TABLE_PADDING,
   },
 
@@ -254,49 +289,66 @@ export default StyleSheet.create({
     flexShrink: 0,
   },
 
-  tableList: {
-    flex: 1,
+  // load cell in the frozen column — height is set inline per row
+  loadCell: {
+    justifyContent: 'center',
+    paddingRight: COL_GAP,
   },
 
-  listContent: {
-    paddingHorizontal: TABLE_PADDING,
-  },
-
-  tableRow: {
+  // a row of scrolling cells — height is set inline to match its load cell
+  dataRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    minHeight: ROW_MIN_H,
-    paddingVertical: vs(8),
-    // borderBottomWidth: StyleSheet.hairlineWidth,
-    borderBottomColor: colors.border_Color,
   },
 
-  /* Column sizing — shared by header + rows so they stay in sync.
-     Load is left-aligned; the rest are centered. */
-  colLoad: {...col(COL.load, 18), paddingRight: COL_GAP},
-  colMode: {...col(COL.mode, 15), alignItems: 'center'},
-  colPickup: {...col(COL.pickup, 23), alignItems: 'center'},
-  colDrop: {...col(COL.drop, 22), alignItems: 'center'},
-  colLowest: {...col(COL.lowest, 23), alignItems: 'center'},
-  colChevron: {width: CHEVRON_W, alignItems: 'center', justifyContent: 'center'},
+  dataCell: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
 
-  /* Load cell — one dotted line per stop, then the pickup/drop summary */
+  /* Load cell — one line per stop joined by a dashed connector */
+  stopsWrap: {
+    position: 'relative',
+  },
+
+  stopConnector: {
+    position: 'absolute',
+    left: ms(11) / 2,
+    width: 0,
+    borderLeftWidth: 1,
+    borderLeftColor: colors.primaryLight,
+    borderStyle: 'dashed',
+  },
+
   stopRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: ms(6),
-    marginTop: vs(1),
+    height: STOP_LINE_H,
+    gap: ms(5),
   },
 
-  stopDot: {
-    width: ms(8),
-    height: ms(8),
-    borderRadius: ms(4),
+  stopIcon: {
+    width: ms(11),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  stopRing: {
+    width: ms(10),
+    height: ms(10),
+    borderRadius: ms(5),
+    borderWidth: ms(1.6),
+    borderColor: colors.accentBlue,
+    backgroundColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  stopRingCore: {
+    width: ms(4),
+    height: ms(4),
+    borderRadius: ms(2),
     backgroundColor: colors.accentBlue,
-  },
-
-  stopDotDrop: {
-    backgroundColor: colors.success,
   },
 
   stopCity: {
@@ -307,11 +359,11 @@ export default StyleSheet.create({
   },
 
   stopSummary: {
+    height: STOP_SUMMARY_H,
     fontSize: ms(9),
     fontWeight: '500',
     color: colors.textMuted,
-    marginTop: vs(4),
-    marginLeft: ms(14),
+    marginLeft: ms(16),
   },
 
   arrowSmall: {
@@ -332,6 +384,68 @@ export default StyleSheet.create({
     color: colors.textMuted,
     marginTop: vs(2),
     textAlign: 'center',
+  },
+
+  cellText: {
+    fontSize: ms(11),
+    fontWeight: '500',
+    color: colors.textStrong,
+    textAlign: 'center',
+  },
+
+  /* Auction Mode — extensions call themselves out in orange */
+  auctionModeText: {
+    fontSize: ms(11),
+    fontWeight: '500',
+    color: colors.textStrong,
+    textAlign: 'center',
+  },
+
+  auctionModeExt: {
+    color: colors.button_color,
+    fontWeight: '700',
+  },
+
+  /* Cell pills */
+  pillSoft: {
+    backgroundColor: '#FEE9CF',
+    borderRadius: ms(5),
+    paddingHorizontal: ms(9),
+    paddingVertical: vs(3),
+  },
+
+  pillSoftText: {
+    fontSize: ms(10),
+    fontWeight: '600',
+    color: colors.button_color,
+  },
+
+  pillOutline: {
+    borderWidth: 1,
+    borderColor: colors.border_Color,
+    borderRadius: ms(5),
+    paddingHorizontal: ms(9),
+    paddingVertical: vs(3),
+  },
+
+  pillOutlineText: {
+    fontSize: ms(10),
+    fontWeight: '500',
+    color: colors.textStrong,
+  },
+
+  pillBlue: {
+    borderWidth: 1,
+    borderColor: colors.accentBlueDark,
+    borderRadius: ms(5),
+    paddingHorizontal: ms(9),
+    paddingVertical: vs(3),
+  },
+
+  pillBlueText: {
+    fontSize: ms(10),
+    fontWeight: '600',
+    color: colors.accentBlueDark,
   },
 
   /* ---------- Filter button + sort sheet ---------- */
@@ -427,7 +541,7 @@ export default StyleSheet.create({
     borderRadius: ms(12),
     borderWidth: 1,
     borderColor: colors.cardBorder,
-    padding: ms(10),
+    padding: select({phone: ms(10), tablet: ms(10)}),
   },
 
   cardTopRow: {
@@ -436,64 +550,68 @@ export default StyleSheet.create({
     alignItems: 'flex-start',
   },
 
+  // Reserve a 3-stop block so a 1- or 2-drop card pushes its divider to the
+  // same baseline as its taller neighbour and the two line up across the row.
   cardRouteWrap: {
     flex: 1,
     paddingRight: ms(6),
-  },
-
-  cardRoute: {
-    fontSize: ms(12),
-    fontWeight: '700',
-    color: colors.textStrong,
+    minHeight: 3 * STOP_LINE_H + STOP_SUMMARY_H,
   },
 
   cardStopCity: {
     fontSize: ms(12),
   },
 
-  cardRef: {
-    fontSize: ms(10),
-    fontWeight: '500',
-    color: colors.textMuted,
-    marginTop: vs(2),
-  },
-
-  cardLeadChipText: {
-    fontSize: ms(10),
-    fontWeight: '700',
-    color: colors.accentBlueDark,
-  },
-
-  cardAmountWrap: {
-    alignItems: 'flex-end',
-  },
-
   cardAmount: {
     fontSize: ms(15),
     fontWeight: '800',
     color: colors.textStrong,
-    marginTop: vs(4),
   },
 
-  cardAwardedAt: {
-    fontSize: ms(8),
-    fontWeight: '500',
-    color: colors.success,
-    marginTop: vs(1),
-  },
-
+  // mode / date / auction type / distance — always one row, never wraps.
+  // Fonts (CHIP_FONT) and gaps are sized so all four fit the card width.
   cardChipsRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    flexWrap: 'wrap',
-    gap: ms(6),
+    flexWrap: 'nowrap',
+    gap: select({phone: ms(3), tablet: ms(6)}),
     marginTop: vs(10),
   },
 
-  // right-aligns the status badge in the chips row; with flexWrap it drops to
-  // its own line (still inside the card) when the row is too narrow.
-  cardStatusPush: {
-    marginLeft: 'auto',
+  // one shared padding for every chip (mode / date / type / distance) so the
+  // strip reads on a single, even rhythm on both phone and tablet.
+  cardChip: {
+    paddingHorizontal: CHIP_PAD,
+    paddingVertical: CHIP_PAD_V,
+  },
+
+  cardChipText: {
+    fontSize: CHIP_FONT,
+  },
+
+  cardChipMuted: {
+    fontSize: CHIP_FONT,
+    fontWeight: '500',
+    color: colors.textMuted,
+  },
+
+  cardChipSoft: {
+    fontSize: CHIP_FONT,
+    fontWeight: '600',
+    color: colors.button_color,
+  },
+
+  cardDistance: {
+    fontSize: CHIP_FONT,
+    fontWeight: '600',
+    color: colors.card_drive_load,
+  },
+
+  // Cards in a row stretch to equal height, so pinning the chips/divider/times
+  // block to the bottom keeps the divider on one line however many stops each
+  // card has.
+  cardFooter: {
+    marginTop: 'auto',
   },
 
   cardDivider: {
@@ -506,23 +624,15 @@ export default StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+    gap: ms(6),
     marginTop: vs(8),
   },
 
-  cardLowestLabel: {
-    fontSize: ms(11),
-    fontWeight: '500',
+  cardTimeLabel: {
+    flexShrink: 1,
+    fontSize: ms(8),
+    fontWeight: '600',
     color: colors.textMuted,
   },
 
-  cardLowestValue: {
-    fontWeight: '800',
-    color: colors.accentBlueDark,
-  },
-
-  cardRank: {
-    fontSize: ms(11),
-    fontWeight: '700',
-    color: colors.textMuted,
-  },
 });

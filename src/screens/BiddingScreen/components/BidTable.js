@@ -1,51 +1,91 @@
-import React from 'react';
-import {View, FlatList, ScrollView} from 'react-native';
+import React, {useRef} from 'react';
+import {View, ScrollView, TouchableOpacity} from 'react-native';
+import {useNavigation} from '@react-navigation/native';
 
-import styles from '../BiddingScreen.styles';
+import styles, {rowHeight} from '../BiddingScreen.styles';
+import {COLUMNS} from '../constants';
 import HeaderCell from './HeaderCell';
-import ListRow from './ListRow';
-import {IS_TABLET} from '../../../theme/device';
+import DataRow from './DataRow';
+import StopList from './StopList';
 
+/* The Load column is frozen: it lives outside the horizontal scroller, so the
+   remaining columns slide left/right underneath their own headers. The header
+   strip is a non-interactive ScrollView driven from the body's scroll offset,
+   which keeps labels above their columns without a second gesture handler. */
 export default function BidTable({data}) {
-  const table = (
-    <View style={styles.tableInner}>
-      <View style={styles.tableHeader}>
-        <HeaderCell label="Load" colStyle={styles.colLoad} sortable />
-        <HeaderCell label="Mode" colStyle={styles.colMode} sortable center />
-        <HeaderCell label="Pickup Time" colStyle={styles.colPickup} sortable center />
-        <HeaderCell label="Drop Time" colStyle={styles.colDrop} sortable center />
-        <HeaderCell label="Lowest Bid" colStyle={styles.colLowest} sortable center />
-        <View style={styles.colChevron} />
-      </View>
-      <FlatList
-        key="list"
-        data={data}
-        keyExtractor={b => b.id}
-        showsVerticalScrollIndicator={false}
-        style={styles.tableList}
-        contentContainerStyle={styles.listContent}
-        renderItem={({item}) => <ListRow item={item} />}
-      />
-    </View>
-  );
+  const navigation = useNavigation();
+  const headRef = useRef(null);
+
+  const syncHeader = e =>
+    headRef.current?.scrollTo({
+      x: e.nativeEvent.contentOffset.x,
+      animated: false,
+    });
 
   return (
     <View style={styles.tableWrap}>
-      {/* Tablet: the table fits the width, render directly. Phone: fixed
-          column widths that are wider than the screen, so scroll L/R. */}
-      {IS_TABLET ? (
-        table
-      ) : (
+      {/* ---------- Header ---------- */}
+      <View style={styles.tableHeaderRow}>
+        <View style={styles.frozenHead}>
+          <HeaderCell label="Load" sortable />
+        </View>
         <ScrollView
+          ref={headRef}
           horizontal
-          bounces={false}
-          overScrollMode="never"
-          showsHorizontalScrollIndicator={false}
-          style={styles.tableScroll}
-          contentContainerStyle={styles.tableScrollContent}>
-          {table}
+          scrollEnabled={false}
+          style={styles.hScroll}
+          showsHorizontalScrollIndicator={false}>
+          <View style={[styles.tableHeader, styles.scrollCells]}>
+            {COLUMNS.map(c => (
+              <HeaderCell
+                key={c.key}
+                label={c.label}
+                colStyle={[{width: c.width}, c.shaded && styles.shadedColHead]}
+                sortable={c.sortable}
+                center
+              />
+            ))}
+          </View>
         </ScrollView>
-      )}
+      </View>
+
+      {/* ---------- Body ---------- */}
+      <ScrollView style={styles.tableBody} showsVerticalScrollIndicator={false}>
+        <View style={styles.tableBodyRow}>
+          {/* frozen Load column */}
+          <View style={styles.frozenCol}>
+            {data.map(item => (
+              <TouchableOpacity
+                key={item.id}
+                activeOpacity={0.85}
+                style={[styles.loadCell, {height: rowHeight(item.stops.length)}]}
+                onPress={() => navigation.navigate('ActiveBidding', {item})}>
+                <StopList stops={item.stops} />
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* scrolling columns */}
+          <ScrollView
+            horizontal
+            onScroll={syncHeader}
+            scrollEventThrottle={16}
+            style={styles.hScroll}
+            showsHorizontalScrollIndicator={false}>
+            <View style={styles.scrollCells}>
+              <View>
+                {data.map(item => (
+                  <DataRow
+                    key={item.id}
+                    item={item}
+                    height={rowHeight(item.stops.length)}
+                  />
+                ))}
+              </View>
+            </View>
+          </ScrollView>
+        </View>
+      </ScrollView>
     </View>
   );
 }

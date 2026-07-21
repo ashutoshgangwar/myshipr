@@ -62,11 +62,24 @@ export const STATS = [
   },
 ];
 
-export const STATUS = {
-  Awarded: {text: colors.success_text, bg: colors.success_bg},
-  Open: {text: colors.button_color, bg: '#FEE9CF'},
-  Closed: {text: colors.textMuted, bg: colors.border_Color},
-};
+/* Scrollable table columns, in order. "Load" is not here — it is the frozen
+   first column and lives outside the horizontal scroller. `kind` picks the
+   cell renderer in DataRow. */
+export const COLUMNS = [
+  {key: 'mode', label: 'Mode', width: ms(72), kind: 'mode', shaded: true, sortable: true},
+  {key: 'pickup', label: 'Pickup Time', width: ms(76), kind: 'pickup', sortable: true},
+  {key: 'drop', label: 'Drop Time', width: ms(76), kind: 'drop', sortable: true},
+  {key: 'lowest', label: 'Lowest Bid', width: ms(74), kind: 'lowest', sortable: true},
+  {key: 'chevron', label: '', width: ms(28), kind: 'chevron'},
+  {key: 'auctionMode', label: 'Auction Mode', width: ms(84), kind: 'auctionMode', sortable: true},
+  {key: 'auctionType', label: 'Auction Type', width: ms(82), kind: 'pillSoft', field: 'auctionType', sortable: true},
+  {key: 'deadMile', label: 'Dead Mile', width: ms(70), kind: 'text', field: 'deadMile', sortable: true},
+  {key: 'tripDistance', label: 'Trip Distance', width: ms(80), kind: 'text', field: 'tripDistance', sortable: true},
+  {key: 'frequency', label: 'Frequency', width: ms(80), kind: 'pillOutline', field: 'frequency', sortable: true},
+  {key: 'equipmentType', label: 'Equipment Type', width: ms(94), kind: 'text', field: 'equipmentType', sortable: true},
+  {key: 'dockPriority', label: 'Dock Priority', width: ms(82), kind: 'text', field: 'dockPriority', sortable: true},
+  {key: 'driverRequirement', label: 'Driver Requirement', width: ms(112), kind: 'pillBlue', field: 'driverRequirement', sortable: true},
+];
 
 /* Sort options behind the funnel button in the filter row. */
 export const SORTS = [
@@ -93,10 +106,20 @@ const bid = b => ({
   pickupDate: '28th July',
   dropTime: '10.00Pm',
   dropDate: '28th July',
+  pickupClock: '6:00 AM',
+  dropClock: '9:00 PM',
   indicative: '$4567',
   amount: '$1100',
   lowestBid: '$4567',
   awardedAt: null,
+  auctionMode: 'Original',
+  auctionType: 'Instant',
+  deadMile: '8 miles',
+  tripDistance: '184 miles',
+  frequency: 'One-Time',
+  equipmentType: '43’ Dry Van',
+  dockPriority: 'Time - Based',
+  driverRequirement: 'Single',
   ...b,
   origin: b.stops[0].city,
   dest: b.stops[b.stops.length - 1].city,
@@ -119,6 +142,7 @@ export const BIDS = [
     stops: stops('San Jose CA', 'Newark NJ'),
     rank: '#1',
     status: 'Open',
+    auctionMode: 'EXTENSION 1',
   }),
 
   /* ---- Active only ---- */
@@ -137,6 +161,7 @@ export const BIDS = [
     stops: stops('San Jose CA', 'Newark NJ'),
     rank: null,
     status: 'Open',
+    auctionMode: 'EXTENSION 1',
   }),
   bid({
     id: 'b5',
