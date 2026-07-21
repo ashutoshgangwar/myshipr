@@ -24,10 +24,10 @@ import TruckIcon from '../../assets/svg_icon/Frame.svg';
 import StatusBar from '../../component/StatusBar/StatusBar';
 import AppText from '../../theme/AppText';
 import {ms, vs} from '../../theme/scale';
-import React, { useState, useRef, useMemo } from 'react';
+import React, {useState, useRef, useMemo} from 'react';
 import BiometricLoginButton from '../../component/BiometricLoginButton/BiometricLoginButton';
 import useDeviceType from '../../hooks/useDeviceType';
-import { loginWithPassword } from '../../services/api/AuthService';
+import {loginWithPassword} from '../../services/api/AuthService';
 import ErrorModal from '../../component/ErrorModal/ErrorModal';
 import useErrorModal from '../../hooks/useErrorModal';
 
@@ -38,22 +38,19 @@ const Login = () => {
   const [deviceId, setDeviceId] = useState('');
   const [deviceName, setDeviceName] = useState('');
   const navigation = useNavigation();
+  const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
+  const emailRef = useRef(null);
   const passwordRef = useRef(null);
   const isLoginDisabled =
-    loading || !email.trim() || !password.trim();
+    loading || (!phone.trim() && !email.trim()) || !password.trim();
 
+  console.log('device name', deviceName);
+  console.log('device id', deviceId);
 
-    console.log('device name', deviceName);
-    console.log('device id', deviceId);
-
-
-    
-    
-  
   // Fetch device info only once on mount
   React.useEffect(() => {
     let mounted = true;
@@ -73,7 +70,9 @@ const Login = () => {
       }
     };
     fetchDeviceInfo();
-    return () => { mounted = false; };
+    return () => {
+      mounted = false;
+    };
   }, []);
 
   const toggleShowPassword = () => {
@@ -82,9 +81,9 @@ const Login = () => {
 
   const handleLogin = async () => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const phoneRegex = /^\+?\d{10,15}$/; 
+    const phoneRegex = /^\+?\d{10,15}$/;
 
-    const identifier = email.trim();
+    const identifier = phone.trim() || email.trim();
 
     if (!identifier) {
       showMessage({
@@ -137,13 +136,17 @@ const Login = () => {
     setLoading(true);
 
     try {
-      await loginWithPassword({ identifier, password, role: 'DRIVER' });
+      await loginWithPassword({identifier, password, role: 'DRIVER'});
       navigation.reset({
         index: 0,
-        routes: [{ name: 'MainApp' }],
+        routes: [{name: 'MainApp'}],
       });
     } catch (err) {
-      showError(err, {title: 'Login Failed', confirmText: 'Retry', onConfirm: handleLogin});
+      showError(err, {
+        title: 'Login Failed',
+        confirmText: 'Retry',
+        onConfirm: handleLogin,
+      });
     } finally {
       setLoading(false);
     }
@@ -179,7 +182,10 @@ const Login = () => {
           />
           <ScrollView
             style={{backgroundColor: colors.white}}
-            contentContainerStyle={[styles.container, {backgroundColor: colors.white}]}
+            contentContainerStyle={[
+              styles.container,
+              {backgroundColor: colors.white},
+            ]}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
             bounces={false}
@@ -221,12 +227,33 @@ const Login = () => {
                 </LinearGradient>
               </View>
 
-              <View
-                style={styles.card}
-                accessibilityLabel="Login form">
-                <AppText style={styles.label}>Phone Number or Email Address</AppText>
+              <View style={styles.card} accessibilityLabel="Login form">
+                <AppText style={styles.label}>Phone Number</AppText>
                 <TextInput
-                  placeholder="Enter your phone number or email"
+                  placeholder="Enter your Phone Number"
+                  placeholderTextColor={colors.placeholder || '#9CA3AF'}
+                  keyboardType="phone-pad"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                  value={phone}
+                  onChangeText={setPhone}
+                  onSubmitEditing={() => emailRef.current?.focus()}
+                  returnKeyType="next"
+                  style={[styles.input, loading && styles.disabledInput]}
+                  accessibilityLabel="Phone number input"
+                  editable={!loading}
+                />
+
+                <View style={styles.dividerRow}>
+                  <View style={styles.dividerLine} />
+                  <AppText style={styles.dividerText}>Or Login With</AppText>
+                  <View style={styles.dividerLine} />
+                </View>
+
+                <AppText style={styles.label}>Email Address</AppText>
+                <TextInput
+                  ref={emailRef}
+                  placeholder="Enter your Email Address"
                   placeholderTextColor={colors.placeholder || '#9CA3AF'}
                   keyboardType="email-address"
                   autoCapitalize="none"
@@ -244,7 +271,7 @@ const Login = () => {
                 <View style={styles.passwordContainer}>
                   <TextInput
                     ref={passwordRef}
-                    placeholder="Enter your password"
+                    placeholder="Enter a password"
                     placeholderTextColor={colors.placeholder}
                     secureTextEntry={!showPassword}
                     autoCapitalize="none"
@@ -289,44 +316,45 @@ const Login = () => {
                   </AppText>
                 </TouchableOpacity>
 
-           <View style={styles.buttonContainer}>
-                {loading ? (
-                  <View style={[styles.primaryButton, styles.loadingButton]}>
-                    <ActivityIndicator
-                      color={colors.button_color}
-                      size="small"
+                <View style={styles.buttonContainer}>
+                  {loading ? (
+                    <View style={[styles.primaryButton, styles.loadingButton]}>
+                      <ActivityIndicator
+                        color={colors.button_color}
+                        size="small"
+                      />
+                    </View>
+                  ) : (
+                    <Button
+                      title="Login"
+                      onPress={handleLogin}
+                      backgroundColor={colors.primary}
+                      textColor={colors.white}
+                      style={[
+                        styles.primaryButton,
+                        isLoginDisabled && styles.disabledButton,
+                      ]}
+                      textStyle={styles.primaryButtonText}
+                      disabled={isLoginDisabled}
                     />
-                  </View>
-                ) : (
-                  <Button
-                    title="Login"
-                    onPress={handleLogin}
-                    backgroundColor={colors.primary}
-                    textColor={colors.white}
-                    style={[
-                      styles.primaryButton,
-                      isLoginDisabled && styles.disabledButton,
-                    ]}
-                    textStyle={styles.primaryButtonText}
-                    disabled={isLoginDisabled}
+                  )}
+                  <AppText style={styles.altLogin}>Or</AppText>
+                  {/* Biometric Login Button */}
+                  <BiometricLoginButton
+                    buttonStyle={styles.biometricButton}
+                    textStyle={styles.biometricButtonText}
+                    iconColor={colors.primary}
+                    loaderColor={colors.primary}
+                    onSuccess={() => {
+                      navigation.reset({index: 0, routes: [{name: 'MainApp'}]});
+                    }}
+                    onError={err => {
+                      if (err)
+                        showError(err, {title: 'Biometric Login Failed'});
+                    }}
                   />
-                )}
-              <AppText style={styles.altLogin}>Or</AppText>
-                {/* Biometric Login Button */}
-                <BiometricLoginButton
-                  buttonStyle={styles.biometricButton}
-                  textStyle={styles.biometricButtonText}
-                  iconColor={colors.primary}
-                  loaderColor={colors.primary}
-                  onSuccess={() => {
-                    navigation.reset({ index: 0, routes: [{ name: 'MainApp' }] });
-                  }}
-                  onError={(err) => {
-                    if (err) showError(err, {title: 'Biometric Login Failed'});
-                  }}
-                />
+                </View>
               </View>
-                   </View>
             </View>
           </ScrollView>
           <ErrorModal {...modalProps} />

@@ -64,8 +64,8 @@ const LoginSplashScreen = ({navigation}) => {
   };
 
   const handleCredentialsPress = () => {
-    navigation.reset({index: 0, routes: [{name: 'MainApp'}]});
-    // navigation.navigate('TruckAnimationScreen');
+    // navigation.reset({index: 0, routes: [{name: 'MainApp'}]});
+    navigation.navigate('LoginScreen');
     // navigation.navigate('ActiveBidding');
   };
   
@@ -166,11 +166,11 @@ const LoginSplashScreen = ({navigation}) => {
             />
 
             <Button
-              title="Log in with Credentials"
+              title="Login with Username and Password"
               onPress={handleCredentialsPress}
-              backgroundColor="transparent"
-              textColor={colors.white}
-              borderColor={colors.onDarkLow}
+              backgroundColor={colors.white}
+              textColor={colors.splashBorder}
+              borderColor={colors.white}
               style={styles.credentialsButton}
               textStyle={styles.credentialsButtonText}
             />

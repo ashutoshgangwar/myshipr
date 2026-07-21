@@ -5,18 +5,9 @@ import {colors} from '../../theme/colors';
 const isIOS = Platform.OS === 'ios';
 
 const makeStyles = (isTablet = false) => {
-  // On tablets the form is constrained to a centered column instead of
-  // stretching edge-to-edge; phones keep the full-width layout.
   const contentMaxWidth = isTablet ? scale(460) : '100%';
-
-  // Size the hero image as a share of the screen height so it stays
-  // proportional on every device instead of using verticalScale (which
-  // over-inflates the image on tall tablet screens).
   const {height: windowHeight} = Dimensions.get('window');
   const heroHeight = isTablet ? windowHeight * 0.35 : windowHeight * 0.40;
-
-  // Shared sizing so the Login button and the Face ID button match in every
-  // state (active / disabled / loading) on both phones and tablets.
   const buttonPaddingV = isTablet ? verticalScale(6) : verticalScale(12);
   const buttonRadius = moderateScale(12);
 
@@ -35,7 +26,6 @@ const makeStyles = (isTablet = false) => {
       justifyContent: 'flex-start',
       minHeight: '100%',
       backgroundColor: colors.white,
-      // paddingBottom: isIOS ? verticalScale(20) : verticalScale(14),
     },
 
     screenShell: {
@@ -195,6 +185,25 @@ const makeStyles = (isTablet = false) => {
       backgroundColor: '#F3F4F6',
       opacity: 0.7,
     },
+
+    dividerRow: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      marginBottom: verticalScale(16),
+    },
+
+    dividerLine: {
+      flex: 1,
+      height: scale(1.5),
+      backgroundColor: colors.border_Color,
+    },
+
+    dividerText: {
+      marginHorizontal: scale(10),
+      color: colors.text_dark,
+      fontSize: moderateScale(12),
+      fontWeight: '400',
+    },
     passwordContainer: {
       position: 'relative',
       marginBottom: verticalScale(4),
@@ -265,7 +274,7 @@ const makeStyles = (isTablet = false) => {
     },
     buttonContainer: {
       marginTop: isTablet ? 'auto' : verticalScale(80),
-      paddingTop: isTablet ? verticalScale(24) : 0,
+      paddingTop: isTablet ? verticalScale(14) : -verticalScale(10),
     },
 
     button: {
