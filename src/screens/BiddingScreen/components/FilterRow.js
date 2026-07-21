@@ -9,6 +9,7 @@ import SearchIcon from '../../../assets/svg_icon/Search_Icon.svg';
 import ListViewIcon from '../../../assets/svg_icon/list_grid.svg';
 import CardViewIcon from '../../../assets/svg_icon/card_grid.svg';
 import FilterIcon from '../../../assets/svg_icon/filter_funnel.svg';
+import { IS_TABLET } from '../../../theme/device';
 
 export default function FilterRow({
   mode,
@@ -75,7 +76,7 @@ export default function FilterRow({
         activeOpacity={0.85}
         onPress={() => setSortOpen(true)}
         style={[styles.filterBtn, sort && styles.filterBtnActive]}>
-        <FilterIcon width={16} height={16} />
+        <FilterIcon width={IS_TABLET ? 22 : 16} height={IS_TABLET ? 22 : 16 } />
       </TouchableOpacity>
 
       <Modal
