@@ -248,7 +248,6 @@ export default StyleSheet.create({
 
   frozenHead: {
     width: LOAD_COL_W,
-    paddingLeft: TABLE_PADDING,
     justifyContent: 'center',
     height: HEADER_H,
     borderRightWidth: StyleSheet.hairlineWidth,
@@ -278,8 +277,6 @@ export default StyleSheet.create({
 
   thText: {
     flexShrink: 1,
-    // uniform size for every header; small enough that all labels fit on one
-    // line so none are cut and the Load column keeps room for its city text.
     fontSize: ms(10),
     fontWeight: '600',
     color: colors.nearBlack,
@@ -288,14 +285,10 @@ export default StyleSheet.create({
   thSortIcon: {
     flexShrink: 0,
   },
-
-  // load cell in the frozen column — height is set inline per row
   loadCell: {
     justifyContent: 'center',
     paddingRight: COL_GAP,
   },
-
-  // a row of scrolling cells — height is set inline to match its load cell
   dataRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -306,7 +299,6 @@ export default StyleSheet.create({
     justifyContent: 'center',
   },
 
-  /* Load cell — one line per stop joined by a dashed connector */
   stopsWrap: {
     position: 'relative',
   },
