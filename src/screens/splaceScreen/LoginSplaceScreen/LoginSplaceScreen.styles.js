@@ -6,11 +6,11 @@ import {IS_TABLET, select} from '../../../theme/device';
 const isIOS = Platform.OS === 'ios';
 
 const makeStyles = (isTablet = IS_TABLET) => {
-  const controlHeight = select({
-    phone: verticalScale(48),
-    tablet: moderateScale(50),
-  });
+  // Match Login.js button sizing (padding-based, no fixed height)
+  const buttonPaddingV = isTablet ? verticalScale(6) : verticalScale(12);
   const fieldWidth = isTablet ? '100%' : isIOS ? '92%' : '100%';
+  // Narrower width for the action buttons
+  const buttonWidth = isTablet ? '80%' : '86%';
 
   return StyleSheet.create({
     screen: {
@@ -148,8 +148,8 @@ const makeStyles = (isTablet = IS_TABLET) => {
     },
 
     faceIdButton: {
-      height: controlHeight,
-      width: fieldWidth,
+      paddingVertical: buttonPaddingV,
+      width: buttonWidth,
       alignSelf: 'center',
       marginBottom: verticalScale(14),
     },
@@ -160,8 +160,8 @@ const makeStyles = (isTablet = IS_TABLET) => {
     },
 
     credentialsButton: {
-      height: controlHeight,
-      width: fieldWidth,
+      paddingVertical: buttonPaddingV,
+      width: buttonWidth,
       alignSelf: 'center',
       fontWeight: '600',
     },
