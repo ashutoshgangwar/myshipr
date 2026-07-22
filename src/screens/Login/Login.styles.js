@@ -287,6 +287,8 @@ const makeStyles = (isTablet = false) => {
 
     loadingButton: {
       opacity: 0.7,
+      borderWidth: 1,
+      borderColor: colors.primary,
     },
 
     buttonText: {
