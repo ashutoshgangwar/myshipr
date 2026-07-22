@@ -16,8 +16,8 @@ export default StyleSheet.create({
     paddingHorizontal: ms(16),
     paddingTop: vs(14),
     paddingBottom: vs(18),
-    borderBottomLeftRadius: ms(24),
-    borderBottomRightRadius: ms(24),
+    borderBottomLeftRadius: ms(36),
+    borderBottomRightRadius: ms(36),
   },
 
   headerWithStats: {
@@ -122,7 +122,7 @@ export default StyleSheet.create({
   chartCard: {
     flex: 1,
     backgroundColor: colors.white,
-    borderRadius: ms(14),
+    borderRadius: ms(18),
     // Tighter vertical padding to shorten the card.
     paddingVertical: vs(8),
     paddingHorizontal: ms(10),

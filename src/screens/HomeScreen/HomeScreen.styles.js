@@ -24,14 +24,22 @@ export default StyleSheet.create({
     paddingBottom: vs(90),
   },
 
+  /* Taller blue header — Home screen only (overrides DashboardHeader defaults) */
+  dashboardHeader: {
+    paddingTop: vs(20),
+    paddingBottom: vs(80),
+    borderBottomLeftRadius: ms(80),
+    borderBottomRightRadius: ms(80),
+  },
+
   /* ---------- Header ---------- */
   header: {
     backgroundColor: colors.primary,
     paddingHorizontal: ms(20),
     paddingTop: vs(16),
     paddingBottom: vs(44),
-    borderBottomLeftRadius: ms(28),
-    borderBottomRightRadius: ms(28),
+    borderBottomLeftRadius: ms(38),
+    borderBottomRightRadius: ms(38),
   },
 
   headerTopRow: {

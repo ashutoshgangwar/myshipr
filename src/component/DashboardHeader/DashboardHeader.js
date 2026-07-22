@@ -75,7 +75,11 @@ const DashboardHeader = ({
                 key={id}
                 style={[styles.chartCard, {borderLeftColor: stat.accent}]}>
                 <View style={styles.chartCardTopRow}>
-                  <AppText style={styles.chartCardTitle} numberOfLines={1}>
+                  <AppText
+                    style={styles.chartCardTitle}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.85}>
                     {stat.label}
                   </AppText>
                   {stat.note ? (

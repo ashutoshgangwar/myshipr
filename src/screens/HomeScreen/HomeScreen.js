@@ -1,7 +1,6 @@
 import React, {useRef, useState} from 'react';
 import {
   View,
-  SafeAreaView,
   ScrollView,
   TouchableOpacity,
   StyleSheet,
@@ -9,6 +8,7 @@ import {
   Modal,
   Dimensions,
 } from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
 import styles from './HomeScreen.styles';
@@ -225,6 +225,8 @@ const HomeScreen = () => {
         <DashboardHeader
           icon={<TruckIcon width={20} height={20} />}
           title="CARRIER"
+          headerStyle={styles.dashboardHeader}
+          statsOffset={IS_TABLET ? -ms(70) : -ms(40)}
           statsVariant="chart"
           right={
             <View style={styles.headerRight}>
