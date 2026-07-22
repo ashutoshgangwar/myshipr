@@ -127,7 +127,7 @@ const makeStyles = (isTablet = IS_TABLET) => {
 
     subtitle: {
       marginTop: verticalScale(10),
-      color: colors.splashSubtitle,
+      color: '#B4B4B4',
       fontSize: select({phone: moderateScale(14), tablet: moderateScale(15)}),
       fontWeight: '400',
       lineHeight: moderateScale(20),
@@ -138,7 +138,7 @@ const makeStyles = (isTablet = IS_TABLET) => {
 
     subtitle_line2: {
       marginTop: verticalScale(1),
-      color: colors.splashSubtitle,
+      color: '#B4B4B4',
       fontSize: select({phone: moderateScale(14), tablet: moderateScale(15)}),
       fontWeight: '400',
       width: fieldWidth,
@@ -156,13 +156,14 @@ const makeStyles = (isTablet = IS_TABLET) => {
 
     faceIdButtonText: {
       fontSize: select({phone: moderateScale(15), tablet: moderateScale(16)}),
-      fontWeight: '700',
+      fontWeight: '400',
     },
 
     credentialsButton: {
       height: controlHeight,
       width: fieldWidth,
       alignSelf: 'center',
+      fontWeight: '600',
     },
 
     credentialsButtonText: {

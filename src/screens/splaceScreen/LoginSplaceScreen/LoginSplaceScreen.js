@@ -168,8 +168,8 @@ const LoginSplashScreen = ({navigation}) => {
             <Button
               title="Login with Username and Password"
               onPress={handleCredentialsPress}
-              backgroundColor={colors.white}
-              textColor={colors.splashBorder}
+              backgroundColor={colors.splashBackground}
+              textColor={colors.white}
               borderColor={colors.white}
               style={styles.credentialsButton}
               textStyle={styles.credentialsButtonText}

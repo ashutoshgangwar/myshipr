@@ -110,7 +110,7 @@ const styles = StyleSheet.create({
   buttonText: {
     color: '#fff',
     fontSize: moderateScale(16),
-    fontWeight: '600',
+    fontWeight: '400',
   },
   errorContainer: {
     marginTop: verticalScale(16),

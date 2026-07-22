@@ -9,7 +9,7 @@ const makeStyles = (isTablet = false) => {
   const {height: windowHeight} = Dimensions.get('window');
   const heroHeight = isTablet ? windowHeight * 0.35 : windowHeight * 0.40;
   const buttonPaddingV = isTablet ? verticalScale(6) : verticalScale(12);
-  const buttonRadius = moderateScale(12);
+  const buttonRadius = moderateScale(10);
 
   return StyleSheet.create({
     keyboardAvoiding: {
