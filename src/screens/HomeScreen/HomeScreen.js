@@ -26,6 +26,7 @@ import StarIcon from '../../assets/svg_icon/Star_Vector.svg';
 import Dropdown_icon from '../../assets/svg_icon/Dropdown_icon.svg';
 import Profile_icon from '../../assets/svg_icon/profile_icon.svg';
 import RouteStops from '../../component/RouteStops/RouteStops';
+import DieselBadge from '../../component/DieselBadge/DieselBadge';
 import {clearSession} from '../../services/api/AuthService';
 import { ms } from '../../theme/scale';
 
@@ -230,10 +231,7 @@ const HomeScreen = () => {
           statsVariant="chart"
           right={
             <View style={styles.headerRight}>
-              <View style={styles.dieselBadge}>
-                <AppText style={styles.dieselLabel}>DIESEL</AppText>
-                <AppText style={styles.dieselValue}>$3.89/gal</AppText>
-              </View>
+              <DieselBadge value="$3.89/gal" />
               <TouchableOpacity
                 ref={avatarRef}
                 style={styles.avatarBtn}

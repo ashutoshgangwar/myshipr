@@ -1,5 +1,5 @@
 import React, {useMemo, useState} from 'react';
-import {View, FlatList, Platform} from 'react-native';
+import {FlatList, Platform} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
 import styles, {GRID_COLS} from './BiddingScreen.styles';
@@ -9,7 +9,7 @@ import BidTable from './components/BidTable';
 import GridCard from './components/GridCard';
 import StatusBar from '../../component/StatusBar/StatusBar';
 import DashboardHeader from '../../component/DashboardHeader/DashboardHeader';
-import AppText from '../../theme/AppText';
+import DieselBadge from '../../component/DieselBadge/DieselBadge';
 import {colors} from '../../theme/colors';
 import {IS_TABLET, select} from '../../theme/device';
 
@@ -70,12 +70,7 @@ export default function BiddingScreen() {
         width="100%"
         title="Bidding"
         subtitle="Live Auction"
-        right={
-          <View style={styles.dieselPill}>
-            <AppText style={styles.dieselLabel}>DIESEL</AppText>
-            <AppText style={styles.dieselValue}>$3.89/gal</AppText>
-          </View>
-        }
+        right={<DieselBadge value="$3.89/gal" />}
         stats={STATS}
         activeStat={bucket}
         onStatPress={setBucket}
