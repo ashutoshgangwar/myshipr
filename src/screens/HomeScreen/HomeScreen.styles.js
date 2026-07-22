@@ -26,10 +26,10 @@ export default StyleSheet.create({
 
   /* Taller blue header — Home screen only (overrides DashboardHeader defaults) */
   dashboardHeader: {
-    paddingTop: vs(20),
-    paddingBottom: vs(80),
-    borderBottomLeftRadius: ms(80),
-    borderBottomRightRadius: ms(80),
+    paddingTop: vs(15),
+    paddingBottom: IS_TABLET ? vs(80) : vs(100),
+    borderBottomLeftRadius: ms(100),
+    borderBottomRightRadius: ms(100),
   },
 
   /* ---------- Header ---------- */
@@ -203,7 +203,7 @@ export default StyleSheet.create({
     color: colors.onDarkMedium,
     fontSize: ms(15),
     fontWeight: '500',
-    marginTop: vs(18),
+    marginTop: IS_TABLET ? vs(2) : vs(18),
   },
 
   headerWelcome: {
@@ -211,6 +211,7 @@ export default StyleSheet.create({
     fontSize: IS_TABLET ? ms(20) : ms(24),
     fontWeight: '500',
     marginTop: vs(2),
+    marginBottom:IS_TABLET ? vs(6) : Platform.OS === 'ios' ? vs(1) : vs(8),
   },
 
   /* ---------- Stats ---------- */
@@ -264,7 +265,7 @@ export default StyleSheet.create({
     flexDirection: COLUMN_DIRECTION,
     alignItems: 'stretch',
     paddingHorizontal: ms(12),
-    paddingTop: vs(14),
+    paddingTop: vs(24),
     gap: ms(8),
   },
 

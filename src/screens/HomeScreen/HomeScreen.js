@@ -226,7 +226,7 @@ const HomeScreen = () => {
           icon={<TruckIcon width={20} height={20} />}
           title="CARRIER"
           headerStyle={styles.dashboardHeader}
-          statsOffset={IS_TABLET ? -ms(70) : -ms(40)}
+          statsOffset={IS_TABLET ? -ms(95) : -ms(80)}
           statsVariant="chart"
           right={
             <View style={styles.headerRight}>

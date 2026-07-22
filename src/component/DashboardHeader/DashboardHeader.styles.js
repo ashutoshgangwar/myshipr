@@ -114,9 +114,8 @@ export default StyleSheet.create({
   statsRowChart: {
     flexDirection: 'row',
     marginTop: -vs(25),
-    // Wider side margin + gap so the two cards are narrower.
-    marginHorizontal: ms(26),
-    gap: ms(14),
+    marginHorizontal: IS_TABLET ? ms(8) : ms(10),
+    gap: ms(12),
   },
 
   chartCard: {
