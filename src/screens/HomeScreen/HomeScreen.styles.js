@@ -265,7 +265,7 @@ export default StyleSheet.create({
     flexDirection: COLUMN_DIRECTION,
     alignItems: 'stretch',
     paddingHorizontal: ms(12),
-    paddingTop: vs(24),
+    paddingTop: vs(20),
     gap: ms(8),
   },
 
@@ -294,18 +294,14 @@ export default StyleSheet.create({
   },
 
   pill: {
-    paddingHorizontal: ms(10),
-    paddingVertical: vs(4),
-    borderRadius: ms(10),
+    paddingHorizontal: ms(8),
+    paddingVertical: vs(1),
+    borderRadius: ms(6),
     borderWidth: 1,
     backgroundColor: colors.warningLight,
   },
-
-  // The "Starts in" chip sits on its own line below the header row: the card is
-  // only half the screen wide, so title + this chip + "On time" won't fit on a
-  // single row without spilling outside the card.
   pillStartsIn: {
-    alignSelf: 'flex-start',
+    alignSelf: 'flex-end',
     marginTop: vs(8),
     borderColor: colors.warningLight,
     backgroundColor: '#FBF3D9',
@@ -345,12 +341,12 @@ export default StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-start',
     gap: ms(8),
-    marginTop: vs(8),
+    marginTop: vs(5),
   },
 
   payoutValue: {
     color: colors.success,
-    fontSize: IS_TABLET ? ms(20) : ms(25),
+    fontSize: IS_TABLET ? ms(18) : ms(25),
     fontWeight: '500',
   },
 
@@ -366,19 +362,19 @@ export default StyleSheet.create({
     borderRadius: ms(10),
     paddingVertical: IS_TABLET ? ms(10) : ms(14),
     paddingHorizontal: IS_TABLET ? ms(10) : ms(14),
-    marginTop: vs(10),
+    marginTop: vs(5),
   },
 
   tripStatsDivider: {
     height: 1,
     backgroundColor: colors.cardBorder,
-    marginTop: vs(12),
+    marginTop: vs(6),
   },
 
   tripStatsRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginTop: vs(12),
+    marginTop: vs(8),
   },
 
   tripStatItem: {
@@ -403,7 +399,7 @@ export default StyleSheet.create({
   tripStatLabel: {
     color: colors.textMuted,
     fontWeight: '400',
-    fontSize: IS_TABLET ? ms(11) : ms(10),
+    fontSize: IS_TABLET ? ms(8) : ms(10),
     marginTop: vs(2),
     textAlign: 'center',
   },
@@ -413,7 +409,7 @@ export default StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: vs(16),
+    marginTop: vs(10),
     marginBottom: vs(6),
   },
 
@@ -430,7 +426,7 @@ export default StyleSheet.create({
   },
 
   progressTrack: {
-    height: vs(8),
+    height: vs(5),
     borderRadius: ms(8),
     backgroundColor: colors.cardBorder,
     overflow: 'hidden',
@@ -448,9 +444,9 @@ export default StyleSheet.create({
 
   /* ---------- Buttons ---------- */
   primaryBtn: {
-    borderRadius: ms(14),
-    paddingVertical: vs(10),
-    marginTop: vs(18),
+    borderRadius: ms(10),
+    paddingVertical:IS_TABLET ? vs(5) : vs(8),
+    marginTop: vs(12),
   },
 
   primaryBtnText: {
@@ -507,8 +503,6 @@ export default StyleSheet.create({
     fontWeight: '400',
   },
   rewardsCard: {
-    // No fixed flex: let the card grow to fit its text so iOS (taller
-    // line-heights) doesn't get clipped by overflow: 'hidden'.
     alignSelf: 'stretch',
     borderRadius: ms(12),
     paddingVertical: ms(10),
@@ -518,10 +512,10 @@ export default StyleSheet.create({
 
   rewardsPumpImage: {
     position: 'absolute',
-    right: ms(8),
-    top: ms(10),
-    width: ms(84),
-    height: ms(84),
+    right:  ms(1),
+    top:IS_TABLET ? ms(58) : ms(68),
+    width: IS_TABLET ? ms(64) : ms(48),
+    height: IS_TABLET ? ms(64) : ms(48),
   },
 
   rewardsBadge: {
@@ -530,8 +524,8 @@ export default StyleSheet.create({
     borderColor: 'rgba(86,255,132,0.45)',
     backgroundColor: 'rgba(86,255,132,0.12)',
     borderRadius: ms(20),
-    paddingHorizontal: ms(12),
-    paddingVertical: vs(5),
+    paddingHorizontal: ms(5),
+    paddingVertical:IS_TABLET ? vs(1) : vs(4),
   },
 
   rewardsLabel: {
@@ -542,20 +536,17 @@ export default StyleSheet.create({
 
   rewardsTitle: {
     color: colors.white,
-    fontSize: IS_TABLET ? ms(15) : ms(16),
+    fontSize: IS_TABLET ? ms(12) : ms(10),
     fontWeight: '800',
-    marginTop: vs(6),
-    // Line height kept proportional to the font (~1.25×) so the two title
-    // lines sit close together instead of leaving a big vertical gap.
+    marginTop: vs(5),
     lineHeight: IS_TABLET ? ms(19) : ms(20),
-    // Keep the title clear of the larger pump image sitting in the top-right.
-    paddingRight: ms(74),
+    paddingRight: ms(44),
   },
   rewardsBody: {
     color: colors.onDarkLow,
-    fontSize: ms(11),
-    lineHeight: ms(16),
-    marginTop: vs(10),
+    fontSize: IS_TABLET ? ms(7) : ms(8),
+    lineHeight: ms(12),
+    marginTop: vs(1),
   },
   rewardsBalanceRow: {
     flexDirection: 'row',
@@ -567,14 +558,14 @@ export default StyleSheet.create({
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.08)',
     borderRadius: ms(8),
-    paddingVertical: ms(5),
-    paddingHorizontal: ms(8),
+    paddingVertical: ms(1),
+    paddingHorizontal: ms(6),
   },
 
   rewardsStarBadge: {
-    width: ms(36),
-    height: ms(36),
-    borderRadius: ms(10),
+    width: ms(28),
+    height: ms(28),
+    borderRadius: ms(8),
     backgroundColor: colors.success_bg_star,
     alignItems: 'center',
     borderWidth: 1,
@@ -583,9 +574,9 @@ export default StyleSheet.create({
   },
 
   rewardsStarRing: {
-    width: ms(25),
-    height: ms(25),
-    borderRadius: ms(12.5),
+    width: ms(20),
+    height: ms(20),
+    borderRadius: ms(10),
     borderWidth: ms(2),
     borderColor: colors.sucess_border,
     alignItems: 'center',
@@ -599,7 +590,7 @@ export default StyleSheet.create({
 
   rewardsBalanceLabel: {
     color: colors.onDarkHigh,
-    fontSize: ms(10),
+    fontSize:IS_TABLET ? ms(8) : ms(10),
     fontWeight: '500',
     marginBottom: vs(2),
     textAlign: 'left',
@@ -607,7 +598,7 @@ export default StyleSheet.create({
 
   rewardsPoints: {
     color: colors.white,
-    fontSize: ms(12),
+    fontSize: IS_TABLET ? ms(10) : ms(12),
     fontWeight: '800',
     textAlign: 'left',
     alignSelf: 'flex-start',
@@ -616,7 +607,7 @@ export default StyleSheet.create({
 
   rewardsPointsUnit: {
     color: colors.sucess_border,
-    fontSize: ms(12),
+    fontSize: ms(8),
     fontWeight: '600',
   },
   /* ---------- Upcoming loads ---------- */

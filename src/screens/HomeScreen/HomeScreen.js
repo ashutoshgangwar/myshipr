@@ -311,7 +311,7 @@ const HomeScreen = () => {
                 title={tripStarted ? 'TRIP ONGOING' : 'START TRIP'}
                 onPress={openMap_Here}
                 backgroundColor={
-                  tripStarted ? colors.warning_text : colors.accentBlue
+                  tripStarted ? colors.warning_text :colors.accentBlueLight
                 }
                 textColor={colors.white}
                 style={styles.primaryBtn}
@@ -379,17 +379,18 @@ const HomeScreen = () => {
               <AppText style={styles.rewardsTitle}>
                 Report your fuel price, earn points
               </AppText>
-              <AppText style={styles.rewardsBody}>
-                Enter the diesel price at your nearest station. Every verified
-                report earns you points — redeem for bonuses & perks.
+              <AppText style={styles.rewardsBody} numberOfLines={3}>
+                Enter the diesel price at your nearest{'\n'}
+                 station. Every verified report earns you{'\n'}
+                points — redeem for bonuses & perks.
               </AppText>
 
               <View style={styles.rewardsBalanceRow}>
                 <View style={styles.rewardsStarBadge}>
                   <View style={styles.rewardsStarRing}>
                     <StarIcon
-                      width={IS_TABLET ? ms(12) : ms(10)}
-                      height={IS_TABLET? ms(12): ms(10)}
+                      width={IS_TABLET ? ms(10) : ms(8)}
+                      height={IS_TABLET ? ms(10) : ms(8)}
                     />
                   </View>
                 </View>
