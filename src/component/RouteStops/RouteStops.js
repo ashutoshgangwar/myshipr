@@ -1,12 +1,11 @@
 import React, {useEffect, useState} from 'react';
 import {View} from 'react-native';
-import Svg, {Line} from 'react-native-svg';
 
 import styles, {ROUTE_ROW_H, NAME_LINE_H} from './RouteStops.styles';
 import AppText from '../../theme/AppText';
-import {colors} from '../../theme/colors';
 import CityRing from '../../assets/svg_icon/city_ring.svg';
 import DropPin from '../../assets/svg_icon/stop_pin_green.svg';
+import RouteDashedLine from '../../assets/svg_icon/RouteDashedLine.svg';
 import {useLocation} from '../../services/LocationService';
 import {reverseGeocode} from '../../screens/HereMapScreen/services/hereTruckService';
 const DASH_GAP = 11;
@@ -94,27 +93,21 @@ export default function RouteStops({
       ) : null}
 
       <View style={styles.stops}>
-        {/* One dashed segment per gap between consecutive markers. */}
-        {resolvedStops.length > 1 ? (
-          <Svg
+        {/* Reuse the shared dashed-line asset once per gap between consecutive
+            markers, each inset by DASH_GAP so the line stays clear of every
+            ring/pin. */}
+        {Array.from({length: last}).map((_, i) => (
+          <RouteDashedLine
+            key={i}
             width={2}
-            height={last * ROUTE_ROW_H}
-            style={[styles.dashed, {top: NAME_LINE_H / 2}]}>
-            {resolvedStops.slice(1).map((_, i) => (
-              <Line
-                key={i}
-                x1={1}
-                y1={i * ROUTE_ROW_H + DASH_GAP}
-                x2={1}
-                y2={(i + 1) * ROUTE_ROW_H - DASH_GAP}
-                stroke={colors.primaryLight}
-                strokeWidth={1.5}
-                strokeLinecap="round"
-                strokeDasharray="2 3"
-              />
-            ))}
-          </Svg>
-        ) : null}
+            height={ROUTE_ROW_H - 2 * DASH_GAP}
+            preserveAspectRatio="none"
+            style={[
+              styles.dashed,
+              {top: NAME_LINE_H / 2 + i * ROUTE_ROW_H + DASH_GAP},
+            ]}
+          />
+        ))}
 
         {resolvedStops.map((s, i) => (
           <View key={`${s.kind}-${i}`} style={styles.row}>
