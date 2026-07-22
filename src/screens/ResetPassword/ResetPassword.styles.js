@@ -165,10 +165,10 @@ const styles = StyleSheet.create({
   },
 
   label: {
-    fontSize: moderateScale(16),
+    fontSize: moderateScale(15),
     fontWeight: '500',
     color: colors.text_dark,
-    marginBottom: verticalScale(15),
+    marginBottom: verticalScale(5),
     textAlign: 'left',
     alignSelf: 'center',
     width: '100%',
@@ -227,7 +227,7 @@ const styles = StyleSheet.create({
 
   passwordContainer: {
     position: 'relative',
-    marginBottom: verticalScale(4),
+    marginBottom: verticalScale(20),
     width: '100%',
     maxWidth: FORM_MAX_WIDTH,
     alignSelf: IS_TABLET ? 'center' : 'stretch',
@@ -235,7 +235,7 @@ const styles = StyleSheet.create({
 
   passwordInput: {
     paddingRight: scale(50),
-    marginBottom: verticalScale(12),
+    marginBottom: verticalScale(10),
   },
 
   otpRow: {
@@ -417,7 +417,7 @@ const styles = StyleSheet.create({
 
   primaryButton: {
     backgroundColor: colors.primary,
-    borderRadius: moderateScale(14),
+    borderRadius: moderateScale(12),
     alignItems: 'center',
     justifyContent: 'center',
     paddingVertical: select({
@@ -508,7 +508,7 @@ const styles = StyleSheet.create({
   resendRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'flex-end',
+    justifyContent: 'flex-start',
     gap: scale(6),
     marginTop: verticalScale(6),
     marginBottom: verticalScale(20),
@@ -539,6 +539,102 @@ const styles = StyleSheet.create({
     width: '100%',
     maxWidth: FORM_MAX_WIDTH,
     alignSelf: 'center',
+  },
+
+  // ── Step 1: "Or" divider between phone and email ──
+  orDividerRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: verticalScale(16),
+    marginTop: verticalScale(2),
+    width: '100%',
+    maxWidth: FORM_MAX_WIDTH,
+    alignSelf: IS_TABLET ? 'center' : 'stretch',
+  },
+
+  orDividerLine: {
+    flex: 1,
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.border_Color,
+  },
+
+  orDividerText: {
+    marginHorizontal: scale(12),
+    color: colors.textOnLightStrong,
+    fontSize: moderateScale(13),
+    fontWeight: '500',
+  },
+
+  // ── Step 2: per-channel OTP block ──
+  otpBlock: {
+    width: '100%',
+    maxWidth: FORM_MAX_WIDTH,
+    alignSelf: IS_TABLET ? 'center' : 'stretch',
+    marginBottom: verticalScale(18),
+  },
+
+  otpSectionLabel: {
+    fontSize: moderateScale(15),
+    fontWeight: '500',
+    color: colors.text_dark,
+    marginBottom: verticalScale(4),
+  },
+
+  otpSentText: {
+    fontSize: moderateScale(12),
+    color: colors.textOnLightStrong,
+    marginBottom: verticalScale(10),
+  },
+
+  otpSentValue: {
+    fontSize: moderateScale(12),
+    fontWeight: '700',
+    color: colors.text_dark,
+  },
+
+  otpInlineRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+  },
+
+  otpBoxRow: {
+    flex: 1,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+
+  otpBoxSmall: {
+    flex: 1,
+    borderWidth: 1,
+    borderColor: colors.border_Color,
+    backgroundColor: colors.gray400,
+    borderRadius:IS_TABLET ? moderateScale(12) : moderateScale(8),
+    textAlign: 'center',
+    fontSize: moderateScale(16),
+    paddingVertical: select({phone: verticalScale(10), tablet: moderateScale(8)}),
+    marginHorizontal: scale(3),
+    color: colors.text_dark || '#111827',
+  },
+
+  verifyButton: {
+    marginLeft: scale(8),
+    backgroundColor: colors.primary,
+    borderRadius: moderateScale(8),
+    paddingVertical: verticalScale(10),
+    paddingHorizontal: scale(14),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  verifyButtonDisabled: {
+    backgroundColor: colors.primaryLight,
+  },
+
+  verifyButtonText: {
+    color: colors.white,
+    fontSize: moderateScale(13),
+    fontWeight: '700',
   },
 });
 

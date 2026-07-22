@@ -25,66 +25,108 @@ import StatusBar from '../../component/StatusBar/StatusBar';
 import AppText from '../../theme/AppText';
 import {ms, vs} from '../../theme/scale';
 
-// step 1 = email/phone form
-// step 2 = otp verify
+// step 1 = phone / email form
+// step 2 = otp verify (per channel)
 // step 3 = new password
+
+const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const PHONE_REGEX = /^\+?\d{10,15}$/;
+const EMPTY_OTP = ['', '', '', '', '', ''];
 
 const ResetPassword = () => {
   const navigation = useNavigation();
 
   const [step, setStep] = useState(1);
-  const [identifier, setIdentifier] = useState('');
-  const [otp, setOtp] = useState(['', '', '', '', '', '']);
-  const [otpVerified, setOtpVerified] = useState(false);
+
+  // ── Step 1 identifiers ──
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+
+  // ── Step 2 per-channel OTP ──
+  const [phoneOtp, setPhoneOtp] = useState(EMPTY_OTP);
+  const [emailOtp, setEmailOtp] = useState(EMPTY_OTP);
+  const [phoneVerified, setPhoneVerified] = useState(false);
+  const [emailVerified, setEmailVerified] = useState(false);
+
+  // ── Step 3 password ──
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
   const [loading, setLoading] = useState(false);
 
-  const otpRefs = useRef([]);
+  const phoneOtpRefs = useRef([]);
+  const emailOtpRefs = useRef([]);
+  const emailInputRef = useRef(null);
   const confirmPasswordRef = useRef(null);
-  const isSendOtpDisabled = loading || !identifier.trim();
-  const isVerifyOtpDisabled = loading || otpVerified || otp.join('').length !== 6;
+
+  const hasPhone = phone.trim().length > 0;
+  const hasEmail = email.trim().length > 0;
+
+  const isSendOtpDisabled = loading || (!hasPhone && !hasEmail);
+  // Submit is enabled once every provided channel has been verified.
+  const isSubmitDisabled =
+    loading ||
+    (!hasPhone && !hasEmail) ||
+    (hasPhone && !phoneVerified) ||
+    (hasEmail && !emailVerified);
   const isResetPasswordDisabled =
     loading || !newPassword.trim() || !confirmPassword.trim();
 
-  const handleOtpChange = (value, index) => {
+  // ── Channel helpers (keeps the two OTP blocks in one code path) ──
+  const getChannel = channel =>
+    channel === 'phone'
+      ? {
+          value: phone,
+          otp: phoneOtp,
+          setOtp: setPhoneOtp,
+          refs: phoneOtpRefs,
+          verified: phoneVerified,
+          setVerified: setPhoneVerified,
+        }
+      : {
+          value: email,
+          otp: emailOtp,
+          setOtp: setEmailOtp,
+          refs: emailOtpRefs,
+          verified: emailVerified,
+          setVerified: setEmailVerified,
+        };
+
+  const handleOtpChange = (value, index, channel) => {
     if (!/^\d?$/.test(value)) return;
-    if (otpVerified) {
-      setOtpVerified(false);
-    }
-    const updated = [...otp];
+    const c = getChannel(channel);
+    if (c.verified) c.setVerified(false);
+    const updated = [...c.otp];
     updated[index] = value;
-    setOtp(updated);
+    c.setOtp(updated);
     if (value && index < 5) {
-      otpRefs.current[index + 1]?.focus();
+      c.refs.current[index + 1]?.focus();
     }
   };
 
-  const handleOtpKeyPress = (e, index) => {
-    if (e.nativeEvent.key === 'Backspace' && !otp[index] && index > 0) {
-      otpRefs.current[index - 1]?.focus();
+  const handleOtpKeyPress = (e, index, channel) => {
+    const c = getChannel(channel);
+    if (e.nativeEvent.key === 'Backspace' && !c.otp[index] && index > 0) {
+      c.refs.current[index - 1]?.focus();
     }
   };
 
   const handleSendOtp = () => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const phoneRegex = /^\+?\d{10,15}$/;
+    const trimmedPhone = phone.trim();
+    const trimmedEmail = email.trim();
 
-    const value = identifier.trim();
-    if (!value) {
-      Alert.alert('Required', 'Please enter email or phone number');
+    if (!trimmedPhone && !trimmedEmail) {
+      Alert.alert('Required', 'Please enter a phone number or email address');
       return;
     }
-
-    const looksLikeEmail = value.includes('@');
-    if (looksLikeEmail && !emailRegex.test(value)) {
-      Alert.alert('Invalid Email', 'Please enter a valid email address');
-      return;
-    }
-    if (!looksLikeEmail && !phoneRegex.test(value)) {
+    if (trimmedPhone && !PHONE_REGEX.test(trimmedPhone)) {
       Alert.alert('Invalid Number', 'Please enter a valid phone number');
+      return;
+    }
+    if (trimmedEmail && !EMAIL_REGEX.test(trimmedEmail)) {
+      Alert.alert('Invalid Email', 'Please enter a valid email address');
       return;
     }
 
@@ -92,33 +134,46 @@ const ResetPassword = () => {
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
-      setOtpVerified(false);
-      setOtp(['', '', '', '', '', '']);
+      setPhoneOtp(EMPTY_OTP);
+      setEmailOtp(EMPTY_OTP);
+      setPhoneVerified(false);
+      setEmailVerified(false);
       setStep(2);
     }, 800);
   };
 
-  const handleResendOtp = () => {
-    setOtpVerified(false);
-    setOtp(['', '', '', '', '', '']);
-    Alert.alert('OTP Sent', 'A new OTP has been sent.');
+  const handleResend = channel => {
+    const c = getChannel(channel);
+    c.setOtp(EMPTY_OTP);
+    c.setVerified(false);
+    Alert.alert('OTP Sent', `A new code has been sent to ${c.value.trim()}.`);
   };
 
-  const handleVerifyOtp = () => {
-    if (otp.join('').length !== 6) {
-      Alert.alert('Invalid OTP', 'Please enter all 6 digits');
+  const handleVerifyChannel = channel => {
+    const c = getChannel(channel);
+    if (c.otp.join('').length !== 6) {
+      Alert.alert('Invalid Code', 'Please enter all 6 digits');
+      return;
+    }
+    Keyboard.dismiss();
+    c.setVerified(true);
+  };
+
+  const handleSubmitOtp = () => {
+    if (hasPhone && !phoneVerified) {
+      Alert.alert('Verify Required', 'Please verify the code sent to your phone');
+      return;
+    }
+    if (hasEmail && !emailVerified) {
+      Alert.alert('Verify Required', 'Please verify the code sent to your email');
       return;
     }
     Keyboard.dismiss();
     setLoading(true);
     setTimeout(() => {
       setLoading(false);
-      setOtpVerified(true);
-      setTimeout(() => {
-        setOtpVerified(false);
-        setStep(3);
-      }, 3000);
-    }, 800);
+      setStep(3);
+    }, 600);
   };
 
   const handleResetPassword = () => {
@@ -132,7 +187,10 @@ const ResetPassword = () => {
       return;
     }
     if (!passwordRegex.test(newPassword)) {
-      Alert.alert('Weak Password', 'Password must include a number and a special character');
+      Alert.alert(
+        'Weak Password',
+        'Password must include a number and a special character',
+      );
       return;
     }
     if (!confirmPassword) {
@@ -154,6 +212,76 @@ const ResetPassword = () => {
     }, 1000);
   };
 
+  // ── One OTP block (used for both phone and email in step 2) ──
+  const renderOtpBlock = channel => {
+    const c = getChannel(channel);
+    const label = channel === 'phone' ? 'Phone Number' : 'Email Address';
+    const isComplete = c.otp.join('').length === 6;
+    const verifyDisabled = loading || c.verified || !isComplete;
+
+    return (
+      <View style={styles.otpBlock}>
+        <AppText style={styles.otpSectionLabel}>{label}</AppText>
+        <AppText style={styles.otpSentText}>
+          Verification code sent to{' '}
+          <AppText style={styles.otpSentValue}>{c.value.trim()}</AppText>
+        </AppText>
+
+        <View style={styles.otpInlineRow}>
+          <View style={styles.otpBoxRow}>
+            {c.otp.map((digit, index) => (
+              <TextInput
+                key={`${channel}-${index}`}
+                ref={ref => {
+                  c.refs.current[index] = ref;
+                }}
+                value={digit}
+                onChangeText={value => handleOtpChange(value, index, channel)}
+                onKeyPress={e => handleOtpKeyPress(e, index, channel)}
+                keyboardType="number-pad"
+                maxLength={1}
+                style={[styles.otpBoxSmall, loading && styles.disabledInput]}
+                editable={!loading && !c.verified}
+                returnKeyType={index === 5 ? 'done' : 'next'}
+              />
+            ))}
+          </View>
+
+          <TouchableOpacity
+            onPress={() => handleVerifyChannel(channel)}
+            disabled={verifyDisabled}
+            activeOpacity={0.8}
+            style={[
+              styles.verifyButton,
+              verifyDisabled && styles.verifyButtonDisabled,
+            ]}>
+            <AppText style={styles.verifyButtonText}>
+              {c.verified ? 'Verified' : 'Verify'}
+            </AppText>
+          </TouchableOpacity>
+        </View>
+
+        {c.verified ? (
+          <View style={styles.resendRow}>
+            <AppText style={styles.otpSuccessText}>
+              Verified successfully
+            </AppText>
+          </View>
+        ) : (
+          <View style={styles.resendRow}>
+            <AppText style={styles.resendText}>Didn’t received code? </AppText>
+            <TouchableOpacity
+              onPress={() => handleResend(channel)}
+              disabled={loading}
+              activeOpacity={0.7}>
+              <AppText style={styles.resendLink}>Resend</AppText>
+            </TouchableOpacity>
+          </View>
+        )}
+      </View>
+    );
+  };
+
   return (
     <KeyboardAvoidingView
       style={styles.keyboardAvoiding}
@@ -170,7 +298,10 @@ const ResetPassword = () => {
           />
           <ScrollView
             style={[styles.scroll, {backgroundColor: colors.white}]}
-            contentContainerStyle={[styles.container, {backgroundColor: colors.white}]}
+            contentContainerStyle={[
+              styles.container,
+              {backgroundColor: colors.white},
+            ]}
             keyboardShouldPersistTaps="handled"
             showsVerticalScrollIndicator={false}
             bounces={Platform.OS === 'ios'}
@@ -198,17 +329,17 @@ const ResetPassword = () => {
                   <View style={styles.heroContent}>
                     <AppText style={styles.title}>
                       {step === 1
-                        ? 'Forgot Password?'
+                        ? 'Forgot Password'
                         : step === 2
-                        ? 'Verification Code'
-                        : 'Create Password'}
+                        ? 'Enter Verification Code'
+                        : 'Enter New Password'}
                     </AppText>
                     <AppText style={styles.subtitle}>
                       {step === 1
                         ? 'Enter the email or phone linked with your account.'
                         : step === 2
-                        ? 'Enter the verification code.'
-                        : 'Your new password must be unique from those previously used.'}
+                        ? 'Enter the verification code'
+                        : 'Create a new password'}
                     </AppText>
                     <TouchableOpacity
                       style={styles.roleBadge}
@@ -222,69 +353,53 @@ const ResetPassword = () => {
               </View>
 
               <View style={styles.card}>
-
-                {/* ── STEP 1: Email / Phone ── */}
+                {/* ── STEP 1: Phone / Email ── */}
                 {step === 1 && (
                   <>
-                    <AppText style={styles.label}>Phone Number or Email Address</AppText>
+                    <AppText style={styles.label}>Phone Number</AppText>
                     <TextInput
-                      placeholder="Enter your email or phone number"
+                      placeholder="Enter your Phone Number"
+                      placeholderTextColor={colors.placeholder || '#9CA3AF'}
+                      keyboardType="phone-pad"
+                      autoCapitalize="none"
+                      autoCorrect={false}
+                      value={phone}
+                      onChangeText={setPhone}
+                      returnKeyType="next"
+                      onSubmitEditing={() => emailInputRef.current?.focus()}
+                      style={[styles.input, loading && styles.disabledInput]}
+                      editable={!loading}
+                    />
+
+                    <View style={styles.orDividerRow}>
+                      <View style={styles.orDividerLine} />
+                      <AppText style={styles.orDividerText}>Or</AppText>
+                      <View style={styles.orDividerLine} />
+                    </View>
+
+                    <AppText style={styles.label}>Email Address</AppText>
+                    <TextInput
+                      ref={emailInputRef}
+                      placeholder="Enter your Email Address"
                       placeholderTextColor={colors.placeholder || '#9CA3AF'}
                       keyboardType="email-address"
                       autoCapitalize="none"
                       autoCorrect={false}
-                      value={identifier}
-                      onChangeText={setIdentifier}
-                      returnKeyType="next"
+                      value={email}
+                      onChangeText={setEmail}
+                      returnKeyType="done"
+                      onSubmitEditing={handleSendOtp}
                       style={[styles.input, loading && styles.disabledInput]}
                       editable={!loading}
                     />
                   </>
                 )}
 
-                {/* ── STEP 2: OTP Verify ── */}
+                {/* ── STEP 2: OTP Verify (per channel) ── */}
                 {step === 2 && (
                   <>
-                    <AppText style={styles.otpLabel}>Enter Verification Code</AppText>
-                    <View style={styles.otpBoxContainer}>
-                      {otp.map((digit, index) => (
-                        <TextInput
-                          key={index}
-                          ref={ref => {otpRefs.current[index] = ref;}}
-                          value={digit}
-                          onChangeText={value => handleOtpChange(value, index)}
-                          onKeyPress={e => handleOtpKeyPress(e, index)}
-                          keyboardType="number-pad"
-                          maxLength={1}
-                          style={[styles.otpBox, loading && styles.disabledInput]}
-                          editable={!loading && !otpVerified}
-                          returnKeyType={index === 5 ? 'done' : 'next'}
-                        />
-                      ))}
-                    </View>
-
-                      {otpVerified && (
-                        <View style={styles.otpSuccessContainer}>
-                          <AppText style={styles.otpSuccessText}>
-                            OTP verified successfully
-                          </AppText>
-                        </View>
-                      )}
-
-                    {!otpVerified && (
-                      <View style={styles.resendRow}>
-                        <AppText style={styles.resendText}>
-                          Didn’t received code? {' '}
-                        </AppText>
-                        <TouchableOpacity
-                          onPress={handleResendOtp}
-                          disabled={loading || otpVerified}
-                          activeOpacity={0.7}>
-                          <AppText style={styles.resendLink}>Resend</AppText>
-                        </TouchableOpacity>
-                      </View>
-                    )}
-
+                    {hasPhone && renderOtpBlock('phone')}
+                    {hasEmail && renderOtpBlock('email')}
                   </>
                 )}
 
@@ -301,9 +416,15 @@ const ResetPassword = () => {
                         autoCorrect={false}
                         value={newPassword}
                         onChangeText={setNewPassword}
-                        onSubmitEditing={() => confirmPasswordRef.current?.focus()}
+                        onSubmitEditing={() =>
+                          confirmPasswordRef.current?.focus()
+                        }
                         returnKeyType="next"
-                        style={[styles.input, styles.passwordInput, loading && styles.disabledInput]}
+                        style={[
+                          styles.input,
+                          styles.passwordInput,
+                          loading && styles.disabledInput,
+                        ]}
                         editable={!loading}
                       />
                       <TouchableOpacity
@@ -319,11 +440,11 @@ const ResetPassword = () => {
                       </TouchableOpacity>
                     </View>
 
-                    <AppText style={styles.label}>Confirm Password</AppText>
+                    <AppText style={styles.label}>Confirm New Password</AppText>
                     <View style={styles.passwordContainer}>
                       <TextInput
                         ref={confirmPasswordRef}
-                        placeholder="Confirm new password"
+                        placeholder="Confirm New Password"
                         placeholderTextColor={colors.placeholder || '#9CA3AF'}
                         secureTextEntry={!showConfirmPassword}
                         autoCapitalize="none"
@@ -332,7 +453,11 @@ const ResetPassword = () => {
                         onChangeText={setConfirmPassword}
                         onSubmitEditing={handleResetPassword}
                         returnKeyType="done"
-                        style={[styles.input, styles.passwordInput, loading && styles.disabledInput]}
+                        style={[
+                          styles.input,
+                          styles.passwordInput,
+                          loading && styles.disabledInput,
+                        ]}
                         editable={!loading}
                       />
                       <TouchableOpacity
@@ -347,21 +472,21 @@ const ResetPassword = () => {
                         )}
                       </TouchableOpacity>
                     </View>
-
-                    {/* <AppText style={styles.passwordHint}>
-                      Password must be at least 8 characters, including a number and a special character.
-                    </AppText> */}
                   </>
                 )}
-
               </View>
             </View>
           </ScrollView>
 
-          {/* ── Primary action pinned to a fixed footer (same spot for every step) ── */}
+          {/* ── Primary action pinned to a fixed footer (same spot every step) ── */}
           <View style={styles.footer}>
             {loading ? (
-              <View style={[styles.primaryButton, styles.footerButton, styles.loadingButton]}>
+              <View
+                style={[
+                  styles.primaryButton,
+                  styles.footerButton,
+                  styles.loadingButton,
+                ]}>
                 <ActivityIndicator color={colors.white} size="small" />
               </View>
             ) : step === 1 ? (
@@ -380,21 +505,21 @@ const ResetPassword = () => {
               />
             ) : step === 2 ? (
               <Button
-                title="Verify"
-                onPress={handleVerifyOtp}
+                title="Submit"
+                onPress={handleSubmitOtp}
                 backgroundColor={colors.primary}
                 textColor={colors.white}
                 style={[
                   styles.primaryButton,
                   styles.footerButton,
-                  isVerifyOtpDisabled && styles.disabledButton,
+                  isSubmitDisabled && styles.disabledButton,
                 ]}
                 textStyle={styles.primaryButtonText}
-                disabled={isVerifyOtpDisabled}
+                disabled={isSubmitDisabled}
               />
             ) : (
               <Button
-                title="Reset Password"
+                title="Confirm Password"
                 onPress={handleResetPassword}
                 backgroundColor={colors.primary}
                 textColor={colors.white}
