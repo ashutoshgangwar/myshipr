@@ -64,8 +64,8 @@ const LoginSplashScreen = ({navigation}) => {
   };
 
   const handleCredentialsPress = () => {
-    // navigation.reset({index: 0, routes: [{name: 'MainApp'}]});
-    navigation.navigate('LoginScreen');
+    navigation.reset({index: 0, routes: [{name: 'MainApp'}]});
+    // navigation.navigate('LoginScreen');
     // navigation.navigate('ActiveBidding');
   };
   

@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useRef, useState} from 'react';
 import {
   View,
   SafeAreaView,
@@ -6,6 +6,8 @@ import {
   TouchableOpacity,
   StyleSheet,
   Image,
+  Modal,
+  Dimensions,
 } from 'react-native';
 import {useNavigation, useFocusEffect} from '@react-navigation/native';
 import LinearGradient from 'react-native-linear-gradient';
@@ -21,6 +23,13 @@ import TruckIcon from '../../assets/svg_icon/Frame_black.svg';
 import Right_Arrow from '../../assets/svg_icon/right_Arrow.svg';
 import Strech_arrow_bottom from '../../assets/svg_icon/Strech_arrow_bottom.svg';
 import StarIcon from '../../assets/svg_icon/Star_Vector.svg';
+import Dropdown_icon from '../../assets/svg_icon/Dropdown_icon.svg';
+import Profile_icon from '../../assets/svg_icon/profile_icon.svg';
+import RouteStops from '../../component/RouteStops/RouteStops';
+import {clearSession} from '../../services/api/AuthService';
+import { ms } from '../../theme/scale';
+
+const {width: SCREEN_W} = Dimensions.get('window');
 
 const FUEL_PUMP = require('../../assets/Image/fuel_pump.png');
 
@@ -28,32 +37,26 @@ const PRIMARY_GRADIENT = ['#00033E', '#0008A4'];
 
 const STATS = [
   {
-    label: 'Miles • Week',
+    key: 'miles',
+    label: 'Weekly Miles',
+    range: '13 July - 19 July',
     value: '1,234',
     note: '↑ 8% vs last week',
     noteColor: colors.success,
     accent: colors.warning,
+    chartColor: colors.success,
+    chart: [30, 42, 38, 55, 50, 62, 72],
   },
   {
-    label: 'Earnings',
+    key: 'earnings',
+    label: 'Weekly Earnings',
+    range: '13 July - 19 July',
     value: '$1,234',
     note: '↓ $200 this week',
     noteColor: colors.danger,
-    accent: colors.success,
-  },
-  {
-    label: 'Net Profit',
-    value: '$879',
-    note: 'after all costs',
-    noteColor: colors.textMuted,
-    accent: colors.accentBlue,
-  },
-  {
-    label: 'Fuel Saved',
-    value: '$1,234',
-    note: 'Route Optimization',
-    noteColor: colors.accentBlue,
     accent: colors.warning,
+    chartColor: colors.danger,
+    chart: [50, 40, 52, 44, 54, 42, 50, 60],
   },
 ];
 
@@ -62,6 +65,17 @@ const TRIP_STATS = [
   {value: '4h 10m', label: 'Est. time'},
   {value: 'I-45 S', label: 'Route'},
   {value: '12:10 PM', label: 'ETA'},
+];
+
+/* Current trip route — driven by data so the number of pickups/drops is
+   dynamic (2 pickups → 2 rows, etc.). `kind` picks the marker and the auto
+   point number; the RouteStops component owns the layout/icons so the same
+   timeline can be reused elsewhere. Real point names will come from the API. */
+const CURRENT_TRIP_STOPS = [
+  {kind: 'current', sub: 'You are here'},
+  {kind: 'pickup', sub: '8.00–8.30 AM'},
+  {kind: 'pickup', sub: '9.00–9.30 AM'},
+  {kind: 'drop', sub: '2.30 PM'},
 ];
 
 const HOS_DETAILS = [
@@ -121,14 +135,14 @@ const UPCOMING_LOADS = [
     pay: '$980',
     miles: '180 mil',
   },
-   {
+  {
     id: 'u8',
     route: 'San Jose, CA → Newark, NJ',
     pickup: 'Wed • 2:00 PM pickup',
     pay: '$980',
     miles: '180 mil',
   },
-   {
+  {
     id: 'u9',
     route: 'San Jose, CA → Newark, NJ',
     pickup: 'Wed • 2:00 PM pickup',
@@ -141,10 +155,44 @@ const HomeScreen = () => {
   const navigation = useNavigation();
   const [mapVisible, setMapVisible] = useState(false);
   const [tripStarted, setTripStarted] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuPos, setMenuPos] = useState({top: 0, right: 0});
+  const avatarRef = useRef(null);
 
   const openMap_Here = () => {
     setTripStarted(true);
     navigation.navigate('ActiveTripScreen');
+  };
+
+  // Anchor the dropdown under the avatar (works on both tablet and phone
+  // regardless of safe-area insets) by measuring the button in-window.
+  const openMenu = () => {
+    const node = avatarRef.current;
+    if (node?.measureInWindow) {
+      node.measureInWindow((x, y, width, height) => {
+        setMenuPos({top: y + height + 8, right: SCREEN_W - (x + width)});
+        setMenuOpen(true);
+      });
+    } else {
+      setMenuOpen(true);
+    }
+  };
+
+  const closeMenu = () => setMenuOpen(false);
+
+  const goAccountSettings = () => {
+    closeMenu();
+    navigation.navigate('Profile');
+  };
+
+  const handleLogout = async () => {
+    closeMenu();
+    try {
+      await clearSession();
+    } catch (e) {
+      // Even if clearing storage fails, still return the user to login.
+    }
+    navigation.reset({index: 0, routes: [{name: 'LoginScreen'}]});
   };
 
   // When the user comes back to Home while a trip is ongoing, float the map.
@@ -177,10 +225,27 @@ const HomeScreen = () => {
         <DashboardHeader
           icon={<TruckIcon width={20} height={20} />}
           title="CARRIER"
+          statsVariant="chart"
           right={
-            <View style={styles.dieselBadge}>
-              <AppText style={styles.dieselLabel}>DIESEL</AppText>
-              <AppText style={styles.dieselValue}>$3.89/gal</AppText>
+            <View style={styles.headerRight}>
+              <View style={styles.dieselBadge}>
+                <AppText style={styles.dieselLabel}>DIESEL</AppText>
+                <AppText style={styles.dieselValue}>$3.89/gal</AppText>
+              </View>
+              <TouchableOpacity
+                ref={avatarRef}
+                style={styles.avatarBtn}
+                activeOpacity={0.85}
+                onPress={openMenu}>
+                <View style={styles.avatarCircle}>
+                  <AppText style={styles.avatarInitials}>AG</AppText>
+                </View>
+                <Dropdown_icon
+                  width={IS_TABLET ? 16 : 14}
+                  height={IS_TABLET ? 16 : 14}
+                  style={menuOpen && styles.avatarCaretOpen}
+                />
+              </TouchableOpacity>
             </View>
           }
           stats={STATS}>
@@ -201,25 +266,19 @@ const HomeScreen = () => {
                 </View>
               </View>
 
+              <View style={[styles.pill, styles.pillStartsIn]}>
+                <AppText style={styles.pillStartsInText} numberOfLines={1}>
+                  Starts in 1h 28 mins
+                </AppText>
+              </View>
+
               <View style={styles.payoutRow}>
                 <AppText style={styles.payoutValue}>$1,250</AppText>
                 <AppText style={styles.payoutLabel}>Load payout</AppText>
               </View>
 
               <View style={styles.routeBox}>
-                <View style={styles.routeTimeline}>
-                  <View style={styles.routeDotStart} />
-                  <View style={styles.routeLine} />
-                  <View style={styles.routeDotEnd} />
-                </View>
-                <View style={{flex: 1}}>
-                  <AppText style={styles.routeStopLabel}>FROM</AppText>
-                  <AppText style={styles.routeStopCity}>Dallas, TX</AppText>
-                  <AppText style={styles.routeStopLabel}>TO</AppText>
-                  <AppText style={[styles.routeStopCity, {marginBottom: 0}]}>
-                    Houston, TX
-                  </AppText>
-                </View>
+                <RouteStops stops={CURRENT_TRIP_STOPS} showSummary />
               </View>
 
               <View style={styles.tripStatsDivider} />
@@ -318,7 +377,7 @@ const HomeScreen = () => {
                 resizeMode="contain"
               />
               <View style={styles.rewardsBadge}>
-                <AppText style={styles.rewardsLabel}>Fuel Rewards</AppText>
+                <AppText style={styles.rewardsLabel}>Fuel Rewards </AppText>
               </View>
               <AppText style={styles.rewardsTitle}>
                 Report your fuel price, earn points
@@ -331,7 +390,10 @@ const HomeScreen = () => {
               <View style={styles.rewardsBalanceRow}>
                 <View style={styles.rewardsStarBadge}>
                   <View style={styles.rewardsStarRing}>
-                    <StarIcon width={16} height={15} />
+                    <StarIcon
+                      width={IS_TABLET ? ms(12) : ms(10)}
+                      height={IS_TABLET? ms(12): ms(10)}
+                    />
                   </View>
                 </View>
                 <View style={styles.rewardsBalanceTextWrap}>
@@ -343,22 +405,6 @@ const HomeScreen = () => {
                     <AppText style={styles.rewardsPointsUnit}> pts</AppText>
                   </AppText>
                 </View>
-              </View>
-              {/* points value sits inline beside the label icon */}
-              <View style={styles.rewardsTrackRow}>
-                <View style={styles.rewardsTrack}>
-                  <View style={[styles.rewardsFill, {width: '61%'}]} />
-                </View>
-                <View style={styles.rewardsPercentBadge}>
-                  <AppText style={styles.rewardsPercentText}>61%</AppText>
-                </View>
-              </View>
-              <View style={styles.rewardsFooterRow}>
-                <AppText style={styles.rewardsFooterText}>
-                  <AppText style={styles.rewardsFooterAccent}>2,983</AppText>{' '}
-                  points to next reward
-                </AppText>
-                <AppText style={styles.rewardsFooterValue}>2000 pts</AppText>
               </View>
             </View>
 
@@ -419,6 +465,50 @@ const HomeScreen = () => {
           />
         </TouchableOpacity>
       )}
+
+      {/* Profile dropdown anchored under the header avatar */}
+      <Modal
+        visible={menuOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={closeMenu}>
+        <View style={{flex: 1}}>
+          <TouchableOpacity
+            style={StyleSheet.absoluteFill}
+            activeOpacity={1}
+            onPress={closeMenu}
+          />
+          <View
+            style={[styles.menuCard, {top: menuPos.top, right: menuPos.right}]}>
+            <View style={styles.menuHeaderRow}>
+              <View style={styles.menuAvatar}>
+                <AppText style={styles.menuAvatarText}>DW</AppText>
+              </View>
+              <AppText style={styles.menuName}>Deeveja Wadhwa</AppText>
+            </View>
+
+            <View style={styles.menuDivider} />
+
+            <TouchableOpacity
+              style={styles.menuItem}
+              activeOpacity={0.7}
+              onPress={goAccountSettings}>
+              <Profile_icon width={18} height={18} />
+              <AppText style={styles.menuItemText}>Account Settings</AppText>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.menuItem}
+              activeOpacity={0.7}
+              onPress={handleLogout}>
+              <Right_Arrow width={18} height={18} />
+              <AppText style={[styles.menuItemText, styles.menuItemLogout]}>
+                Logout
+              </AppText>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
 
       {/* Draggable floating HERE map — movable anywhere on the screen */}
       <FloatingMap visible={mapVisible} onClose={() => setMapVisible(false)} />

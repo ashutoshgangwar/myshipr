@@ -3,6 +3,8 @@ import {View, TouchableOpacity} from 'react-native';
 
 import styles from './DashboardHeader.styles';
 import AppText from '../../theme/AppText';
+import Sparkline from '../Sparkline/Sparkline';
+import {IS_TABLET} from '../../theme/device';
 
 const DashboardHeader = ({
   icon,
@@ -20,6 +22,9 @@ const DashboardHeader = ({
   paddingVertical,
   statsOffset,
   statsStyle,
+  // 'chart' renders wide cards with a title, date range, value and inline
+  // sparkline (the Home dashboard). Defaults to the compact stat cards.
+  statsVariant = 'default',
   // When provided the stat cards become filter tabs: the selected one fills
   // with its own accent and flips its text to white.
   activeStat,
@@ -61,7 +66,60 @@ const DashboardHeader = ({
         {children}
       </View>
 
-      {hasStats && (
+      {hasStats && statsVariant === 'chart' && (
+        <View style={[styles.statsRowChart, statsRowStyle, statsStyle]}>
+          {stats.map(stat => {
+            const id = stat.key ?? stat.label;
+            return (
+              <View
+                key={id}
+                style={[styles.chartCard, {borderLeftColor: stat.accent}]}>
+                <View style={styles.chartCardTopRow}>
+                  <AppText style={styles.chartCardTitle} numberOfLines={1}>
+                    {stat.label}
+                  </AppText>
+                  {stat.note ? (
+                    <AppText
+                      numberOfLines={1}
+                      style={[
+                        styles.chartCardNote,
+                        stat.noteColor && {color: stat.noteColor},
+                      ]}>
+                      {stat.note}
+                    </AppText>
+                  ) : null}
+                </View>
+
+                {stat.range ? (
+                  <AppText style={styles.chartCardRange} numberOfLines={1}>
+                    {stat.range}
+                  </AppText>
+                ) : null}
+
+                <View style={styles.chartCardBottomRow}>
+                  <AppText
+                    style={styles.chartCardValue}
+                    numberOfLines={1}
+                    adjustsFontSizeToFit
+                    minimumFontScale={0.7}>
+                    {stat.value}
+                  </AppText>
+                  <View style={styles.chartCardSpark}>
+                    <Sparkline
+                      data={stat.chart}
+                      color={stat.chartColor ?? stat.accent}
+                      width={IS_TABLET ? 120 : 78}
+                      height={IS_TABLET ? 38 : 30}
+                    />
+                  </View>
+                </View>
+              </View>
+            );
+          })}
+        </View>
+      )}
+
+      {hasStats && statsVariant !== 'chart' && (
         <View style={[styles.statsRow, statsRowStyle, statsStyle]}>
           {stats.map(stat => {
             const id = stat.key ?? stat.label;

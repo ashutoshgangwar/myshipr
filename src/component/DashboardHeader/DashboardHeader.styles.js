@@ -109,4 +109,75 @@ export default StyleSheet.create({
   statTextActive: {
     color: colors.white,
   },
+
+  /* ---------- Chart variant (wide cards + sparkline) ---------- */
+  statsRowChart: {
+    flexDirection: 'row',
+    marginTop: -vs(25),
+    // Wider side margin + gap so the two cards are narrower.
+    marginHorizontal: ms(26),
+    gap: ms(14),
+  },
+
+  chartCard: {
+    flex: 1,
+    backgroundColor: colors.white,
+    borderRadius: ms(14),
+    // Tighter vertical padding to shorten the card.
+    paddingVertical: vs(8),
+    paddingHorizontal: ms(10),
+    borderLeftWidth: ms(4),
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.12,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+
+  chartCardTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: ms(6),
+  },
+
+  chartCardTitle: {
+    flexShrink: 1,
+    color: colors.textStrong,
+    fontSize: ms(14),
+    fontWeight: '700',
+  },
+
+  chartCardNote: {
+    color: colors.textMuted,
+    fontSize: ms(11),
+    fontWeight: '600',
+  },
+
+  chartCardRange: {
+    color: colors.textMuted,
+    fontSize: ms(10),
+    fontWeight: '500',
+    marginTop: vs(2),
+  },
+
+  chartCardBottomRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    justifyContent: 'space-between',
+    marginTop: vs(4),
+    gap: ms(6),
+  },
+
+  chartCardValue: {
+    flexShrink: 1,
+    color: colors.textStrong,
+    fontSize: ms(22),
+    fontWeight: '800',
+  },
+
+  chartCardSpark: {
+    alignItems: 'flex-end',
+    justifyContent: 'flex-end',
+  },
 });

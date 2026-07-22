@@ -90,6 +90,107 @@ export default StyleSheet.create({
     marginTop: vs(2),
   },
 
+  /* ---------- Header right (diesel + profile) ---------- */
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: ms(10),
+  },
+
+  avatarBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: ms(4),
+  },
+
+  avatarCircle: {
+    width: IS_TABLET ? ms(30) : ms(38),
+    height: IS_TABLET ? ms(30) : ms(38),
+    borderRadius: IS_TABLET ? ms(15) : ms(19),
+    backgroundColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  avatarInitials: {
+    color: colors.primary,
+    fontSize: IS_TABLET ? ms(13) : ms(15),
+    fontWeight: '700',
+  },
+
+  avatarCaretOpen: {
+    transform: [{rotate: '180deg'}],
+  },
+
+  /* ---------- Profile dropdown menu ---------- */
+  menuCard: {
+    position: 'absolute',
+    minWidth: ms(220),
+    backgroundColor: colors.white,
+    borderRadius: ms(14),
+    paddingVertical: vs(6),
+    paddingHorizontal: ms(6),
+    shadowColor: '#000',
+    shadowOpacity: 0.18,
+    shadowRadius: 16,
+    shadowOffset: {width: 0, height: 8},
+    elevation: 10,
+  },
+
+  menuHeaderRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: ms(10),
+    paddingHorizontal: ms(8),
+    paddingVertical: vs(8),
+  },
+
+  menuAvatar: {
+    width: ms(34),
+    height: ms(34),
+    borderRadius: ms(17),
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  menuAvatarText: {
+    color: colors.white,
+    fontSize: ms(13),
+    fontWeight: '700',
+  },
+
+  menuName: {
+    color: colors.textStrong,
+    fontSize: ms(14),
+    fontWeight: '600',
+  },
+
+  menuDivider: {
+    height: 1,
+    backgroundColor: colors.cardBorder,
+    marginVertical: vs(4),
+  },
+
+  menuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: ms(10),
+    paddingHorizontal: ms(8),
+    paddingVertical: vs(11),
+    borderRadius: ms(10),
+  },
+
+  menuItemText: {
+    color: colors.textStrong,
+    fontSize: ms(14),
+    fontWeight: '500',
+  },
+
+  menuItemLogout: {
+    color: colors.danger,
+  },
+
   headerLocation: {
     color: colors.onDarkMedium,
     fontSize: ms(15),
@@ -191,6 +292,22 @@ export default StyleSheet.create({
     backgroundColor: colors.warningLight,
   },
 
+  // The "Starts in" chip sits on its own line below the header row: the card is
+  // only half the screen wide, so title + this chip + "On time" won't fit on a
+  // single row without spilling outside the card.
+  pillStartsIn: {
+    alignSelf: 'flex-start',
+    marginTop: vs(8),
+    borderColor: colors.warningLight,
+    backgroundColor: '#FBF3D9',
+  },
+
+  pillStartsInText: {
+    color: colors.warning_text,
+    fontSize: ms(11),
+    fontWeight: '700',
+  },
+
   pillOnTime: {
     borderColor: colors.success,
     backgroundColor: colors.successLight,
@@ -238,51 +355,9 @@ export default StyleSheet.create({
   routeBox: {
     backgroundColor: colors.screenBg,
     borderRadius: ms(10),
-    paddingVertical: IS_TABLET ? ms(8) : ms(16),
-    paddingHorizontal: IS_TABLET ? ms(1) : ms(16),
+    paddingVertical: IS_TABLET ? ms(10) : ms(14),
+    paddingHorizontal: IS_TABLET ? ms(10) : ms(14),
     marginTop: vs(10),
-    flexDirection: 'row',
-  },
-
-  routeTimeline: {
-    width: ms(16),
-    alignItems: 'center',
-    marginRight: ms(8),
-  },
-
-  routeDotStart: {
-    width: ms(10),
-    height: ms(10),
-    borderRadius: ms(5),
-    backgroundColor: colors.textMuted,
-  },
-
-  routeLine: {
-    flex: 1,
-    width: 2,
-    backgroundColor: colors.cardBorder,
-    marginVertical: vs(4),
-  },
-
-  routeDotEnd: {
-    width: ms(10),
-    height: ms(10),
-    borderRadius: ms(5),
-    backgroundColor: colors.accentBlue,
-  },
-
-  routeStopLabel: {
-    color: colors.textMuted,
-    fontSize: IS_TABLET ? ms(6) : ms(8),
-    fontWeight: '600',
-    letterSpacing: 0.5,
-  },
-
-  routeStopCity: {
-    color: colors.textStrong,
-    fontSize: IS_TABLET ? ms(10) : ms(12),
-    fontWeight: '700',
-    marginBottom: vs(8),
   },
 
   tripStatsDivider: {
@@ -434,10 +509,10 @@ export default StyleSheet.create({
 
   rewardsPumpImage: {
     position: 'absolute',
-    right: ms(6),
-    top: ms(6),
-    width: ms(66),
-    height: ms(66),
+    right: ms(8),
+    top: ms(10),
+    width: ms(84),
+    height: ms(84),
   },
 
   rewardsBadge: {
@@ -452,18 +527,20 @@ export default StyleSheet.create({
 
   rewardsLabel: {
     color: '#56FF84',
-    fontSize: ms(12),
+    fontSize: ms(10),
     fontWeight: '600',
   },
 
   rewardsTitle: {
     color: colors.white,
-    fontSize: IS_TABLET ?  ms(20) : ms(18),
+    fontSize: IS_TABLET ? ms(15) : ms(16),
     fontWeight: '800',
-    marginTop: vs(4),
-    lineHeight: ms(28),
-    // Keep the title clear of the pump image sitting in the top-right.
-    paddingRight: ms(60),
+    marginTop: vs(6),
+    // Line height kept proportional to the font (~1.25×) so the two title
+    // lines sit close together instead of leaving a big vertical gap.
+    lineHeight: IS_TABLET ? ms(19) : ms(20),
+    // Keep the title clear of the larger pump image sitting in the top-right.
+    paddingRight: ms(74),
   },
   rewardsBody: {
     color: colors.onDarkLow,
@@ -476,13 +553,13 @@ export default StyleSheet.create({
     alignItems: 'center',
     gap: ms(10),
     marginTop: vs(12),
-    marginBottom: vs(12),
+    marginBottom: vs(5),
     backgroundColor: 'rgba(255,255,255,0.10)',
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.08)',
-    borderRadius: ms(12),
-    paddingVertical: ms(9),
-    paddingHorizontal: ms(10),
+    borderRadius: ms(8),
+    paddingVertical: ms(5),
+    paddingHorizontal: ms(8),
   },
 
   rewardsStarBadge: {
@@ -497,9 +574,9 @@ export default StyleSheet.create({
   },
 
   rewardsStarRing: {
-    width: ms(28),
-    height: ms(28),
-    borderRadius: ms(14),
+    width: ms(25),
+    height: ms(25),
+    borderRadius: ms(12.5),
     borderWidth: ms(2),
     borderColor: colors.sucess_border,
     alignItems: 'center',
@@ -513,7 +590,7 @@ export default StyleSheet.create({
 
   rewardsBalanceLabel: {
     color: colors.onDarkHigh,
-    fontSize: ms(12),
+    fontSize: ms(10),
     fontWeight: '500',
     marginBottom: vs(2),
     textAlign: 'left',
@@ -521,7 +598,7 @@ export default StyleSheet.create({
 
   rewardsPoints: {
     color: colors.white,
-    fontSize: ms(18),
+    fontSize: ms(12),
     fontWeight: '800',
     textAlign: 'left',
     alignSelf: 'flex-start',
@@ -532,60 +609,6 @@ export default StyleSheet.create({
     color: colors.sucess_border,
     fontSize: ms(12),
     fontWeight: '600',
-  },
-  rewardsTrackRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: ms(8),
-  },
-
-  rewardsTrack: {
-    flex: 1,
-    height: vs(9),
-    borderRadius: ms(8),
-    backgroundColor: 'rgba(255,255,255,0.18)',
-    overflow: 'hidden',
-  },
-
-  rewardsFill: {
-    height: '100%',
-    borderRadius: ms(8),
-    backgroundColor: colors.sucess_border,
-  },
-
-  rewardsPercentBadge: {
-    backgroundColor: 'rgba(255,255,255,0.12)',
-    borderRadius: ms(8),
-    paddingHorizontal: ms(8),
-    paddingVertical: vs(3),
-  },
-
-  rewardsPercentText: {
-    color: colors.white,
-    fontSize: ms(11),
-    fontWeight: '700',
-  },
-
-  rewardsFooterRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: vs(10),
-  },
-  rewardsFooterText: {
-    color: colors.onDarkMedium,
-    fontSize: ms(12),
-    flex: 1,
-    marginRight: ms(8),
-  },
-  rewardsFooterAccent: {
-    color: '#56FF84',
-    fontWeight: '700',
-  },
-  rewardsFooterValue: {
-    color: colors.onDarkMedium,
-    fontSize: ms(12),
-    flexShrink: 0,
   },
   /* ---------- Upcoming loads ---------- */
   // Fills the right column (stretched to the left column height). Rounded clip
