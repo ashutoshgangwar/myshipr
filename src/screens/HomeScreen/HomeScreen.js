@@ -67,13 +67,10 @@ const TRIP_STATS = [
   {value: 'I-45 S', label: 'Route'},
   {value: '12:10 PM', label: 'ETA'},
 ];
-
-/* Current trip route — driven by data so the number of pickups/drops is
-   dynamic (2 pickups → 2 rows, etc.). `kind` picks the marker and the auto
-   point number; the RouteStops component owns the layout/icons so the same
-   timeline can be reused elsewhere. Real point names will come from the API. */
+// `current` carries no label/sub — RouteStops fills it from the device's real
+// location. Pickup/drop come from API data (hardcoded here until wired up).
 const CURRENT_TRIP_STOPS = [
-  {kind: 'current', sub: 'You are here'},
+  {kind: 'current'},
   {kind: 'pickup', sub: '8.00–8.30 AM'},
   {kind: 'pickup', sub: '9.00–9.30 AM'},
   {kind: 'drop', sub: '2.30 PM'},
@@ -278,7 +275,7 @@ const HomeScreen = () => {
               </View>
 
               <View style={styles.routeBox}>
-                <RouteStops stops={CURRENT_TRIP_STOPS} showSummary />
+                <RouteStops stops={CURRENT_TRIP_STOPS} showSummary liveCurrentLocation />
               </View>
 
               <View style={styles.tripStatsDivider} />
