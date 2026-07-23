@@ -1,75 +1,248 @@
 import React, {useMemo, useState} from 'react';
-import {
-  View,
-  FlatList,
-  TouchableOpacity,
-  Modal,
-  Pressable,
-} from 'react-native';
+import {View, FlatList, TouchableOpacity, Modal, Pressable} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
-import styles from './EarningsScreen.styles';
+import styles, {
+  ROW_STOP_H,
+  ROW_MARKER_H,
+  ROW_DASH_INSET,
+} from './EarningsScreen.styles';
 import StatusBar from '../../component/StatusBar/StatusBar';
 import DashboardHeader from '../../component/DashboardHeader/DashboardHeader';
 import AppText from '../../theme/AppText';
 import {colors} from '../../theme/colors';
-import EarningsIcon from '../../assets/svg_icon/Earnings.svg';
+import {ms} from '../../theme/scale';
+import EarningsIcon from '../../assets/svg_icon/Earning_1.svg';
 import DropdownIcon from '../../assets/svg_icon/Dropdown_icon.svg';
+import CityRing from '../../assets/svg_icon/city_ring.svg';
+import StopPin from '../../assets/svg_icon/stop_pin_green.svg';
+import RouteDashedLine from '../../assets/svg_icon/RouteDashedLine.svg';
+import GrayTruck from '../../assets/svg_icon/gray_truck.svg';
+import {IS_TABLET} from '../../theme/device';
 
 const PERIODS = ['Weekly', 'Monthly', 'Yearly'];
 
-// Per-period header copy + chart shape. Bar heights are 0-1 fractions.
+// Per-period header copy + floating chart cards.
 const PERIOD_DATA = {
   Weekly: {
     range: '8 Jun – 14 Jun',
     gross: '$844',
     grossLabel: 'Gross earning this Week',
-    labels: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'],
-    bars: [0.45, 0.32, 0.55, 0.72, 0.4, 0.5, 0.3],
+    stats: [
+      {
+        key: 'miles',
+        label: 'Miles • Week',
+        value: '1,234',
+        note: '↑ 8% vs last week',
+        noteColor: colors.success,
+        accent: colors.warning,
+        chartColor: colors.success,
+        chart: [30, 42, 38, 55, 50, 62, 72],
+      },
+      {
+        key: 'earnings',
+        label: 'Earnings',
+        value: '$1,234',
+        note: '↓ $200 this week',
+        noteColor: colors.danger,
+        accent: colors.warning,
+        chartColor: colors.danger,
+        chart: [50, 40, 52, 44, 54, 42, 50, 60],
+      },
+    ],
   },
   Monthly: {
     range: 'June 2026',
-    gross: '$1244',
-    grossLabel: 'Gross earning this month',
-    labels: ['Week 1', 'Week 2', 'Week 3', 'Week4'],
-    bars: [0.6, 0.62, 0.6, 0.6],
+    gross: '$1,244',
+    grossLabel: 'Gross earning this Month',
+    stats: [
+      {
+        key: 'miles',
+        label: 'Miles • Month',
+        value: '5,120',
+        note: '↑ 12% vs last month',
+        noteColor: colors.success,
+        accent: colors.warning,
+        chartColor: colors.success,
+        chart: [40, 48, 52, 60],
+      },
+      {
+        key: 'earnings',
+        label: 'Earnings',
+        value: '$4,980',
+        note: '↑ $420 this month',
+        noteColor: colors.success,
+        accent: colors.warning,
+        chartColor: colors.success,
+        chart: [42, 46, 50, 58],
+      },
+    ],
   },
   Yearly: {
     range: '2026 – now',
-    gross: '$12344',
+    gross: '$12,344',
     grossLabel: 'Gross earning this Year',
-    labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'June', 'July', 'Aug', 'Sept', 'Oct', 'Nov', 'Dec'],
-    bars: [0.55, 0.5, 0.6, 0.5, 0.55, 0.6, 0.5, 0.55, 0.6, 0.55, 0.6, 0.55],
+    stats: [
+      {
+        key: 'miles',
+        label: 'Miles • Year',
+        value: '61,300',
+        note: '↑ 6% vs last year',
+        noteColor: colors.success,
+        accent: colors.warning,
+        chartColor: colors.success,
+        chart: [45, 50, 48, 55, 52, 60, 58, 62, 60, 65, 63, 70],
+      },
+      {
+        key: 'earnings',
+        label: 'Earnings',
+        value: '$58,900',
+        note: '↓ $1.2k this year',
+        noteColor: colors.danger,
+        accent: colors.warning,
+        chartColor: colors.danger,
+        chart: [55, 52, 58, 54, 60, 56, 50, 58, 54, 60, 56, 52],
+      },
+    ],
   },
 };
 
-const STATS = [
-  {label: 'Net Profit', value: '$1,234', note: 'after $324 cost', accent: colors.warning_text},
-  {label: 'Miles Driven', value: '1,234', note: '$0.97/mile average', accent: colors.card_drive},
-  {label: 'Loads Done', value: '9', note: '$234 avg /per load', accent: colors.card_drive_load},
-];
-
-const STATUS = {
+// Filled status pill colours.
+const STATUS_COLOR = {
   Paid: colors.success,
-  'In-Progress': colors.warning,
+  'In - Transit': colors.warning,
   Cancelled: colors.danger,
 };
 
 const TRANSACTIONS = [
-  {id: 't1', route: 'San Jose, CA → Newark, NJ', meta: 'Yesterday • 4h 10 m', amount: '$234', status: 'Paid'},
-  {id: 't2', route: 'San Jose, CA → Newark, NJ', meta: 'Yesterday • 4h 10 m', amount: '$234', status: 'In-Progress'},
-  {id: 't3', route: 'San Jose, CA → Newark, NJ', meta: 'Yesterday • 4h 10 m', amount: '$234', status: 'Cancelled'},
-  {id: 't4', route: 'San Jose, CA → Newark, NJ', meta: 'Yesterday • 4h 10 m', amount: '$234', status: 'In-Progress'},
-  {id: 't5', route: 'San Jose, CA → Newark, NJ', meta: 'Yesterday • 4h 10 m', amount: '$234', status: 'Paid'},
-  {id: 't6', route: 'San Jose, CA → Newark, NJ', meta: 'Yesterday • 4h 10 m', amount: '$234', status: 'Paid'},
-  {id: 't7', route: 'San Jose, CA → Newark, NJ', meta: 'Yesterday • 4h 10 m', amount: '$234', status: 'Paid'},
-  {id: 't8', route: 'San Jose, CA → Newark, NJ', meta: 'Yesterday • 4h 10 m', amount: '$234', status: 'Paid'},
-  {id: 't9', route: 'San Jose, CA → Newark, NJ', meta: 'Yesterday • 4h 10 m', amount: '$234', status: 'Paid'},
-  {id: 't10', route: 'San Jose, CA → Newark, NJ', meta: 'Yesterday • 4h 10 m', amount: '$234', status: 'Paid'},
-  {id: 't11', route: 'San Jose, CA → Newark, NJ', meta: 'Yesterday • 4h 10 m', amount: '$234', status: 'Paid'},
-  {id: 't12', route: 'San Jose, CA → Newark, NJ', meta: 'Yesterday • 4h 10 m', amount: '$234', status: 'Paid'},
-  {id: 't13', route: 'San Jose, CA → Newark, NJ', meta: 'Yesterday • 4h 10 m', amount: '$234', status: 'Paid'},
+  {
+    id: 't1',
+    type: 'FTL',
+    stops: ['San Jose CA', 'Newark NJ'],
+    miles: '184 MILES',
+    time: '4h 20 minutes',
+    amount: '$900',
+    subMiles: '180 miles',
+    status: 'Paid',
+  },
+  {
+    id: 't2',
+    type: 'FTL',
+    stops: ['San Jose CA', 'Newark NJ'],
+    miles: '184 MILES',
+    time: '4h 20 minutes',
+    amount: '$900',
+    subMiles: '180 miles',
+    status: 'In - Transit',
+  },
+  {
+    id: 't3',
+    type: 'FTL',
+    stops: ['San Jose CA', 'Newark NJ'],
+    miles: '184 MILES',
+    time: '4h 20 minutes',
+    amount: '$900',
+    subMiles: '180 miles',
+    status: 'In - Transit',
+  },
+  {
+    id: 't4',
+    type: 'FTL',
+    stops: ['San Jose CA', 'Newark NJ'],
+    miles: '184 MILES',
+    time: '4h 20 minutes',
+    amount: '$900',
+    subMiles: '180 miles',
+    status: 'In - Transit',
+  },
+  {
+    id: 't5',
+    type: 'FTL',
+    stops: ['San Jose CA', 'Newark NJ'],
+    miles: '184 MILES',
+    time: '4h 20 minutes',
+    amount: '$900',
+    subMiles: '180 miles',
+    status: 'In - Transit',
+  },
+  {
+    id: 't6',
+    type: 'FTL',
+    stops: ['San Jose CA', 'Newark NJ'],
+    miles: '184 MILES',
+    time: '4h 20 minutes',
+    amount: '$900',
+    subMiles: '180 miles',
+    status: 'In - Transit',
+  },
+  {
+    id: 't7',
+    type: 'FTL',
+    stops: ['San Jose CA', 'Newark NJ'],
+    miles: '184 MILES',
+    time: '4h 20 minutes',
+    amount: '$900',
+    subMiles: '180 miles',
+    status: 'In - Transit',
+  },
+  {
+    id: 't8',
+    type: 'FTL',
+    stops: ['San Jose CA', 'Newark NJ'],
+    miles: '184 MILES',
+    time: '4h 20 minutes',
+    amount: '$900',
+    subMiles: '180 miles',
+    status: 'Paid',
+  },
+  {
+    id: 't9',
+    type: 'FTL',
+    stops: ['San Jose CA', 'Newark NJ'],
+    miles: '184 MILES',
+    time: '4h 20 minutes',
+    amount: '$900',
+    subMiles: '180 miles',
+    status: 'Cancelled',
+  },
 ];
+
+// Vertical dashed route with a city ring for pickups and a green pin for the
+// final drop — mirrors the Home upcoming-loads route.
+const RouteStops = ({stops}) => {
+  const last = stops.length - 1;
+  return (
+    <View style={styles.routeWrap}>
+      {Array.from({length: last}).map((_, i) => (
+        <RouteDashedLine
+          key={i}
+          width={2}
+          height={ROW_STOP_H - 2 * ROW_DASH_INSET}
+          preserveAspectRatio="none"
+          style={[
+            styles.routeDashed,
+            {top: ROW_MARKER_H / 2 + i * ROW_STOP_H + ROW_DASH_INSET},
+          ]}
+        />
+      ))}
+
+      {stops.map((label, i) => (
+        <View key={`${label}-${i}`} style={styles.stopRow}>
+          <View style={styles.stopMarker}>
+            {i === last ? (
+              <StopPin width={ms(14)} height={ms(16)} />
+            ) : (
+              <CityRing width={ms(13)} height={ms(13)} />
+            )}
+          </View>
+          <AppText style={styles.stopLabel} numberOfLines={1}>
+            {label}
+          </AppText>
+        </View>
+      ))}
+    </View>
+  );
+};
 
 export default function EarningsScreen() {
   const [period, setPeriod] = useState('Weekly');
@@ -84,13 +257,23 @@ export default function EarningsScreen() {
         barStyle="light-content"
         translucent={false}
       />
-
       <View style={styles.page}>
         {/* HEADER */}
         <DashboardHeader
-          icon={<EarningsIcon width={18} height={18} color={colors.primary} />}
+          icon={
+            <EarningsIcon
+              width={IS_TABLET ? 28 : 16}
+              height={IS_TABLET? 28: 16}
+              color={colors.primary}
+            />
+          }
           title="EARNINGS"
+          titleStyle={styles.brandTitle}
           subtitle={data.range}
+          subtitleStyle={styles.brandSubTight}
+          headerStyle={styles.dashboardHeader}
+          statsOffset={IS_TABLET ? -ms(115) : -ms(100)}
+          statsVariant="chart"
           right={
             <TouchableOpacity
               style={styles.periodBtn}
@@ -100,32 +283,9 @@ export default function EarningsScreen() {
               <DropdownIcon width={16} height={16} />
             </TouchableOpacity>
           }
-          stats={STATS}>
+          stats={data.stats}>
           <AppText style={styles.grossValue}>{data.gross}</AppText>
           <AppText style={styles.grossLabel}>{data.grossLabel}</AppText>
-
-          {/* BAR CHART */}
-          <View style={styles.chartWrap}>
-            <View style={styles.chartRow}>
-              {data.bars.map((h, i) => (
-                <View
-                  key={`${period}-bar-${i}`}
-                  style={[styles.bar, {height: `${Math.round(h * 100)}%`}]}
-                />
-              ))}
-            </View>
-            <View style={styles.chartLabelsRow}>
-              {data.labels.map((label, i) => (
-                <AppText
-                  key={`${period}-label-${i}`}
-                  numberOfLines={1}
-                  adjustsFontSizeToFit
-                  style={styles.chartLabel}>
-                  {label}
-                </AppText>
-              ))}
-            </View>
-          </View>
         </DashboardHeader>
 
         {/* TRANSACTIONS */}
@@ -133,18 +293,47 @@ export default function EarningsScreen() {
           data={TRANSACTIONS}
           keyExtractor={tx => tx.id}
           style={styles.listCard}
+          contentContainerStyle={styles.scrollContent}
           nestedScrollEnabled
           showsVerticalScrollIndicator={false}
           renderItem={({item: tx, index}) => (
             <View
-              style={[styles.row, index === TRANSACTIONS.length - 1 && styles.rowLast]}>
+              style={[
+                styles.row,
+                index === TRANSACTIONS.length - 1 && styles.rowLast,
+              ]}>
               <View style={styles.rowLeft}>
-                <AppText style={styles.rowRoute}>{tx.route}</AppText>
-                <AppText style={styles.rowMeta}>{tx.meta}</AppText>
+                <RouteStops stops={tx.stops} />
+                <View style={styles.typeBadge}>
+                  <GrayTruck
+                    width={ms(14)}
+                    height={ms(14)}
+                    style={styles.typeIcon}
+                  />
+                  <AppText style={styles.typeText}>{tx.type}</AppText>
+                </View>
               </View>
+
+              <View style={styles.rowCenter}>
+                <AppText style={styles.centerMiles} numberOfLines={1}>
+                  {tx.miles}
+                </AppText>
+                <AppText style={styles.centerTime} numberOfLines={1}>
+                  {tx.time}
+                </AppText>
+              </View>
+
               <View style={styles.rowRight}>
                 <AppText style={styles.rowAmount}>{tx.amount}</AppText>
-                <View style={[styles.pill, {backgroundColor: STATUS[tx.status]}]}>
+                <AppText style={styles.rowSubMiles}>{tx.subMiles}</AppText>
+                <View
+                  style={[
+                    styles.pill,
+                    {
+                      backgroundColor:
+                        STATUS_COLOR[tx.status] ?? colors.textMuted,
+                    },
+                  ]}>
                   <AppText style={styles.pillText}>{tx.status}</AppText>
                 </View>
               </View>
@@ -159,7 +348,9 @@ export default function EarningsScreen() {
         transparent
         animationType="fade"
         onRequestClose={() => setMenuOpen(false)}>
-        <Pressable style={styles.menuOverlay} onPress={() => setMenuOpen(false)}>
+        <Pressable
+          style={styles.menuOverlay}
+          onPress={() => setMenuOpen(false)}>
           <View style={styles.menu}>
             {PERIODS.map(p => (
               <TouchableOpacity
@@ -170,7 +361,10 @@ export default function EarningsScreen() {
                   setMenuOpen(false);
                 }}>
                 <AppText
-                  style={[styles.menuItemText, p === period && styles.menuItemTextActive]}>
+                  style={[
+                    styles.menuItemText,
+                    p === period && styles.menuItemTextActive,
+                  ]}>
                   {p}
                 </AppText>
               </TouchableOpacity>

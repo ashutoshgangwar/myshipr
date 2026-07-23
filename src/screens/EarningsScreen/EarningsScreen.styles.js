@@ -7,6 +7,11 @@ const PHONE_FACTOR = select({phone: 0.82, tablet: 1});
 const ms = n => baseMs(n) * PHONE_FACTOR;
 const vs = n => baseVs(n) * PHONE_FACTOR;
 
+// Route stop geometry (shared with the RouteRow component in the screen).
+export const ROW_STOP_H = ms(22);
+export const ROW_MARKER_H = ms(16);
+export const ROW_DASH_INSET = ms(6);
+
 export default StyleSheet.create({
   safe: {
     flex: 1,
@@ -20,49 +25,19 @@ export default StyleSheet.create({
   scrollContent: {
     paddingBottom: vs(28),
   },
-
-  /* ---------- Header ---------- */
-  header: {
-    backgroundColor: colors.primary,
-    paddingHorizontal: ms(20),
-    paddingTop: vs(16),
-    paddingBottom: vs(52),
-    borderBottomLeftRadius: ms(28),
-    borderBottomRightRadius: ms(28),
+ dashboardHeader: {
+    paddingTop: vs(12),
+    paddingBottom: IS_TABLET ? vs(80) : vs(100),
+    borderBottomLeftRadius: ms(80),
+    borderBottomRightRadius: ms(80),
+  },
+  brandTitle: {
+    fontSize: IS_TABLET ? ms(14) : ms(15),
   },
 
-  headerTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-
-  brandRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: ms(10),
-  },
-
-  brandBadge: {
-    width: IS_TABLET ? ms(30) : ms(38),
-    height: IS_TABLET ? ms(30) : ms(38),
-    borderRadius: IS_TABLET ? ms(8) : Platform.OS === 'ios' ? ms(10) : ms(12),
-    backgroundColor: colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
- brandText: {
-    color: colors.white,
-    fontSize: ms(18),
-    fontWeight: '600',
-    letterSpacing: 1,
-  },
-
-  brandSub: {
-    color: colors.onDarkMedium,
-    fontSize: ms(11),
-    fontWeight: '500',
-    marginTop: vs(2),
+  // Pulls the date line up closer to the EARNINGS title.
+  brandSubTight: {
+    marginTop: -vs(2),
   },
 
   /* ---------- Period dropdown ---------- */
@@ -128,111 +103,33 @@ export default StyleSheet.create({
   /* ---------- Gross earning ---------- */
   grossValue: {
     color: colors.white,
-    fontSize: IS_TABLET ? ms(34) : ms(38),
+    fontSize: IS_TABLET ? ms(25) : ms(30),
     fontWeight: '800',
-    marginTop: vs(10),
+    marginTop: vs(5),
   },
 
   grossLabel: {
     color: colors.onDarkMedium,
-    fontSize: ms(14),
+    fontSize:IS_TABLET? ms(10): ms(12),
     fontWeight: '500',
-    marginTop: vs(2),
-  },
-
-  /* ---------- Bar chart ---------- */
-  chartWrap: {
-    marginTop: -vs(15),
-  },
-
-  chartRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-end',
-    justifyContent: 'space-between',
-    height: vs(100),
-    gap: ms(6),
-  },
-
-  bar: {
-    flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.85)',
-    borderTopLeftRadius: ms(6),
-    borderTopRightRadius: ms(6),
-  },
-
-  chartLabelsRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginTop: vs(8),
-    gap: ms(6),
-  },
-
-  chartLabel: {
-    flex: 1,
-    textAlign: 'center',
-    color: colors.onDarkLow,
-    fontSize: ms(10),
-    fontWeight: '500',
-  },
-
-  /* ---------- Stat cards ---------- */
-  statsRow: {
-    flexDirection: 'row',
-    paddingHorizontal: ms(12),
-    marginTop: -vs(34),
-    zIndex: 2,
-    gap: ms(10),
-  },
-
-  statCard: {
-    flex: 1,
-    backgroundColor: colors.white,
-    borderRadius: ms(14),
-    paddingVertical: ms(12),
-    paddingHorizontal: ms(12),
-    borderLeftWidth: 2,
-    borderLeftColor: colors.cardBorder,
-    shadowColor: '#000',
-    shadowOpacity: 0.05,
-    shadowRadius: 6,
-    shadowOffset: {width: 0, height: 2},
-    elevation: 2,
-  },
-
-  statLabel: {
-    color: colors.splashSubtitle,
-    fontSize: ms(12),
-    fontWeight: '600',
-  },
-
-  statValue: {
-    color: colors.textStrong,
-    fontSize: ms(22),
-    fontWeight: '800',
-    marginTop: vs(4),
-  },
-
-  statNote: {
-    color: colors.textMuted,
-    fontSize: ms(10),
-    fontWeight: '500',
-    marginTop: vs(4),
+    marginTop: vs(1),
+    marginBottom: IS_TABLET ? vs(30) : Platform.OS === 'ios' ? vs(20) : vs(35),
   },
 
   /* ---------- Transactions list ---------- */
   listCard: {
     flex: 1,
     backgroundColor: colors.white,
-    borderRadius: ms(10),
+    borderRadius: ms(14),
     marginHorizontal: ms(12),
-    marginTop: vs(14),
+    marginTop: vs(18),
     marginBottom: vs(14),
     paddingHorizontal: ms(14),
-    // shadowColor: '#000',
-    // shadowOpacity: 0.04,
-    // shadowRadius: 6,
-    // shadowOffset: {width: 0, height: 2},
-    // elevation: 1,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    shadowOffset: {width: 0, height: 2},
+    elevation: 2,
   },
 
   row: {
@@ -247,38 +144,112 @@ export default StyleSheet.create({
     borderBottomWidth: 0,
   },
 
+  /* ----- Left: route + type badge ----- */
   rowLeft: {
-    flex: 1,
+    flex: 1.15,
     paddingRight: ms(8),
   },
 
-  rowRoute: {
+  routeWrap: {
+    position: 'relative',
+  },
+
+  routeDashed: {
+    position: 'absolute',
+    left: ms(8),
+  },
+
+  stopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    height: ROW_STOP_H,
+  },
+
+  stopMarker: {
+    width: ms(18),
+    height: ROW_MARKER_H,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: ms(6),
+  },
+
+  stopLabel: {
+    flex: 1,
     color: colors.textStrong,
-    fontSize: ms(14),
+    fontSize: IS_TABLET ? ms(12) : ms(13),
+    lineHeight: ms(16),
     fontWeight: '600',
   },
 
-  rowMeta: {
-    color: colors.textMuted,
-    fontSize: ms(12),
-    fontWeight: '500',
-    marginTop: vs(3),
+  typeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    marginTop: vs(6),
+    borderRadius: ms(6),
+    backgroundColor: colors.screenBg,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    paddingHorizontal: ms(8),
+    paddingVertical: vs(3),
   },
 
+  typeIcon: {
+    marginRight: ms(5),
+  },
+
+  typeText: {
+    color: colors.textMuted,
+    fontSize: ms(10),
+    fontWeight: '600',
+  },
+
+  /* ----- Center: distance + duration ----- */
+  rowCenter: {
+    flex: 1,
+    alignItems: 'center',
+    paddingHorizontal: ms(4),
+  },
+
+  centerMiles: {
+    color: colors.textStrong,
+    fontSize: ms(12),
+    fontWeight: '700',
+    letterSpacing: 0.3,
+    textAlign: 'center',
+  },
+
+  centerTime: {
+    color: colors.textMuted,
+    fontSize: ms(11),
+    fontWeight: '500',
+    marginTop: vs(3),
+    textAlign: 'center',
+  },
+
+  /* ----- Right: amount + miles + status ----- */
   rowRight: {
     alignItems: 'flex-end',
+    minWidth: ms(78),
   },
 
   rowAmount: {
     color: colors.textStrong,
-    fontSize: ms(15),
-    fontWeight: '700',
+    fontSize: ms(16),
+    fontWeight: '800',
+  },
+
+  rowSubMiles: {
+    color: colors.textMuted,
+    fontSize: ms(11),
+    fontWeight: '500',
+    marginTop: vs(2),
   },
 
   pill: {
     borderRadius: ms(6),
-    paddingHorizontal: ms(8),
-    paddingVertical: vs(2),
+    paddingHorizontal: ms(10),
+    paddingVertical: vs(3),
     marginTop: vs(6),
   },
 

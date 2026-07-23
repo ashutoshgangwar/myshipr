@@ -15,6 +15,8 @@ const DashboardHeader = ({
   stats,
   style,
   headerStyle,
+  titleStyle,
+  subtitleStyle,
   height,
   width,
   padding,
@@ -55,9 +57,11 @@ const DashboardHeader = ({
           <View style={styles.brandRow}>
             <View style={styles.brandTitleRow}>
               {icon ? <View style={styles.brandBadge}>{icon}</View> : null}
-              <AppText style={styles.brandText}>{title}</AppText>
+              <AppText style={[styles.brandText, titleStyle]}>{title}</AppText>
             </View>
-            {subtitle ? <AppText style={styles.brandSub}>{subtitle}</AppText> : null}
+            {subtitle ? (
+              <AppText style={[styles.brandSub, subtitleStyle]}>{subtitle}</AppText>
+            ) : null}
           </View>
 
           {right ?? null}
