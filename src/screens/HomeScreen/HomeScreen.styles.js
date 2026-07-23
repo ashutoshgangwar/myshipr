@@ -133,9 +133,10 @@ export default StyleSheet.create({
   /* ---------- Profile dropdown menu ---------- */
   menuCard: {
     position: 'absolute',
-    minWidth: ms(220),
+    minWidth: ms(150),
     backgroundColor: colors.white,
-    borderRadius: ms(14),
+    borderRadius: ms(6),
+    marginTop: ms(10),
     paddingVertical: vs(6),
     paddingHorizontal: ms(6),
     shadowColor: '#000',
@@ -150,27 +151,27 @@ export default StyleSheet.create({
     alignItems: 'center',
     gap: ms(10),
     paddingHorizontal: ms(8),
-    paddingVertical: vs(8),
+    paddingVertical: vs(1),
   },
 
   menuAvatar: {
-    width: ms(34),
-    height: ms(34),
-    borderRadius: ms(17),
-    backgroundColor: colors.primary,
+    width: ms(24),
+    height: ms(24),
+    borderRadius: ms(12),
+    backgroundColor: '#F0F0F0',
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   menuAvatarText: {
-    color: colors.white,
-    fontSize: ms(13),
+    color: colors.navy,
+    fontSize: ms(10),
     fontWeight: '700',
   },
 
   menuName: {
     color: colors.textStrong,
-    fontSize: ms(14),
+    fontSize: ms(10),
     fontWeight: '600',
   },
 
@@ -185,13 +186,20 @@ export default StyleSheet.create({
     alignItems: 'center',
     gap: ms(10),
     paddingHorizontal: ms(8),
-    paddingVertical: vs(11),
+    paddingVertical: vs(6),
     borderRadius: ms(10),
+  },
+
+  // Matches menuAvatar width so item labels align with the name above.
+  menuItemIcon: {
+    width: ms(24),
+    alignItems: 'center',
+    justifyContent: 'center',
   },
 
   menuItemText: {
     color: colors.textStrong,
-    fontSize: ms(14),
+    fontSize: ms(10),
     fontWeight: '500',
   },
 

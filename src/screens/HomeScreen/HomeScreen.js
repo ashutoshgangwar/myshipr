@@ -34,7 +34,9 @@ import {clearSession} from '../../services/api/AuthService';
 import { ms } from '../../theme/scale';
 import Gray_truck from '../../assets/svg_icon/gray_truck.svg';
 import Ltl_Arrow from '../../assets/svg_icon/Ltl_Arrow.svg';
-import Multileg_icon from '../../assets/svg_icon/multileg_icon.svg'
+import Multileg_icon from '../../assets/svg_icon/multileg_icon.svg';
+import Setting_Icon from '../../assets/svg_icon/Setting_Icon.svg';
+import Logout_Icon from '../../assets/svg_icon/Logout_Icon.svg'
 
 
 const {width: SCREEN_W} = Dimensions.get('window');
@@ -271,8 +273,8 @@ const HomeScreen = () => {
                   <AppText style={styles.avatarInitials}>AG</AppText>
                 </View>
                 <Dropdown_icon
-                  width={IS_TABLET ? 16 : 14}
-                  height={IS_TABLET ? 16 : 14}
+                  width={IS_TABLET ? 20 : 15}
+                  height={IS_TABLET ? 20 : 15}
                   style={menuOpen && styles.avatarCaretOpen}
                 />
               </TouchableOpacity>
@@ -541,9 +543,9 @@ const HomeScreen = () => {
             style={[styles.menuCard, {top: menuPos.top, right: menuPos.right}]}>
             <View style={styles.menuHeaderRow}>
               <View style={styles.menuAvatar}>
-                <AppText style={styles.menuAvatarText}>DW</AppText>
+                <AppText style={styles.menuAvatarText}>AG</AppText>
               </View>
-              <AppText style={styles.menuName}>Deeveja Wadhwa</AppText>
+              <AppText style={styles.menuName}>Ashutosh Gangwar</AppText>
             </View>
 
             <View style={styles.menuDivider} />
@@ -552,7 +554,9 @@ const HomeScreen = () => {
               style={styles.menuItem}
               activeOpacity={0.7}
               onPress={goAccountSettings}>
-              <Profile_icon width={18} height={18} />
+              <View style={styles.menuItemIcon}>
+                <Setting_Icon width={18} height={18} />
+              </View>
               <AppText style={styles.menuItemText}>Account Settings</AppText>
             </TouchableOpacity>
 
@@ -560,7 +564,9 @@ const HomeScreen = () => {
               style={styles.menuItem}
               activeOpacity={0.7}
               onPress={handleLogout}>
-              <Right_Arrow width={18} height={18} />
+              <View style={styles.menuItemIcon}>
+                <Logout_Icon width={18} height={18} />
+              </View>
               <AppText style={[styles.menuItemText, styles.menuItemLogout]}>
                 Logout
               </AppText>
