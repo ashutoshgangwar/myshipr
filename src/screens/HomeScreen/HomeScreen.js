@@ -17,7 +17,7 @@ import DashboardHeader from '../../component/DashboardHeader/DashboardHeader';
 import FloatingMap from '../../component/FloatingMap/FloatingMap';
 import Button from '../../component/Button/Button';
 import {colors} from '../../theme/colors';
-import {IS_TABLET} from '../../theme/device';
+import {IS_TABLET, select} from '../../theme/device';
 import AppText from '../../theme/AppText';
 import TruckIcon from '../../assets/svg_icon/Frame_black.svg';
 import Right_Arrow from '../../assets/svg_icon/right_Arrow.svg';
@@ -25,10 +25,17 @@ import Strech_arrow_bottom from '../../assets/svg_icon/Strech_arrow_bottom.svg';
 import StarIcon from '../../assets/svg_icon/Star_Vector.svg';
 import Dropdown_icon from '../../assets/svg_icon/Dropdown_icon.svg';
 import Profile_icon from '../../assets/svg_icon/profile_icon.svg';
+import CityRing from '../../assets/svg_icon/city_ring.svg';
+import StopPin from '../../assets/svg_icon/stop_pin_green.svg';
+import RouteDashedLine from '../../assets/svg_icon/RouteDashedLine.svg';
 import RouteStops from '../../component/RouteStops/RouteStops';
 import DieselBadge from '../../component/DieselBadge/DieselBadge';
 import {clearSession} from '../../services/api/AuthService';
 import { ms } from '../../theme/scale';
+import Gray_truck from '../../assets/svg_icon/gray_truck.svg';
+import Ltl_Arrow from '../../assets/svg_icon/Ltl_Arrow.svg';
+import Multileg_icon from '../../assets/svg_icon/multileg_icon.svg'
+
 
 const {width: SCREEN_W} = Dimensions.get('window');
 
@@ -83,71 +90,113 @@ const HOS_DETAILS = [
   // {label: 'Driving Status', value: 'On DUTY', strong: true},
 ];
 
+// The last stop in `stops` renders as a green drop pin; the rest render as
+// blue circle rings connected by a dashed line. `urgent` tints the time badge
+// orange (same-day) instead of the default blue.
 const UPCOMING_LOADS = [
   {
     id: 'u1',
-    route: 'San Jose, CA → Newark, NJ',
-    pickup: 'Tomorrow • 6:00 AM pickup',
-    pay: '$980',
-    miles: '180 mil',
+    type: 'FTL',
+    time: '6.00 Pm',
+    date: 'Today',
+    urgent: true,
+    pay: '$900',
+    miles: '180 miles',
+    stops: ['San Jose CA', 'Newark NJ'],
   },
   {
     id: 'u2',
-    route: 'San Jose, CA → Newark, NJ',
-    pickup: 'Wed • 2:00 PM pickup',
-    pay: '$980',
-    miles: '180 mil',
+    type: 'LTL',
+    time: '6.00 Pm',
+    date: '17 July',
+    urgent: false,
+    pay: '$900',
+    miles: '180 miles',
+    stops: ['San Jose CA', 'Newark NJ', 'Newark NJ'],
   },
   {
     id: 'u3',
-    route: 'San Jose, CA → Newark, NJ',
-    pickup: 'Wed • 2:00 PM pickup',
-    pay: '$980',
-    miles: '180 mil',
-  },
-  {
-    id: 'u4',
-    route: 'San Jose, CA → Newark, NJ',
-    pickup: 'Wed • 2:00 PM pickup',
-    pay: '$980',
-    miles: '180 mil',
-  },
-  {
-    id: 'u5',
-    route: 'San Jose, CA → Newark, NJ',
-    pickup: 'Wed • 2:00 PM pickup',
-    pay: '$980',
-    miles: '180 mil',
-  },
-  {
-    id: 'u6',
-    route: 'San Jose, CA → Newark, NJ',
-    pickup: 'Wed • 2:00 PM pickup',
-    pay: '$980',
-    miles: '180 mil',
-  },
-  {
-    id: 'u7',
-    route: 'San Jose, CA → Newark, NJ',
-    pickup: 'Wed • 2:00 PM pickup',
-    pay: '$980',
-    miles: '180 mil',
-  },
-  {
-    id: 'u8',
-    route: 'San Jose, CA → Newark, NJ',
-    pickup: 'Wed • 2:00 PM pickup',
-    pay: '$980',
-    miles: '180 mil',
-  },
-  {
-    id: 'u9',
-    route: 'San Jose, CA → Newark, NJ',
-    pickup: 'Wed • 2:00 PM pickup',
-    pay: '$9180',
-    miles: '180 mil',
+    type: 'Multileg',
+    time: '6.00 Pm',
+    date: '17 July',
+    urgent: false,
+    pay: '$900',
+    miles: '180 miles',
+    stops: ['San Jose CA', 'San Jose CA', 'Newark NJ', 'Newark NJ'],
   },
 ];
+
+// Load-type glyphs keyed to the `type` in UPCOMING_LOADS — LoadTypeBadge renders
+// the mapped SVG automatically.
+const LOAD_TYPE_ICON = {
+  FTL: Gray_truck,
+  LTL: Ltl_Arrow,
+  Multileg: Multileg_icon,
+};
+
+// LoadRoute lays out the dashed connectors with absolute `top` offsets, so its
+// constants must match the *actual* rendered row/marker sizes in the styles —
+// which are shrunk on phones by PHONE_FACTOR. Without this factor the dashes
+// stay aligned on tablet (factor 1) but drift on phone (factor 0.78).
+const LOAD_PHONE_FACTOR = select({phone: 0.78, tablet: 1});
+const lms = n => ms(n) * LOAD_PHONE_FACTOR;
+
+const LOAD_STOP_H = lms(26);
+const LOAD_MARKER_H = lms(16);
+// Must exceed the ring's radius (lms(13)/2 ≈ 6.5) so the dash sits in the gap
+// between markers instead of overlapping the circles/pin.
+const LOAD_DASH_INSET = lms(8);
+
+const LoadRoute = ({stops}) => {
+  const last = stops.length - 1;
+  return (
+    <View style={styles.loadRouteWrap}>
+      {Array.from({length: last}).map((_, i) => (
+        <RouteDashedLine
+          key={i}
+          width={2}
+          height={LOAD_STOP_H - 2 * LOAD_DASH_INSET}
+          preserveAspectRatio="none"
+          style={[
+            styles.loadDashed,
+            {top: LOAD_MARKER_H / 2 + i * LOAD_STOP_H + LOAD_DASH_INSET},
+          ]}
+        />
+      ))}
+
+      {stops.map((label, i) => (
+        <View key={`${label}-${i}`} style={styles.loadStopRow}>
+          <View style={styles.loadStopMarker}>
+            {i === last ? (
+              <StopPin width={ms(14)} height={ms(16)} />
+            ) : (
+              <CityRing width={ms(13)} height={ms(13)} />
+            )}
+          </View>
+          <AppText style={styles.loadStopLabel} numberOfLines={1}>
+            {label}
+          </AppText>
+        </View>
+      ))}
+    </View>
+  );
+};
+
+// Load-type chip (FTL / LTL / Multileg). Renders the mapped SVG once supplied,
+// otherwise a small placeholder box so the layout is ready in advance.
+const LoadTypeBadge = ({type}) => {
+  const Icon = LOAD_TYPE_ICON[type];
+  return (
+    <View style={styles.loadTypeBadge}>
+      {Icon ? (
+        <Icon width={ms(14)} height={ms(14)} style={styles.loadTypeIcon} />
+      ) : (
+        <View style={styles.loadTypeIconPlaceholder} />
+      )}
+      <AppText style={styles.loadTypeText}>{type}</AppText>
+    </View>
+  );
+};
 
 const HomeScreen = () => {
   const navigation = useNavigation();
@@ -409,9 +458,6 @@ const HomeScreen = () => {
             {/* Upcoming loads */}
             <View style={[styles.card, styles.loadsCard]}>
               <AppText style={styles.cardTitle}>Upcoming loads</AppText>
-
-              {/* flex:1 box sized by the column stretch; the absolute-fill
-                  ScrollView fills it without inflating the column height. */}
               <View style={styles.loadsScrollWrap}>
                 <ScrollView
                   style={StyleSheet.absoluteFill}
@@ -425,12 +471,38 @@ const HomeScreen = () => {
                         styles.loadRow,
                         index === 0 && styles.loadRowFirst,
                       ]}>
-                      <View style={{flex: 1, paddingRight: 8}}>
-                        <AppText style={styles.loadRoute}>{load.route}</AppText>
-                        <AppText style={styles.loadPickup}>
-                          {load.pickup}
+                      <View style={styles.loadRouteCol}>
+                        <LoadRoute stops={load.stops} />
+                        <LoadTypeBadge type={load.type} />
+                      </View>
+
+                      <View
+                        style={[
+                          styles.loadTimeBadge,
+                          load.urgent
+                            ? styles.loadTimeBadgeUrgent
+                            : styles.loadTimeBadgeDefault,
+                        ]}>
+                        <AppText
+                          style={[
+                            styles.loadTimeText,
+                            load.urgent
+                              ? styles.loadTimeTextUrgent
+                              : styles.loadTimeTextDefault,
+                          ]}>
+                          {load.time}
+                        </AppText>
+                        <AppText
+                          style={[
+                            styles.loadTimeText,
+                            load.urgent
+                              ? styles.loadTimeTextUrgent
+                              : styles.loadTimeTextDefault,
+                          ]}>
+                          {load.date}
                         </AppText>
                       </View>
+
                       <View style={styles.loadRight}>
                         <AppText style={styles.loadPay}>{load.pay}</AppText>
                         <AppText style={styles.loadMiles}>{load.miles}</AppText>

@@ -14,7 +14,7 @@ import BackArrow from '../../assets/svg_icon/Back_arrow_map.svg';
 import Blue_truck_icon from '../../assets/svg_icon/Truck_Frame.svg';
 import CalendarIcon from '../../assets/svg_icon/Schedule.svg';
 import Time_Icon from '../../assets/svg_icon/Time_Icon.svg';
-import Gray_Truck from '../../assets/svg_icon/Gray_Truck.svg';
+import Gray_Truck from '../../assets/svg_icon/gray_truck.svg';
 
 // One responsive size for the chip icons so they scale together on phone and
 // tablet instead of being hardcoded.

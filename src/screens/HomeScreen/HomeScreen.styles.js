@@ -631,7 +631,7 @@ export default StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'flex-start',
-    paddingVertical: vs(12),
+    paddingVertical: vs(8),
     borderTopWidth: 1,
     borderTopColor: colors.cardBorder,
   },
@@ -640,17 +640,100 @@ export default StyleSheet.create({
     borderTopWidth: 0,
   },
 
-  loadRoute: {
+  loadRouteCol: {
+    flex: 1,
+    paddingRight: ms(8),
+  },
+  loadRouteWrap: {
+    position: 'relative',
+  },
+
+  loadDashed: {
+    position: 'absolute',
+    left: ms(8),
+  },
+
+  loadStopRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    height: ms(26),
+  },
+
+  loadStopMarker: {
+    width: ms(18),
+    height: ms(16),
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: ms(6),
+  },
+
+  loadStopLabel: {
+    flex: 1,
     color: colors.textStrong,
-    fontSize: ms(10),
+    fontSize: IS_TABLET ? ms(10) : ms(9),
+    lineHeight: ms(15),
     fontWeight: '600',
   },
 
-  loadPickup: {
+  // Type chip (FTL / LTL / Multileg).
+  loadTypeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    marginTop: vs(6),
+    borderRadius: ms(6),
+    backgroundColor: colors.screenBg,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    paddingHorizontal: ms(8),
+    paddingVertical: vs(3),
+  },
+
+  loadTypeIcon: {
+    marginRight: ms(5),
+  },
+
+  loadTypeIconPlaceholder: {
+    width: ms(14),
+    height: ms(14),
+    marginRight: ms(5),
+  },
+
+  loadTypeText: {
     color: colors.textMuted,
-    fontSize: ms(10),
-    marginTop: vs(3),
-    fontWeight: '400',
+    fontSize: ms(8),
+    fontWeight: '600',
+  },
+
+  // Centre time badge (orange when same-day, blue otherwise).
+  loadTimeBadge: {
+    alignItems: 'center',
+    borderRadius: ms(6),
+    paddingHorizontal: ms(5),
+    paddingVertical: vs(1),
+    marginHorizontal: ms(15),
+  },
+
+  loadTimeBadgeUrgent: {
+    backgroundColor: '#F9DEC9',
+  },
+
+  loadTimeBadgeDefault: {
+    backgroundColor: '#D8E4FB',
+  },
+
+  loadTimeText: {
+    fontSize: ms(8),
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+
+  loadTimeTextUrgent: {
+    color: '#D9773B',
+  },
+
+  loadTimeTextDefault: {
+    color: '#3B6FE0',
   },
 
   loadRight: {
@@ -660,12 +743,12 @@ export default StyleSheet.create({
   loadPay: {
     color: colors.textStrong,
     fontSize: ms(10),
-    fontWeight: '400',
+    fontWeight: '700',
   },
 
   loadMiles: {
     color: colors.textMuted,
-    fontSize: ms(10),
+    fontSize: ms(8),
     marginTop: vs(3),
     fontWeight: '400',
   },
