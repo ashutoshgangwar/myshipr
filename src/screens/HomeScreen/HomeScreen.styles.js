@@ -658,36 +658,6 @@ export default StyleSheet.create({
     flex: 1,
     paddingRight: ms(8),
   },
-  loadRouteWrap: {
-    position: 'relative',
-  },
-
-  loadDashed: {
-    position: 'absolute',
-    left: ms(8),
-  },
-
-  loadStopRow: {
-    flexDirection: 'row',
-    alignItems: 'flex-start',
-    height: ms(26),
-  },
-
-  loadStopMarker: {
-    width: ms(18),
-    height: ms(16),
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: ms(6),
-  },
-
-  loadStopLabel: {
-    flex: 1,
-    color: colors.textStrong,
-    fontSize: IS_TABLET ? ms(10) : ms(9),
-    lineHeight: ms(15),
-    fontWeight: '600',
-  },
 
   // Type chip (FTL / LTL / Multileg).
   loadTypeBadge: {

@@ -22,7 +22,7 @@ export default function GridCard({item}) {
       <View style={styles.cardTopRow}>
         <View style={styles.cardRouteWrap}>
           {/* every stop on the load, same treatment as the table's Load column */}
-          <StopList stops={item.stops} textStyle={styles.cardStopCity} />
+          <StopList stops={item.stops} />
         </View>
         <AppText style={styles.cardAmount}>{item.amount}</AppText>
       </View>

@@ -2,6 +2,10 @@ import {StyleSheet} from 'react-native';
 import {ms as baseMs, vs as baseVs} from '../../theme/scale';
 import {colors} from '../../theme/colors';
 import {select, IS_TABLET} from '../../theme/device';
+import {
+  STOP_LINE_H as ROUTE_LINE_H,
+  STOP_SUMMARY_H as ROUTE_SUMMARY_H,
+} from '../../component/LoadRoute/LoadRoute';
 
 const PHONE_FACTOR = select({phone: 0.82, tablet: 1});
 const ms = n => baseMs(n) * PHONE_FACTOR;
@@ -24,8 +28,10 @@ export const HEADER_H = vs(30);
 
 /* Rows are explicitly sized so the frozen column and the scrolling column —
    which live in separate scroll containers — stay on the same baseline. */
-export const STOP_LINE_H = vs(19);
-const STOP_SUMMARY_H = vs(14);
+// Sized from the shared LoadRoute so the frozen "Load" column, the scrolling
+// data rows and the grid cards all line up with the same route geometry.
+export const STOP_LINE_H = ROUTE_LINE_H;
+const STOP_SUMMARY_H = ROUTE_SUMMARY_H;
 const ROW_PAD_V = vs(8);
 
 /* Card grid is two-up everywhere; phones get tighter chip padding and type so

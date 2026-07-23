@@ -2,21 +2,15 @@ import React, {useMemo, useState} from 'react';
 import {View, FlatList, TouchableOpacity, Modal, Pressable} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
-import styles, {
-  ROW_STOP_H,
-  ROW_MARKER_H,
-  ROW_DASH_INSET,
-} from './EarningsScreen.styles';
+import styles from './EarningsScreen.styles';
 import StatusBar from '../../component/StatusBar/StatusBar';
 import DashboardHeader from '../../component/DashboardHeader/DashboardHeader';
+import LoadRoute from '../../component/LoadRoute/LoadRoute';
 import AppText from '../../theme/AppText';
 import {colors} from '../../theme/colors';
 import {ms} from '../../theme/scale';
 import EarningsIcon from '../../assets/svg_icon/Earning_1.svg';
 import DropdownIcon from '../../assets/svg_icon/Dropdown_icon.svg';
-import CityRing from '../../assets/svg_icon/city_ring.svg';
-import StopPin from '../../assets/svg_icon/stop_pin_green.svg';
-import RouteDashedLine from '../../assets/svg_icon/RouteDashedLine.svg';
 import GrayTruck from '../../assets/svg_icon/gray_truck.svg';
 import {IS_TABLET} from '../../theme/device';
 
@@ -207,43 +201,6 @@ const TRANSACTIONS = [
   },
 ];
 
-// Vertical dashed route with a city ring for pickups and a green pin for the
-// final drop — mirrors the Home upcoming-loads route.
-const RouteStops = ({stops}) => {
-  const last = stops.length - 1;
-  return (
-    <View style={styles.routeWrap}>
-      {Array.from({length: last}).map((_, i) => (
-        <RouteDashedLine
-          key={i}
-          width={2}
-          height={ROW_STOP_H - 2 * ROW_DASH_INSET}
-          preserveAspectRatio="none"
-          style={[
-            styles.routeDashed,
-            {top: ROW_MARKER_H / 2 + i * ROW_STOP_H + ROW_DASH_INSET},
-          ]}
-        />
-      ))}
-
-      {stops.map((label, i) => (
-        <View key={`${label}-${i}`} style={styles.stopRow}>
-          <View style={styles.stopMarker}>
-            {i === last ? (
-              <StopPin width={ms(14)} height={ms(16)} />
-            ) : (
-              <CityRing width={ms(13)} height={ms(13)} />
-            )}
-          </View>
-          <AppText style={styles.stopLabel} numberOfLines={1}>
-            {label}
-          </AppText>
-        </View>
-      ))}
-    </View>
-  );
-};
-
 export default function EarningsScreen() {
   const [period, setPeriod] = useState('Weekly');
   const [menuOpen, setMenuOpen] = useState(false);
@@ -303,7 +260,7 @@ export default function EarningsScreen() {
                 index === TRANSACTIONS.length - 1 && styles.rowLast,
               ]}>
               <View style={styles.rowLeft}>
-                <RouteStops stops={tx.stops} />
+                <LoadRoute stops={tx.stops} />
                 <View style={styles.typeBadge}>
                   <GrayTruck
                     width={ms(14)}

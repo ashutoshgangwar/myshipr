@@ -17,7 +17,7 @@ import DashboardHeader from '../../component/DashboardHeader/DashboardHeader';
 import FloatingMap from '../../component/FloatingMap/FloatingMap';
 import Button from '../../component/Button/Button';
 import {colors} from '../../theme/colors';
-import {IS_TABLET, select} from '../../theme/device';
+import {IS_TABLET} from '../../theme/device';
 import AppText from '../../theme/AppText';
 import TruckIcon from '../../assets/svg_icon/Frame_black.svg';
 import Right_Arrow from '../../assets/svg_icon/right_Arrow.svg';
@@ -25,10 +25,8 @@ import Strech_arrow_bottom from '../../assets/svg_icon/Strech_arrow_bottom.svg';
 import StarIcon from '../../assets/svg_icon/Star_Vector.svg';
 import Dropdown_icon from '../../assets/svg_icon/Dropdown_icon.svg';
 import Profile_icon from '../../assets/svg_icon/profile_icon.svg';
-import CityRing from '../../assets/svg_icon/city_ring.svg';
-import StopPin from '../../assets/svg_icon/stop_pin_green.svg';
-import RouteDashedLine from '../../assets/svg_icon/RouteDashedLine.svg';
 import RouteStops from '../../component/RouteStops/RouteStops';
+import LoadRoute from '../../component/LoadRoute/LoadRoute';
 import DieselBadge from '../../component/DieselBadge/DieselBadge';
 import {clearSession} from '../../services/api/AuthService';
 import { ms } from '../../theme/scale';
@@ -128,54 +126,13 @@ const LOAD_TYPE_ICON = {
   LTL: Ltl_Arrow,
   Multileg: Multileg_icon,
 };
-const LOAD_PHONE_FACTOR = select({phone: 0.78, tablet: 1});
-const lms = n => ms(n) * LOAD_PHONE_FACTOR;
-
-const LOAD_STOP_H = lms(26);
-const LOAD_MARKER_H = lms(16);
-const LOAD_DASH_INSET = lms(8);
-
-const LoadRoute = ({stops}) => {
-  const last = stops.length - 1;
-  return (
-    <View style={styles.loadRouteWrap}>
-      {Array.from({length: last}).map((_, i) => (
-        <RouteDashedLine
-          key={i}
-          width={2}
-          height={LOAD_STOP_H - 2 * LOAD_DASH_INSET}
-          preserveAspectRatio="none"
-          style={[
-            styles.loadDashed,
-            {top: LOAD_MARKER_H / 2 + i * LOAD_STOP_H + LOAD_DASH_INSET},
-          ]}
-        />
-      ))}
-
-      {stops.map((label, i) => (
-        <View key={`${label}-${i}`} style={styles.loadStopRow}>
-          <View style={styles.loadStopMarker}>
-            {i === last ? (
-              <StopPin width={ms(14)} height={ms(16)} />
-            ) : (
-              <CityRing width={ms(13)} height={ms(13)} />
-            )}
-          </View>
-          <AppText style={styles.loadStopLabel} numberOfLines={1}>
-            {label}
-          </AppText>
-        </View>
-      ))}
-    </View>
-  );
-};
 
 const LoadTypeBadge = ({type}) => {
   const Icon = LOAD_TYPE_ICON[type];
   return (
     <View style={styles.loadTypeBadge}>
       {Icon ? (
-        <Icon width={ms(14)} height={ms(14)} style={styles.loadTypeIcon} />
+        <Icon width={ms(12)} height={ms(12)} style={styles.loadTypeIcon} />
       ) : (
         <View style={styles.loadTypeIconPlaceholder} />
       )}

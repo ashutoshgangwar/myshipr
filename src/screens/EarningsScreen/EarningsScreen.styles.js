@@ -7,11 +7,6 @@ const PHONE_FACTOR = select({phone: 0.82, tablet: 1});
 const ms = n => baseMs(n) * PHONE_FACTOR;
 const vs = n => baseVs(n) * PHONE_FACTOR;
 
-// Route stop geometry (shared with the RouteRow component in the screen).
-export const ROW_STOP_H = ms(22);
-export const ROW_MARKER_H = ms(16);
-export const ROW_DASH_INSET = ms(6);
-
 export default StyleSheet.create({
   safe: {
     flex: 1,
@@ -122,7 +117,7 @@ export default StyleSheet.create({
     backgroundColor: colors.white,
     borderRadius: ms(14),
     marginHorizontal: ms(12),
-    marginTop: vs(18),
+    marginTop: vs(12),
     marginBottom: vs(14),
     paddingHorizontal: ms(14),
     shadowColor: '#000',
@@ -135,7 +130,7 @@ export default StyleSheet.create({
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: vs(12),
+    paddingVertical: vs(6),
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border_Color,
   },
@@ -148,37 +143,6 @@ export default StyleSheet.create({
   rowLeft: {
     flex: 1.15,
     paddingRight: ms(8),
-  },
-
-  routeWrap: {
-    position: 'relative',
-  },
-
-  routeDashed: {
-    position: 'absolute',
-    left: ms(8),
-  },
-
-  stopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    height: ROW_STOP_H,
-  },
-
-  stopMarker: {
-    width: ms(18),
-    height: ROW_MARKER_H,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginRight: ms(6),
-  },
-
-  stopLabel: {
-    flex: 1,
-    color: colors.textStrong,
-    fontSize: IS_TABLET ? ms(12) : ms(13),
-    lineHeight: ms(16),
-    fontWeight: '600',
   },
 
   typeBadge: {
