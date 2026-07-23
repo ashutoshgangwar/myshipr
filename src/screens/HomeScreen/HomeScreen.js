@@ -74,8 +74,7 @@ const TRIP_STATS = [
   {value: 'I-45 S', label: 'Route'},
   {value: '12:10 PM', label: 'ETA'},
 ];
-// `current` carries no label/sub — RouteStops fills it from the device's real
-// location. Pickup/drop come from API data (hardcoded here until wired up).
+
 const CURRENT_TRIP_STOPS = [
   {kind: 'current'},
   {kind: 'pickup', sub: '8.00–8.30 AM'},
@@ -84,15 +83,11 @@ const CURRENT_TRIP_STOPS = [
 ];
 
 const HOS_DETAILS = [
-  {label: 'Cycle Remaining', value: '34h 10m'},
-  {label: 'Break Available In', value: '2h 10m'},
+  {label: 'Remaining Driving Hours', value: '34h 10m'},
+  {label: 'Cycle Remaining', value: '2h 10m'},
   {label: 'Reset Available', value: 'Tomorrow 8:00 AM'},
-  // {label: 'Driving Status', value: 'On DUTY', strong: true},
 ];
 
-// The last stop in `stops` renders as a green drop pin; the rest render as
-// blue circle rings connected by a dashed line. `urgent` tints the time badge
-// orange (same-day) instead of the default blue.
 const UPCOMING_LOADS = [
   {
     id: 'u1',
@@ -126,25 +121,16 @@ const UPCOMING_LOADS = [
   },
 ];
 
-// Load-type glyphs keyed to the `type` in UPCOMING_LOADS — LoadTypeBadge renders
-// the mapped SVG automatically.
 const LOAD_TYPE_ICON = {
   FTL: Gray_truck,
   LTL: Ltl_Arrow,
   Multileg: Multileg_icon,
 };
-
-// LoadRoute lays out the dashed connectors with absolute `top` offsets, so its
-// constants must match the *actual* rendered row/marker sizes in the styles —
-// which are shrunk on phones by PHONE_FACTOR. Without this factor the dashes
-// stay aligned on tablet (factor 1) but drift on phone (factor 0.78).
 const LOAD_PHONE_FACTOR = select({phone: 0.78, tablet: 1});
 const lms = n => ms(n) * LOAD_PHONE_FACTOR;
 
 const LOAD_STOP_H = lms(26);
 const LOAD_MARKER_H = lms(16);
-// Must exceed the ring's radius (lms(13)/2 ≈ 6.5) so the dash sits in the gap
-// between markers instead of overlapping the circles/pin.
 const LOAD_DASH_INSET = lms(8);
 
 const LoadRoute = ({stops}) => {
@@ -182,8 +168,6 @@ const LoadRoute = ({stops}) => {
   );
 };
 
-// Load-type chip (FTL / LTL / Multileg). Renders the mapped SVG once supplied,
-// otherwise a small placeholder box so the layout is ready in advance.
 const LoadTypeBadge = ({type}) => {
   const Icon = LOAD_TYPE_ICON[type];
   return (
@@ -379,7 +363,7 @@ const HomeScreen = () => {
 
               <View style={styles.hosDrivenRow}>
                 <AppText style={styles.hosDrivenText}>8h 23m Driven</AppText>
-                <AppText style={styles.hosRemText}>2h 37m rem</AppText>
+                <AppText style={styles.hosRemText}>11h Total</AppText>
               </View>
               <View style={styles.progressTrack}>
                 <View
@@ -391,8 +375,13 @@ const HomeScreen = () => {
                 />
               </View>
 
-              {HOS_DETAILS.map(item => (
-                <View key={item.label} style={styles.detailRow}>
+              {HOS_DETAILS.map((item, index) => (
+                <View
+                  key={item.label}
+                  style={[
+                    styles.detailRow,
+                    index === HOS_DETAILS.length - 1 && styles.detailRowLast,
+                  ]}>
                   <AppText style={styles.detailLabel}>{item.label}</AppText>
                   <AppText
                     style={

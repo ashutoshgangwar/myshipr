@@ -480,9 +480,15 @@ export default StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    paddingVertical: vs(12),
+    paddingVertical: vs(5),
     borderTopWidth: 1,
     borderTopColor: colors.cardBorder,
+  },
+
+  detailRowLast: {
+    borderBottomWidth: 1,
+    borderBottomColor: colors.cardBorder,
+    marginBottom: ms(10)
   },
 
   detailLabel: {
@@ -680,7 +686,7 @@ export default StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'flex-start',
-    marginTop: vs(6),
+    marginTop: vs(1),
     borderRadius: ms(6),
     backgroundColor: colors.screenBg,
     borderWidth: 1,
