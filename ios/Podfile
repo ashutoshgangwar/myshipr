@@ -26,6 +26,22 @@ require_relative '../node_modules/react-native-permissions/scripts/setup'
 target 'myshipr' do
   config = use_native_modules!
 
+  # React Native Firebase (statically linked, i.e. no use_frameworks!) requires
+  # the Firebase pods to expose clang module maps, because they `@import` each
+  # other (e.g. FirebaseMessaging does `@import FirebaseCore`). Without module
+  # maps the build fails with "Module 'FirebaseCore' not found".
+  # Scoped to just the Firebase/Google subtree so the rest of the project
+  # (React Native, HERE, MLKit, MapLibre) keeps its existing header style.
+  pod 'FirebaseCore', :modular_headers => true
+  pod 'FirebaseCoreInternal', :modular_headers => true
+  pod 'FirebaseCoreExtension', :modular_headers => true
+  pod 'FirebaseInstallations', :modular_headers => true
+  pod 'FirebaseMessaging', :modular_headers => true
+  pod 'GoogleUtilities', :modular_headers => true
+  pod 'GoogleDataTransport', :modular_headers => true
+  pod 'nanopb', :modular_headers => true
+  pod 'PromisesObjC', :modular_headers => true
+
   use_react_native!(
     :path => config[:reactNativePath],
     :new_arch_enabled => true,
@@ -111,12 +127,36 @@ target 'myshipr' do
         config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
         config.build_settings['GCC_TREAT_WARNINGS_AS_ERRORS'] = 'NO'
 
+        # Xcode 16+ / 26 enables "Explicitly Built Modules" by default. Its clang
+        # dependency scanner runs BEFORE CocoaPods' "copy module map" build phase,
+        # so it fails with:
+        #   Clang dependency scanner failure: fatal error: module map file
+        #   '.../Build/Products/Debug-iphoneos/FirebaseCoreInternal/FirebaseCoreInternal.modulemap' not found
+        # and cascades into every "Search path ... not found". Reverting to implicit
+        # modules (the behaviour CocoaPods expects) fixes it.
+        config.build_settings['CLANG_ENABLE_EXPLICIT_MODULES'] = 'NO'
+        config.build_settings['SWIFT_ENABLE_EXPLICIT_MODULES'] = 'NO'
+
         other_cflags = config.build_settings['OTHER_CFLAGS'] || '$(inherited)'
         config.build_settings['OTHER_CFLAGS'] = "#{other_cflags} -Wno-error=return-type"
 
         other_cxxflags = config.build_settings['OTHER_CPLUSPLUSFLAGS'] || '$(inherited)'
         config.build_settings['OTHER_CPLUSPLUSFLAGS'] = "#{other_cxxflags} -Wno-error=return-type"
       end
+    end
+
+    # The app ("myshipr") target lives in the user project, not the Pods project,
+    # and it triggers the same explicit-modules scanner. Disable it there too.
+    installer.aggregate_targets.each do |aggregate_target|
+      user_project = aggregate_target.user_project
+      next unless user_project
+      user_project.native_targets.each do |target|
+        target.build_configurations.each do |config|
+          config.build_settings['CLANG_ENABLE_EXPLICIT_MODULES'] = 'NO'
+          config.build_settings['SWIFT_ENABLE_EXPLICIT_MODULES'] = 'NO'
+        end
+      end
+      user_project.save
     end
   end
 end

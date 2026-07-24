@@ -24,6 +24,8 @@ import {
   onTokenRefresh,
   onNotificationOpenedApp,
   getInitialNotification,
+  registerDeviceForRemoteMessages,
+  isDeviceRegisteredForRemoteMessages,
   AuthorizationStatus,
 } from '@react-native-firebase/messaging';
 
@@ -78,6 +80,14 @@ export async function requestNotificationPermission() {
  */
 export async function getFcmToken() {
   try {
+    // iOS: FCM needs an APNs registration before it can mint a token. With
+    // swizzling enabled Firebase usually does this automatically, but if the
+    // device isn't registered yet getToken() throws [messaging/unregistered],
+    // so we register explicitly first. (No-op / not needed on Android.)
+    if (Platform.OS === 'ios' && !isDeviceRegisteredForRemoteMessages(messaging)) {
+      await registerDeviceForRemoteMessages(messaging);
+    }
+
     const token = await getToken(messaging);
     console.log('[FCM] Token:', token);
     return token;
