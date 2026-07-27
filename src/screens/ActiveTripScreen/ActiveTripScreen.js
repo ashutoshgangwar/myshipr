@@ -9,7 +9,7 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
 } from 'react-native';
-import {SafeAreaView} from 'react-native-safe-area-context';
+import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 import {verticalScale} from 'react-native-size-matters';
 
 import styles from './ActiveTripScreen.styles';
@@ -40,6 +40,10 @@ const DEFAULT_CENTER = {lat: 37.7599, lng: -122.4469};
 const PANEL_IDS = ['chat', 'documents', 'bidding', 'navigate', 'dock'];
 
 export default function ActiveTripScreen({navigation}) {
+  // The bottom progress bar grows by the bottom inset (edge-to-edge on RN 0.83),
+  // so the floating GPS button has to rise with it or the bar covers it.
+  const insets = useSafeAreaInsets();
+
   const mapRef = useRef(null);
   const [center, setCenter] = useState(DEFAULT_CENTER);
   const [sdkReady, setSdkReady] = useState(false);
@@ -226,7 +230,10 @@ export default function ActiveTripScreen({navigation}) {
       {/* ── Floating GPS re-center button ── */}
       {/* Sits behind the panels (low zIndex), so it stays put when one opens. */}
       <TouchableOpacity
-        style={styles.gpsButton}
+        style={[
+          styles.gpsButton,
+          {bottom: styles.gpsButton.bottom + insets.bottom},
+        ]}
         onPress={() => showMyLocation({animate: true})}
         disabled={locating}
         activeOpacity={0.8}>

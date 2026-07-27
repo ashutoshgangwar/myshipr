@@ -10,6 +10,10 @@ import {IS_TABLET} from '../../theme/device';
 // Width of the floating panels (chat / documents / bidding) in the centre.
 const PANEL_WIDTH = IS_TABLET ? ms(300) : ms(260);
 
+// Gap between the floating trip-progress card and the screen edges. The GPS
+// button's offset is derived from this, so the two can't drift apart.
+const BAR_GAP = 12;
+
 // Reveal circle: diameter = 2× screen diagonal so it fully covers the screen
 // (from its centred origin) once scaled to 1.
 const {width: SCREEN_W, height: SCREEN_H} = Dimensions.get('window');
@@ -47,7 +51,9 @@ export default StyleSheet.create({
   gpsButton: {
     position: 'absolute',
     left: s(12),
-    bottom:  vs(85),
+    // Sits above the floating progress card, which itself clears the bottom
+    // edge by BAR_GAP. The component adds the bottom safe-area inset on top.
+    bottom: vs(85 + BAR_GAP),
     width: ms(46),
     height: ms(46),
     borderRadius: ms(23),
@@ -542,25 +548,28 @@ export default StyleSheet.create({
   },
 
   // ── Bottom trip progress ──────────────────────────────────────────────
+  // Floating card, inset from all three screen edges (the component adds the
+  // bottom safe-area inset on top of `bottom`). Every edge is visible now, so
+  // the radius wraps all four corners and the shadow casts outward rather than
+  // only upward the way it did when this was a sheet pinned to bottom: 0.
   bottomBar: {
     position: 'absolute',
-    left: 0,
-    right: 0,
-    bottom: 0,
+    left: s(BAR_GAP),
+    right: s(BAR_GAP),
+    bottom: vs(BAR_GAP),
     backgroundColor: colors.white,
-    paddingHorizontal: s(16),
+    paddingHorizontal: s(10),
     paddingTop: vs(12),
-    paddingBottom: vs(16),
-    borderTopLeftRadius: ms(14),
-    borderTopRightRadius: ms(14),
+    paddingBottom: vs(14),
+    borderRadius: ms(10),
     flexDirection: 'row',
     alignItems: 'center',
     ...Platform.select({
       ios: {
         shadowColor: '#000',
         shadowOpacity: 0.15,
-        shadowRadius: 8,
-        shadowOffset: {width: 0, height: -3},
+        shadowRadius: 10,
+        shadowOffset: {width: 0, height: 3},
       },
       android: {elevation: 12},
     }),
@@ -579,46 +588,41 @@ export default StyleSheet.create({
     fontWeight: '700',
   },
 
-  track: {
-    height: vs(6),
-    borderRadius: ms(3),
+  // Milestone segments (Start / P1 / P2 / D1 / D2). Equal-width columns so the
+  // labels line up with the start of the segment they belong to; the gap lives
+  // on the segment itself rather than the column to keep that alignment.
+  segmentRow: {flexDirection: 'row'},
+  segmentCol: {flex: 1},
+  segment: {
+    height: vs(7),
+    borderRadius: ms(2),
     backgroundColor: colors.border_Color,
-    overflow: 'hidden',
+    marginRight: s(4),
   },
-  trackFill: {
-    height: '100%',
-    borderRadius: ms(3),
-    backgroundColor: colors.accentBlue,
-  },
-
-  scaleRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginTop: vs(6),
-  },
-  scaleEdge: {color: colors.textMuted, fontSize: ms(9)},
-  etaText: {color: colors.text_dark, fontSize: ms(11), fontWeight: '600'},
+  segmentLast: {marginRight: 0},
+  segmentDone: {backgroundColor: colors.success},
+  segmentActive: {backgroundColor: colors.accentBlue},
+  segmentLabel: {color: colors.textMuted, fontSize: ms(9), marginTop: vs(5)},
 
   endTripBtn: {
     flexDirection: 'row',
     alignItems: 'center',
     borderWidth: 1.5,
-    borderColor: colors.button_color,
+    borderColor: colors.danger,
     borderRadius: ms(8),
-    paddingVertical: vs(10),
-    paddingHorizontal: s(16),
+    paddingVertical: vs(5),
+    paddingHorizontal: s(10),
   },
   endTripCheckbox: {
     width: ms(14),
     height: ms(14),
     borderRadius: ms(3),
     borderWidth: 1.5,
-    borderColor: colors.button_color,
+    borderColor: colors.danger,
     marginRight: s(8),
   },
   endTripText: {
-    color: colors.button_color,
+    color: colors.danger,
     fontSize: ms(13),
     fontWeight: '700',
   },
