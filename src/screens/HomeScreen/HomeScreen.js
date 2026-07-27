@@ -30,9 +30,6 @@ import LoadRoute from '../../component/LoadRoute/LoadRoute';
 import DieselBadge from '../../component/DieselBadge/DieselBadge';
 import {clearSession} from '../../services/api/AuthService';
 import { ms } from '../../theme/scale';
-import Gray_truck from '../../assets/svg_icon/gray_truck.svg';
-import Ltl_Arrow from '../../assets/svg_icon/Ltl_Arrow.svg';
-import Multileg_icon from '../../assets/svg_icon/multileg_icon.svg';
 import Setting_Icon from '../../assets/svg_icon/Setting_Icon.svg';
 import Logout_Icon from '../../assets/svg_icon/Logout_Icon.svg'
 import Circle_two_way from '../../assets/svg_icon/circle_two_way.svg';
@@ -94,58 +91,51 @@ const HOS_DETAILS = [
   {label: 'Reset Available', value: 'Tomorrow 8:00 AM'},
 ];
 
+// Stops carry an explicit pickup/drop type so multi-pickup / multi-drop loads
+// can collapse the middle stops behind a "+N More …" chip and pin every drop.
+const pickup = city => ({city, type: 'pickup'});
+const drop = city => ({city, type: 'drop'});
+
 const UPCOMING_LOADS = [
   {
     id: 'u1',
-    type: 'FTL',
-    time: '6.00 Pm',
-    date: 'Today',
-    urgent: true,
-    pay: '$900',
-    miles: '180 miles',
-    stops: ['San Jose CA', 'Newark NJ'],
+    time: '08:30 AM',
+    date: '26 July 2026',
+    stops: [
+      pickup('Jersey City, NJ'),
+      pickup('Newark, NJ'),
+      pickup('Trenton, NJ'),
+      drop('Baltimore, ND'),
+    ],
   },
   {
     id: 'u2',
-    type: 'LTL',
-    time: '6.00 Pm',
-    date: '17 July',
-    urgent: false,
-    pay: '$900',
-    miles: '180 miles',
-    stops: ['San Jose CA', 'Newark NJ', 'Newark NJ'],
+    time: '08:30 AM',
+    date: '26 July 2026',
+    stops: [
+      pickup('Jersey City, NJ'),
+      pickup('Trenton, NJ'),
+      drop('Baltimore, ND'),
+    ],
   },
   {
     id: 'u3',
-    type: 'Multileg',
-    time: '6.00 Pm',
-    date: '17 July',
-    urgent: false,
-    pay: '$900',
-    miles: '180 miles',
-    stops: ['San Jose CA', 'San Jose CA', 'Newark NJ', 'Newark NJ'],
+    time: '08:30 AM',
+    date: '26 July 2026',
+    stops: [pickup('Jersey City, NJ'), drop('Baltimore, ND')],
+  },
+  {
+    id: 'u4',
+    time: '09:15 AM',
+    date: '27 July 2026',
+    stops: [
+      pickup('San Jose CA'),
+      pickup('Fresno CA'),
+      drop('Reno NV'),
+      drop('Newark NJ'),
+    ],
   },
 ];
-
-const LOAD_TYPE_ICON = {
-  FTL: Gray_truck,
-  LTL: Ltl_Arrow,
-  Multileg: Multileg_icon,
-};
-
-const LoadTypeBadge = ({type}) => {
-  const Icon = LOAD_TYPE_ICON[type];
-  return (
-    <View style={styles.loadTypeBadge}>
-      {Icon ? (
-        <Icon width={ms(12)} height={ms(12)} style={styles.loadTypeIcon} />
-      ) : (
-        <View style={styles.loadTypeIconPlaceholder} />
-      )}
-      <AppText style={styles.loadTypeText}>{type}</AppText>
-    </View>
-  );
-};
 
 const HomeScreen = () => {
   const navigation = useNavigation();
@@ -153,7 +143,13 @@ const HomeScreen = () => {
   const [tripStarted, setTripStarted] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuPos, setMenuPos] = useState({top: 0, right: 0});
+  // Upcoming loads collapse their middle stops; tapping a row (or its
+  // "+N More …" chip) reveals every pickup and drop for that load.
+  const [expandedLoads, setExpandedLoads] = useState({});
   const avatarRef = useRef(null);
+
+  const toggleLoad = id =>
+    setExpandedLoads(prev => ({...prev, [id]: !prev[id]}));
 
   const openMap_Here = () => {
     setTripStarted(true);
@@ -411,7 +407,11 @@ const HomeScreen = () => {
 
             {/* Upcoming loads */}
             <View style={[styles.card, styles.loadsCard]}>
-              <AppText style={styles.cardTitle}>Upcoming loads</AppText>
+              <View style={styles.loadsHeader}>
+                <AppText style={styles.loadsHeaderText}>
+                  Upcoming Shipment
+                </AppText>
+              </View>
               <View style={styles.loadsScrollWrap}>
                 <ScrollView
                   style={StyleSheet.absoluteFill}
@@ -419,49 +419,33 @@ const HomeScreen = () => {
                   bounces
                   showsVerticalScrollIndicator={false}>
                   {UPCOMING_LOADS.map((load, index) => (
-                    <View
+                    <TouchableOpacity
                       key={load.id}
+                      activeOpacity={load.stops.length > 2 ? 0.7 : 1}
+                      disabled={load.stops.length <= 2}
+                      onPress={() => toggleLoad(load.id)}
                       style={[
                         styles.loadRow,
                         index === 0 && styles.loadRowFirst,
                       ]}>
                       <View style={styles.loadRouteCol}>
-                        <LoadRoute stops={load.stops} />
-                        <LoadTypeBadge type={load.type} />
+                        <LoadRoute
+                          stops={load.stops}
+                          typed
+                          showSummary
+                          collapsed={!expandedLoads[load.id]}
+                          onPressMore={() => toggleLoad(load.id)}
+                        />
                       </View>
 
-                      <View
-                        style={[
-                          styles.loadTimeBadge,
-                          load.urgent
-                            ? styles.loadTimeBadgeUrgent
-                            : styles.loadTimeBadgeDefault,
-                        ]}>
-                        <AppText
-                          style={[
-                            styles.loadTimeText,
-                            load.urgent
-                              ? styles.loadTimeTextUrgent
-                              : styles.loadTimeTextDefault,
-                          ]}>
-                          {load.time}
-                        </AppText>
-                        <AppText
-                          style={[
-                            styles.loadTimeText,
-                            load.urgent
-                              ? styles.loadTimeTextUrgent
-                              : styles.loadTimeTextDefault,
-                          ]}>
-                          {load.date}
-                        </AppText>
-                      </View>
-
-                      <View style={styles.loadRight}>
-                        <AppText style={styles.loadPay}>{load.pay}</AppText>
-                        <AppText style={styles.loadMiles}>{load.miles}</AppText>
-                      </View>
-                    </View>
+                      <AppText
+                        style={styles.loadWhen}
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                        minimumFontScale={0.8}>
+                        {load.time} | {load.date}
+                      </AppText>
+                    </TouchableOpacity>
                   ))}
                 </ScrollView>
               </View>

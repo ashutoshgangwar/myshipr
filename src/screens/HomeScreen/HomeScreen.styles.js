@@ -627,10 +627,26 @@ export default StyleSheet.create({
   /* ---------- Upcoming loads ---------- */
   // Fills the right column (stretched to the left column height). Rounded clip
   // keeps the corners and contains the scroll content.
+  // Padding is dropped so the blue header can bleed to the card edges; the
+  // rows carry their own horizontal padding instead.
   loadsCard: {
     flex: 1,
     minHeight: 0,
     overflow: 'hidden',
+    paddingVertical: 0,
+    paddingHorizontal: 0,
+  },
+
+  loadsHeader: {
+    backgroundColor: '#4A7CF5',
+    paddingHorizontal: ms(12),
+    paddingVertical: vs(10),
+  },
+
+  loadsHeaderText: {
+    color: colors.white,
+    fontSize: IS_TABLET ? ms(10) : ms(13),
+    fontWeight: '700',
   },
 
   // Sized by the card via flex; the absolute-fill ScrollView lives inside it
@@ -644,8 +660,9 @@ export default StyleSheet.create({
   loadRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     paddingVertical: vs(8),
+    paddingHorizontal: ms(10),
     borderTopWidth: 1,
     borderTopColor: colors.cardBorder,
   },
@@ -659,87 +676,25 @@ export default StyleSheet.create({
     paddingRight: ms(8),
   },
 
-  // Type chip (FTL / LTL / Multileg).
-  loadTypeBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    alignSelf: 'flex-start',
-    marginTop: vs(1),
-    borderRadius: ms(6),
-    backgroundColor: colors.screenBg,
-    borderWidth: 1,
-    borderColor: colors.cardBorder,
-    paddingHorizontal: ms(8),
-    paddingVertical: vs(3),
-  },
-
-  loadTypeIcon: {
-    marginRight: ms(5),
-  },
-
-  loadTypeIconPlaceholder: {
-    width: ms(14),
-    height: ms(14),
-    marginRight: ms(5),
-  },
-
-  loadTypeText: {
-    color: colors.textMuted,
-    fontSize: ms(8),
-    fontWeight: '600',
-  },
-
-  // Centre time badge (orange when same-day, blue otherwise).
-  loadTimeBadge: {
-    alignItems: 'center',
-    borderRadius: ms(6),
-    paddingHorizontal: ms(5),
-    paddingVertical: vs(1),
-    marginHorizontal: ms(15),
-  },
-
-  loadTimeBadgeUrgent: {
-    backgroundColor: '#F9DEC9',
-  },
-
-  loadTimeBadgeDefault: {
-    backgroundColor: '#D8E4FB',
-  },
-
-  loadTimeText: {
-    fontSize: ms(8),
-    fontWeight: '600',
-    textAlign: 'center',
-  },
-
-  loadTimeTextUrgent: {
-    color: '#D9773B',
-  },
-
-  loadTimeTextDefault: {
-    color: '#3B6FE0',
-  },
-
-  loadRight: {
-    alignItems: 'flex-end',
-  },
-
-  loadPay: {
+  // "08:30 AM | 26 July 2026" — pickup window, right-aligned on a single line.
+  // Width is capped so this long string can't squeeze the route column into
+  // truncating its city names and "N Pickups • M Drops" summary; the text
+  // shrinks to fit that cap instead of wrapping or ellipsizing.
+  loadWhen: {
+    maxWidth: '44%',
     color: colors.textStrong,
-    fontSize: ms(10),
-    fontWeight: '700',
+    fontSize: ms(8.5),
+    lineHeight: ms(12),
+    fontWeight: '500',
+    textAlign: 'right',
   },
 
-  loadMiles: {
-    color: colors.textMuted,
-    fontSize: ms(8),
-    marginTop: vs(3),
-    fontWeight: '400',
-  },
-
+  // The card itself has no padding (the blue header bleeds to its edges), so
+  // the chevron supplies the bottom breathing room.
   loadChevron: {
     alignItems: 'center',
     paddingTop: vs(10),
+    paddingBottom: vs(8),
   },
 
   loadChevronGlyph: {

@@ -1,8 +1,10 @@
 import React from 'react';
-import {View} from 'react-native';
+import {TouchableOpacity, View} from 'react-native';
+import Svg, {Line} from 'react-native-svg';
 
 import styles, {
   STOP_LINE_H,
+  MORE_ROW_H,
   MARKER_H,
   DASH_INSET,
   CITY_RING,
@@ -12,79 +14,188 @@ import styles, {
 import AppText from '../../theme/AppText';
 import CityRing from '../../assets/svg_icon/city_ring.svg';
 import DropPin from '../../assets/svg_icon/stop_pin_green.svg';
-import RouteDashedLine from '../../assets/svg_icon/RouteDashedLine.svg';
 
-export {STOP_LINE_H, STOP_SUMMARY_H} from './LoadRoute.styles';
+// RouteDashedLine.svg is a fixed 12-unit line that callers stretch to length,
+// which would also stretch its dash pattern — fine when every gap is the same
+// height, wrong once the "+N More …" row makes one segment twice as tall. The
+// line is drawn here instead so the dash pattern stays identical at any length,
+// matching the density the stretched asset produces for a normal stop gap.
+const DASH_STROKE = '#999AB2';
+const DASH_STROKE_W = 1.5;
+const DASH_SCALE = (STOP_LINE_H - 2 * DASH_INSET) / 12;
+const DASH_ARRAY = [2 * DASH_SCALE, 3 * DASH_SCALE];
+
+export {STOP_LINE_H, STOP_SUMMARY_H, MORE_ROW_H} from './LoadRoute.styles';
 
 // Accepts stops as plain strings ('San Jose CA') or objects ({city} / {label}).
 const cityOf = stop =>
   typeof stop === 'string' ? stop : stop?.city ?? stop?.label ?? '';
 
-// First stop is the pickup, the rest are drops (matches how every screen builds
-// its stop list), so the summary copy can be derived from the count.
+// Stops may carry an explicit {type: 'pickup' | 'drop'}. When they don't, the
+// first stop is the pickup and the rest are drops (how every older screen
+// builds its list), so the type can be derived from the position.
+const typeOf = (stop, index, last) => {
+  const type = typeof stop === 'string' ? null : stop?.type;
+  if (type === 'pickup' || type === 'drop') return type;
+  return index === last ? 'drop' : 'pickup';
+};
+
+const plural = (count, word) => `${count} ${word}${count === 1 ? '' : 's'}`;
+
+// Legacy copy kept for the screens that already render it this way.
 const summaryOf = stops => {
   const drops = Math.max(0, stops.length - 1);
   return `1 Pickup ${drops} Drop`;
 };
 
+const typedSummaryOf = types => {
+  const pickups = types.filter(t => t === 'pickup').length;
+  const drops = types.length - pickups;
+  return `${plural(pickups, 'Pickup')} • ${plural(drops, 'Drop')}`;
+};
+
+// Label for the collapsed chip: name the hidden stops when they are all of one
+// kind, otherwise fall back to the neutral "Stops".
+const moreLabelOf = hiddenTypes => {
+  const pickups = hiddenTypes.filter(t => t === 'pickup').length;
+  const drops = hiddenTypes.length - pickups;
+  const word = drops === 0 ? 'Pickup' : pickups === 0 ? 'Drop' : 'Stop';
+  return `+${hiddenTypes.length} More ${word}${
+    hiddenTypes.length === 1 ? '' : 's'
+  }`;
+};
+
 /**
  * Shared load-route: a vertical dashed line joining a city ring at each pickup
- * to a green pin at the final drop, with the city name beside every marker.
+ * to a green pin at every drop, with the city name beside each marker.
  *
- * @param stops        array of city strings or {city}/{label} objects
- * @param showSummary  render the derived "1 Pickup N Drop" line below
- * @param textStyle    override for the city label (e.g. truncation width)
- * @param summaryStyle override for the summary line
- * @param style        wrapper style
+ * @param stops         array of city strings or {city, type}/{label} objects
+ * @param showSummary   render the summary line below the route
+ * @param typed         stops carry pickup/drop types: pin every drop and use
+ *                      the "N Pickups • M Drops" summary instead of the legacy
+ *                      "1 Pickup N Drop" copy
+ * @param collapsed     hide the middle stops behind a "+N More …" chip
+ * @param onPressMore   tap handler for that chip
+ * @param textStyle     override for the city label (e.g. truncation width)
+ * @param summaryStyle  override for the summary line
+ * @param style         wrapper style
  */
 export default function LoadRoute({
   stops = [],
   showSummary = false,
+  typed = false,
+  collapsed = false,
+  onPressMore,
   textStyle,
   summaryStyle,
   style,
 }) {
   if (!stops.length) return null;
 
+  const last = stops.length - 1;
   const cities = stops.map(cityOf);
-  const last = cities.length - 1;
+  const types = stops.map((stop, i) => typeOf(stop, i, last));
+
+  // Rows are laid out top-down with known heights, so the dashed connectors can
+  // be positioned from the running offset — this keeps the collapsed chip row
+  // (which is taller than a stop row) on the same line as the rest.
+  const hidden = collapsed && stops.length > 2 ? types.slice(1, last) : [];
+  const rows = hidden.length
+    ? [
+        {kind: 'stop', index: 0, height: STOP_LINE_H},
+        {kind: 'more', height: MORE_ROW_H},
+        {kind: 'stop', index: last, height: STOP_LINE_H},
+      ]
+    : stops.map((_, index) => ({kind: 'stop', index, height: STOP_LINE_H}));
+
+  let offset = 0;
+  const tops = rows.map(row => {
+    const top = offset;
+    offset += row.height;
+    return top;
+  });
+
+  // Markers sit MARKER_H / 2 below their row top; each dash spans that gap,
+  // inset at both ends so it stays clear of the icons.
+  const anchorOf = i => tops[i] + MARKER_H / 2;
+
+  // Dashes join marker to marker, spanning straight past the "+N More …" row —
+  // that row carries no icon, so breaking the line there would leave a gap in
+  // the middle of the connector instead of a continuous route.
+  const markerRows = rows.reduce(
+    (acc, row, i) => (row.kind === 'stop' ? [...acc, i] : acc),
+    [],
+  );
 
   return (
     <View style={style}>
       <View style={styles.wrap}>
-        {/* One dashed segment per gap, inset so it stays clear of the markers. */}
-        {Array.from({length: last}).map((_, i) => (
-          <RouteDashedLine
-            key={i}
-            width={2}
-            height={STOP_LINE_H - 2 * DASH_INSET}
-            preserveAspectRatio="none"
-            style={[
-              styles.dashed,
-              {top: MARKER_H / 2 + i * STOP_LINE_H + DASH_INSET},
-            ]}
-          />
-        ))}
+        {markerRows.slice(0, -1).map((rowIndex, i) => {
+          const height = Math.max(
+            0,
+            anchorOf(markerRows[i + 1]) - anchorOf(rowIndex) - 2 * DASH_INSET,
+          );
+          return (
+            <Svg
+              key={`dash-${i}`}
+              width={2}
+              height={height}
+              style={[styles.dashed, {top: anchorOf(rowIndex) + DASH_INSET}]}>
+              <Line
+                x1={1}
+                y1={0}
+                x2={1}
+                y2={height}
+                stroke={DASH_STROKE}
+                strokeWidth={DASH_STROKE_W}
+                strokeLinecap="round"
+                strokeDasharray={DASH_ARRAY}
+              />
+            </Svg>
+          );
+        })}
 
-        {cities.map((city, i) => (
-          <View key={`${city}-${i}`} style={styles.row}>
-            <View style={styles.marker}>
-              {i === last ? (
-                <DropPin width={DROP_PIN_W} height={DROP_PIN_H} />
-              ) : (
-                <CityRing width={CITY_RING} height={CITY_RING} />
-              )}
+        {rows.map((row, i) =>
+          row.kind === 'more' ? (
+            <View key="more" style={styles.moreRow}>
+              <TouchableOpacity
+                style={styles.moreChip}
+                activeOpacity={onPressMore ? 0.7 : 1}
+                disabled={!onPressMore}
+                onPress={onPressMore}>
+                <AppText
+                  style={styles.moreChipText}
+                  numberOfLines={1}
+                  adjustsFontSizeToFit
+                  minimumFontScale={0.75}>
+                  {moreLabelOf(hidden)}
+                </AppText>
+              </TouchableOpacity>
             </View>
-            <AppText style={[styles.city, textStyle]} numberOfLines={1}>
-              {city}
-            </AppText>
-          </View>
-        ))}
+          ) : (
+            <View key={`${cities[row.index]}-${i}`} style={styles.row}>
+              <View style={styles.marker}>
+                {(typed ? types[row.index] === 'drop' : row.index === last) ? (
+                  <DropPin width={DROP_PIN_W} height={DROP_PIN_H} />
+                ) : (
+                  <CityRing width={CITY_RING} height={CITY_RING} />
+                )}
+              </View>
+              <AppText style={[styles.city, textStyle]} numberOfLines={1}>
+                {cities[row.index]}
+              </AppText>
+            </View>
+          ),
+        )}
       </View>
 
       {showSummary ? (
-        <AppText style={[styles.summary, summaryStyle]} numberOfLines={1}>
-          {summaryOf(cities)}
+        <AppText
+          style={[styles.summary, summaryStyle]}
+          numberOfLines={1}
+          adjustsFontSizeToFit
+          minimumFontScale={0.8}>
+          {typed ? typedSummaryOf(types) : summaryOf(cities)}
         </AppText>
       ) : null}
     </View>
