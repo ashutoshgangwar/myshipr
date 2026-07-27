@@ -5,6 +5,12 @@ import styles from './DashboardHeader.styles';
 import AppText from '../../theme/AppText';
 import Sparkline from '../Sparkline/Sparkline';
 import {IS_TABLET} from '../../theme/device';
+import {ms} from '../../theme/scale';
+
+// Keep the sparkline narrow enough that the value beside it never has to
+// shrink — cards with different value widths must still match visually.
+const SPARK_W = IS_TABLET ? ms(105) : ms(60);
+const SPARK_H = IS_TABLET ? ms(30) : ms(20);
 
 const DashboardHeader = ({
   icon,
@@ -74,6 +80,84 @@ const DashboardHeader = ({
         <View style={[styles.statsRowChart, statsRowStyle, statsStyle]}>
           {stats.map(stat => {
             const id = stat.key ?? stat.label;
+
+            // Icon cards use the newer layout: icon + title/subtitle, a
+            // divider, then the value with its sparkline and a delta pill.
+            if (stat.icon) {
+              const up = stat.deltaUp;
+              return (
+                <View key={id} style={[styles.chartCard, styles.chartCardPlain]}>
+                  <View style={styles.chartCardIconRow}>
+                    <View style={styles.chartCardIcon}>{stat.icon}</View>
+                    <View style={styles.chartCardHeading}>
+                      <AppText
+                        style={styles.chartCardTitle}
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                        minimumFontScale={0.95}>
+                        {stat.label}
+                      </AppText>
+                      {stat.range ? (
+                        <AppText style={styles.chartCardRange} numberOfLines={1}>
+                          {stat.range}
+                        </AppText>
+                      ) : null}
+                    </View>
+                  </View>
+
+                  <View style={styles.chartCardDivider} />
+
+                  <View style={styles.chartCardBottomRow}>
+                    <AppText
+                      style={styles.chartCardValue}
+                      numberOfLines={1}
+                      adjustsFontSizeToFit
+                      minimumFontScale={0.95}>
+                      {stat.value}
+                    </AppText>
+                    <View style={styles.chartCardSpark}>
+                      <Sparkline
+                        data={stat.chart}
+                        color={stat.chartColor ?? stat.accent}
+                        width={SPARK_W}
+                        height={SPARK_H}
+                      />
+                    </View>
+                  </View>
+
+                  {stat.delta ? (
+                    <View style={styles.chartCardDeltaRow}>
+                      <View
+                        style={[
+                          styles.chartCardDeltaPill,
+                          up
+                            ? styles.chartCardDeltaPillUp
+                            : styles.chartCardDeltaPillDown,
+                        ]}>
+                        <AppText
+                          numberOfLines={1}
+                          style={[
+                            styles.chartCardDeltaText,
+                            up
+                              ? styles.chartCardDeltaTextUp
+                              : styles.chartCardDeltaTextDown,
+                          ]}>
+                          {stat.delta} {up ? '↗' : '↙'}
+                        </AppText>
+                      </View>
+                      {stat.deltaNote ? (
+                        <AppText
+                          numberOfLines={1}
+                          style={styles.chartCardDeltaNote}>
+                          {stat.deltaNote}
+                        </AppText>
+                      ) : null}
+                    </View>
+                  ) : null}
+                </View>
+              );
+            }
+
             return (
               <View
                 key={id}
@@ -116,8 +200,8 @@ const DashboardHeader = ({
                     <Sparkline
                       data={stat.chart}
                       color={stat.chartColor ?? stat.accent}
-                      width={IS_TABLET ? 120 : 78}
-                      height={IS_TABLET ? 38 : 30}
+                      width={SPARK_W}
+                      height={SPARK_H}
                     />
                   </View>
                 </View>

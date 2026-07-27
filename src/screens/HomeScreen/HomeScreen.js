@@ -35,6 +35,8 @@ import Ltl_Arrow from '../../assets/svg_icon/Ltl_Arrow.svg';
 import Multileg_icon from '../../assets/svg_icon/multileg_icon.svg';
 import Setting_Icon from '../../assets/svg_icon/Setting_Icon.svg';
 import Logout_Icon from '../../assets/svg_icon/Logout_Icon.svg'
+import Circle_two_way from '../../assets/svg_icon/circle_two_way.svg';
+import Earning_sign from '../../assets/svg_icon/earning_sign.svg';
 
 
 const {width: SCREEN_W} = Dimensions.get('window');
@@ -43,26 +45,30 @@ const FUEL_PUMP = require('../../assets/Image/fuel_pump.png');
 
 const PRIMARY_GRADIENT = ['#00033E', '#0008A4'];
 
+const STAT_ICON_SIZE = IS_TABLET ? 26 : 22;
+
 const STATS = [
   {
     key: 'miles',
-    label: 'Weekly Miles',
-    range: '13 July - 19 July',
-    value: '1,234',
-    note: '↑ 8% vs last week',
-    noteColor: colors.success,
-    accent: colors.warning,
+    icon: <Circle_two_way width={STAT_ICON_SIZE} height={STAT_ICON_SIZE} />,
+    label: 'Monthly Miles',
+    range: 'July',
+    value: '20,000',
+    delta: '8.9%',
+    deltaUp: true,
+    deltaNote: 'from Last Month',
     chartColor: colors.success,
     chart: [30, 42, 38, 55, 50, 62, 72],
   },
   {
     key: 'earnings',
-    label: 'Weekly Earnings',
-    range: '13 July - 19 July',
-    value: '$1,234',
-    note: '↓ $200 this week',
-    noteColor: colors.danger,
-    accent: colors.warning,
+    icon: <Earning_sign width={STAT_ICON_SIZE} height={STAT_ICON_SIZE} />,
+    label: 'Monthly Earnings',
+    range: 'July',
+    value: '$26,000',
+    delta: '8.9%',
+    deltaUp: false,
+    deltaNote: 'from Last Month',
     chartColor: colors.danger,
     chart: [50, 40, 52, 44, 54, 42, 50, 60],
   },

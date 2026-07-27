@@ -121,7 +121,7 @@ export default StyleSheet.create({
   chartCard: {
     flex: 1,
     backgroundColor: colors.white,
-    borderRadius: ms(18),
+    borderRadius: ms(8),
     // Tighter vertical padding to shorten the card.
     paddingVertical: vs(8),
     paddingHorizontal: ms(10),
@@ -133,6 +133,76 @@ export default StyleSheet.create({
     elevation: 4,
   },
 
+  // Icon variant: no accent stripe, a little more breathing room.
+  chartCardPlain: {
+    borderLeftWidth: 0,
+    paddingVertical: vs(10),
+    paddingHorizontal: ms(12),
+  },
+
+  chartCardIconRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: ms(8),
+  },
+
+  chartCardIcon: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  chartCardHeading: {
+    flex: 1,
+  },
+
+  chartCardDivider: {
+    height: 1,
+    backgroundColor: colors.cardBorder,
+    marginTop: vs(8),
+    marginBottom: vs(2),
+  },
+
+  chartCardDeltaRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: vs(6),
+    gap: ms(6),
+  },
+
+  chartCardDeltaPill: {
+    borderRadius: ms(6),
+    paddingHorizontal: ms(6),
+    paddingVertical: vs(2),
+  },
+
+  chartCardDeltaPillUp: {
+    backgroundColor: '#E7F8EE',
+  },
+
+  chartCardDeltaPillDown: {
+    backgroundColor: '#FDE8E8',
+  },
+
+  chartCardDeltaText: {
+    fontSize: ms(11),
+    fontWeight: '700',
+  },
+
+  chartCardDeltaTextUp: {
+    color: colors.success,
+  },
+
+  chartCardDeltaTextDown: {
+    color: colors.danger,
+  },
+
+  chartCardDeltaNote: {
+    flexShrink: 1,
+    color: colors.textMuted,
+    fontSize: ms(11),
+    fontWeight: '500',
+  },
+
   chartCardTopRow: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -142,36 +212,36 @@ export default StyleSheet.create({
 
   chartCardTitle: {
     flexShrink: 1,
-    color: colors.textStrong,
-    fontSize: ms(14),
+    color: colors.lightbg_gray2,
+    fontSize: ms(12),
     fontWeight: '700',
   },
 
   chartCardNote: {
     color: colors.textMuted,
-    fontSize: ms(11),
+    fontSize: ms(8),
     fontWeight: '600',
   },
 
   chartCardRange: {
-    color: colors.textMuted,
+    color: colors.lightbg_gray3,
     fontSize: ms(10),
     fontWeight: '500',
-    marginTop: vs(2),
   },
 
   chartCardBottomRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
     justifyContent: 'space-between',
-    marginTop: vs(4),
     gap: ms(6),
   },
 
+  // Sized so the widest value ("$26,000") still fits without auto-shrinking,
+  // otherwise the two cards render their values at different sizes.
   chartCardValue: {
     flexShrink: 1,
     color: colors.textStrong,
-    fontSize: ms(22),
+    fontSize: ms(20),
     fontWeight: '800',
   },
 

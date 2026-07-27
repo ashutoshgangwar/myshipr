@@ -51,6 +51,7 @@ export const colors = {
   textOnLightStrong: '#767676',
   lightbg_gray: '#8888884D',
   lightbg_gray2: '#606060',
+  lightbg_gray3:'#7171717D',
 
 
   surfaceDarkPrimary: '#00033E',
