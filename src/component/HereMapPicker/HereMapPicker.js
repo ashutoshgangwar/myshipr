@@ -1,4 +1,11 @@
-import React, {useEffect, useRef, useState, useCallback} from 'react';
+import React, {
+  useEffect,
+  useRef,
+  useState,
+  useCallback,
+  forwardRef,
+  useImperativeHandle,
+} from 'react';
 import {
   View,
   TextInput,
@@ -55,14 +62,18 @@ const isClose = (a, b) =>
  * @param {function} props.onPick             Called with {latitude, longitude, description}.
  * @param {object}   [props.mapStyle]         Style for the map card container.
  * @param {string}   [props.searchPlaceholder]
+ *
+ * Exposes `recenterToCurrentLocation()` on its ref so a parent can trigger the
+ * same GPS recenter as the built-in button; it resolves with the located
+ * coordinate, or null if the fix failed.
  */
-const HereMapPicker = ({
+const HereMapPicker = forwardRef(({
   pickedLocation = null,
   onPick,
   mapStyle,
   searchPlaceholder = 'Search a location',
   showSearch = true,
-}) => {
+}, ref) => {
   const mapRef = useRef(null);
   const [sdkReady, setSdkReady] = useState(false);
   const [initError, setInitError] = useState(null);
@@ -271,7 +282,7 @@ const HereMapPicker = ({
   );
 
   const onRecenter = useCallback(async () => {
-    if (locating) return;
+    if (locating) return null;
     setLocating(true);
     try {
       const loc = await getCurrentLocation({detectMock: true});
@@ -283,11 +294,25 @@ const HereMapPicker = ({
           style: 'pedestrian',
         })
         .catch(() => {});
+      // If we're already sitting on that point the camera won't move, so the
+      // poller never fires — emit the pick here instead.
+      const center = lastCenterRef.current;
+      if (center && isClose(center, {lat: loc.latitude, lng: loc.longitude})) {
+        pendingMoveRef.current = null;
+        emitPick(loc.latitude, loc.longitude, '');
+        scheduleReverseGeocode(loc.latitude, loc.longitude);
+      }
+      return loc;
     } catch (_) {
+      return null;
     } finally {
       setLocating(false);
     }
-  }, [locating, moveTo]);
+  }, [locating, moveTo, emitPick, scheduleReverseGeocode]);
+
+  useImperativeHandle(ref, () => ({recenterToCurrentLocation: onRecenter}), [
+    onRecenter,
+  ]);
 
   const showOverlay = !sdkReady || !!initError;
 
@@ -394,6 +419,8 @@ const HereMapPicker = ({
       </View>
     </View>
   );
-};
+});
+
+HereMapPicker.displayName = 'HereMapPicker';
 
 export default HereMapPicker;

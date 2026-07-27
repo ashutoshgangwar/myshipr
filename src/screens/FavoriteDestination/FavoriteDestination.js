@@ -1,15 +1,16 @@
-import React, {useState} from 'react';
+import React, {useRef, useState} from 'react';
 import {
   View,
   ImageBackground,
   ScrollView,
   TextInput,
   TouchableOpacity,
+  ActivityIndicator,
   Alert,
 } from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 import styles, {ICON_SIZE} from './FavoriteDestination.styles';
-import Location_Icon from '../../assets/svg_icon/location.svg';
+import Location_Icon from '../../assets/svg_icon/current_location_icon.svg';
 import Manual_icon_Icon from '../../assets/svg_icon/Manual_icon.svg';
 import TruckIcon from '../../assets/svg_icon/Frame.svg';
 import {colors} from '../../theme/colors';
@@ -20,6 +21,9 @@ import Button from '../../component/Button/Button';
 import {ms, vs} from '../../theme/scale';
 
 const HERO_IMAGE = require('../../assets/Image/bg_image_login.jpg');
+
+// Muted grey shared by the placeholder text and the un-selected pin icon.
+const PLACEHOLDER_COLOR = '#9CA3AF';
 
 const EMPTY_FORM = {
   street: '',
@@ -32,10 +36,13 @@ const EMPTY_FORM = {
 const FavoriteDestination = () => {
   const navigation = useNavigation();
 
+  const pickerRef = useRef(null);
+
   const [mode, setMode] = useState('map'); // 'map' | 'manual'
   const [picked, setPicked] = useState(null); // {latitude, longitude, description}
   const [form, setForm] = useState(EMPTY_FORM);
   const [errors, setErrors] = useState({});
+  const [locating, setLocating] = useState(false);
 
   const setField = (key, value) => {
     setForm(prev => ({...prev, [key]: value}));
@@ -82,10 +89,29 @@ const FavoriteDestination = () => {
     });
   };
 
-  const selectedLabel = picked
-    ? picked.description?.trim() ||
-      `Selected: ${picked.latitude.toFixed(5)}, ${picked.longitude.toFixed(5)}`
-    : 'Move the map to select a location';
+  // Tapping the row asks the picker for a GPS fix; the map recenters and the
+  // resulting pin is emitted back through onPick.
+  const handleUseCurrentLocation = async () => {
+    if (locating) return;
+    setLocating(true);
+    try {
+      const loc = await pickerRef.current?.recenterToCurrentLocation();
+      if (!loc) {
+        Alert.alert(
+          'Location unavailable',
+          'We could not get your current location. Check that location access is on, or move the map to set your destination.',
+        );
+      }
+    } finally {
+      setLocating(false);
+    }
+  };
+
+  // Only ever show a real address — never raw coordinates.
+  const pickedAddress = picked?.description?.trim();
+  const selectedLabel = locating
+    ? 'Fetching current location…'
+    : pickedAddress || (picked ? 'Fetching address…' : 'Select Current Location');
 
   return (
     <View style={styles.safe}>
@@ -146,7 +172,7 @@ const FavoriteDestination = () => {
                   styles.tabText,
                   mode === 'map' && styles.tabTextActive,
                 ]}>
-                Pick on Map
+                Select Current Location
               </AppText>
             </TouchableOpacity>
 
@@ -171,29 +197,39 @@ const FavoriteDestination = () => {
 
           {mode === 'map' ? (
             <>
-              {/* HERE SDK search + map picker */}
-              <HereMapPicker
-                mapStyle={styles.mapCard}
-                pickedLocation={picked}
-                onPick={setPicked}
-              />
-
-              {/* Selected location */}
-              <View style={styles.selectedRow}>
+              {/* Selected location — sits where the search bar used to be.
+                  Tap it to drop onto the device's current location. */}
+              <TouchableOpacity
+                style={styles.selectedRow}
+                onPress={handleUseCurrentLocation}
+                disabled={locating}
+                activeOpacity={0.8}>
                 <Location_Icon
                   width={ICON_SIZE.tab}
                   height={ICON_SIZE.tab}
-                  color={colors.primary}
+                  color={pickedAddress ? colors.primary : PLACEHOLDER_COLOR}
                 />
                 <AppText
                   style={[
                     styles.selectedText,
-                    !picked && styles.selectedPlaceholder,
+                    !pickedAddress && styles.selectedPlaceholder,
                   ]}
                   numberOfLines={1}>
                   {selectedLabel}
                 </AppText>
-              </View>
+                {locating && (
+                  <ActivityIndicator size="small" color={colors.primary} />
+                )}
+              </TouchableOpacity>
+
+              {/* HERE SDK map picker — no search, pin drives the selection */}
+              <HereMapPicker
+                ref={pickerRef}
+                mapStyle={styles.mapCard}
+                pickedLocation={picked}
+                onPick={setPicked}
+                showSearch={false}
+              />
             </>
           ) : (
             <>

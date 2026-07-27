@@ -9,7 +9,6 @@ const CONTENT_MAX_WIDTH = select({phone: undefined, tablet: scale(380)});
 // Icon sizes bump up on tablets so they stay in proportion with the scaled text.
 export const ICON_SIZE = {
   tab: select({phone: moderateScale(18), tablet: moderateScale(15)}),
-  search: select({phone: moderateScale(18), tablet: moderateScale(22)}),
   selected: select({phone: moderateScale(16), tablet: moderateScale(20)}),
 };
 
@@ -125,41 +124,13 @@ const styles = StyleSheet.create({
   },
 
   tabText: {
-    fontSize: moderateScale(12),
+    fontSize: moderateScale(10),
     fontWeight: '400',
     color: colors.splashText,
   },
 
   tabTextActive: {
     color: colors.textOnLightStrong,
-  },
-
-  /* Search */
-  searchBox: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: scale(10),
-    borderWidth: 1,
-    borderColor: colors.border_Color,
-    backgroundColor: '#F8FAFC',
-    borderRadius: moderateScale(12),
-    paddingHorizontal: scale(12),
-    paddingVertical: IS_TABLET
-      ? verticalScale(5)
-      : Platform.OS === 'ios'
-      ? verticalScale(13)
-      : verticalScale(12),
-    marginBottom: verticalScale(12),
-    width: '100%',
-    maxWidth: CONTENT_MAX_WIDTH,
-    alignSelf: IS_TABLET ? 'center' : 'stretch',
-  },
-
-  searchInput: {
-    flex: 1,
-    fontSize: moderateScale(14),
-    color: colors.text_dark,
-    padding: 0,
   },
 
   /* Map */
@@ -179,7 +150,7 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(12),
     paddingHorizontal: scale(12),
     paddingVertical:IS_TABLET ? verticalScale(7) :  verticalScale(12),
-    marginTop: verticalScale(14),
+    marginBottom: verticalScale(12),
   },
 
   selectedText: {

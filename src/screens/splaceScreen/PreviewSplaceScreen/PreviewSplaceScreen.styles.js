@@ -95,7 +95,7 @@ export default StyleSheet.create({
   },
 
   activeDot: {
-    width: scale(24),
+    width: scale(15),
     height: scale(8),
     borderRadius: moderateScale(99),
     backgroundColor: colors.white,

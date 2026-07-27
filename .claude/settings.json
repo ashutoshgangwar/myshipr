@@ -4,7 +4,8 @@
       "Bash(python3 /private/tmp/claude-501/-Users-ashutoshgangwar-Desktop-myshipr/33217c21-83fa-4f4d-9182-74ad2a4b94a4/scratchpad/make_screens_components.py)",
       "Bash(javap -cp . com/here/sdk/mapview/MapScheme)",
       "Bash(grep -v '\\\\$')",
-      "Bash(javap -cp . com/here/sdk/mapview/MapView)"
+      "Bash(javap -cp . com/here/sdk/mapview/MapView)",
+      "Bash(npx eslint *)"
     ]
   }
 }
