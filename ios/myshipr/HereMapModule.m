@@ -127,4 +127,77 @@ RCT_EXTERN_METHOD(
   rejecter:(RCTPromiseRejectBlock)reject
 )
 
+// ── Search / geocoding / POI (HERE SDK SearchEngine) ───────────────────────
+RCT_EXTERN_METHOD(
+  suggest:(NSDictionary *)options
+  resolver:(RCTPromiseResolveBlock)resolve
+  rejecter:(RCTPromiseRejectBlock)reject
+)
+
+RCT_EXTERN_METHOD(
+  searchByText:(NSDictionary *)options
+  resolver:(RCTPromiseResolveBlock)resolve
+  rejecter:(RCTPromiseRejectBlock)reject
+)
+
+RCT_EXTERN_METHOD(
+  searchByCategory:(NSDictionary *)options
+  resolver:(RCTPromiseResolveBlock)resolve
+  rejecter:(RCTPromiseRejectBlock)reject
+)
+
+RCT_EXTERN_METHOD(
+  geocode:(NSDictionary *)options
+  resolver:(RCTPromiseResolveBlock)resolve
+  rejecter:(RCTPromiseRejectBlock)reject
+)
+
+RCT_EXTERN_METHOD(
+  reverseGeocode:(NSDictionary *)options
+  resolver:(RCTPromiseResolveBlock)resolve
+  rejecter:(RCTPromiseRejectBlock)reject
+)
+
+RCT_EXTERN_METHOD(
+  lookupPlace:(NSDictionary *)options
+  resolver:(RCTPromiseResolveBlock)resolve
+  rejecter:(RCTPromiseRejectBlock)reject
+)
+
+// ── Routing (HERE SDK RoutingEngine) ───────────────────────────────────────
+RCT_EXTERN_METHOD(
+  calculateRouteWithOptions:(NSDictionary *)options
+  resolver:(RCTPromiseResolveBlock)resolve
+  rejecter:(RCTPromiseRejectBlock)reject
+)
+
+// ── Map styling & features ─────────────────────────────────────────────────
+RCT_EXTERN_METHOD(
+  setMapScheme:(nonnull NSNumber *)viewTag scheme:(NSString *)scheme
+  resolver:(RCTPromiseResolveBlock)resolve
+  rejecter:(RCTPromiseRejectBlock)reject
+)
+
+RCT_EXTERN_METHOD(
+  getMapScheme:(nonnull NSNumber *)viewTag resolver:(RCTPromiseResolveBlock)resolve
+  rejecter:(RCTPromiseRejectBlock)reject
+)
+
+RCT_EXTERN_METHOD(
+  setMapFeatures:(nonnull NSNumber *)viewTag options:(NSDictionary *)options
+  resolver:(RCTPromiseResolveBlock)resolve
+  rejecter:(RCTPromiseRejectBlock)reject
+)
+
+RCT_EXTERN_METHOD(
+  set3DBuildingsEnabled:(nonnull NSNumber *)viewTag enabled:(BOOL)enabled
+  resolver:(RCTPromiseResolveBlock)resolve
+  rejecter:(RCTPromiseRejectBlock)reject
+)
+
+RCT_EXTERN_METHOD(
+  getSupportedMapFeatures:(nonnull NSNumber *)viewTag resolver:(RCTPromiseResolveBlock)resolve
+  rejecter:(RCTPromiseRejectBlock)reject
+)
+
 @end

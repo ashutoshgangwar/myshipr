@@ -1,4 +1,5 @@
 import UIKit
+import React
 #if canImport(heresdk)
 import heresdk
 #endif
@@ -94,6 +95,15 @@ class HereMapView: UIView {
     private var isSceneLoaded = false
     private var pendingSceneOps: [() -> Void] = []
 
+    // ── Map styling ────────────────────────────────────────────────────────
+    // Scheme currently applied, and the feature set (3D buildings, traffic…)
+    // that must be re-applied after every scene load because loadScene resets it.
+    private var currentScheme: MapScheme = .normalDay
+    private var enabledFeatures: [String: String] = [:]
+
+    // Side of the square hit-test box used when picking an embedded POI.
+    private static let poiPickBoxPx: Double = 48
+
 #else
     private let placeholderView: UIView = {
         let view = UIView()
@@ -142,12 +152,39 @@ class HereMapView: UIView {
         fatalError("init(coder:) has not been implemented")
     }
 
+    // MARK: - Event props (wired up in HereMapViewManager.m)
+
+    @objc var onMapTap: RCTDirectEventBlock?
+    @objc var onMapLongPress: RCTDirectEventBlock?
+    @objc var onPoiTap: RCTDirectEventBlock?
+
+    /// Map style, e.g. "normalDay", "satellite", "logisticsDay".
+    @objc var mapScheme: NSString? {
+        didSet {
+#if canImport(heresdk)
+            if let value = mapScheme as String?, !value.isEmpty {
+                _ = setMapScheme(value)
+            }
+#endif
+        }
+    }
+
+    /// Turns on HERE's extruded-building (3D) rendering.
+    @objc var buildings3D: Bool = false {
+        didSet {
+#if canImport(heresdk)
+            set3DBuildingsEnabled(buildings3D)
+#endif
+        }
+    }
+
 #if canImport(heresdk)
 
     // MARK: - Map Load
 
     private func loadMap() {
-        mapView.mapScene.loadScene(mapScheme: .normalDay) { [weak self] error in
+        attachGestureDelegates()
+        mapView.mapScene.loadScene(mapScheme: currentScheme) { [weak self] error in
             guard let self = self else { return }
             guard error == nil else {
                 print("[HereMapView] Map load error: \(String(describing: error))")
@@ -174,6 +211,11 @@ class HereMapView: UIView {
             offset: Point2D(x: -65, y: 0)
            )
 
+            // Loading a scene clears the feature set, so restore it.
+            if !self.enabledFeatures.isEmpty {
+                self.mapView.mapScene.enableFeatures(self.enabledFeatures)
+            }
+
             // Scene is ready — flush any operations queued while it was loading
             // (in FIFO order so a queued clear → draw stays consistent).
             self.isSceneLoaded = true
@@ -181,6 +223,107 @@ class HereMapView: UIView {
             self.pendingSceneOps.removeAll()
             ops.forEach { $0() }
         }
+    }
+
+    // MARK: - Map styling — the schemes the Explore edition ships with
+
+    /// Switches the map style. Accepts the `MapScheme` names in any case and
+    /// hyphen/underscore form, e.g. "satellite", "hybridDay", "LOGISTICS_NIGHT".
+    /// Returns false when the name matches no scheme (the map is left as-is).
+    func setMapScheme(_ name: String) -> Bool {
+        guard let scheme = HereMapView.parseMapScheme(name) else {
+            print("[HereMapView] unknown map scheme '\(name)'")
+            return false
+        }
+        guard scheme != currentScheme else { return true }
+
+        currentScheme = scheme
+        // The initial loadScene may still be running; queue behind it.
+        whenSceneReady { [weak self] in
+            guard let self = self else { return }
+            self.mapView.mapScene.loadScene(mapScheme: scheme) { error in
+                if let error = error {
+                    print("[HereMapView] Scene load error: \(error)")
+                    return
+                }
+                MapView.primaryLanguage = LanguageCode.enUs
+                if !self.enabledFeatures.isEmpty {
+                    self.mapView.mapScene.enableFeatures(self.enabledFeatures)
+                }
+            }
+        }
+        return true
+    }
+
+    func getMapScheme() -> String { String(describing: currentScheme) }
+
+    /// "hybrid_day" / "HYBRID-DAY" / "hybridDay" / "SATELLITE" all resolve by
+    /// comparing on letters/digits only, case-insensitively.
+    private static func parseMapScheme(_ name: String) -> MapScheme? {
+        let target = name.filter { $0.isLetter || $0.isNumber }.lowercased()
+        guard !target.isEmpty else { return nil }
+        return MapScheme.allCases.first { String(describing: $0).lowercased() == target }
+    }
+
+    /// Toggles map features. `enable` maps a `MapFeatures` key to a
+    /// `MapFeatureModes` value; `disable` is a plain list of feature keys.
+    /// `MapFeatures.extrudedBuildings` is what turns on 3D building rendering.
+    func setMapFeatures(enable: [String: String], disable: [String]) {
+        disable.forEach { enabledFeatures.removeValue(forKey: $0) }
+        enable.forEach { enabledFeatures[$0.key] = $0.value }
+
+        // Before the scene is ready there is nothing to toggle — the recorded
+        // set is applied by loadScene instead.
+        guard isSceneLoaded else { return }
+
+        if !disable.isEmpty { mapView.mapScene.disableFeatures(disable) }
+        if !enable.isEmpty { mapView.mapScene.enableFeatures(enable) }
+    }
+
+    /// Convenience toggle for 3D buildings + the shadows that sell the effect.
+    func set3DBuildingsEnabled(_ enabled: Bool) {
+        if enabled {
+            setMapFeatures(
+                enable: [
+                    MapFeatures.extrudedBuildings: MapFeatureModes.extrudedBuildingsAll,
+                    MapFeatures.shadows: MapFeatureModes.shadowsAll
+                ],
+                disable: []
+            )
+        } else {
+            setMapFeatures(
+                enable: [:],
+                disable: [MapFeatures.extrudedBuildings, MapFeatures.shadows]
+            )
+        }
+    }
+
+    // MARK: - Map interaction — tap / long-press, including embedded POIs
+
+    private func attachGestureDelegates() {
+        mapView.gestures.tapDelegate = self
+        mapView.gestures.longPressDelegate = self
+    }
+
+    /// Picks the embedded (carto) POI under a screen point. HERE returns these
+    /// as a lightweight `PickedPlace`; JS can hand the name/category back to the
+    /// search engine for full details.
+    fileprivate func pickPlace(at origin: Point2D, completion: @escaping (PickedPlace?) -> Void) {
+        // A 1px hit test almost never lands on the POI icon itself, so probe a
+        // small box around the finger.
+        let size = HereMapView.poiPickBoxPx
+        let area = Rectangle2D(
+            origin: Point2D(x: origin.x - size / 2, y: origin.y - size / 2),
+            size: Size2D(width: size, height: size)
+        )
+        let filter = MapScene.MapPickFilter(filter: [.mapContent])
+        mapView.pick(filter: filter, inside: area) { result in
+            completion(result?.mapContent?.pickedPlaces.first)
+        }
+    }
+
+    fileprivate func geoCoordinates(at origin: Point2D) -> GeoCoordinates? {
+        mapView.viewToGeoCoordinates(viewCoordinates: origin)
     }
 
     /// Runs `block` immediately if the map scene has finished loading, otherwise
@@ -962,3 +1105,49 @@ private extension UIBezierPath {
         return self
     }
 }
+// MARK: - Gesture delegates
+//
+// Emits onMapTap / onMapLongPress, and additionally onPoiTap when the tap lands
+// on one of HERE's embedded map POIs.
+
+#if canImport(heresdk)
+
+extension HereMapView: TapDelegate {
+    func onTap(origin: Point2D) {
+        if let coords = geoCoordinates(at: origin) {
+            onMapTap?([
+                "latitude": coords.latitude,
+                "longitude": coords.longitude,
+                "x": origin.x,
+                "y": origin.y
+            ])
+        }
+
+        guard onPoiTap != nil else { return }
+        pickPlace(at: origin) { [weak self] picked in
+            guard let self = self, let picked = picked else { return }
+            self.onPoiTap?([
+                "name": picked.name,
+                "categoryId": picked.placeCategoryId,
+                "latitude": picked.coordinates.latitude,
+                "longitude": picked.coordinates.longitude,
+                "x": origin.x,
+                "y": origin.y
+            ])
+        }
+    }
+}
+
+extension HereMapView: LongPressDelegate {
+    func onLongPress(state: GestureState, origin: Point2D) {
+        guard state == .begin, let coords = geoCoordinates(at: origin) else { return }
+        onMapLongPress?([
+            "latitude": coords.latitude,
+            "longitude": coords.longitude,
+            "x": origin.x,
+            "y": origin.y
+        ])
+    }
+}
+
+#endif

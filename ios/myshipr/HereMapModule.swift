@@ -443,6 +443,208 @@ class HereMapModule: NSObject {
         }
     }
 
+    // MARK: - Search / geocoding / POI  (HERE SDK SearchEngine — no REST calls)
+
+    @objc(suggest:resolver:rejecter:)
+    func suggest(
+        _ options: NSDictionary,
+        resolver resolve: @escaping RCTPromiseResolveBlock,
+        rejecter reject: @escaping RCTPromiseRejectBlock
+    ) {
+        runSearch(options, resolve, reject) { parsed, done, fail in
+#if canImport(heresdk)
+            HEREAutosuggestService.suggest(parsed, resolve: done, reject: fail)
+#endif
+        }
+    }
+
+    @objc(searchByText:resolver:rejecter:)
+    func searchByText(
+        _ options: NSDictionary,
+        resolver resolve: @escaping RCTPromiseResolveBlock,
+        rejecter reject: @escaping RCTPromiseRejectBlock
+    ) {
+        runSearch(options, resolve, reject) { parsed, done, fail in
+#if canImport(heresdk)
+            HEREAutosuggestService.searchByText(parsed, resolve: done, reject: fail)
+#endif
+        }
+    }
+
+    @objc(searchByCategory:resolver:rejecter:)
+    func searchByCategory(
+        _ options: NSDictionary,
+        resolver resolve: @escaping RCTPromiseResolveBlock,
+        rejecter reject: @escaping RCTPromiseRejectBlock
+    ) {
+        runSearch(options, resolve, reject) { parsed, done, fail in
+#if canImport(heresdk)
+            HEREAutosuggestService.searchByCategory(parsed, resolve: done, reject: fail)
+#endif
+        }
+    }
+
+    @objc(geocode:resolver:rejecter:)
+    func geocode(
+        _ options: NSDictionary,
+        resolver resolve: @escaping RCTPromiseResolveBlock,
+        rejecter reject: @escaping RCTPromiseRejectBlock
+    ) {
+        runSearch(options, resolve, reject) { parsed, done, fail in
+#if canImport(heresdk)
+            HEREGeocodingService.geocode(parsed, resolve: done, reject: fail)
+#endif
+        }
+    }
+
+    @objc(reverseGeocode:resolver:rejecter:)
+    func reverseGeocode(
+        _ options: NSDictionary,
+        resolver resolve: @escaping RCTPromiseResolveBlock,
+        rejecter reject: @escaping RCTPromiseRejectBlock
+    ) {
+        runSearch(options, resolve, reject) { parsed, done, fail in
+#if canImport(heresdk)
+            HEREGeocodingService.reverseGeocode(parsed, resolve: done, reject: fail)
+#endif
+        }
+    }
+
+    @objc(lookupPlace:resolver:rejecter:)
+    func lookupPlace(
+        _ options: NSDictionary,
+        resolver resolve: @escaping RCTPromiseResolveBlock,
+        rejecter reject: @escaping RCTPromiseRejectBlock
+    ) {
+        runSearch(options, resolve, reject) { parsed, done, fail in
+#if canImport(heresdk)
+            HEREGeocodingService.lookupPlace(parsed, resolve: done, reject: fail)
+#endif
+        }
+    }
+
+    // MARK: - Routing  (HERE SDK RoutingEngine — no REST calls)
+
+    /// Calculates a route for any supported transport mode; resolves `{ routes: [...] }`.
+    @objc(calculateRouteWithOptions:resolver:rejecter:)
+    func calculateRouteWithOptions(
+        _ options: NSDictionary,
+        resolver resolve: @escaping RCTPromiseResolveBlock,
+        rejecter reject: @escaping RCTPromiseRejectBlock
+    ) {
+        runSearch(options, resolve, reject) { parsed, done, fail in
+#if canImport(heresdk)
+            HERERoutingService.calculateRoute(parsed, resolve: done, reject: fail)
+#endif
+        }
+    }
+
+    /// Shared plumbing for the engine-backed calls: bridges the NSDictionary to
+    /// a Swift dictionary and adapts the reject signature. The engines are only
+    /// compiled in when the HERE framework is embedded.
+    private func runSearch(
+        _ options: NSDictionary,
+        _ resolve: @escaping RCTPromiseResolveBlock,
+        _ reject: @escaping RCTPromiseRejectBlock,
+        _ body: (_ options: [String: Any],
+                 _ resolve: @escaping (Any?) -> Void,
+                 _ reject: @escaping (String, String) -> Void) -> Void
+    ) {
+#if canImport(heresdk)
+        let parsed = (options as? [String: Any]) ?? [:]
+        body(parsed, { resolve($0) }, { code, message in reject(code, message, nil) })
+#else
+        reject("SDK_MISSING", "HERE SDK not embedded in Xcode project.", nil)
+#endif
+    }
+
+    // MARK: - Map styling & features
+
+    @objc(setMapScheme:scheme:resolver:rejecter:)
+    func setMapScheme(
+        _ viewTag: NSNumber,
+        scheme: String,
+        resolver resolve: @escaping RCTPromiseResolveBlock,
+        rejecter reject: @escaping RCTPromiseRejectBlock
+    ) {
+        DispatchQueue.main.async {
+#if canImport(heresdk)
+            guard let view = self.findHereMapView() else {
+                reject("VIEW_ERROR", "HereMapView not found", nil)
+                return
+            }
+            if view.setMapScheme(scheme) {
+                resolve(view.getMapScheme())
+            } else {
+                reject("INVALID_ARGS", "Unknown map scheme: \(scheme)", nil)
+            }
+#else
+            reject("SDK_MISSING", "HERE SDK not embedded in Xcode project.", nil)
+#endif
+        }
+    }
+
+    @objc(getMapScheme:resolver:rejecter:)
+    func getMapScheme(
+        _ viewTag: NSNumber,
+        resolver resolve: @escaping RCTPromiseResolveBlock,
+        rejecter reject: @escaping RCTPromiseRejectBlock
+    ) {
+        DispatchQueue.main.async {
+#if canImport(heresdk)
+            resolve(self.findHereMapView()?.getMapScheme())
+#else
+            resolve(nil)
+#endif
+        }
+    }
+
+    /// `{ enable: { FEATURE_KEY: MODE }, disable: [FEATURE_KEY] }`
+    @objc(setMapFeatures:options:resolver:rejecter:)
+    func setMapFeatures(
+        _ viewTag: NSNumber,
+        options: NSDictionary,
+        resolver resolve: @escaping RCTPromiseResolveBlock,
+        rejecter reject: @escaping RCTPromiseRejectBlock
+    ) {
+        let enable = (options["enable"] as? [String: Any])?
+            .compactMapValues { $0 as? String } ?? [:]
+        let disable = HEREOptions.strings(options["disable"])
+
+        DispatchQueue.main.async {
+#if canImport(heresdk)
+            self.findHereMapView()?.setMapFeatures(enable: enable, disable: disable)
+#endif
+            resolve(nil)
+        }
+    }
+
+    @objc(set3DBuildingsEnabled:enabled:resolver:rejecter:)
+    func set3DBuildingsEnabled(
+        _ viewTag: NSNumber,
+        enabled: Bool,
+        resolver resolve: @escaping RCTPromiseResolveBlock,
+        rejecter reject: @escaping RCTPromiseRejectBlock
+    ) {
+        DispatchQueue.main.async {
+#if canImport(heresdk)
+            self.findHereMapView()?.set3DBuildingsEnabled(enabled)
+#endif
+            resolve(nil)
+        }
+    }
+
+    /// The iOS SDK exposes no `supportedFeatures` query (Android does), so this
+    /// resolves an empty map and exists only to keep the JS API symmetrical.
+    @objc(getSupportedMapFeatures:resolver:rejecter:)
+    func getSupportedMapFeatures(
+        _ viewTag: NSNumber,
+        resolver resolve: @escaping RCTPromiseResolveBlock,
+        rejecter reject: @escaping RCTPromiseRejectBlock
+    ) {
+        resolve([String: Any]())
+    }
+
     // MARK: - Helpers
 
     /// Coerces an NSNumber / NSString JS value into a Double.

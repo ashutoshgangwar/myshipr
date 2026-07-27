@@ -15,7 +15,23 @@ try {
 }
 
 const HereMapView = forwardRef(function HereMapView(
-  { style, centerLat = 0, centerLng = 0, zoomLevel = 14, onSDKInitialized, ...rest },
+  {
+    style,
+    centerLat = 0,
+    centerLng = 0,
+    zoomLevel = 14,
+    // HERE SDK map style ('normalDay' | 'satellite' | 'logisticsDay' | …) and
+    // 3D extruded buildings. Both can also be driven imperatively via the ref.
+    mapScheme,
+    buildings3D = false,
+    // Map interaction. Each handler receives { latitude, longitude, x, y };
+    // onPoiTap additionally gets { name, categoryId } for HERE's embedded POIs.
+    onMapTap,
+    onMapLongPress,
+    onPoiTap,
+    onSDKInitialized,
+    ...rest
+  },
   ref,
 ) {
   const nativeRef = useRef(null);
@@ -168,6 +184,25 @@ const HereMapView = forwardRef(function HereMapView(
     },
 
     clearPolyline: () => withTag(tag => HereMapModule.clearPolyline(tag)),
+
+    // ── Map style (HERE SDK MapScheme) ──
+    //  'normalDay' | 'normalNight' | 'satellite' | 'hybridDay' | 'liteDay' |
+    //  'logisticsDay' | 'logisticsNight' | 'roadNetworkDay' | …
+    setMapScheme: scheme => withTag(tag => HereMapModule.setMapScheme(tag, scheme)),
+    getMapScheme: () => withTag(tag => HereMapModule.getMapScheme(tag)),
+
+    // ── Map features ──
+    //  setMapFeatures({ enable: { [MapFeatures key]: mode }, disable: [key] })
+    setMapFeatures: ({enable = {}, disable = []} = {}) =>
+      withTag(tag => HereMapModule.setMapFeatures(tag, {enable, disable})),
+
+    // 3D extruded buildings (plus shadows, which is what sells the effect).
+    set3DBuildingsEnabled: enabled =>
+      withTag(tag => HereMapModule.set3DBuildingsEnabled(tag, !!enabled)),
+
+    // Android only — iOS resolves {} (the iOS SDK has no such query).
+    getSupportedMapFeatures: () =>
+      withTag(tag => HereMapModule.getSupportedMapFeatures(tag)),
   }));
 
   if (!NativeHereMapView) {
@@ -197,6 +232,13 @@ const HereMapView = forwardRef(function HereMapView(
       centerLat={centerLat}
       centerLng={centerLng}
       zoomLevel={zoomLevel}
+      buildings3D={buildings3D}
+      {...(mapScheme ? {mapScheme} : {})}
+      {...(onMapTap ? {onMapTap: event => onMapTap(event.nativeEvent)} : {})}
+      {...(onMapLongPress
+        ? {onMapLongPress: event => onMapLongPress(event.nativeEvent)}
+        : {})}
+      {...(onPoiTap ? {onPoiTap: event => onPoiTap(event.nativeEvent)} : {})}
       {...rest}
     />
   );

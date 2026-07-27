@@ -9,6 +9,10 @@ import android.graphics.Paint
 import android.util.Base64
 import android.widget.FrameLayout
 import android.util.Log
+import com.facebook.react.bridge.Arguments
+import com.facebook.react.bridge.ReactContext
+import com.facebook.react.bridge.WritableMap
+import com.facebook.react.uimanager.UIManagerHelper
 import com.here.sdk.core.Anchor2D
 import com.here.sdk.core.Color as HereColor
 import com.here.sdk.core.GeoCoordinates
@@ -18,16 +22,24 @@ import com.here.sdk.core.GeoPolyline
 import com.here.sdk.core.LanguageCode
 import com.here.sdk.core.Location
 import com.here.sdk.core.Point2D
+import com.here.sdk.core.Rectangle2D
+import com.here.sdk.core.Size2D
+import com.here.sdk.gestures.GestureState
+import com.here.sdk.gestures.LongPressListener
+import com.here.sdk.gestures.TapListener
 import com.here.sdk.mapview.LineCap
 import com.here.sdk.mapview.MapCameraAnimationFactory
 import com.here.time.Duration
 import com.here.sdk.mapview.LocationIndicator
+import com.here.sdk.mapview.MapFeatureModes
+import com.here.sdk.mapview.MapFeatures
 import com.here.sdk.mapview.MapImage
 import com.here.sdk.mapview.MapImageFactory
 import com.here.sdk.mapview.MapMarker
 import com.here.sdk.mapview.MapMeasure
 import com.here.sdk.mapview.MapMeasureDependentRenderSize
 import com.here.sdk.mapview.MapPolyline
+import com.here.sdk.mapview.MapScene
 import com.here.sdk.mapview.MapScheme
 import com.here.sdk.mapview.MapView
 import com.here.sdk.mapview.RenderSize
@@ -45,6 +57,9 @@ class HereMapView(context: Context) : FrameLayout(context) {
         private const val DEFAULT_ZOOM = 14.0
         // Fixed pixel width for native drawRoute fallback
         private const val DEFAULT_ROUTE_WIDTH_PX = 26.0
+
+        // Side of the square hit-test box used when picking an embedded POI.
+        private const val POI_PICK_BOX_PX = 48.0
 
         // ── Native-controlled marker size ────────────────────────────────────
         // On-screen pixel size for every JS-supplied marker image (source /
@@ -76,6 +91,17 @@ class HereMapView(context: Context) : FrameLayout(context) {
     private var polylineManager:         PolylineManager?          = null
     private var navigationCameraManager: NavigationCameraManager?  = null
 
+    /** Scheme currently applied — reported back to JS by [getMapScheme]. */
+    private var currentScheme: MapScheme = MapScheme.NORMAL_DAY
+
+    /** Map features (3D buildings, traffic…) survive a scene reload via this. */
+    private val enabledFeatures = mutableMapOf<String, String>()
+
+    // loadScene is async and resets scene state, so styling calls that arrive
+    // before it completes are recorded and replayed rather than dropped.
+    private var isSceneLoaded = false
+    private var pendingScheme: MapScheme? = null
+
     private fun polylines(): PolylineManager =
         polylineManager ?: PolylineManager(mapView).also { polylineManager = it }
 
@@ -100,14 +126,23 @@ class HereMapView(context: Context) : FrameLayout(context) {
         // Call onCreate with null SavedInstanceState
         mapView.onCreate(null)
         Log.d(TAG, "✅ mapView.onCreate() called")
-        
-        // Load map scene
-        mapView.mapScene.loadScene(MapScheme.NORMAL_DAY) { err ->
+
+        loadScene(MapScheme.NORMAL_DAY) { initRoutingEngine() }
+        attachGestureListeners()
+    }
+
+    /**
+     * Loads a map scheme and re-applies everything the scene reset: the HERE
+     * watermark position and any enabled map features (3D buildings, traffic…).
+     */
+    private fun loadScene(scheme: MapScheme, onLoaded: (() -> Unit)? = null) {
+        mapView.mapScene.loadScene(scheme) { err ->
             if (err != null) {
                 Log.e(TAG, "❌ Scene load error: $err")
                 return@loadScene
             }
             Log.d(TAG, "✅ Map scene loaded successfully")
+            currentScheme = scheme
             MapView.setPrimaryLanguage(LanguageCode.EN_US)
 
             // Move the HERE watermark/logo to the vertical-centre of the map's
@@ -119,7 +154,19 @@ class HereMapView(context: Context) : FrameLayout(context) {
                 Point2D(-65.0, -40.0)
             )
 
-            initRoutingEngine()
+            // Loading a scene clears the feature set, so restore it.
+            isSceneLoaded = true
+            if (enabledFeatures.isNotEmpty()) {
+                mapView.mapScene.enableFeatures(enabledFeatures)
+            }
+
+            onLoaded?.invoke()
+
+            // A scheme requested while this load was in flight wins.
+            pendingScheme?.let { requested ->
+                pendingScheme = null
+                if (requested != currentScheme) loadScene(requested)
+            }
         }
     }
 
@@ -209,6 +256,152 @@ class HereMapView(context: Context) : FrameLayout(context) {
             Log.w(TAG, "resetNorth flyTo failed, fallback: ${e.message}")
             mapView.camera.lookAt(s.targetCoordinates, orientation, measure)
         }
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Map styling — the schemes the Explore edition ships with
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Switches the map style. Accepts the [MapScheme] enum names in any case
+     * and hyphen/camel form, e.g. "satellite", "hybridDay", "LOGISTICS_NIGHT".
+     * Returns false when the name matches no scheme (the map is left as-is).
+     */
+    fun setMapScheme(name: String): Boolean {
+        val scheme = parseMapScheme(name) ?: run {
+            Log.w(TAG, "unknown map scheme '$name'")
+            return false
+        }
+        if (!isSceneLoaded) {
+            // The initial loadScene is still running — queue instead of racing it.
+            pendingScheme = scheme
+            return true
+        }
+        if (scheme == currentScheme) return true
+        loadScene(scheme)
+        return true
+    }
+
+    fun getMapScheme(): String = currentScheme.name
+
+    private fun parseMapScheme(name: String): MapScheme? {
+        // "hybridDay" / "hybrid-day" / "HYBRID_DAY" all match HYBRID_DAY —
+        // compare on letters and digits only, case-insensitively.
+        val target = name.filter { it.isLetterOrDigit() }.lowercase()
+        if (target.isEmpty()) return null
+        return MapScheme.values().firstOrNull {
+            it.name.replace("_", "").lowercase() == target
+        }
+    }
+
+    /**
+     * Toggles map features. [enable] maps a [MapFeatures] key to a
+     * [MapFeatureModes] value; [disable] is a plain list of feature keys.
+     * `EXTRUDED_BUILDINGS` is what turns on 3D building rendering.
+     */
+    fun setMapFeatures(enable: Map<String, String>, disable: List<String>) {
+        disable.forEach { enabledFeatures.remove(it) }
+        enabledFeatures.putAll(enable)
+
+        // Before the scene is ready there is nothing to toggle — the recorded
+        // set is applied by loadScene instead.
+        if (!isSceneLoaded) return
+
+        if (disable.isNotEmpty()) mapView.mapScene.disableFeatures(disable)
+        if (enable.isNotEmpty()) mapView.mapScene.enableFeatures(enable)
+    }
+
+    /** Convenience toggle for 3D buildings + the shadows that sell the effect. */
+    fun set3DBuildingsEnabled(enabled: Boolean) {
+        if (enabled) {
+            setMapFeatures(
+                mapOf(
+                    MapFeatures.EXTRUDED_BUILDINGS to MapFeatureModes.EXTRUDED_BUILDINGS_ALL,
+                    MapFeatures.SHADOWS to MapFeatureModes.SHADOWS_ALL
+                ),
+                emptyList()
+            )
+        } else {
+            setMapFeatures(
+                emptyMap(),
+                listOf(MapFeatures.EXTRUDED_BUILDINGS, MapFeatures.SHADOWS)
+            )
+        }
+    }
+
+    /** The feature keys/modes this SDK build supports — handy for debugging. */
+    fun getSupportedMapFeatures(): Map<String, List<String>> =
+        mapView.mapScene.supportedFeatures ?: emptyMap()
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Map interaction — tap / long-press, including embedded POIs
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private fun attachGestureListeners() {
+        mapView.gestures.tapListener = TapListener { point ->
+            emitTouchEvent("topMapTap", point)
+            pickPlaceAt(point) { picked ->
+                if (picked != null) emitPoiEvent(picked, point)
+            }
+        }
+
+        mapView.gestures.longPressListener = LongPressListener { state, point ->
+            if (state == GestureState.BEGIN) emitTouchEvent("topMapLongPress", point)
+        }
+    }
+
+    /**
+     * Picks the embedded (carto) POI under a screen point. HERE returns these
+     * as a lightweight [com.here.sdk.core.PickedPlace]; JS can hand the id back
+     * to the search engine for full details.
+     */
+    private fun pickPlaceAt(point: Point2D, callback: (com.here.sdk.core.PickedPlace?) -> Unit) {
+        try {
+            // A small box around the finger — a 1px hit test almost never lands
+            // on the POI icon itself.
+            val size = POI_PICK_BOX_PX
+            val origin = Point2D(point.x - size / 2, point.y - size / 2)
+            val filter = MapScene.MapPickFilter(
+                listOf(MapScene.MapPickFilter.ContentType.MAP_CONTENT)
+            )
+            mapView.pick(filter, Rectangle2D(origin, Size2D(size, size))) { result ->
+                callback(result?.mapContent?.pickedPlaces?.firstOrNull())
+            }
+        } catch (e: Exception) {
+            Log.w(TAG, "pickPlaceAt failed: ${e.message}")
+            callback(null)
+        }
+    }
+
+    private fun emitTouchEvent(eventName: String, point: Point2D) {
+        val coords = mapView.viewToGeoCoordinates(point) ?: return
+        emitEvent(eventName, Arguments.createMap().apply {
+            putDouble("latitude", coords.latitude)
+            putDouble("longitude", coords.longitude)
+            putDouble("x", point.x)
+            putDouble("y", point.y)
+        })
+    }
+
+    private fun emitPoiEvent(picked: com.here.sdk.core.PickedPlace, point: Point2D) {
+        emitEvent("topPoiTap", Arguments.createMap().apply {
+            putString("name", picked.name)
+            putString("categoryId", picked.placeCategoryId)
+            picked.coordinates?.let {
+                putDouble("latitude", it.latitude)
+                putDouble("longitude", it.longitude)
+            }
+            putDouble("x", point.x)
+            putDouble("y", point.y)
+        })
+    }
+
+    private fun emitEvent(eventName: String, payload: WritableMap) {
+        val reactContext = context as? ReactContext ?: return
+        val dispatcher = UIManagerHelper.getEventDispatcherForReactTag(reactContext, id) ?: return
+        dispatcher.dispatchEvent(
+            HereMapEvent(UIManagerHelper.getSurfaceId(reactContext), id, eventName, payload)
+        )
     }
 
     // ─────────────────────────────────────────────────────────────────────────
@@ -352,7 +545,8 @@ class HereMapView(context: Context) : FrameLayout(context) {
                 override fun onRouteCalculated(error: RoutingError?, routes: List<Route>?) {
                     if (error != null) { onError?.invoke(error.toString()); return }
                     val r = routes?.firstOrNull() ?: run { onError?.invoke("No routes"); return }
-                    onSuccess?.invoke(renderRoute(r).first, renderRoute(r).second)
+                    val (distanceMeters, durationSeconds) = renderRoute(r)
+                    onSuccess?.invoke(distanceMeters, durationSeconds)
                 }
             }
         )

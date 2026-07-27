@@ -79,6 +79,29 @@ const HereMapModule = {
   trimPolyline: safeMethod('trimPolyline', 'reject'),
   clearPolyline: safeMethod('clearPolyline', 'reject'),
 
+  // ── Map style & features (HERE SDK MapScheme / MapFeatures) ───────────────
+  //  setMapScheme(viewTag, 'satellite' | 'normalDay' | 'logisticsNight' | …)
+  setMapScheme: safeMethod('setMapScheme', 'reject'),
+  getMapScheme: safeMethod('getMapScheme', 'reject'),
+  //  setMapFeatures(viewTag, { enable: {FEATURE: MODE}, disable: [FEATURE] })
+  setMapFeatures: safeMethod('setMapFeatures', 'reject'),
+  //  3D extruded buildings + shadows
+  set3DBuildingsEnabled: safeMethod('set3DBuildingsEnabled', 'reject'),
+  getSupportedMapFeatures: safeMethod('getSupportedMapFeatures', 'reject'),
+
+  // ── Search / geocoding / POI (HERE SDK SearchEngine) ──────────────────────
+  //  These take a single options object and are view-independent. Prefer the
+  //  wrappers in src/services/hereSdkService.js over calling them directly.
+  suggest: safeMethod('suggest', 'reject'),
+  searchByText: safeMethod('searchByText', 'reject'),
+  searchByCategory: safeMethod('searchByCategory', 'reject'),
+  geocode: safeMethod('geocode', 'reject'),
+  reverseGeocode: safeMethod('reverseGeocode', 'reject'),
+  lookupPlace: safeMethod('lookupPlace', 'reject'),
+
+  // ── Routing (HERE SDK RoutingEngine, all transport modes) ─────────────────
+  calculateRouteWithOptions: safeMethod('calculateRouteWithOptions', 'reject'),
+
   // ── Debug ─────────────────────────────────────────────────────────────────
   isAvailable: () => !!NativeHereMapModule,
   nativeModule: NativeHereMapModule,

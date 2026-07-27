@@ -360,6 +360,125 @@ class HereMapModule(
     }
 
     // -------------------------------------------------------------------------
+    // Search / geocoding / POI  (HERE SDK SearchEngine — no REST calls)
+    // -------------------------------------------------------------------------
+
+    /** Type-ahead suggestions: `{ query, lat?, lng?, limit?, lang? }`. */
+    @ReactMethod
+    fun suggest(options: ReadableMap, promise: Promise) =
+        HereSearchService.suggest(options, promise)
+
+    /** Free-text place search — every result carries a coordinate. */
+    @ReactMethod
+    fun searchByText(options: ReadableMap, promise: Promise) =
+        HereSearchService.searchByText(options, promise)
+
+    /** POI search by HERE category id: `{ categories: [...], lat, lng }`. */
+    @ReactMethod
+    fun searchByCategory(options: ReadableMap, promise: Promise) =
+        HereSearchService.searchByCategory(options, promise)
+
+    /** Forward geocoding: address text → coordinates. */
+    @ReactMethod
+    fun geocode(options: ReadableMap, promise: Promise) =
+        HereSearchService.geocode(options, promise)
+
+    /** Reverse geocoding: coordinates → address (resolves null when unknown). */
+    @ReactMethod
+    fun reverseGeocode(options: ReadableMap, promise: Promise) =
+        HereSearchService.reverseGeocode(options, promise)
+
+    /** Resolves a place id from [suggest] to its full details. */
+    @ReactMethod
+    fun lookupPlace(options: ReadableMap, promise: Promise) =
+        HereSearchService.lookupPlace(options, promise)
+
+    // -------------------------------------------------------------------------
+    // Routing  (HERE SDK RoutingEngine — no REST calls)
+    // -------------------------------------------------------------------------
+
+    /**
+     * Calculates a route for any supported transport mode and resolves
+     * `{ routes: [...] }`. See [HereRoutingService.calculateRoute] for the
+     * accepted options.
+     */
+    @ReactMethod
+    fun calculateRouteWithOptions(options: ReadableMap, promise: Promise) =
+        HereRoutingService.calculateRoute(options, promise)
+
+    // -------------------------------------------------------------------------
+    // Map styling & features
+    // -------------------------------------------------------------------------
+
+    /** Switch map style, e.g. "normalDay", "satellite", "logisticsNight". */
+    @ReactMethod
+    fun setMapScheme(viewTag: Int, scheme: String, promise: Promise) {
+        runOnView(viewTag, promise) { view ->
+            if (view.setMapScheme(scheme)) {
+                promise.resolve(view.getMapScheme())
+            } else {
+                promise.reject("INVALID_ARGS", "Unknown map scheme: $scheme")
+            }
+        }
+    }
+
+    @ReactMethod
+    fun getMapScheme(viewTag: Int, promise: Promise) {
+        runOnView(viewTag, promise) { view -> promise.resolve(view.getMapScheme()) }
+    }
+
+    /**
+     * Toggle map features.
+     *
+     * Options: `{ enable: { FEATURE_KEY: MODE }, disable: [FEATURE_KEY] }` —
+     * keys and modes are the HERE `MapFeatures` / `MapFeatureModes` constants,
+     * e.g. `{ enable: { "extruded buildings": "all" } }`.
+     */
+    @ReactMethod
+    fun setMapFeatures(viewTag: Int, options: ReadableMap, promise: Promise) {
+        val enable = mutableMapOf<String, String>()
+        options.getMap("enable")?.let { map ->
+            val iterator = map.keySetIterator()
+            while (iterator.hasNextKey()) {
+                val key = iterator.nextKey()
+                map.getString(key)?.let { enable[key] = it }
+            }
+        }
+
+        val disable = options.getArray("disable")
+            ?.let { array -> (0 until array.size()).mapNotNull { array.getString(it) } }
+            .orEmpty()
+
+        runOnView(viewTag, promise) { view ->
+            view.setMapFeatures(enable, disable)
+            promise.resolve(null)
+        }
+    }
+
+    /** Convenience toggle for HERE's extruded-building (3D) rendering. */
+    @ReactMethod
+    fun set3DBuildingsEnabled(viewTag: Int, enabled: Boolean, promise: Promise) {
+        runOnView(viewTag, promise) { view ->
+            view.set3DBuildingsEnabled(enabled)
+            promise.resolve(null)
+        }
+    }
+
+    /** Feature keys/modes this SDK build supports — useful when debugging. */
+    @ReactMethod
+    fun getSupportedMapFeatures(viewTag: Int, promise: Promise) {
+        runOnView(viewTag, promise) { view ->
+            val result = Arguments.createMap()
+            view.getSupportedMapFeatures().forEach { (feature, modes) ->
+                val modeArray = Arguments.createArray()
+                modes.forEach { modeArray.pushString(it) }
+                result.putArray(feature, modeArray)
+            }
+            promise.resolve(result)
+        }
+    }
+
+    // -------------------------------------------------------------------------
     // Helpers
     // -------------------------------------------------------------------------
 

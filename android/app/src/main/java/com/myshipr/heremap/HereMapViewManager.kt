@@ -100,6 +100,29 @@ class HereMapViewManager(
         pendingProps.getOrPut(view) { PendingProps() }.centerLng = lng
     }
 
+    /** Map style, e.g. "normalDay", "satellite", "logisticsDay". */
+    @ReactProp(name = "mapScheme")
+    fun setMapScheme(view: HereMapView, scheme: String?) {
+        if (!scheme.isNullOrEmpty()) view.setMapScheme(scheme)
+    }
+
+    /** Turns on HERE's extruded-building (3D) rendering. */
+    @ReactProp(name = "buildings3D", defaultBoolean = false)
+    fun setBuildings3D(view: HereMapView, enabled: Boolean) {
+        view.set3DBuildingsEnabled(enabled)
+    }
+
+    // ------------------------------------------------------------------
+    // Events — onMapTap / onMapLongPress / onPoiTap
+    // ------------------------------------------------------------------
+
+    override fun getExportedCustomDirectEventTypeConstants(): MutableMap<String, Any> =
+        mutableMapOf(
+            "topMapTap" to mapOf("registrationName" to "onMapTap"),
+            "topMapLongPress" to mapOf("registrationName" to "onMapLongPress"),
+            "topPoiTap" to mapOf("registrationName" to "onPoiTap")
+        )
+
     override fun onAfterUpdateTransaction(view: HereMapView) {
         super.onAfterUpdateTransaction(view)
         registerView(view)

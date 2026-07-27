@@ -34,7 +34,6 @@ import {
   REROUTE_COOLDOWN_MS,
 } from './helpers/radarNav';
 import {calculateRouteTolls} from '../HereMapScreen/services/hereTruckService';
-import {decodeFlexiblePolyline} from '../HereMapScreen/utils/polylineDecoder';
 import SearchPanel from './components/SearchPanel';
 import NavBanner from './components/NavBanner';
 import ArrivedBanner from './components/ArrivedBanner';
@@ -352,10 +351,9 @@ export default function RadarMapScreen({navigation, route: navRoute}) {
       throw new Error('No route found between those points');
     }
 
-    const decoded = decodeFlexiblePolyline(
-      String(toll.polyline || '').replace(/\s+/g, ''),
-    );
-    const coordinates = decoded.map(p => [p.lng, p.lat]); // [lng, lat]
+    // The HERE SDK hands back decoded vertices, so there is no flexible-polyline
+    // string to unpack any more — just reorder to GeoJSON [lng, lat].
+    const coordinates = (toll.polyline || []).map(p => [p.lng, p.lat]);
     if (!coordinates.length) {
       throw new Error('No route found between those points');
     }

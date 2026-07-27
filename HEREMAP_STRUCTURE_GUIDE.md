@@ -19,8 +19,8 @@ HereMapScreen/
 ├── hooks/                              ← Custom React Hooks
 │   └── useSmoothLocation.js           ← GPS location animation logic
 │
-├── services/                           ← Placeholder folder inside screen
-│   └── (empty)                        ← Actual HERE service lives in src/services/hereTruckService.js
+├── services/                           ← HERE service facade
+│   └── hereTruckService.js          ← SDK-backed facade over src/services/hereSdkService.js
 │
 ├── utils/                              ← Utility Functions
 │   ├── coordinateValidation.js        ← Validate lat/lng coordinates
@@ -112,19 +112,39 @@ smooth.cleanup();                               // Cleanup
 ### **4. Services/** (Business Logic)
 
 #### **Route + Search API**
-**Purpose:** Central HERE API service logic
-**Location:** `src/services/hereTruckService.js`
+**Purpose:** Central HERE service logic — **HERE SDK Explore, not the REST APIs**
+**Location:** `src/services/hereSdkService.js` (facade: `screens/HereMapScreen/services/hereTruckService.js`)
 
-**Exports:**
-- `autosuggest(query, coords, limit)` - HERE location suggestions
-- `calculateTruckRouteREST(origin, destination, vehicle)` - HERE truck routing API
-- `lookup(placeId)` - HERE place lookup helper
-- `findSequence(params)` - HERE sequence optimization helper
+Everything below runs through the native `SearchEngine` / `RoutingEngine`
+bundled in the Explore SDK. The app no longer calls `autosuggest.search`,
+`revgeocode.search`, `lookup.search`, `router/v8` or `findsequence2` over HTTP.
 
-**Why it lives outside HereMapScreen/**
-- `HereMapScreen` uses the shared service for route and autosuggest data
-- Search and route logic are centralized for reuse
-- The screen folder no longer has an active local route service implementation
+**Exports (`hereSdkService.js`):**
+- `autosuggest(query, coords, limit)` - type-ahead suggestions (SearchEngine.suggest)
+- `searchPlaces(query, coords, limit)` - free-text place search
+- `searchPOIs(categoryIds, coords, opts)` - POI search by HERE category
+- `geocode(query, coords, limit)` - address text → coordinates
+- `reverseGeocode({latitude, longitude})` - coordinates → address
+- `lookup(placeId)` - resolve a suggestion's place id to full details
+- `calculateRoute({origin, destination, waypoints, transportMode, vehicle, ev, …})`
+  - modes: truck (default), car, pedestrian, scooter, bicycle, bus, taxi; `isElectric`
+    switches car/truck to EV routing
+- `optimizeWaypointOrder(params)` - replaces the `findsequence2` REST helper
+- `ensureInitialized()` - lazily runs `initSDK`, so non-map screens can search too
+
+**Extra exports (`hereTruckService.js`, kept for the existing screens):**
+- `calculateTruckRoute` / `calculateTruckRouteREST` - truck route in the REST JSON shape
+- `calculateRouteTolls(origin, destination, currency, vehicle)` - route + toll totals,
+  still returning `{raw, total, currency, polyline, actions, …}`. `raw.…section.polyline`
+  is now a decoded `[{lat, lng}]` array instead of an encoded flexible polyline.
+
+**Map-side SDK features** (via `HereMapModule` / the `HereMapView` ref):
+- `setMapScheme(scheme)` - normalDay, normalNight, satellite, hybrid*, lite*,
+  logistics*, roadNetwork*
+- `set3DBuildingsEnabled(bool)` / `setMapFeatures({enable, disable})` - 3D extruded
+  buildings, shadows, traffic flow/incidents, zones
+- `onMapTap` / `onMapLongPress` / `onPoiTap` props - map interaction, including
+  HERE's embedded POIs
 
 ---
 
@@ -251,7 +271,7 @@ Display on map
 ### **Navigation Flow:**
 
 1. **User selects destination** → HereSearchCard updates state
-2. **Preview route** → `calculateTruckRouteREST()` from `src/services/hereTruckService.js` → extractRoutePolyline → setup geometry
+2. **Preview route** → `calculateRouteTolls()` (HERE SDK RoutingEngine) → extractRoutePolyline → setup geometry
 3. **User taps Navigate** → handleStartNavigation
 4. **GPS watch starts** → watchCurrentLocation callback
 5. **Each GPS fix:**
@@ -263,7 +283,7 @@ Display on map
      - Check reroute conditions
      - Periodic reroute check (every 12 sec)
 6. **Reroute triggered:**
-   - calculateTruckRouteREST (new route)
+   - calculateRouteTolls (new route, HERE SDK RoutingEngine)
    - updateRouteGeometryOnly (redraw polyline)
 7. **Navigation ends** → stopNavigation (cleanup)
 
