@@ -31,6 +31,7 @@ import BiddingPanel from './components/BiddingPanel';
 import HoursOfServicePanel from './components/HoursOfServicePanel';
 import FuelPricePanel from './components/FuelPricePanel';
 import TripProgressBar from './components/TripProgressBar';
+import StepConfirmCard from './components/StepConfirmCard';
 import PodModal from './components/PodModal';
 
 // San Francisco fallback (matches the design mock-up region).
@@ -40,22 +41,19 @@ const DEFAULT_CENTER = {lat: 37.7599, lng: -122.4469};
 const PANEL_IDS = ['chat', 'documents', 'bidding', 'navigate', 'dock'];
 
 export default function ActiveTripScreen({navigation}) {
-  // The bottom progress bar grows by the bottom inset (edge-to-edge on RN 0.83),
-  // so the floating GPS button has to rise with it or the bar covers it.
   const insets = useSafeAreaInsets();
 
   const mapRef = useRef(null);
   const [center, setCenter] = useState(DEFAULT_CENTER);
   const [sdkReady, setSdkReady] = useState(false);
-
-  // Which floating panel is open (null = none). Drives the toolbar highlight.
   const [activePanel, setActivePanel] = useState(null);
-
-  // Proof-of-Delivery flow shown after the driver taps "End Trip".
   const [podOpen, setPodOpen] = useState(false);
+  const [milestone, setMilestone] = useState({
+    step: 2,
+    totalSteps: 4,
+    title: 'Shipment Procured at Pickup 2',
+  });
 
-  // Whether the on-screen keyboard is up — used to show a full-screen backdrop
-  // so tapping anywhere outside an input dismisses it (iOS + Android).
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   useEffect(() => {
     const showSub = Keyboard.addListener('keyboardDidShow', () =>
@@ -70,10 +68,6 @@ export default function ActiveTripScreen({navigation}) {
     };
   }, []);
 
-  // Circular "reveal" transition played after the driver confirms delivery:
-  // a white circle grows from the centre of the map to fill the screen, then
-  // we hand off to the truck-animation screen (its white background lines up
-  // seamlessly with the circle, so the jump is invisible).
   const [revealing, setRevealing] = useState(false);
   const revealScale = useRef(new Animated.Value(0)).current;
 
@@ -92,8 +86,7 @@ export default function ActiveTripScreen({navigation}) {
         subtitle: 'Finalising delivery and queuing your payout.',
         next: 'TripCompletedScreen',
       });
-      // Drop the overlay once the truck screen is on top of it — the user
-      // never sees it disappear, but it's cleared for the next trip.
+
       setTimeout(() => {
         setRevealing(false);
         revealScale.setValue(0);
@@ -122,19 +115,13 @@ export default function ActiveTripScreen({navigation}) {
     };
   }, []);
 
-  // Whether a location fetch is currently in flight (drives the GPS button spinner).
   const [locating, setLocating] = useState(false);
-
-  // Fetch the driver's current position, drop the HERE current-location marker
-  // there, and (optionally) glide the camera to it. Shared by the initial
-  // placement effect and the floating GPS button.
   const showMyLocation = useCallback(async ({animate = true} = {}) => {
     setLocating(true);
     try {
       const pos = await getCurrentLocation({highAccuracy: false});
       if (!pos?.latitude || !pos?.longitude) return;
       setCenter({lat: pos.latitude, lng: pos.longitude});
-      // Native HERE current-location marker (blue dot) at the live position.
       await mapRef.current?.showCurrentLocation({
         lat: pos.latitude,
         lng: pos.longitude,
@@ -156,8 +143,6 @@ export default function ActiveTripScreen({navigation}) {
     }
   }, []);
 
-  // Centre the map on the driver's current position once the SDK is ready and
-  // the native map view has mounted, and place the current-location marker.
   useEffect(() => {
     if (!sdkReady) return undefined;
     const timer = setTimeout(() => {
@@ -207,7 +192,12 @@ export default function ActiveTripScreen({navigation}) {
       )}
 
       {/* ── Top bar ── */}
-      <TripTopBar onBack={goBack} onToggleDuty={() => {}} onSOS={() => {}} />
+      <TripTopBar
+        onBack={goBack}
+        onToggleDuty={() => {}}
+        onSOS={() => {}}
+        onService={() => {}}
+      />
 
       {/* ── Left toolbar ── */}
       <SideToolbar panel={activePanel} onSelect={handleToolSelect} />
@@ -243,6 +233,18 @@ export default function ActiveTripScreen({navigation}) {
           <GpsIcon width={verticalScale(26)} height={verticalScale(26)} fill={colors.navy} />
         )}
       </TouchableOpacity>
+
+      {/* ── Milestone confirm card ── */}
+      {/* Keyed on the milestone so a newly-arrived one always opens expanded,
+          even if the driver had collapsed the previous one. */}
+      <StepConfirmCard
+        key={milestone?.step}
+        visible={Boolean(milestone)}
+        step={milestone?.step}
+        totalSteps={milestone?.totalSteps}
+        title={milestone?.title}
+        onConfirm={() => setMilestone(null)}
+      />
 
       {/* ── Bottom trip progress ── */}
       <TripProgressBar

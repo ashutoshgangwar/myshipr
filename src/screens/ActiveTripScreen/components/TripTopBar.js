@@ -4,6 +4,7 @@ import AppText from '../../../theme/AppText';
 import styles from '../ActiveTripScreen.styles';
 import Back_arrow_map from '../../../assets/svg_icon/Back_arrow_map.svg'
 import Dropdown_icon from '../../../assets/svg_icon/Dropdown_icon.svg'
+import Service_Icon from '../../../assets/svg_icon/Service_Icon.svg'
 import { ms } from '../../../theme/scale';
 
 // Duty states shown in the dropdown when the pill is tapped.
@@ -15,7 +16,7 @@ const DUTY_OPTIONS = [
   'OFF DUTY',
 ];
 
-export default function TripTopBar({status = 'ON DUTY', onBack, onSelectStatus, onSOS}) {
+export default function TripTopBar({status = 'ON DUTY', onBack, onSelectStatus, onSOS, onService}) {
   const [open, setOpen] = useState(false);
   const [selected, setSelected] = useState(status);
 
@@ -25,8 +26,10 @@ export default function TripTopBar({status = 'ON DUTY', onBack, onSelectStatus, 
     onSelectStatus?.(option);
   };
 
+  // box-none so the taller bar doesn't swallow map drags in the empty gaps
+  // between the buttons — the buttons themselves still take their taps.
   return (
-    <View style={styles.topBar}>
+    <View style={styles.topBar} pointerEvents="box-none">
       {/* Tap-outside backdrop closes the dropdown. */}
       {open && (
         <Pressable style={styles.dutyBackdrop} onPress={() => setOpen(false)} />
@@ -70,9 +73,22 @@ export default function TripTopBar({status = 'ON DUTY', onBack, onSelectStatus, 
         )}
       </View>
 
-      <TouchableOpacity style={styles.sosBtn} onPress={onSOS} activeOpacity={0.85}>
-        <AppText style={styles.sosText}>SOS</AppText>
-      </TouchableOpacity>
+      <View style={styles.sosWrap}>
+        {/* The slot keeps SOS level with the back button now that this column
+            is taller than the other two items in the row. */}
+        <View style={styles.topRowSlot}>
+          <TouchableOpacity style={styles.sosBtn} onPress={onSOS} activeOpacity={0.85}>
+            <AppText style={styles.sosText}>SOS</AppText>
+          </TouchableOpacity>
+        </View>
+
+        <TouchableOpacity
+          style={styles.serviceBtn}
+          onPress={onService}
+          activeOpacity={0.85}>
+          <Service_Icon width={ms(20)} height={ms(20)} />
+        </TouchableOpacity>
+      </View>
     </View>
   );
 }

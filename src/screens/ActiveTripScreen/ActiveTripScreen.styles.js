@@ -81,12 +81,18 @@ export default StyleSheet.create({
     left: 0,
     right: 0,
     flexDirection: 'row',
-    alignItems: 'center',
+    // flex-start, not center: the SOS column now hangs lower than the other two
+    // items, and centering would drag the back button and duty pill down with
+    // it. Each item gets a topRowSlot instead, so the top row still lines up.
+    alignItems: 'flex-start',
     justifyContent: 'space-between',
     paddingHorizontal: s(14),
     paddingTop: IS_TABLET ? vs(20) : vs(40),
     zIndex: 50,
   },
+  // One row-height band, so items shorter than the back button stay centred
+  // against it.
+  topRowSlot: {height: ms(38), justifyContent: 'center'},
   circleBtn: {
     width: ms(38),
     height: ms(38),
@@ -126,7 +132,9 @@ export default StyleSheet.create({
   dutyChevron: {color: colors.white, fontSize: ms(11)},
 
   // ── Duty-status dropdown ──────────────────────────────────────────────
-  dutyWrap: {alignItems: 'center'},
+  // minHeight matches the back button so the pill stays centred against it
+  // under the row's flex-start alignment.
+  dutyWrap: {alignItems: 'center', minHeight: ms(38), justifyContent: 'center'},
   dutyBackdrop: {
     position: 'absolute',
     top: -vs(1000),
@@ -184,6 +192,24 @@ export default StyleSheet.create({
     fontSize: ms(13),
     fontWeight: '600',
     letterSpacing: 0.5,
+  },
+
+  // Right-hand stack: SOS on the top row, service button hanging below it.
+  // Kept as a flow child rather than absolutely positioned — Android clips
+  // touches on children that spill outside their parent's bounds.
+  sosWrap: {alignItems: 'flex-end'},
+  // A crisp grey outline rather than a shadow — on a dark circle the Android
+  // elevation shadow renders as a blurry halo instead of a clean ring.
+  serviceBtn: {
+    width: ms(38),
+    height: ms(38),
+    borderRadius: ms(19),
+    backgroundColor: colors.nearBlack,
+    borderWidth: 3.5,
+    borderColor: colors.status,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginTop: vs(10),
   },
 
   // ── Side toolbar ──────────────────────────────────────────────────────
@@ -547,6 +573,87 @@ export default StyleSheet.create({
     backgroundColor: colors.success,
   },
 
+
+  stepCardWrap: {
+    position: 'absolute',
+    left: s(BAR_GAP),
+    right: s(BAR_GAP),
+    bottom: vs(BAR_GAP + 130),
+    alignItems: 'flex-end',
+    zIndex: 44,
+  },
+  stepCard: {
+    width: IS_TABLET ? ms(250) : ms(205),
+    backgroundColor: colors.white,
+    borderRadius: ms(12),
+    borderWidth: 1,
+    borderColor: colors.border_Color,
+    paddingHorizontal: s(12),
+    paddingTop: vs(10),
+    paddingBottom: vs(12),
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+        shadowOffset: {width: 0, height: 3},
+      },
+      android: {elevation: 8},
+    }),
+  },
+  stepCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
+  stepLabel: {color: colors.textMuted, fontSize: ms(10)},
+  stepTitle: {
+    color: colors.textStrong,
+    fontSize: ms(15),
+    fontWeight: 'bold',
+    marginTop: vs(2),
+    marginBottom: vs(10),
+  },
+  stepConfirmBtn: {
+    backgroundColor: colors.navy,
+    borderRadius: ms(8),
+    paddingVertical: vs(11),
+    alignItems: 'center',
+  },
+  stepConfirmText: {color: colors.white, fontSize: ms(13), fontWeight: '700'},
+
+  // Collapsed state: pill-shaped, sized to its text instead of the card width.
+  stepPill: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    maxWidth: '100%',
+    backgroundColor: colors.white,
+    borderRadius: ms(24),
+    borderWidth: 1,
+    borderColor: colors.border_Color,
+    paddingLeft: s(16),
+    paddingRight: s(10),
+    paddingVertical: vs(8),
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+        shadowOffset: {width: 0, height: 3},
+      },
+      android: {elevation: 8},
+    }),
+  },
+  // flexShrink (not flex) so the pill still hugs short titles and only gives
+  // way once the text would overflow the wrap.
+  stepPillTexts: {flexShrink: 1, marginRight: s(8)},
+  stepPillTitle: {
+    color: colors.textStrong,
+    fontSize: ms(13),
+    fontWeight: 'bold',
+  },
+  stepChevronUp: {transform: [{rotate: '180deg'}]},
+
   // ── Bottom trip progress ──────────────────────────────────────────────
   // Floating card, inset from all three screen edges (the component adds the
   // bottom safe-area inset on top of `bottom`). Every edge is visible now, so
@@ -709,12 +816,14 @@ export default StyleSheet.create({
     position: 'absolute',
     top: vs(8),
     left: s(8),
-    backgroundColor: colors.background,
+    backgroundColor: '#E5403326',
     borderRadius: ms(4),
+    borderColor:'#FF3B30',
+    borderWidth:ms(1),
     paddingHorizontal: s(6),
     paddingVertical: vs(2),
   },
-  podRequiredText: {color: colors.textMuted, fontSize: ms(9), fontWeight: '600'},
+  podRequiredText: {color: '#FF3B30', fontSize: ms(9), fontWeight: '600'},
   podPhotoHint: {color: colors.textMuted, fontSize: ms(12), marginTop: vs(6)},
   podPhotoImage: {...StyleSheet.absoluteFillObject},
 

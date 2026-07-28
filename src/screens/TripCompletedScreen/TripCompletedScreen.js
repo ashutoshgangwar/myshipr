@@ -1,26 +1,22 @@
 import React from 'react';
-import {
-  View,
-  StyleSheet,
-  StatusBar,
-  TouchableOpacity,
-  Image,
-} from 'react-native';
+import {View, StyleSheet, TouchableOpacity, Image, Platform} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {
   verticalScale as vs,
   moderateScale as ms,
 } from 'react-native-size-matters';
-import Svg, {Path, Circle} from 'react-native-svg';
 import AppText from '../../theme/AppText';
 import {colors} from '../../theme/colors';
-import RoadImage from '../../assets/Image/Road_image.png';
+import RoadImage from '../../assets/Image/pod_screen.png';
 import Load_DocIcon from '../../assets/svg_icon/Load_DocIcon.svg';
 import Drop_Pin from '../../assets/svg_icon/Drop_Pin.svg';
+import RouteDashedLine from '../../assets/svg_icon/RouteDashedLine.svg';
 import SuccessBurst from '../../component/SuccessBurst/SuccessBurst';
 import Reciept_Icon from '../../assets/svg_icon/icons_reciept.svg';
 import Info_Icon from '../../assets/svg_icon/Info_Icon.svg';
 import Cross_Icon from '../../assets/svg_icon/Cross_Icon.svg';
+import StatusBar from '../../component/StatusBar/StatusBar';
+import {IS_TABLET} from '../../theme/device';
 
 export default function TripCompletedScreen({navigation, route}) {
   const {
@@ -34,93 +30,118 @@ export default function TripCompletedScreen({navigation, route}) {
   }, [navigation]);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
-      <StatusBar barStyle="dark-content" backgroundColor={colors.white} />
 
-      {/* Scenic backdrop pinned to the bottom of the screen. */}
+    <View style={styles.container}>
+      <StatusBar
+        backgroundColor={colors.primary}
+        barStyle="light-content"
+        translucent={false}
+      />
+
       <Image source={RoadImage} style={styles.backdrop} resizeMode="cover" />
 
-      {/* Close button */}
-      <TouchableOpacity
-        style={styles.closeBtn}
-        onPress={handleClose}
-        hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>
-        <Cross_Icon  width={ms(30)} height={ms(30)}/>
-      </TouchableOpacity>
+      <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+        {/* Close button */}
+        <TouchableOpacity
+          style={styles.closeBtn}
+          onPress={handleClose}
+          hitSlop={{top: 20, bottom: 10, left: 10, right: 10}}>
+          <Cross_Icon width={ms(30)} height={ms(30)} />
+        </TouchableOpacity>
 
-      <View style={styles.body}>
-        <SuccessBurst size={ms(72)} style={{alignSelf: 'center'}} />
+        <View style={styles.body}>
+          <SuccessBurst
+            size={IS_TABLET ? ms(52) : ms(35)}
+            style={{alignSelf: 'center'}}
+          />
 
-        <AppText style={styles.title}>You have completed your trip</AppText>
-        <AppText style={styles.subtitle}>
-          Your payout for this trip will be visible in your earnings tab
-        </AppText>
+          <AppText style={styles.title}>You have completed your trip</AppText>
+          <AppText style={styles.subtitle}>
+            Your payout for this trip will be visible in your earnings tab
+          </AppText>
 
-        {/* Pickup / Drop card */}
-        <View style={styles.card}>
-          <View style={styles.locRow}>
-            <View style={styles.markerCol_pickup}>
-              <Load_DocIcon width={ms(20)} height={ms(20)} />
+          {/* Pickup / Drop card */}
+          <View style={styles.card}>
+            <View style={styles.locRow}>
+              <View style={styles.markerCol}>
+                <View style={styles.markerCircle_pickup}>
+                  <Load_DocIcon width={ms(15)} height={ms(15)} />
+                </View>
+                {/* Fills whatever vertical room is left under the ring, so the
+                    dashes always reach the drop pin on the next row. */}
+                <View style={styles.connector}>
+                  <RouteDashedLine
+                    width={2}
+                    height="100%"
+                    preserveAspectRatio="none"
+                  />
+                </View>
+              </View>
+              <View style={styles.locTextCol}>
+                <AppText style={styles.locLabel}>Pickup Location</AppText>
+                <AppText style={styles.locValue}>{pickup}</AppText>
+                <View style={styles.divider} />
+              </View>
             </View>
-            <View style={styles.locTextCol}>
-              <AppText style={styles.locLabel}>Pickup Location</AppText>
-              <AppText style={styles.locValue}>{pickup}</AppText>
-              <View style={styles.divider} />
+
+            <View style={styles.locRow}>
+              <View style={styles.markerCol}>
+                <View style={styles.markerCircle_drop}>
+                  <Drop_Pin width={ms(15)} height={ms(15)} />
+                </View>
+              </View>
+              <View style={styles.locTextCol}>
+                <AppText style={styles.locLabel}>Drop Location</AppText>
+                <AppText style={styles.locValue}>{drop}</AppText>
+              </View>
             </View>
           </View>
 
-          <View style={styles.locRow}>
-            <View style={styles.markerCol_drop}>
-              <Drop_Pin width={ms(20)} height={ms(20)} />
+          {/* Load ID card */}
+          <View style={[styles.card, styles.loadCard]}>
+            <View style={styles.loadIconWrap}>
+              <Reciept_Icon width={ms(15)} height={ms(15)} />
             </View>
-            <View style={styles.locTextCol}>
-              <AppText style={styles.locLabel}>Drop Location</AppText>
-              <AppText style={styles.locValue}>{drop}</AppText>
+            <View>
+              <AppText style={styles.locLabel}>#Load ID</AppText>
+              <AppText style={styles.loadValue}>{loadId}</AppText>
             </View>
           </View>
         </View>
 
-        {/* Load ID card */}
-        <View style={[styles.card, styles.loadCard]}>
-          <View style={styles.loadIconWrap}>
-            <Reciept_Icon width={ms(20)} height={ms(20)} />
-          </View>
-          <View>
-            <AppText style={styles.locLabel}>#Load ID</AppText>
-            <AppText style={styles.loadValue}>{loadId}</AppText>
-          </View>
+        {/* Footer hint */}
+        <View style={styles.footer}>
+          <Info_Icon width={ms(16)} height={ms(16)} />
+          <AppText style={styles.footerText}>
+            You can download the receipt from Schedule Section
+          </AppText>
         </View>
-      </View>
-
-      {/* Footer hint */}
-      <View style={styles.footer}>
-        <Info_Icon width={ms(16)} height={ms(16)} style={{marginLeft: ms(8)}} />
-        <AppText style={styles.footerText}>
-          You can download the receipt from Schedule Section
-        </AppText>
-      </View>
-    </SafeAreaView>
+      </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {flex: 1, backgroundColor: colors.white},
+  safe: {flex: 1},
+  // Full-bleed scene: the asset is a portrait-shaped illustration, so `cover`
+  // keeps the road anchored to the bottom edge on every device aspect ratio.
   backdrop: {
     position: 'absolute',
+    top: 0,
     left: 0,
     right: 0,
     bottom: 0,
     width: '100%',
-    height: vs(180),
+    height: '100%',
   },
   closeBtn: {
     position: 'absolute',
-    top: vs(35),
+    top: Platform.OS === 'ios' ? vs(45) : vs(10),
     right: ms(10),
     width: ms(34),
     height: ms(34),
     borderRadius: ms(17),
-    // backgroundColor: colors.gray400,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 5,
@@ -154,47 +175,34 @@ const styles = StyleSheet.create({
     marginTop: vs(20),
   },
   locRow: {flexDirection: 'row'},
-  markerCol_pickup: {
+  // Column stretches to the row height so the connector can claim the leftover
+  // space beneath the ring.
+  markerCol: {
     width: ms(38),
-    height: ms(38),
-    borderRadius: ms(19),
+    alignItems: 'center',
+    marginRight: ms(12),
+  },
+  markerCircle_pickup: {
+    width: ms(28),
+    height: ms(28),
+    borderRadius: ms(14),
     backgroundColor: '#D977061A',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: ms(12),
   },
-  markerCol_drop: {
-    width: ms(38),
-    height: ms(38),
-    borderRadius: ms(19),
+  markerCircle_drop: {
+    width: ms(28),
+    height: ms(28),
+    borderRadius: ms(14),
     backgroundColor: '#16A33D1A',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: ms(12),
-  },
-  pickupOuter: {
-    width: ms(22),
-    height: ms(22),
-    borderRadius: ms(11),
-    backgroundColor: '#FCE9D6',
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  pickupRing: {
-    width: ms(14),
-    height: ms(14),
-    borderRadius: ms(7),
-    borderWidth: ms(4),
-    borderColor: colors.button_color,
-    backgroundColor: colors.white,
   },
   connector: {
     flex: 1,
-    width: 1,
-    borderLeftWidth: 1,
-    borderStyle: 'dashed',
-    borderColor: colors.border_Color,
-    marginVertical: vs(2),
+    width: 2,
+    // Keeps the dashes clear of the ring above and the pin below.
+    marginVertical: vs(4),
   },
   locTextCol: {flex: 1, paddingLeft: ms(12)},
   locLabel: {
@@ -218,8 +226,8 @@ const styles = StyleSheet.create({
     marginTop: vs(12),
   },
   loadIconWrap: {
-    width: ms(38),
-    height: ms(38),
+    width: ms(28),
+    height: ms(28),
     borderRadius: ms(19),
     backgroundColor: '#EEEAFB',
     alignItems: 'center',
@@ -241,7 +249,7 @@ const styles = StyleSheet.create({
   },
   footerText: {
     color: colors.text_dark,
-    fontSize: ms(13),
+    fontSize: ms(12),
     fontWeight: '600',
     marginLeft: ms(8),
     textAlign: 'center',
