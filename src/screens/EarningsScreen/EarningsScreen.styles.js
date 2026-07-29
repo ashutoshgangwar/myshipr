@@ -54,7 +54,7 @@ export default StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.08)',
     borderRadius: ms(10),
     paddingHorizontal: ms(12),
-    paddingVertical: vs(7),
+    paddingVertical: vs(5),
   },
 
   periodBtnText: {
@@ -142,12 +142,12 @@ export default StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#DDE8F8',
     paddingHorizontal: ms(14),
-    paddingVertical: vs(10),
+    paddingVertical: vs(7),
   },
 
   tableHeadText: {
     color: colors.nearBlack,
-    fontSize: ms(12),
+    fontSize: ms(10),
     fontWeight: '700',
     textAlign: 'center',
   },
@@ -180,7 +180,7 @@ export default StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     paddingHorizontal: ms(14),
-    paddingVertical: vs(10),
+    paddingVertical: vs(5),
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border_Color,
   },
@@ -192,7 +192,7 @@ export default StyleSheet.create({
   /* ----- AWB number ----- */
   awbText: {
     color: colors.textStrong,
-    fontSize: ms(12),
+    fontSize: ms(9),
     fontWeight: '600',
     textAlign: 'center',
   },
@@ -201,13 +201,13 @@ export default StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     alignSelf: 'center',
-    marginTop: vs(6),
+    marginTop: vs(4),
     borderRadius: ms(6),
     backgroundColor: colors.screenBg,
     borderWidth: 1,
     borderColor: colors.cardBorder,
     paddingHorizontal: ms(8),
-    paddingVertical: vs(3),
+    paddingVertical: vs(2),
   },
 
   typeIcon: {
@@ -216,31 +216,31 @@ export default StyleSheet.create({
 
   typeText: {
     color: colors.textMuted,
-    fontSize: ms(10),
+    fontSize: ms(9),
     fontWeight: '600',
   },
 
   /* ----- Center: distance + duration ----- */
   centerMiles: {
     color: colors.textStrong,
-    fontSize: ms(12),
+    fontSize: ms(11),
     fontWeight: '700',
     letterSpacing: 0.3,
     textAlign: 'center',
   },
 
   centerTime: {
-    color: colors.textMuted,
-    fontSize: ms(11),
+    color: colors.lightbg_gray,
+    fontSize: IS_TABLET ? ms(8) : ms(10),
     fontWeight: '500',
-    marginTop: vs(3),
+    marginTop: vs(2),
     textAlign: 'center',
   },
 
   /* ----- Right: amount + status ----- */
   rowAmount: {
     color: colors.textStrong,
-    fontSize: ms(14),
+    fontSize: ms(12),
     fontWeight: '700',
     textAlign: 'center',
   },
@@ -249,12 +249,12 @@ export default StyleSheet.create({
     alignSelf: 'center',
     borderRadius: ms(6),
     paddingHorizontal: ms(10),
-    paddingVertical: vs(4),
-    marginTop: vs(6),
+    paddingVertical:IS_TABLET? vs(1) : vs(5),
+    marginTop: vs(4),
   },
 
   pillText: {
-    fontSize: ms(11),
+    fontSize: ms(8),
     fontWeight: '700',
     color: colors.white,
   },

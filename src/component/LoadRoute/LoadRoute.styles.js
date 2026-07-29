@@ -11,13 +11,15 @@ const ms = n => baseMs(n) * PHONE_FACTOR;
 const vs = n => baseVs(n) * PHONE_FACTOR;
 
 // Row + marker geometry (exported so callers can size their containers/rows).
-export const STOP_LINE_H = vs(20);
+export const STOP_LINE_H = vs(18);
 export const STOP_SUMMARY_H = vs(14);
 export const MARKER_H = ms(16);
-export const DASH_INSET = ms(6);
+// Shorter rows leave less room between markers, so the dash is inset less at
+// each end — otherwise the connector all but disappears between two stops.
+export const DASH_INSET = ms(5);
 // Row that holds the collapsed "+N More Pickups" chip; taller than a stop row
 // because the chip carries its own padding.
-export const MORE_ROW_H = vs(24);
+export const MORE_ROW_H = vs(19);
 
 // Icon dimensions (kept here so every screen renders the same size).
 export const CITY_RING = ms(13);

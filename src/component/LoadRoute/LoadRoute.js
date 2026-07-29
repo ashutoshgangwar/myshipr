@@ -100,6 +100,10 @@ export default function LoadRoute({
   // be positioned from the running offset — this keeps the collapsed chip row
   // (which is taller than a stop row) on the same line as the rest.
   const hidden = collapsed && stops.length > 2 ? types.slice(1, last) : [];
+
+  // Once expanded, the revealed middle stops sit exactly where the "+N More …"
+  // chip was, so tapping any of them there collapses the route again.
+  const canCollapse = !collapsed && stops.length > 2 && !!onPressMore;
   const rows = hidden.length
     ? [
         {kind: 'stop', index: 0, height: STOP_LINE_H},
@@ -173,7 +177,14 @@ export default function LoadRoute({
               </TouchableOpacity>
             </View>
           ) : (
-            <View key={`${cities[row.index]}-${i}`} style={styles.row}>
+            <TouchableOpacity
+              key={`${cities[row.index]}-${i}`}
+              style={styles.row}
+              activeOpacity={
+                canCollapse && row.index > 0 && row.index < last ? 0.7 : 1
+              }
+              disabled={!canCollapse || row.index === 0 || row.index === last}
+              onPress={onPressMore}>
               <View style={styles.marker}>
                 {(typed ? types[row.index] === 'drop' : row.index === last) ? (
                   <DropPin width={DROP_PIN_W} height={DROP_PIN_H} />
@@ -184,7 +195,7 @@ export default function LoadRoute({
               <AppText style={[styles.city, textStyle]} numberOfLines={1}>
                 {cities[row.index]}
               </AppText>
-            </View>
+            </TouchableOpacity>
           ),
         )}
       </View>

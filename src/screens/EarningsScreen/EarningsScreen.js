@@ -103,6 +103,7 @@ const TRANSACTIONS = [
   {
     id: 't2',
     awb: 'AWB-125',
+    type: 'LTL',
     stops: ROUTE,
     miles: '184 MILES',
     when: '4h 20 minutes',
@@ -249,10 +250,7 @@ export default function EarningsScreen() {
             nestedScrollEnabled
             showsVerticalScrollIndicator={false}
             renderItem={({item: tx, index}) => (
-              <TouchableOpacity
-                activeOpacity={tx.stops.length > 2 ? 0.7 : 1}
-                disabled={tx.stops.length <= 2}
-                onPress={() => toggleRow(tx.id)}
+              <View
                 style={[
                   styles.row,
                   index === TRANSACTIONS.length - 1 && styles.rowLast,
@@ -311,7 +309,7 @@ export default function EarningsScreen() {
                     </AppText>
                   </View>
                 </View>
-              </TouchableOpacity>
+              </View>
             )}
           />
         </View>
