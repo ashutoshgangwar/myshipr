@@ -66,6 +66,7 @@ export default function BiddingScreen() {
         titleStyle={styles.dashboardTitle}
         subtitleStyle={styles.dashboardSubtitle}
         statsStyle={styles.dashboardStats}
+        statLabelStyle={styles.dashboardStatLabel}
         statsOffset={-DASHBOARD_STATS_OVERLAP}
         width="100%"
         title="Bidding"

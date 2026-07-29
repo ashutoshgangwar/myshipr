@@ -10,10 +10,6 @@ export const vs = n => baseVs(n) * PHONE_FACTOR;
 export const SORT_ICON = select({phone: 9, tablet: 12});
 
 export const MODES = ['All Modes', 'FTL', 'LTL'];
-
-/* The four header cards double as the primary filter for the list/grid below.
-   `key` maps to the `categories` array on each bid; `activeBg` is the fill used
-   when that card is the selected filter. */
 export const BUCKETS = {
   leading: 'leading',
   active: 'active',
@@ -21,10 +17,6 @@ export const BUCKETS = {
   past: 'past',
 };
 
-/* Compact stat cards that double as the list filter. No `accent` here on
-   purpose — these cards are plain white, so the only thing marking the current
-   filter is `activeTint`, a fill light enough that the label/value stay dark
-   and all four cards still read as one row. */
 const ACTIVE_TINT = '#DDE8F8';
 
 export const STATS = [

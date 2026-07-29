@@ -1,4 +1,4 @@
-import {Platform, StyleSheet} from 'react-native';
+import {Dimensions, Platform, StyleSheet} from 'react-native';
 import {ms as baseMs, vs as baseVs} from '../../theme/scale';
 import {colors} from '../../theme/colors';
 import {select, IS_TABLET} from '../../theme/device';
@@ -23,6 +23,33 @@ const centered = IS_TABLET
   : null;
 
 const COL_GAP = ms(8);
+
+/* ---------- Stat card labels ----------
+   The four header cards are equal-width flex children of the stats row, and
+   each auto-shrinks its own label to fit. "Currently Leading" is far longer
+   than the other three, so it was the only one that shrank and the row read as
+   four different type sizes. Deriving one size that fits the longest label
+   keeps all four identical.
+
+   STATS_ROW_MARGIN / STATS_GAP are the row's own geometry (kept as constants so
+   the width maths below can never drift from the style), and STAT_CARD_PAD is
+   the card padding from DashboardHeader.styles. */
+const STATS_ROW_MARGIN = ms(16);
+const STATS_GAP = ms(8);
+const STAT_CARD_PAD = ms(9);
+
+// Width of "Currently Leading" in Poppins-Bold, in em (sum of its advance
+// widths). Any longer label added to STATS needs this re-measured.
+const LONGEST_LABEL_EM = 9.1;
+
+const STAT_ROW_W = Dimensions.get('window').width;
+const STAT_LABEL_W =
+  (STAT_ROW_W - STATS_ROW_MARGIN * 2 - STATS_GAP * 3) / 4 - STAT_CARD_PAD * 2;
+
+// 0.97 leaves a hair of slack so rounding can't push the longest label back
+// into auto-shrinking. Capped at the shared ms(11) so wide tablets — where
+// everything already fits — keep the size they have today.
+const STAT_LABEL_SIZE = Math.min(ms(11), (STAT_LABEL_W / LONGEST_LABEL_EM) * 0.97);
 
 /* Bidding runs a shorter, flatter blue band than the other dashboard headers —
    the four stat cards are the focus here, so the space above them is trimmed
@@ -113,8 +140,15 @@ export default StyleSheet.create({
   },
 
   dashboardStats: {
-    marginHorizontal: ms(16),
-    gap: ms(8),
+    marginHorizontal: STATS_ROW_MARGIN,
+    gap: STATS_GAP,
+  },
+
+  /* One size for all four labels. Without this the cards shrink their own
+     label to fit, so "Currently Leading" rendered visibly smaller than
+     "Active Bids" / "Awarded Bids" / "Past Auction" beside it. */
+  dashboardStatLabel: {
+    fontSize: STAT_LABEL_SIZE,
   },
 
   /* ---------- Header (diesel pill in the right slot) ---------- */

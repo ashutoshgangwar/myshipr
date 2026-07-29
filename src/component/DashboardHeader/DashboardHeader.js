@@ -30,6 +30,11 @@ const DashboardHeader = ({
   paddingVertical,
   statsOffset,
   statsStyle,
+  // Per-screen override for the stat card label. Cards auto-shrink their label
+  // to fit, so a row with one long label renders it smaller than its
+  // neighbours — a screen can pass a size that fits its longest label and get
+  // one uniform size across the row.
+  statLabelStyle,
   // 'chart' renders wide cards with a title, date range, value and inline
   // sparkline (the Home dashboard). Defaults to the compact stat cards.
   statsVariant = 'default',
@@ -245,6 +250,7 @@ const DashboardHeader = ({
                   minimumFontScale={0.8}
                   style={[
                     styles.statLabel,
+                    statLabelStyle,
                     stat.labelColor && {color: stat.labelColor},
                     onDark,
                   ]}>
