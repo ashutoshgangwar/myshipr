@@ -1,21 +1,22 @@
 import React, {useMemo, useState} from 'react';
-import {View, FlatList, TouchableOpacity, Platform} from 'react-native';
-import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
+import {View, FlatList, TouchableOpacity} from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
 
 import styles from './ShipmentScreen.styles';
 import StatusBar from '../../component/StatusBar/StatusBar';
 import DashboardHeader from '../../component/DashboardHeader/DashboardHeader';
+import LoadRoute from '../../component/LoadRoute/LoadRoute';
 import AppText from '../../theme/AppText';
 import {colors} from '../../theme/colors';
+import {ms} from '../../theme/scale';
 import ScheduleIcon from '../../assets/svg_icon/Schedule.svg';
-import RightArrow from '../../assets/svg_icon/right_Arrow.svg';
-
-const ICON_SIZE = 16;
+import GrayTruck from '../../assets/svg_icon/gray_truck.svg';
+import {IS_TABLET} from '../../theme/device';
 
 // Week strip — `dot` marks days that have a scheduled pickup.
 const WEEK = [
   {key: 'd8', day: 'Mon', date: 8, dot: true},
-  {key: 'd9', day: 'Tue', date: 9, dot: true},
+  {key: 'd9', day: 'Tue', date: 9, dot: false},
   {key: 'd10', day: 'Wed', date: 10, dot: false},
   {key: 'd11', day: 'Thur', date: 11, dot: false},
   {key: 'd12', day: 'Fri', date: 12, dot: true},
@@ -23,42 +24,72 @@ const WEEK = [
   {key: 'd14', day: 'Sun', date: 14, dot: false},
 ];
 
-// The day's headline pickup. Days without an entry show the empty state.
-const FEATURED = {
-  d8: {
-    route: 'San Jose, CA → Newark, NJ',
-    pickup: '6:00 AM pickup',
-    amount: '$990',
-    miles: '180 mil',
-    load: 'TX-8821-A',
-    payout: '$1,250',
-    driven: '168 mil',
-  },
-};
-
-const TRIPS = [
-  {id: 't1', route: 'San Jose, CA → Newark, NJ', meta: 'Tomorrow • 6:00PM', amount: '$990', miles: '180 mil'},
-  {id: 't2', route: 'San Jose, CA → Newark, NJ', meta: 'Tomorrow • 6:00PM', amount: '$990', miles: '180 mil'},
-  {id: 't3', route: 'San Jose, CA → Newark, NJ', meta: 'Tomorrow • 6:00PM', amount: '$990', miles: '180 mil'},
-  {id: 't4', route: 'San Jose, CA → Newark, NJ', meta: 'Tomorrow • 6:00PM', amount: '$990', miles: '180 mil'},
-  {id: 't5', route: 'San Jose, CA → Newark, NJ', meta: 'Tomorrow • 6:00PM', amount: '$990', miles: '180 mil'},
-  {id: 't6', route: 'San Jose, CA → Newark, NJ', meta: 'Tomorrow • 6:00PM', amount: '$990', miles: '180 mil'},
-  {id: 't7', route: 'San Jose, CA → Newark, NJ', meta: 'Tomorrow • 6:00PM', amount: '$990', miles: '180 mil'},
-  {id: 't8', route: 'San Jose, CA → Newark, NJ', meta: 'Tomorrow • 6:00PM', amount: '$990', miles: '180 mil'},
-  {id: 't9', route: 'San Jose, CA → Newark, NJ', meta: 'Tomorrow • 6:00PM', amount: '$990', miles: '180 mil'},
-  {id: 't10', route: 'San Jose, CA → Newark, NJ', meta: 'Tomorrow • 6:00PM', amount: '$990', miles: '180 mil'},
-  {id: 't11', route: 'San Jose, CA → Newark, NJ', meta: 'Tomorrow • 6:00PM', amount: '$990', miles: '180 mil'},
+const TABS = [
+  {key: 'upcoming', label: 'UPCOMING'},
+  {key: 'past', label: 'PAST'},
 ];
 
+const COLUMNS = ['AWB Number', 'Route', 'Payout', 'Pickup Time'];
+
+// Stops carry an explicit pickup/drop type so multi-pickup loads collapse their
+// middle stops behind a "+N More Pickups" chip until the row is tapped.
+const pickup = city => ({city, type: 'pickup'});
+const drop = city => ({city, type: 'drop'});
+
+const ROUTE = [
+  pickup('Jersey City, NJ'),
+  pickup('Newark, NJ'),
+  pickup('Trenton, NJ'),
+  drop('Baltimore, ND'),
+];
+
+const trip = (id, overrides) => ({
+  id,
+  awb: 'AWB-125',
+  type: 'FTL',
+  stops: ROUTE,
+  payout: '$900',
+  miles: '180 Miles',
+  pickupAt: '6:00PM JUL 12',
+  ...overrides,
+});
+
+// `today` flips the pickup pill green — the load leaves within the day.
+const SHIPMENTS = {
+  upcoming: [
+    trip('u1', {pickupAt: '6:00PM TODAY', today: true}),
+    trip('u2'),
+    trip('u3'),
+    trip('u4'),
+    trip('u5'),
+    trip('u6'),
+    trip('u7'),
+    trip('u8', {
+      type: 'LTL',
+      stops: [pickup('San Jose CA'), drop('Newark NJ')],
+    }),
+  ],
+  past: [
+    trip('p1', {pickupAt: '6:00PM JUL 04'}),
+    trip('p2', {pickupAt: '6:00PM JUL 02'}),
+    trip('p3', {
+      type: 'LTL',
+      stops: [pickup('San Jose CA'), drop('Newark NJ')],
+      pickupAt: '6:00PM JUN 28',
+    }),
+  ],
+};
+
 export default function ShipmentScreen() {
-  const insets = useSafeAreaInsets();
   const [selectedKey, setSelectedKey] = useState('d8');
+  const [tab, setTab] = useState('upcoming');
+  // Tapping a row (or its "+N More …" chip) reveals every pickup and drop.
+  const [expandedRows, setExpandedRows] = useState({});
 
-  // iOS tab bar sits on top of the home-indicator safe area, so the list needs
-  // extra bottom clearance there to avoid being hidden behind it.
-  const listBottomGap = Platform.OS === 'ios' ? insets.bottom + 12 : 10;
+  const shipments = useMemo(() => SHIPMENTS[tab] ?? [], [tab]);
 
-  const featured = useMemo(() => FEATURED[selectedKey], [selectedKey]);
+  const toggleRow = id => setExpandedRows(prev => ({...prev, [id]: !prev[id]}));
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <StatusBar
@@ -74,8 +105,14 @@ export default function ShipmentScreen() {
           title="SHIPMENT"
           subtitle="Jun 2026 • 3 Bids"
           right={
-            <TouchableOpacity style={styles.headerCalendarBtn} activeOpacity={0.8}>
-              <ScheduleIcon width={20} height={20} color={colors.white} />
+            <TouchableOpacity
+              style={styles.headerCalendarBtn}
+              activeOpacity={0.8}>
+              <ScheduleIcon
+                width={IS_TABLET ? ms(25) : ms(20)}
+                height={IS_TABLET ? ms(25) : ms(20)}
+                color={colors.white}
+              />
             </TouchableOpacity>
           }
           headerStyle={styles.headerPad}>
@@ -89,85 +126,125 @@ export default function ShipmentScreen() {
                   activeOpacity={0.8}
                   style={[styles.dayPill, active && styles.dayPillActive]}
                   onPress={() => setSelectedKey(d.key)}>
-                  <AppText style={[styles.dayLabel, active && styles.dayLabelActive]}>
+                  <AppText
+                    style={[styles.dayLabel, active && styles.dayLabelActive]}>
                     {d.day}
                   </AppText>
                   <AppText style={styles.dayNumber}>{d.date}</AppText>
-                  <View style={d.dot ? styles.dayDot : styles.dayDotPlaceholder} />
+                  <View
+                    style={d.dot ? styles.dayDot : styles.dayDotPlaceholder}
+                  />
                 </TouchableOpacity>
               );
             })}
           </View>
         </DashboardHeader>
 
-        {/* FEATURED CARD */}
-        <View style={styles.featuredCard}>
-          {featured ? (
-            <>
-              <View style={styles.featuredTopRow}>
-                <View style={styles.featuredRouteWrap}>
-                  <AppText style={styles.featuredRoute}>{featured.route}</AppText>
-                  <AppText style={styles.featuredPickup}>{featured.pickup}</AppText>
-                </View>
-                <View>
-                  <AppText style={styles.featuredAmount}>{featured.amount}</AppText>
-                  <AppText style={styles.featuredMiles}>{featured.miles}</AppText>
-                </View>
-              </View>
-
-              <View style={styles.featuredBottomRow}>
-                <View style={styles.miniStatsGroup}>
-                  <View style={styles.miniStat}>
-                    <AppText style={styles.miniStatLabel}>Load</AppText>
-                    <AppText style={styles.miniStatValue}>{featured.load}</AppText>
-                  </View>
-                  <View style={styles.miniStat}>
-                    <AppText style={styles.miniStatLabel}>Payout</AppText>
-                    <AppText style={styles.miniStatValue}>{featured.payout}</AppText>
-                  </View>
-                  <View style={styles.miniStat}>
-                    <AppText style={styles.miniStatLabel}>Driven</AppText>
-                    <AppText style={styles.miniStatValue}>{featured.driven}</AppText>
-                  </View>
-                </View>
-
-                <TouchableOpacity style={styles.startBtn} activeOpacity={0.85}>
-                  <AppText style={styles.startBtnText}>Start Trip</AppText>
-                </TouchableOpacity>
-              </View>
-            </>
-          ) : (
-            <>
-              <AppText style={styles.emptyTitle}>No Schedule Pickup</AppText>
-              <AppText style={styles.emptySubtitle}>
-                Trips that are scheduled for the day are shown here
-              </AppText>
-            </>
-          )}
+        {/* UPCOMING / PAST */}
+        <View style={styles.tabRow}>
+          {TABS.map(t => {
+            const active = t.key === tab;
+            return (
+              <TouchableOpacity
+                key={t.key}
+                activeOpacity={0.85}
+                style={[
+                  styles.tabBtn,
+                  active ? styles.tabBtnActive : styles.tabBtnIdle,
+                ]}
+                onPress={() => setTab(t.key)}>
+                <AppText style={styles.tabBtnText}>{t.label}</AppText>
+              </TouchableOpacity>
+            );
+          })}
         </View>
 
-        {/* TRANSACTIONS */}
-        <FlatList
-          data={TRIPS}
-          keyExtractor={tx => tx.id}
-          style={styles.listCard}
-          contentContainerStyle={styles.listContent}
-          nestedScrollEnabled
-          showsVerticalScrollIndicator={false}
-          renderItem={({item: tx, index}) => (
-            <View
-              style={[styles.row, index === TRIPS.length - 1 && styles.rowLast]}>
-              <View style={styles.rowLeft}>
-                <AppText style={styles.rowRoute}>{tx.route}</AppText>
-                <AppText style={styles.rowMeta}>{tx.meta}</AppText>
+        {/* SHIPMENTS TABLE */}
+        <View style={styles.listCard}>
+          <View style={styles.tableHead}>
+            {COLUMNS.map((label, index) => (
+              <AppText
+                key={label}
+                numberOfLines={1}
+                style={[styles.tableHeadText, styles[`col${index}`]]}>
+                {label}
+              </AppText>
+            ))}
+          </View>
+
+          <FlatList
+            data={shipments}
+            keyExtractor={item => item.id}
+            contentContainerStyle={styles.listContent}
+            nestedScrollEnabled
+            showsVerticalScrollIndicator={false}
+            renderItem={({item, index}) => (
+              <View
+                style={[
+                  styles.row,
+                  index === shipments.length - 1 && styles.rowLast,
+                ]}>
+                {/* AWB number + load type */}
+                <View style={[styles.col0, styles.cellCenter]}>
+                  <AppText style={styles.awbText} numberOfLines={1}>
+                    {item.awb}
+                  </AppText>
+                  {item.type ? (
+                    <View style={styles.typeBadge}>
+                      <GrayTruck
+                        width={ms(14)}
+                        height={ms(14)}
+                        style={styles.typeIcon}
+                      />
+                      <AppText style={styles.typeText}>{item.type}</AppText>
+                    </View>
+                  ) : null}
+                </View>
+
+                {/* Route */}
+                <View style={styles.col1}>
+                  <LoadRoute
+                    stops={item.stops}
+                    typed
+                    showSummary
+                    collapsed={!expandedRows[item.id]}
+                    onPressMore={() => toggleRow(item.id)}
+                  />
+                </View>
+
+                {/* Payout + distance */}
+                <View style={[styles.col2, styles.cellCenter]}>
+                  <AppText style={styles.payoutAmount} numberOfLines={1}>
+                    {item.payout}
+                  </AppText>
+                  <AppText style={styles.payoutMiles} numberOfLines={1}>
+                    {item.miles}
+                  </AppText>
+                </View>
+
+                {/* Pickup time */}
+                <View style={[styles.col3, styles.cellCenter]}>
+                  <View
+                    style={[
+                      styles.timePill,
+                      item.today ? styles.timePillToday : styles.timePillLater,
+                    ]}>
+                    <AppText
+                      numberOfLines={1}
+                      style={[
+                        styles.timePillText,
+                        item.today
+                          ? styles.timePillTextToday
+                          : styles.timePillTextLater,
+                      ]}>
+                      {item.pickupAt}
+                    </AppText>
+                  </View>
+                </View>
               </View>
-              <View style={styles.rowRight}>
-                <AppText style={styles.rowAmount}>{tx.amount}</AppText>
-                <AppText style={styles.rowMiles}>{tx.miles}</AppText>
-              </View>
-            </View>
-          )}
-        />
+            )}
+          />
+        </View>
       </View>
     </SafeAreaView>
   );

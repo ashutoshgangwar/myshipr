@@ -1,4 +1,4 @@
-import {Platform, StyleSheet} from 'react-native';
+import {StyleSheet} from 'react-native';
 import {ms as baseMs, vs as baseVs} from '../../theme/scale';
 import {colors} from '../../theme/colors';
 import {IS_TABLET, select} from '../../theme/device';
@@ -6,6 +6,14 @@ import {IS_TABLET, select} from '../../theme/device';
 const PHONE_FACTOR = select({phone: 0.82, tablet: 1});
 const ms = n => baseMs(n) * PHONE_FACTOR;
 const vs = n => baseVs(n) * PHONE_FACTOR;
+
+// Pickup-time pill tints. The blue matches the table's column band so the two
+// read as one family; the green marks a load leaving today.
+const PILL_BLUE_BG = '#DDE8F8';
+const PILL_GREEN_BG = colors.success_bg_light;
+
+// Share of the screen the UPCOMING / PAST pair spans — they split it evenly.
+const TAB_ROW_WIDTH = select({phone: '90%', tablet: '90%'});
 
 export default StyleSheet.create({
   safe: {
@@ -18,10 +26,10 @@ export default StyleSheet.create({
   },
 
   /* ---------- Header ---------- */
-  // extra bottom room reserved for the floating featured card that
-  // straddles the header edge (see featuredCard marginTop)
+  // The week strip is the last thing in the blue, so the header only needs
+  // enough bottom room to clear it — nothing floats over this header.
   headerPad: {
-    paddingBottom: vs(60),
+    paddingBottom: vs(16),
   },
 
   // The title/subtitle/badge come from the shared DashboardHeader — this screen
@@ -46,8 +54,8 @@ export default StyleSheet.create({
   dayPill: {
     flex: 1,
     alignItems: 'center',
-    paddingVertical: vs(5),
-    borderRadius: ms(12),
+    paddingVertical: IS_TABLET ? vs(3) : vs(5),
+    borderRadius: IS_TABLET ? ms(10) : ms(12),
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.18)',
     backgroundColor: 'rgba(255,255,255,0.05)',
@@ -60,9 +68,9 @@ export default StyleSheet.create({
 
   dayLabel: {
     color: colors.onDarkLow,
-    fontSize: ms(10),
+    fontSize: IS_TABLET ? ms(10) : ms(10),
     fontWeight: '600',
-    marginBottom: vs(3),
+    marginBottom: IS_TABLET ? vs(2) : vs(3),
   },
 
   dayLabelActive: {
@@ -71,202 +79,205 @@ export default StyleSheet.create({
 
   dayNumber: {
     color: colors.white,
-    fontSize: ms(16),
+    fontSize: IS_TABLET ? ms(12) : ms(16),
     fontWeight: '700',
   },
 
   dayDot: {
-    width: ms(5),
-    height: ms(5),
-    borderRadius: ms(5),
+    width: IS_TABLET ? ms(4) : ms(5),
+    height: IS_TABLET ? ms(4) : ms(5),
+    borderRadius: IS_TABLET ? ms(4) : ms(5),
     backgroundColor: colors.warning,
-    marginTop: vs(4),
+    marginTop: IS_TABLET ? vs(3) : vs(4),
   },
 
   dayDotPlaceholder: {
-    width: ms(5),
-    height: ms(5),
-    marginTop: vs(4),
+    width: IS_TABLET ? ms(4) : ms(5),
+    height: IS_TABLET ? ms(4) : ms(5),
+    marginTop: IS_TABLET ? vs(3) : vs(4),
   },
 
-  /* ---------- Featured card (overlaps header) ---------- */
-  featuredCard: {
-    backgroundColor: colors.white,
-    borderRadius: ms(8),
-    marginHorizontal: ms(14),
-    marginTop: -vs(40),
-    paddingHorizontal: ms(16),
-    paddingVertical: vs(14),
-    shadowColor: '#000',
-    shadowOpacity: 0.06,
-    shadowRadius: 8,
-    shadowOffset: {width: 0, height: 3},
-    elevation: 3,
-  },
-
-  featuredTopRow: {
+  /* ---------- Upcoming / Past ---------- */
+  // The pair is centred and narrower than the table below it — TAB_ROW_WIDTH is
+  // the single knob for how wide the two buttons get.
+  tabRow: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
-    justifyContent: 'space-between',
+    gap: ms(10),
+    width: TAB_ROW_WIDTH,
+    alignSelf: 'center',
+    marginTop: vs(14),
   },
 
-  featuredRouteWrap: {
+  tabBtn: {
     flex: 1,
-    paddingRight: ms(8),
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical:IS_TABLET ? vs(6) : vs(10),
+    borderRadius: ms(10),
   },
 
-  featuredRoute: {
-    color: colors.textStrong,
+  tabBtnActive: {
+    backgroundColor: colors.navy,
+  },
+
+  tabBtnIdle: {
+    backgroundColor: colors.lightbg_gray2,
+  },
+
+  tabBtnText: {
+    color: colors.white,
     fontSize: ms(15),
+    lineHeight: Math.round(ms(15) * 1.4),
     fontWeight: '700',
+    letterSpacing: 0.5,
   },
 
-  featuredPickup: {
-    color: colors.textMuted,
-    fontSize: ms(12),
-    fontWeight: '500',
-    marginTop: vs(3),
+  /* ---------- Shipments table ---------- */
+  listCard: {
+    flex: 1,
+    backgroundColor: colors.white,
+    borderTopLeftRadius: ms(5),
+    borderTopRightRadius: ms(5),
+    marginHorizontal: ms(12),
+    marginTop: vs(12),
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    shadowOffset: {width: 0, height: 2},
+    elevation: 2,
   },
 
-  featuredAmount: {
-    color: colors.textStrong,
-    fontSize: ms(15),
-    fontWeight: '700',
-    textAlign: 'right',
+  listContent: {
+    paddingBottom: vs(16),
   },
 
-  featuredMiles: {
-    color: colors.textMuted,
-    fontSize: ms(11),
-    fontWeight: '500',
-    textAlign: 'right',
-    marginTop: vs(2),
-  },
-
-  featuredDivider: {
-    height: StyleSheet.hairlineWidth,
-    backgroundColor: colors.border_Color,
-    marginVertical: vs(12),
-  },
-
-  featuredBottomRow: {
+  /* ----- Column header band ----- */
+  tableHead: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-      marginVertical: vs(15),
+    backgroundColor: PILL_BLUE_BG,
+    paddingHorizontal: ms(14),
+    paddingVertical: vs(7),
   },
 
-  miniStat: {
-    marginRight: ms(16),
-  },
-
-  miniStatLabel: {
-    color: colors.textMuted,
+  tableHeadText: {
+    color: colors.nearBlack,
     fontSize: ms(10),
-    fontWeight: '500',
-  },
-
-  miniStatValue: {
-    color: colors.textStrong,
-    fontSize: ms(13),
     fontWeight: '700',
-    marginTop: vs(2),
-  },
-
-  miniStatsGroup: {
-    flexDirection: 'row',
-    flex: 1,
-  },
-
-  startBtn: {
-    backgroundColor: colors.success,
-    borderRadius: ms(8),
-    paddingHorizontal: ms(16),
-    paddingVertical: vs(9),
-  },
-
-  startBtnText: {
-    color: colors.white,
-    fontSize: ms(13),
-    fontWeight: '700',
-  },
-
-  /* ---------- Empty featured ---------- */
-  emptyTitle: {
-    color: colors.textStrong,
-    fontSize: ms(15),
-    fontWeight: '700',
-  },
-
-  emptySubtitle: {
-    color: colors.textMuted,
-    fontSize: ms(12),
-    fontWeight: '500',
     textAlign: 'center',
-    marginTop: vs(18),
   },
 
-  /* ---------- Trips list ---------- */
+  /* Shared column widths — header cells and row cells use the same flex so
+     every value stays under its heading. */
+  col0: {
+    flex: 0.9,
+  },
 
-  listCard: {
-     flexGrow: 0,
-     flexShrink: 1,
-     backgroundColor: colors.white,
-     borderRadius: ms(10),
-     marginHorizontal: ms(12),
-     marginTop: vs(14),
-     marginBottom: vs(14),
-     paddingHorizontal: ms(14),
-   },
+  col1: {
+    flex: 1.25,
+    paddingHorizontal: ms(6),
+  },
 
-   listContent: {
-     paddingBottom: vs(16),
-   },
+  col2: {
+    flex: 0.9,
+  },
 
-   row: {
-   flexDirection: 'row',
-      alignItems: 'center',
-      paddingVertical: vs(12),
-      borderBottomWidth: StyleSheet.hairlineWidth,
-      borderBottomColor: colors.border_Color,
-   },
- 
-   rowLast: {
-     borderBottomWidth: 0,
-   },
- 
-   rowLeft: {
-     flex: 1,
-     paddingRight: ms(8),
-   },
- 
-   rowRoute: {
-     color: colors.textStrong,
-     fontSize: ms(14),
-     fontWeight: '600',
-   },
- 
-   rowMeta: {
-     color: colors.textMuted,
-     fontSize: ms(12),
-     fontWeight: '500',
-     marginTop: vs(3),
-   },
- 
-   rowRight: {
-     alignItems: 'flex-end',
-   },
- 
-   rowAmount: {
-     color: colors.textStrong,
-     fontSize: ms(15),
-     fontWeight: '700',
-   },
+  col3: {
+    flex: 1.1,
+  },
 
-   rowMiles: {
-     color: colors.textMuted,
-     fontSize: ms(11),
-     fontWeight: '500',
-     marginTop: vs(2),
-   },
+  cellCenter: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: ms(14),
+    paddingVertical: vs(5),
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.border_Color,
+  },
+
+  rowLast: {
+    borderBottomWidth: 0,
+  },
+
+  /* ----- AWB number ----- */
+  awbText: {
+    color: colors.textStrong,
+    fontSize: ms(9),
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+
+  typeBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'center',
+    marginTop: vs(4),
+    borderRadius: ms(6),
+    backgroundColor: colors.screenBg,
+    borderWidth: 1,
+    borderColor: colors.cardBorder,
+    paddingHorizontal: ms(8),
+    paddingVertical: vs(2),
+  },
+
+  typeIcon: {
+    marginRight: ms(5),
+  },
+
+  typeText: {
+    color: colors.textMuted,
+    fontSize: ms(9),
+    fontWeight: '600',
+  },
+
+  /* ----- Payout ----- */
+  payoutAmount: {
+    color: colors.textStrong,
+    fontSize: ms(12),
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+
+  payoutMiles: {
+    color: colors.lightbg_gray,
+    fontSize: IS_TABLET? ms(8) : ms(10),
+    fontWeight: '500',
+    marginTop: vs(2),
+    textAlign: 'center',
+  },
+
+  /* ----- Pickup time ----- */
+  timePill: {
+    alignSelf: 'center',
+    borderRadius: ms(6),
+    paddingHorizontal: ms(10),
+    paddingVertical: IS_TABLET ? vs(3) : vs(5),
+  },
+
+  timePillToday: {
+    backgroundColor: PILL_GREEN_BG,
+  },
+
+  timePillLater: {
+    backgroundColor: PILL_BLUE_BG,
+  },
+
+  timePillText: {
+    fontSize: ms(9),
+    fontWeight: '700',
+  },
+
+  timePillTextToday: {
+    color: colors.success_text,
+  },
+
+  timePillTextLater: {
+    color: colors.accentBlue,
+  },
 });

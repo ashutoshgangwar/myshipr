@@ -28,6 +28,8 @@ export const colors = {
   success_bg_star: '#008926',
   sucess_border: '#56FF84',
   success_bg: '#86EFAC',
+  success_bg_light: '#00A12D3B',
+  
   muted: '#000000eb',
   background: '#F8F9FA',
 
