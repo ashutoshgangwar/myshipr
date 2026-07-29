@@ -34,6 +34,8 @@ import Setting_Icon from '../../assets/svg_icon/Setting_Icon.svg';
 import Logout_Icon from '../../assets/svg_icon/Logout_Icon.svg'
 import Circle_two_way from '../../assets/svg_icon/circle_two_way.svg';
 import Earning_sign from '../../assets/svg_icon/earning_sign.svg';
+import Total_trip_Icon from '../../assets/svg_icon/Total_trip_Icon.svg';
+import useDriverRole from '../../hooks/useDriverRole';
 
 
 const {width: SCREEN_W} = Dimensions.get('window');
@@ -44,32 +46,49 @@ const PRIMARY_GRADIENT = ['#00033E', '#0008A4'];
 
 const STAT_ICON_SIZE = IS_TABLET ? 26 : 22;
 
-const STATS = [
-  {
-    key: 'miles',
-    icon: <Circle_two_way width={STAT_ICON_SIZE} height={STAT_ICON_SIZE} />,
-    label: 'Monthly Miles',
-    range: 'July',
-    value: '20,000',
-    delta: '8.9%',
-    deltaUp: true,
-    deltaNote: 'from Last Month',
-    chartColor: colors.success,
-    chart: [30, 42, 38, 55, 50, 62, 72],
-  },
-  {
-    key: 'earnings',
-    icon: <Earning_sign width={STAT_ICON_SIZE} height={STAT_ICON_SIZE} />,
-    label: 'Monthly Earnings',
-    range: 'July',
-    value: '$26,000',
-    delta: '8.9%',
-    deltaUp: false,
-    deltaNote: 'from Last Month',
-    chartColor: colors.danger,
-    chart: [50, 40, 52, 44, 54, 42, 50, 60],
-  },
-];
+const MILES_STAT = {
+  key: 'miles',
+  icon: <Circle_two_way width={STAT_ICON_SIZE} height={STAT_ICON_SIZE} />,
+  label: 'Monthly Miles',
+  range: 'July',
+  value: '20,000',
+  delta: '8.9%',
+  deltaUp: true,
+  deltaNote: 'from Last Month',
+  chartColor: colors.success,
+  chart: [30, 42, 38, 55, 50, 62, 72],
+};
+
+// Single drivers see what they made; fleet drivers are paid a salary, so the
+// second card shows their trip count instead.
+const EARNINGS_STAT = {
+  key: 'earnings',
+  icon: <Earning_sign width={STAT_ICON_SIZE} height={STAT_ICON_SIZE} />,
+  label: 'Monthly Earnings',
+  range: 'July',
+  value: '$26,000',
+  delta: '8.9%',
+  deltaUp: false,
+  deltaNote: 'from Last Month',
+  chartColor: colors.danger,
+  chart: [50, 40, 52, 44, 54, 42, 50, 60],
+};
+
+const TRIPS_STAT = {
+  key: 'trips',
+  icon: <Total_trip_Icon width={STAT_ICON_SIZE} height={STAT_ICON_SIZE} />,
+  label: 'Total Trips',
+  range: 'July',
+  value: '12',
+  delta: '8.9%',
+  deltaUp: false,
+  deltaNote: 'from Last Month',
+  chartColor: colors.danger,
+  chart: [50, 40, 52, 44, 54, 42, 50, 60],
+};
+
+const FLEET_STATS = [MILES_STAT, TRIPS_STAT];
+const SINGLE_STATS = [MILES_STAT, EARNINGS_STAT];
 
 const TRIP_STATS = [
   {value: '245 mi', label: 'Distance'},
@@ -139,6 +158,8 @@ const UPCOMING_LOADS = [
 
 const HomeScreen = () => {
   const navigation = useNavigation();
+  const {isFleet} = useDriverRole();
+  const stats = isFleet ? FLEET_STATS : SINGLE_STATS;
   const [mapVisible, setMapVisible] = useState(false);
   const [tripStarted, setTripStarted] = useState(false);
   const [menuOpen, setMenuOpen] = useState(false);
@@ -239,7 +260,7 @@ const HomeScreen = () => {
               </TouchableOpacity>
             </View>
           }
-          stats={STATS}>
+          stats={stats}>
           <AppText style={styles.headerLocation}>Dallas, TX</AppText>
           <AppText style={styles.headerWelcome}>Welcome Back, Ashutosh</AppText>
         </DashboardHeader>
