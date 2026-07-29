@@ -218,7 +218,12 @@ const DashboardHeader = ({
           {stats.map(stat => {
             const id = stat.key ?? stat.label;
             const selected = activeStat != null && activeStat === id;
-            const onDark = selected && styles.statTextActive;
+            // Two selected looks: `activeTint` is a light fill the existing dark
+            // copy still reads against, `activeBg` is a saturated fill that
+            // needs the text flipped to white.
+            const tint = selected && stat.activeTint;
+            const onDark = selected && !tint && styles.statTextActive;
+            const fill = tint || stat.activeBg || stat.accent;
 
             return (
               <TouchableOpacity
@@ -228,11 +233,11 @@ const DashboardHeader = ({
                 onPress={() => onStatPress?.(id)}
                 style={[
                   styles.statCard,
-                  {borderLeftColor: stat.accent},
-                  selected && {
-                    backgroundColor: stat.activeBg ?? stat.accent,
-                    borderLeftColor: stat.activeBg ?? stat.accent,
-                  },
+                  stat.accent && [
+                    styles.statCardStripe,
+                    {borderLeftColor: selected ? fill : stat.accent},
+                  ],
+                  selected && {backgroundColor: fill},
                 ]}>
                 <AppText
                   numberOfLines={1}

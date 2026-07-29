@@ -38,18 +38,6 @@ function Cell({col, item}) {
         </>
       );
 
-    case 'drop':
-      return (
-        <>
-          <AppText style={styles.cellStrong} numberOfLines={1}>
-            {item.dropTime}
-          </AppText>
-          <AppText style={styles.cellMuted} numberOfLines={1}>
-            {item.dropDate}
-          </AppText>
-        </>
-      );
-
     case 'lowest':
       return (
         <>

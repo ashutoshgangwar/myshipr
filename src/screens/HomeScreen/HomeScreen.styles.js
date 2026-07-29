@@ -44,7 +44,7 @@ export default StyleSheet.create({
     backgroundColor: colors.primary,
     paddingHorizontal: ms(20),
     paddingTop: vs(16),
-    paddingBottom: vs(44),
+    paddingBottom: vs(4),
     borderBottomLeftRadius: ms(38),
     borderBottomRightRadius: ms(38),
   },

@@ -1,9 +1,10 @@
 import React, {useMemo, useState} from 'react';
-import {FlatList, Platform} from 'react-native';
+import {FlatList} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
 import styles, {GRID_COLS} from './BiddingScreen.styles';
-import {BIDS, BUCKETS, STATS, ms, vs} from './constants';
+import {DASHBOARD_STATS_OVERLAP} from '../../component/DashboardHeader/DashboardHeader.styles';
+import {BIDS, BUCKETS, STATS} from './constants';
 import FilterRow from './components/FilterRow';
 import BidTable from './components/BidTable';
 import GridCard from './components/GridCard';
@@ -11,7 +12,6 @@ import StatusBar from '../../component/StatusBar/StatusBar';
 import DashboardHeader from '../../component/DashboardHeader/DashboardHeader';
 import DieselBadge from '../../component/DieselBadge/DieselBadge';
 import {colors} from '../../theme/colors';
-import {IS_TABLET, select} from '../../theme/device';
 
 import BiddingIcon from '../../assets/svg_icon/Bidding_Icon.svg';
 
@@ -56,17 +56,17 @@ export default function BiddingScreen() {
       />
 
       {/* HEADER */}
+      {/* Height/curve/padding all ride on headerStyle — the height/padding
+          props are left off on purpose, since headerStyle is applied last and
+          would override them anyway. */}
       <DashboardHeader
         icon={<BiddingIcon width={20} height={20} />}
-        paddingHorizontal={ms(14)}
-        paddingVertical={vs(IS_TABLET ? 32 : 8)}
-        height={IS_TABLET ? vs(130) : Platform.OS === 'ios' ? vs(120) : vs(140)}
-        statsOffset={-vs(
-          select({
-            phone: Platform.OS === 'ios' ? 45 : 55,
-            tablet: 55,
-          }),
-        )}
+        style={styles.dashboardWrap}
+        headerStyle={styles.dashboardHeader}
+        titleStyle={styles.dashboardTitle}
+        subtitleStyle={styles.dashboardSubtitle}
+        statsStyle={styles.dashboardStats}
+        statsOffset={-DASHBOARD_STATS_OVERLAP}
         width="100%"
         title="Bidding"
         subtitle="Live Auction"
@@ -90,8 +90,6 @@ export default function BiddingScreen() {
 
       {/* LIST / GRID */}
       {grid ? (
-        // one card per row on phones: two columns leaves the card too narrow
-        // for the mode/date/type/distance strip to fit on a single line.
         <FlatList
           key="grid"
           data={data}

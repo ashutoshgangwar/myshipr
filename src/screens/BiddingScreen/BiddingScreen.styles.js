@@ -1,4 +1,4 @@
-import {StyleSheet} from 'react-native';
+import {Platform, StyleSheet} from 'react-native';
 import {ms as baseMs, vs as baseVs} from '../../theme/scale';
 import {colors} from '../../theme/colors';
 import {select, IS_TABLET} from '../../theme/device';
@@ -6,6 +6,12 @@ import {
   STOP_LINE_H as ROUTE_LINE_H,
   STOP_SUMMARY_H as ROUTE_SUMMARY_H,
 } from '../../component/LoadRoute/LoadRoute';
+import {
+  DASHBOARD_HEADER_PAD_BOTTOM,
+  DASHBOARD_HEADER_RADIUS,
+  DASHBOARD_TITLE_LINE_H,
+  DASHBOARD_TITLE_SIZE,
+} from '../../component/DashboardHeader/DashboardHeader.styles';
 
 const PHONE_FACTOR = select({phone: 0.82, tablet: 1});
 const ms = n => baseMs(n) * PHONE_FACTOR;
@@ -18,13 +24,28 @@ const centered = IS_TABLET
 
 const COL_GAP = ms(8);
 
+/* Bidding runs a shorter, flatter blue band than the other dashboard headers —
+   the four stat cards are the focus here, so the space above them is trimmed
+   rather than shared with Home/Earnings. Height stays a floor (minHeight), so
+   the header still grows if the copy ever needs more room and the cards keep
+   riding inside it. Lowering these past the content height has no further
+   effect: paddingTop + brand row + DASHBOARD_HEADER_PAD_BOTTOM is the limit. */
+const BLUE_HEADER_H = IS_TABLET
+  ? vs(160)
+  : Platform.OS === 'ios'
+  ? vs(165)
+  : vs(96);
+
+// Tablets carried a very deep curve at the shared ms(95); flatten it here.
+const BLUE_HEADER_RADIUS = IS_TABLET ? ms(60) : DASHBOARD_HEADER_RADIUS;
+
 const FILTER_H = IS_TABLET ? vs(30) : vs(34);
 const TABLE_PADDING = ms(10);
-const ROW_MIN_H = select({phone: vs(66), tablet: vs(56)});
+const ROW_MIN_H = select({phone: vs(66), tablet: vs(44)});
 
 /* Frozen first column ("Load"). Everything else scrolls horizontally beside it. */
 export const LOAD_COL_W = ms(112);
-export const HEADER_H = vs(30);
+export const HEADER_H = IS_TABLET ? vs(26) : vs(30);
 
 /* Rows are explicitly sized so the frozen column and the scrolling column —
    which live in separate scroll containers — stay on the same baseline. */
@@ -32,7 +53,7 @@ export const HEADER_H = vs(30);
 // data rows and the grid cards all line up with the same route geometry.
 export const STOP_LINE_H = ROUTE_LINE_H;
 const STOP_SUMMARY_H = ROUTE_SUMMARY_H;
-const ROW_PAD_V = vs(8);
+const ROW_PAD_V = IS_TABLET ? vs(4) : vs(8);
 
 /* Card grid is two-up everywhere; phones get tighter chip padding and type so
    the mode/date/type/distance strip still fits on one line. */
@@ -49,6 +70,51 @@ export default StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: colors.screenBg,
+  },
+
+  /* Bidding deliberately runs shorter and flatter than Home/Earnings, so the
+     height and curve come from the local BLUE_HEADER_* knobs above rather than
+     the shared constants. The bottom padding still does — it is what reserves
+     the band the floating stat cards ride up into. minHeight (not height) lets
+     the header grow if the copy ever needs more room, which keeps the cards
+     inside the header's bounds and therefore tappable. */
+  dashboardHeader: {
+    paddingTop: vs(15),
+    paddingBottom: DASHBOARD_HEADER_PAD_BOTTOM,
+    minHeight: BLUE_HEADER_H,
+    borderBottomLeftRadius: BLUE_HEADER_RADIUS,
+    borderBottomRightRadius: BLUE_HEADER_RADIUS,
+  },
+
+  /* The remaining DashboardHeader slots, wired up so Bidding can tune its own
+     header copy and stat row without touching Home or Earnings. They are
+     seeded with the shared component's own values, so they change nothing on
+     their own — they are knobs, not overrides. Colours are left to the
+     component (white title, muted subtitle). */
+  dashboardWrap: {
+    // The header and its floating cards are the only thing in this slot; the
+    // list below is a sibling, so nothing here should clip.
+    overflow: 'visible',
+  },
+
+  dashboardTitle: {
+    fontSize: DASHBOARD_TITLE_SIZE,
+    lineHeight: DASHBOARD_TITLE_LINE_H,
+    fontWeight: '500',
+  },
+
+  dashboardSubtitle: {
+    // marginLeft clears the brand badge (ms(32)) plus its ms(10) row gap, so
+    // "Live Auction" lines up under the "B" of Bidding.
+    fontSize: ms(11),
+    fontWeight: '500',
+    marginLeft: ms(42),
+    marginTop: vs(1),
+  },
+
+  dashboardStats: {
+    marginHorizontal: ms(16),
+    gap: ms(8),
   },
 
   /* ---------- Header (diesel pill in the right slot) ---------- */
@@ -97,15 +163,15 @@ export default StyleSheet.create({
     height: FILTER_H,
     justifyContent: 'center',
     borderWidth: 1,
-    borderColor: colors.border_Color,
+    borderColor: '#88888870',
     borderRadius: ms(8),
     paddingHorizontal: ms(12),
     backgroundColor: colors.white,
   },
 
   modeTabActive: {
-    backgroundColor: colors.splashSubtitle,
-    borderColor: colors.splashSubtitle,
+    backgroundColor: '#DDE8F8',
+    borderColor: '#DDE8F8',
   },
 
   modeTabText: {
@@ -115,7 +181,7 @@ export default StyleSheet.create({
   },
 
   modeTabTextActive: {
-    color: colors.white,
+    color: '#171717',
   },
 
   searchBox: {
@@ -224,14 +290,14 @@ export default StyleSheet.create({
   // header band: frozen "Load" head + the scrolling heads, kept in lockstep
   tableHeaderRow: {
     flexDirection: 'row',
-    backgroundColor: colors.gray500,
+    backgroundColor: '#DDE8F8',
   },
 
   tableHeader: {
     flexDirection: 'row',
     alignItems: 'center',
     height: HEADER_H,
-    backgroundColor: colors.gray500,
+    backgroundColor: '#DDE8F8',
   },
 
   // vertical scroller holding both columns' bodies
@@ -283,7 +349,7 @@ export default StyleSheet.create({
 
   thText: {
     flexShrink: 1,
-    fontSize: ms(10),
+    fontSize: IS_TABLET ? ms(9) : ms(10),
     fontWeight: '600',
     color: colors.nearBlack,
   },
@@ -367,22 +433,22 @@ export default StyleSheet.create({
 
   /* Generic centered cell text */
   cellStrong: {
-    fontSize: ms(11),
+    fontSize: IS_TABLET ? ms(10) : ms(11),
     fontWeight: '600',
     color: colors.textStrong,
     textAlign: 'center',
   },
 
   cellMuted: {
-    fontSize: ms(10),
+    fontSize: IS_TABLET ? ms(9) : ms(10),
     fontWeight: '500',
     color: colors.textMuted,
-    marginTop: vs(2),
+    marginTop: IS_TABLET ? vs(1) : vs(2),
     textAlign: 'center',
   },
 
   cellText: {
-    fontSize: ms(11),
+    fontSize: IS_TABLET ? ms(10) : ms(11),
     fontWeight: '500',
     color: colors.textStrong,
     textAlign: 'center',

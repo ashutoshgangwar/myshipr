@@ -21,44 +21,42 @@ export const BUCKETS = {
   past: 'past',
 };
 
+/* Compact stat cards that double as the list filter. No `accent` here on
+   purpose — these cards are plain white, so the only thing marking the current
+   filter is `activeTint`, a fill light enough that the label/value stay dark
+   and all four cards still read as one row. */
+const ACTIVE_TINT = '#DDE8F8';
+
 export const STATS = [
   {
     key: BUCKETS.leading,
     label: 'Currently Leading',
     value: '2',
     note: 'Across Active Bids',
-    accent: colors.warning_text,
-    labelColor: colors.warning_text,
-    activeBg: '#E0A32E',
+    activeTint: ACTIVE_TINT,
   },
   {
     key: BUCKETS.active,
     label: 'Active Bids',
     value: '6',
     note: 'in Progress',
-    accent: colors.accentBlue,
-    labelColor: colors.accentBlue,
-    activeBg: colors.success,
+    activeTint: ACTIVE_TINT,
   },
   {
     key: BUCKETS.awarded,
     label: 'Awarded Bids',
     value: '1',
     note: '8% vs last week',
-    accent: colors.success,
-    labelColor: colors.success,
     noteColor: colors.success,
     up: true,
-    activeBg: colors.card_drive_load,
+    activeTint: ACTIVE_TINT,
   },
   {
     key: BUCKETS.past,
     label: 'Past Auction',
     value: '637',
     note: 'Across All Modes',
-    accent: colors.card_drive_load,
-    labelColor: colors.card_drive_load,
-    activeBg: colors.button_color,
+    activeTint: ACTIVE_TINT,
   },
 ];
 
@@ -68,7 +66,6 @@ export const STATS = [
 export const COLUMNS = [
   {key: 'mode', label: 'Mode', width: ms(72), kind: 'mode', shaded: true, sortable: true},
   {key: 'pickup', label: 'Pickup Time', width: ms(76), kind: 'pickup', sortable: true},
-  {key: 'drop', label: 'Drop Time', width: ms(76), kind: 'drop', sortable: true},
   {key: 'lowest', label: 'Lowest Bid', width: ms(74), kind: 'lowest', sortable: true},
   {key: 'chevron', label: '', width: ms(28), kind: 'chevron'},
   {key: 'auctionMode', label: 'Auction Mode', width: ms(84), kind: 'auctionMode', sortable: true},

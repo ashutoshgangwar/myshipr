@@ -27,7 +27,7 @@ export default function BidTable({data}) {
       {/* ---------- Header ---------- */}
       <View style={styles.tableHeaderRow}>
         <View style={styles.frozenHead}>
-          <HeaderCell label="Load" sortable center />
+          <HeaderCell label="Location" sortable center />
         </View>
         <ScrollView
           ref={headRef}
