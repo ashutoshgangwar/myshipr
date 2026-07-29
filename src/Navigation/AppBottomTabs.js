@@ -6,7 +6,7 @@ import {moderateScale} from 'react-native-size-matters';
 
 import HomeScreen from '../screens/HomeScreen/HomeScreen';
 import EarningsScreen from '../screens/EarningsScreen/EarningsScreen';
-import ScheduleScreen from '../screens/ScheduleScreen/ScheduleScreen';
+import ShipmentScreen from '../screens/ShipmentScreen/ShipmentScreen';
 import BiddingScreen from '../screens/BiddingScreen/BiddingScreen';
 import Profile from '../screens/Profile/Profile';
 import BiddingIcon from '../assets/svg_icon/Bidding.svg';
@@ -44,7 +44,7 @@ const TABS = {
   },
   shipment: {
     name: 'ShipmentTab',
-    component: ScheduleScreen,
+    component: ShipmentScreen,
     label: 'Shipment',
     icon: ScheduleIcon,
   },

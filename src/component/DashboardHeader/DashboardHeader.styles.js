@@ -32,6 +32,15 @@ export const DASHBOARD_HEADER_H = IS_TABLET ? vs(190) : Platform.OS === 'ios' ? 
 // out identical.
 export const DASHBOARD_HEADER_RADIUS = ms(95);
 
+// One title size for every dashboard header (Home / Earnings / Shipment /
+// Bidding). Screens scale their own styles by different phone factors, so a
+// per-screen titleStyle drifts out of step — this is the single knob.
+export const DASHBOARD_TITLE_SIZE = ms(18);
+
+// Poppins sits high in its em box: without an explicit lineHeight the tops of
+// the caps get clipped on Android. Keep it comfortably above the font size.
+export const DASHBOARD_TITLE_LINE_H = Math.round(DASHBOARD_TITLE_SIZE * 1.5);
+
 export default StyleSheet.create({
   wrap: {},
 
@@ -55,14 +64,25 @@ export default StyleSheet.create({
     justifyContent: 'space-between',
   },
 
+  // Takes the row's spare width so a long title (EARNINGS, SHIPMENT) is never
+  // squeezed by the right-hand slot into wrapping or truncation.
   brandRow: {
     flexDirection: 'column',
+    flex: 1,
+    minWidth: 0,
+    paddingRight: ms(8),
+  },
+
+  // The right slot keeps its natural width — only the title flexes.
+  headerRightSlot: {
+    flexShrink: 0,
   },
 
   brandTitleRow: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: ms(10),
+    flexShrink: 1,
   },
 
   brandBadge: {
@@ -76,8 +96,13 @@ export default StyleSheet.create({
 
   brandText: {
     color: colors.white,
-    fontSize: ms(18),
+    fontSize: DASHBOARD_TITLE_SIZE,
+    lineHeight: DASHBOARD_TITLE_LINE_H,
     fontWeight: '500',
+    // Keep Android's font padding: it reserves the ascent room Poppins needs,
+    // and turning it off is what shaves the tops off the caps.
+    includeFontPadding: true,
+    textAlignVertical: 'center',
   },
 
   brandSub: {

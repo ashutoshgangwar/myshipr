@@ -63,14 +63,16 @@ const DashboardHeader = ({
           <View style={styles.brandRow}>
             <View style={styles.brandTitleRow}>
               {icon ? <View style={styles.brandBadge}>{icon}</View> : null}
-              <AppText style={[styles.brandText, titleStyle]}>{title}</AppText>
+              <AppText style={[styles.brandText, titleStyle]} numberOfLines={1}>
+                {title}
+              </AppText>
             </View>
             {subtitle ? (
               <AppText style={[styles.brandSub, subtitleStyle]}>{subtitle}</AppText>
             ) : null}
           </View>
 
-          {right ?? null}
+          {right ? <View style={styles.headerRightSlot}>{right}</View> : null}
         </View>
 
         {children}

@@ -210,9 +210,7 @@ export default function EarningsScreen() {
             />
           }
           title="EARNINGS"
-          titleStyle={styles.brandTitle}
           subtitle={data.range}
-          subtitleStyle={styles.brandSubTight}
           headerStyle={styles.dashboardHeader}
           statsOffset={-DASHBOARD_STATS_OVERLAP}
           statsVariant="chart"

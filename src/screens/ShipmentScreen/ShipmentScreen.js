@@ -2,7 +2,7 @@ import React, {useMemo, useState} from 'react';
 import {View, FlatList, TouchableOpacity, Platform} from 'react-native';
 import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
 
-import styles from './ScheduleScreen.styles';
+import styles from './ShipmentScreen.styles';
 import StatusBar from '../../component/StatusBar/StatusBar';
 import DashboardHeader from '../../component/DashboardHeader/DashboardHeader';
 import AppText from '../../theme/AppText';
@@ -50,7 +50,7 @@ const TRIPS = [
   {id: 't11', route: 'San Jose, CA → Newark, NJ', meta: 'Tomorrow • 6:00PM', amount: '$990', miles: '180 mil'},
 ];
 
-export default function ScheduleScreen() {
+export default function ShipmentScreen() {
   const insets = useSafeAreaInsets();
   const [selectedKey, setSelectedKey] = useState('d8');
 
@@ -71,7 +71,7 @@ export default function ScheduleScreen() {
         {/* HEADER */}
         <DashboardHeader
           icon={<ScheduleIcon width={18} height={18} color={colors.primary} />}
-          title="Schedule"
+          title="SHIPMENT"
           subtitle="Jun 2026 • 3 Bids"
           right={
             <TouchableOpacity style={styles.headerCalendarBtn} activeOpacity={0.8}>

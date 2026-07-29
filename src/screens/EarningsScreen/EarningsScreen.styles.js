@@ -29,21 +29,15 @@ export default StyleSheet.create({
  // Home uses — so both dashboards render an identical blue header and neither
  // hides its copy behind the floating stat cards.
  dashboardHeader: {
-    paddingTop: vs(12),
+    // Clearance below the status bar so the EARNINGS badge/title aren't pinned
+    // to the top edge. The gross block below gives the height back (see
+    // grossValue marginTop) so the floating stat cards stay where they are.
+    paddingTop: vs(26),
     paddingBottom: DASHBOARD_HEADER_PAD_BOTTOM,
     minHeight: DASHBOARD_HEADER_H,
     borderBottomLeftRadius: DASHBOARD_HEADER_RADIUS,
     borderBottomRightRadius: DASHBOARD_HEADER_RADIUS,
   },
-  brandTitle: {
-    fontSize: IS_TABLET ? ms(14) : ms(15),
-  },
-
-  // Pulls the date line up closer to the EARNINGS title.
-  brandSubTight: {
-    marginTop: -vs(2),
-  },
-
   /* ---------- Period dropdown ---------- */
   periodBtn: {
     flexDirection: 'row',
@@ -108,13 +102,15 @@ export default StyleSheet.create({
   grossValue: {
      color: colors.onDarkMedium,
        fontSize: ms(20),
+       lineHeight: Math.round(ms(20) * 1.4),
        fontWeight: '500',
-       marginTop: IS_TABLET ? vs(2) : vs(18),
+       marginTop: IS_TABLET ? vs(2) : vs(8),
   },
 
   grossLabel: {
       color: colors.white,
       fontSize: IS_TABLET ? ms(20) : ms(24),
+      lineHeight: Math.round((IS_TABLET ? ms(20) : ms(24)) * 1.4),
       fontWeight: '500',
       marginTop: vs(2),
       marginBottom:IS_TABLET ? vs(6) : Platform.OS === 'ios' ? vs(1) : vs(8),

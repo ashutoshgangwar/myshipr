@@ -24,41 +24,9 @@ export default StyleSheet.create({
     paddingBottom: vs(60),
   },
 
-  headerTopRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-  },
-
-  brandRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: ms(10),
-  },
-
-  brandBadge: {
-    width: IS_TABLET ? ms(30) : ms(38),
-    height: IS_TABLET ? ms(30) : ms(38),
-    borderRadius: ms(10),
-    backgroundColor: colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-
-  brandText: {
-    color: colors.white,
-    fontSize: ms(18),
-    fontWeight: '600',
-    letterSpacing: 0.5,
-  },
-
-  brandSub: {
-    color: colors.onDarkMedium,
-    fontSize: ms(11),
-    fontWeight: '500',
-    marginTop: vs(2),
-  },
-
+  // The title/subtitle/badge come from the shared DashboardHeader — this screen
+  // deliberately keeps no local copies of them, so the header size stays in
+  // step with Home and Earnings.
   headerCalendarBtn: {
     width: IS_TABLET ? ms(30) : ms(36),
     height: IS_TABLET ? ms(30) : ms(36),
