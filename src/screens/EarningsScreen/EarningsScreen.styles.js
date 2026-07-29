@@ -2,6 +2,11 @@ import {Platform, StyleSheet} from 'react-native';
 import {ms as baseMs, vs as baseVs} from '../../theme/scale';
 import {colors} from '../../theme/colors';
 import {IS_TABLET, select} from '../../theme/device';
+import {
+  DASHBOARD_HEADER_H,
+  DASHBOARD_HEADER_PAD_BOTTOM,
+  DASHBOARD_HEADER_RADIUS,
+} from '../../component/DashboardHeader/DashboardHeader.styles';
 
 const PHONE_FACTOR = select({phone: 0.82, tablet: 1});
 const ms = n => baseMs(n) * PHONE_FACTOR;
@@ -20,11 +25,15 @@ export default StyleSheet.create({
   scrollContent: {
     paddingBottom: vs(28),
   },
+ // Height/padding come from the shared DashboardHeader constants — the same ones
+ // Home uses — so both dashboards render an identical blue header and neither
+ // hides its copy behind the floating stat cards.
  dashboardHeader: {
     paddingTop: vs(12),
-    paddingBottom: IS_TABLET ? vs(80) : vs(100),
-    borderBottomLeftRadius: ms(80),
-    borderBottomRightRadius: ms(80),
+    paddingBottom: DASHBOARD_HEADER_PAD_BOTTOM,
+    minHeight: DASHBOARD_HEADER_H,
+    borderBottomLeftRadius: DASHBOARD_HEADER_RADIUS,
+    borderBottomRightRadius: DASHBOARD_HEADER_RADIUS,
   },
   brandTitle: {
     fontSize: IS_TABLET ? ms(14) : ms(15),
@@ -97,29 +106,29 @@ export default StyleSheet.create({
 
   /* ---------- Gross earning ---------- */
   grossValue: {
-    color: colors.white,
-    fontSize: IS_TABLET ? ms(25) : ms(30),
-    fontWeight: '800',
-    marginTop: vs(5),
+     color: colors.onDarkMedium,
+       fontSize: ms(20),
+       fontWeight: '500',
+       marginTop: IS_TABLET ? vs(2) : vs(18),
   },
 
   grossLabel: {
-    color: colors.onDarkMedium,
-    fontSize:IS_TABLET? ms(10): ms(12),
-    fontWeight: '500',
-    marginTop: vs(1),
-    marginBottom: IS_TABLET ? vs(30) : Platform.OS === 'ios' ? vs(20) : vs(35),
+      color: colors.white,
+      fontSize: IS_TABLET ? ms(20) : ms(24),
+      fontWeight: '500',
+      marginTop: vs(2),
+      marginBottom:IS_TABLET ? vs(6) : Platform.OS === 'ios' ? vs(1) : vs(8),
   },
 
-  /* ---------- Transactions list ---------- */
+  /* ---------- Transactions table ---------- */
   listCard: {
     flex: 1,
     backgroundColor: colors.white,
-    borderRadius: ms(14),
+    borderTopLeftRadius: ms(5),
+    borderTopRightRadius: ms(5),
     marginHorizontal: ms(12),
     marginTop: vs(12),
-    marginBottom: vs(14),
-    paddingHorizontal: ms(14),
+    overflow: 'hidden',
     shadowColor: '#000',
     shadowOpacity: 0.05,
     shadowRadius: 6,
@@ -127,10 +136,51 @@ export default StyleSheet.create({
     elevation: 2,
   },
 
+  /* ----- Column header band ----- */
+  tableHead: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#DDE8F8',
+    paddingHorizontal: ms(14),
+    paddingVertical: vs(10),
+  },
+
+  tableHeadText: {
+    color: colors.nearBlack,
+    fontSize: ms(12),
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+
+  /* Shared column widths — header cells and row cells use the same flex so
+     every value stays under its heading. */
+  col0: {
+    flex: 0.9,
+  },
+
+  col1: {
+    flex: 1.25,
+    paddingHorizontal: ms(6),
+  },
+
+  col2: {
+    flex: 1,
+  },
+
+  col3: {
+    flex: 0.95,
+  },
+
+  cellCenter: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
   row: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: vs(6),
+    paddingHorizontal: ms(14),
+    paddingVertical: vs(10),
     borderBottomWidth: StyleSheet.hairlineWidth,
     borderBottomColor: colors.border_Color,
   },
@@ -139,16 +189,18 @@ export default StyleSheet.create({
     borderBottomWidth: 0,
   },
 
-  /* ----- Left: route + type badge ----- */
-  rowLeft: {
-    flex: 1.15,
-    paddingRight: ms(8),
+  /* ----- AWB number ----- */
+  awbText: {
+    color: colors.textStrong,
+    fontSize: ms(12),
+    fontWeight: '600',
+    textAlign: 'center',
   },
 
   typeBadge: {
     flexDirection: 'row',
     alignItems: 'center',
-    alignSelf: 'flex-start',
+    alignSelf: 'center',
     marginTop: vs(6),
     borderRadius: ms(6),
     backgroundColor: colors.screenBg,
@@ -169,12 +221,6 @@ export default StyleSheet.create({
   },
 
   /* ----- Center: distance + duration ----- */
-  rowCenter: {
-    flex: 1,
-    alignItems: 'center',
-    paddingHorizontal: ms(4),
-  },
-
   centerMiles: {
     color: colors.textStrong,
     fontSize: ms(12),
@@ -191,29 +237,19 @@ export default StyleSheet.create({
     textAlign: 'center',
   },
 
-  /* ----- Right: amount + miles + status ----- */
-  rowRight: {
-    alignItems: 'flex-end',
-    minWidth: ms(78),
-  },
-
+  /* ----- Right: amount + status ----- */
   rowAmount: {
     color: colors.textStrong,
-    fontSize: ms(16),
-    fontWeight: '800',
-  },
-
-  rowSubMiles: {
-    color: colors.textMuted,
-    fontSize: ms(11),
-    fontWeight: '500',
-    marginTop: vs(2),
+    fontSize: ms(14),
+    fontWeight: '700',
+    textAlign: 'center',
   },
 
   pill: {
+    alignSelf: 'center',
     borderRadius: ms(6),
     paddingHorizontal: ms(10),
-    paddingVertical: vs(3),
+    paddingVertical: vs(4),
     marginTop: vs(6),
   },
 

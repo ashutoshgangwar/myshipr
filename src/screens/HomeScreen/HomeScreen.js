@@ -14,6 +14,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import styles from './HomeScreen.styles';
 import StatusBar from '../../component/StatusBar/StatusBar';
 import DashboardHeader from '../../component/DashboardHeader/DashboardHeader';
+import {DASHBOARD_STATS_OVERLAP} from '../../component/DashboardHeader/DashboardHeader.styles';
 import FloatingMap from '../../component/FloatingMap/FloatingMap';
 import Button from '../../component/Button/Button';
 import {colors} from '../../theme/colors';
@@ -239,7 +240,7 @@ const HomeScreen = () => {
           icon={<TruckIcon width={20} height={20} />}
           title="CARRIER"
           headerStyle={styles.dashboardHeader}
-          statsOffset={IS_TABLET ? -ms(95) : -ms(80)}
+          statsOffset={-DASHBOARD_STATS_OVERLAP}
           statsVariant="chart"
           right={
             <View style={styles.headerRight}>

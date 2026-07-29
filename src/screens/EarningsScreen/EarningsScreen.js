@@ -5,6 +5,7 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import styles from './EarningsScreen.styles';
 import StatusBar from '../../component/StatusBar/StatusBar';
 import DashboardHeader from '../../component/DashboardHeader/DashboardHeader';
+import {DASHBOARD_STATS_OVERLAP} from '../../component/DashboardHeader/DashboardHeader.styles';
 import LoadRoute from '../../component/LoadRoute/LoadRoute';
 import AppText from '../../theme/AppText';
 import {colors} from '../../theme/colors';
@@ -12,94 +13,60 @@ import {ms} from '../../theme/scale';
 import EarningsIcon from '../../assets/svg_icon/Earning_1.svg';
 import DropdownIcon from '../../assets/svg_icon/Dropdown_icon.svg';
 import GrayTruck from '../../assets/svg_icon/gray_truck.svg';
+import Circle_two_way from '../../assets/svg_icon/circle_two_way.svg';
+import Earning_sign from '../../assets/svg_icon/earning_sign.svg';
 import {IS_TABLET} from '../../theme/device';
 
 const PERIODS = ['Weekly', 'Monthly', 'Yearly'];
 
-// Per-period header copy + floating chart cards.
+// Only the header copy switches with the period; the two floating cards always
+// report the month, the same way the Home dashboard does.
 const PERIOD_DATA = {
   Weekly: {
     range: '8 Jun – 14 Jun',
     gross: '$844',
     grossLabel: 'Gross earning this Week',
-    stats: [
-      {
-        key: 'miles',
-        label: 'Miles • Week',
-        value: '1,234',
-        note: '↑ 8% vs last week',
-        noteColor: colors.success,
-        accent: colors.warning,
-        chartColor: colors.success,
-        chart: [30, 42, 38, 55, 50, 62, 72],
-      },
-      {
-        key: 'earnings',
-        label: 'Earnings',
-        value: '$1,234',
-        note: '↓ $200 this week',
-        noteColor: colors.danger,
-        accent: colors.warning,
-        chartColor: colors.danger,
-        chart: [50, 40, 52, 44, 54, 42, 50, 60],
-      },
-    ],
   },
   Monthly: {
     range: 'June 2026',
     gross: '$1,244',
     grossLabel: 'Gross earning this Month',
-    stats: [
-      {
-        key: 'miles',
-        label: 'Miles • Month',
-        value: '5,120',
-        note: '↑ 12% vs last month',
-        noteColor: colors.success,
-        accent: colors.warning,
-        chartColor: colors.success,
-        chart: [40, 48, 52, 60],
-      },
-      {
-        key: 'earnings',
-        label: 'Earnings',
-        value: '$4,980',
-        note: '↑ $420 this month',
-        noteColor: colors.success,
-        accent: colors.warning,
-        chartColor: colors.success,
-        chart: [42, 46, 50, 58],
-      },
-    ],
   },
   Yearly: {
     range: '2026 – now',
     gross: '$12,344',
     grossLabel: 'Gross earning this Year',
-    stats: [
-      {
-        key: 'miles',
-        label: 'Miles • Year',
-        value: '61,300',
-        note: '↑ 6% vs last year',
-        noteColor: colors.success,
-        accent: colors.warning,
-        chartColor: colors.success,
-        chart: [45, 50, 48, 55, 52, 60, 58, 62, 60, 65, 63, 70],
-      },
-      {
-        key: 'earnings',
-        label: 'Earnings',
-        value: '$58,900',
-        note: '↓ $1.2k this year',
-        noteColor: colors.danger,
-        accent: colors.warning,
-        chartColor: colors.danger,
-        chart: [55, 52, 58, 54, 60, 56, 50, 58, 54, 60, 56, 52],
-      },
-    ],
   },
 };
+
+const STAT_ICON_SIZE = IS_TABLET ? 26 : 22;
+
+const STATS = [
+  {
+    key: 'miles',
+    icon: <Circle_two_way width={STAT_ICON_SIZE} height={STAT_ICON_SIZE} />,
+    label: 'Monthly Miles',
+    range: 'July',
+    value: '20,000',
+    delta: '8.9%',
+    deltaUp: true,
+    deltaNote: 'from Last Month',
+    chartColor: colors.success,
+    chart: [30, 42, 38, 55, 50, 62, 72],
+  },
+  {
+    key: 'earnings',
+    icon: <Earning_sign width={STAT_ICON_SIZE} height={STAT_ICON_SIZE} />,
+    label: 'Monthly Earnings',
+    range: 'July',
+    value: '$26,000',
+    delta: '8.9%',
+    deltaUp: false,
+    deltaNote: 'from Last Month',
+    chartColor: colors.danger,
+    chart: [50, 40, 52, 44, 54, 42, 50, 60],
+  },
+];
 
 // Filled status pill colours.
 const STATUS_COLOR = {
@@ -108,95 +75,108 @@ const STATUS_COLOR = {
   Cancelled: colors.danger,
 };
 
+const COLUMNS = ['AWB Number', 'Route', 'Distance/ Date', 'Status'];
+
+// Stops carry an explicit pickup/drop type so multi-pickup loads collapse their
+// middle stops behind a "+N More Pickups" chip until the row is tapped.
+const pickup = city => ({city, type: 'pickup'});
+const drop = city => ({city, type: 'drop'});
+
+const ROUTE = [
+  pickup('Jersey City, NJ'),
+  pickup('Newark, NJ'),
+  pickup('Trenton, NJ'),
+  drop('Baltimore, ND'),
+];
+
 const TRANSACTIONS = [
   {
     id: 't1',
+    awb: 'AWB-125',
     type: 'FTL',
-    stops: ['San Jose CA', 'Newark NJ'],
+    stops: ROUTE,
     miles: '184 MILES',
-    time: '4h 20 minutes',
+    when: '12 AUGUST 2026',
     amount: '$900',
-    subMiles: '180 miles',
     status: 'Paid',
   },
   {
     id: 't2',
-    type: 'FTL',
-    stops: ['San Jose CA', 'Newark NJ'],
+    awb: 'AWB-125',
+    stops: ROUTE,
     miles: '184 MILES',
-    time: '4h 20 minutes',
+    when: '4h 20 minutes',
     amount: '$900',
-    subMiles: '180 miles',
     status: 'In - Transit',
   },
   {
     id: 't3',
+    awb: 'AWB-125',
     type: 'FTL',
-    stops: ['San Jose CA', 'Newark NJ'],
+    stops: ROUTE,
     miles: '184 MILES',
-    time: '4h 20 minutes',
+    when: '4h 20 minutes',
     amount: '$900',
-    subMiles: '180 miles',
     status: 'In - Transit',
   },
   {
     id: 't4',
+    awb: 'AWB-125',
     type: 'FTL',
-    stops: ['San Jose CA', 'Newark NJ'],
+    stops: ROUTE,
     miles: '184 MILES',
-    time: '4h 20 minutes',
+    when: '4h 20 minutes',
     amount: '$900',
-    subMiles: '180 miles',
     status: 'In - Transit',
   },
   {
     id: 't5',
+    awb: 'AWB-125',
     type: 'FTL',
-    stops: ['San Jose CA', 'Newark NJ'],
+    stops: ROUTE,
     miles: '184 MILES',
-    time: '4h 20 minutes',
+    when: '4h 20 minutes',
     amount: '$900',
-    subMiles: '180 miles',
     status: 'In - Transit',
   },
   {
     id: 't6',
+    awb: 'AWB-125',
     type: 'FTL',
-    stops: ['San Jose CA', 'Newark NJ'],
+    stops: ROUTE,
     miles: '184 MILES',
-    time: '4h 20 minutes',
+    when: '4h 20 minutes',
     amount: '$900',
-    subMiles: '180 miles',
     status: 'In - Transit',
   },
   {
     id: 't7',
+    awb: 'AWB-125',
     type: 'FTL',
-    stops: ['San Jose CA', 'Newark NJ'],
+    stops: ROUTE,
     miles: '184 MILES',
-    time: '4h 20 minutes',
+    when: '4h 20 minutes',
     amount: '$900',
-    subMiles: '180 miles',
     status: 'In - Transit',
   },
   {
     id: 't8',
+    awb: 'AWB-125',
     type: 'FTL',
-    stops: ['San Jose CA', 'Newark NJ'],
+    stops: [pickup('San Jose CA'), drop('Newark NJ')],
     miles: '184 MILES',
-    time: '4h 20 minutes',
+    when: '4h 20 minutes',
     amount: '$900',
-    subMiles: '180 miles',
     status: 'Paid',
   },
   {
     id: 't9',
+    awb: 'AWB-125',
     type: 'FTL',
-    stops: ['San Jose CA', 'Newark NJ'],
+    stops: [pickup('San Jose CA'), drop('Newark NJ')],
     miles: '184 MILES',
-    time: '4h 20 minutes',
+    when: '4h 20 minutes',
     amount: '$900',
-    subMiles: '180 miles',
     status: 'Cancelled',
   },
 ];
@@ -204,8 +184,12 @@ const TRANSACTIONS = [
 export default function EarningsScreen() {
   const [period, setPeriod] = useState('Weekly');
   const [menuOpen, setMenuOpen] = useState(false);
+  // Tapping a row (or its "+N More …" chip) reveals every pickup and drop.
+  const [expandedRows, setExpandedRows] = useState({});
 
   const data = useMemo(() => PERIOD_DATA[period], [period]);
+
+  const toggleRow = id => setExpandedRows(prev => ({...prev, [id]: !prev[id]}));
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -220,7 +204,7 @@ export default function EarningsScreen() {
           icon={
             <EarningsIcon
               width={IS_TABLET ? 28 : 16}
-              height={IS_TABLET? 28: 16}
+              height={IS_TABLET ? 28 : 16}
               color={colors.primary}
             />
           }
@@ -229,7 +213,7 @@ export default function EarningsScreen() {
           subtitle={data.range}
           subtitleStyle={styles.brandSubTight}
           headerStyle={styles.dashboardHeader}
-          statsOffset={IS_TABLET ? -ms(115) : -ms(100)}
+          statsOffset={-DASHBOARD_STATS_OVERLAP}
           statsVariant="chart"
           right={
             <TouchableOpacity
@@ -240,63 +224,97 @@ export default function EarningsScreen() {
               <DropdownIcon width={16} height={16} />
             </TouchableOpacity>
           }
-          stats={data.stats}>
+          stats={STATS}>
           <AppText style={styles.grossValue}>{data.gross}</AppText>
           <AppText style={styles.grossLabel}>{data.grossLabel}</AppText>
         </DashboardHeader>
 
-        {/* TRANSACTIONS */}
-        <FlatList
-          data={TRANSACTIONS}
-          keyExtractor={tx => tx.id}
-          style={styles.listCard}
-          contentContainerStyle={styles.scrollContent}
-          nestedScrollEnabled
-          showsVerticalScrollIndicator={false}
-          renderItem={({item: tx, index}) => (
-            <View
-              style={[
-                styles.row,
-                index === TRANSACTIONS.length - 1 && styles.rowLast,
-              ]}>
-              <View style={styles.rowLeft}>
-                <LoadRoute stops={tx.stops} />
-                <View style={styles.typeBadge}>
-                  <GrayTruck
-                    width={ms(14)}
-                    height={ms(14)}
-                    style={styles.typeIcon}
+        {/* TRANSACTIONS TABLE */}
+        <View style={styles.listCard}>
+          <View style={styles.tableHead}>
+            {COLUMNS.map((label, index) => (
+              <AppText
+                key={label}
+                numberOfLines={1}
+                style={[styles.tableHeadText, styles[`col${index}`]]}>
+                {label}
+              </AppText>
+            ))}
+          </View>
+
+          <FlatList
+            data={TRANSACTIONS}
+            keyExtractor={tx => tx.id}
+            contentContainerStyle={styles.scrollContent}
+            nestedScrollEnabled
+            showsVerticalScrollIndicator={false}
+            renderItem={({item: tx, index}) => (
+              <TouchableOpacity
+                activeOpacity={tx.stops.length > 2 ? 0.7 : 1}
+                disabled={tx.stops.length <= 2}
+                onPress={() => toggleRow(tx.id)}
+                style={[
+                  styles.row,
+                  index === TRANSACTIONS.length - 1 && styles.rowLast,
+                ]}>
+                {/* AWB number + load type */}
+                <View style={[styles.col0, styles.cellCenter]}>
+                  <AppText style={styles.awbText} numberOfLines={1}>
+                    {tx.awb}
+                  </AppText>
+                  {tx.type ? (
+                    <View style={styles.typeBadge}>
+                      <GrayTruck
+                        width={ms(14)}
+                        height={ms(14)}
+                        style={styles.typeIcon}
+                      />
+                      <AppText style={styles.typeText}>{tx.type}</AppText>
+                    </View>
+                  ) : null}
+                </View>
+
+                {/* Route */}
+                <View style={styles.col1}>
+                  <LoadRoute
+                    stops={tx.stops}
+                    typed
+                    showSummary
+                    collapsed={!expandedRows[tx.id]}
+                    onPressMore={() => toggleRow(tx.id)}
                   />
-                  <AppText style={styles.typeText}>{tx.type}</AppText>
                 </View>
-              </View>
 
-              <View style={styles.rowCenter}>
-                <AppText style={styles.centerMiles} numberOfLines={1}>
-                  {tx.miles}
-                </AppText>
-                <AppText style={styles.centerTime} numberOfLines={1}>
-                  {tx.time}
-                </AppText>
-              </View>
-
-              <View style={styles.rowRight}>
-                <AppText style={styles.rowAmount}>{tx.amount}</AppText>
-                <AppText style={styles.rowSubMiles}>{tx.subMiles}</AppText>
-                <View
-                  style={[
-                    styles.pill,
-                    {
-                      backgroundColor:
-                        STATUS_COLOR[tx.status] ?? colors.textMuted,
-                    },
-                  ]}>
-                  <AppText style={styles.pillText}>{tx.status}</AppText>
+                {/* Distance / date */}
+                <View style={[styles.col2, styles.cellCenter]}>
+                  <AppText style={styles.centerMiles} numberOfLines={1}>
+                    {tx.miles}
+                  </AppText>
+                  <AppText style={styles.centerTime} numberOfLines={1}>
+                    {tx.when}
+                  </AppText>
                 </View>
-              </View>
-            </View>
-          )}
-        />
+
+                {/* Amount + status */}
+                <View style={[styles.col3, styles.cellCenter]}>
+                  <AppText style={styles.rowAmount}>{tx.amount}</AppText>
+                  <View
+                    style={[
+                      styles.pill,
+                      {
+                        backgroundColor:
+                          STATUS_COLOR[tx.status] ?? colors.textMuted,
+                      },
+                    ]}>
+                    <AppText style={styles.pillText} numberOfLines={1}>
+                      {tx.status}
+                    </AppText>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            )}
+          />
+        </View>
       </View>
 
       {/* PERIOD MENU */}

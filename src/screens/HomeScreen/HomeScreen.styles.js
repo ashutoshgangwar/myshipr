@@ -2,6 +2,11 @@ import {Platform, StyleSheet} from 'react-native';
 import {ms as baseMs, vs as baseVs} from '../../theme/scale';
 import {colors} from '../../theme/colors';
 import {IS_TABLET, select} from '../../theme/device';
+import {
+  DASHBOARD_HEADER_H,
+  DASHBOARD_HEADER_PAD_BOTTOM,
+  DASHBOARD_HEADER_RADIUS,
+} from '../../component/DashboardHeader/DashboardHeader.styles';
 
 const PHONE_FACTOR = select({phone: 0.78, tablet: 1});
 const ms = n => baseMs(n) * PHONE_FACTOR;
@@ -24,12 +29,14 @@ export default StyleSheet.create({
     paddingBottom: vs(90),
   },
 
-  /* Taller blue header — Home screen only (overrides DashboardHeader defaults) */
+  /* Taller blue header — shares its height/padding with Earnings through the
+     DashboardHeader constants so the two dashboards match exactly. */
   dashboardHeader: {
     paddingTop: vs(15),
-    paddingBottom: IS_TABLET ? vs(80) : vs(100),
-    borderBottomLeftRadius: ms(100),
-    borderBottomRightRadius: ms(100),
+    paddingBottom: DASHBOARD_HEADER_PAD_BOTTOM,
+    minHeight: DASHBOARD_HEADER_H,
+    borderBottomLeftRadius: DASHBOARD_HEADER_RADIUS,
+    borderBottomRightRadius: DASHBOARD_HEADER_RADIUS,
   },
 
   /* ---------- Header ---------- */
@@ -211,7 +218,7 @@ export default StyleSheet.create({
     color: colors.onDarkMedium,
     fontSize: ms(15),
     fontWeight: '500',
-    marginTop: IS_TABLET ? vs(2) : vs(18),
+    marginTop: IS_TABLET ? vs(10) : vs(10),
   },
 
   headerWelcome: {

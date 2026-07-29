@@ -1,4 +1,4 @@
-import {StyleSheet} from 'react-native';
+import {Platform, StyleSheet} from 'react-native';
 import {ms as baseMs, vs as baseVs} from '../../theme/scale';
 import {colors} from '../../theme/colors';
 import {IS_TABLET, select} from '../../theme/device';
@@ -6,6 +6,31 @@ import {IS_TABLET, select} from '../../theme/device';
 const PHONE_FACTOR = select({phone: 0.82, tablet: 1});
 const ms = n => baseMs(n) * PHONE_FACTOR;
 const vs = n => baseVs(n) * PHONE_FACTOR;
+
+// How far the floating stat cards ride up over the header. The cards are drawn
+// after the header, so anything inside this band is painted over — the header
+// reserves it as bottom padding below.
+export const DASHBOARD_STATS_OVERLAP = IS_TABLET ? baseMs(95) : baseMs(80);
+
+// The reserve is the overlap plus a small clearance so the copy just above the
+// cards still breathes. Shrinking the clearance pulls the cards up.
+export const DASHBOARD_HEADER_PAD_BOTTOM = DASHBOARD_STATS_OVERLAP + vs(4);
+
+// Shared blue-header height for the dashboard screens (Home + Earnings). Their
+// header copy differs in size, so matching them by padding alone drifts; a
+// single value keeps both headers — and the stat cards floating over them — on
+// the same line. It is a floor, not a cap: if a screen's copy ever needs more
+// room the header grows (pushing the cards down with it) instead of hiding it.
+//
+// This is the knob for how far the cards sit from the top: the gap is
+// DASHBOARD_HEADER_H - DASHBOARD_STATS_OVERLAP, so lowering it raises the cards
+// (down to the point where the header copy itself sets the height).
+export const DASHBOARD_HEADER_H = IS_TABLET ? vs(190) : Platform.OS === 'ios' ? vs(210) : vs(96);
+
+// Same idea for the bottom curve: both screens scale their own styles by a
+// different phone factor, so a shared value is the only way the two curves come
+// out identical.
+export const DASHBOARD_HEADER_RADIUS = ms(95);
 
 export default StyleSheet.create({
   wrap: {},
