@@ -137,7 +137,7 @@ const styles = StyleSheet.create({
   },
   closeBtn: {
     position: 'absolute',
-    top: Platform.OS === 'ios' ? vs(45) : vs(10),
+    top: IS_TABLET ? vs(30) : Platform.OS === 'ios' ? vs(45) : vs(10),
     right: ms(10),
     width: ms(34),
     height: ms(34),

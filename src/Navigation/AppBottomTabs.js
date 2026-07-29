@@ -8,10 +8,13 @@ import HomeScreen from '../screens/HomeScreen/HomeScreen';
 import EarningsScreen from '../screens/EarningsScreen/EarningsScreen';
 import ScheduleScreen from '../screens/ScheduleScreen/ScheduleScreen';
 import BiddingScreen from '../screens/BiddingScreen/BiddingScreen';
+import Profile from '../screens/Profile/Profile';
 import BiddingIcon from '../assets/svg_icon/Bidding.svg';
 import HomeIcon from '../assets/svg_icon/Home.svg';
 import EarningsIcon from '../assets/svg_icon/Earnings.svg';
 import ScheduleIcon from '../assets/svg_icon/Schedule.svg';
+import SettingsIcon from '../assets/svg_icon/Settings_Tab.svg';
+import useDriverRole from '../hooks/useDriverRole';
 import {colors} from '../theme/colors';
 import {IS_TABLET, select} from '../theme/device';
 
@@ -29,7 +32,50 @@ const renderTabIcon = Icon => ({focused}) => (
   </View>
 );
 
+// A fleet driver works for a carrier, so no bidding/shipment management: they
+// only get Home, Salary and Settings. A single (owner-operator) driver keeps
+// the full set.
+const TABS = {
+  home: {name: 'HomeTab', component: HomeScreen, label: 'Home', icon: HomeIcon},
+  earnings: {
+    name: 'EarningsTab',
+    component: EarningsScreen,
+    label: 'Earnings',
+    icon: EarningsIcon,
+  },
+  shipment: {
+    name: 'ShipmentTab',
+    component: ScheduleScreen,
+    label: 'Shipment',
+    icon: ScheduleIcon,
+  },
+  bidding: {
+    name: 'BiddingTab',
+    component: BiddingScreen,
+    label: 'Bidding',
+    icon: BiddingIcon,
+  },
+  salary: {
+    name: 'SalaryTab',
+    component: EarningsScreen,
+    label: 'Salary',
+    icon: EarningsIcon,
+  },
+  settings: {
+    name: 'SettingsTab',
+    component: Profile,
+    label: 'Settings',
+    icon: SettingsIcon,
+  },
+};
+
+const FLEET_TABS = [TABS.home, TABS.salary, TABS.settings];
+const SINGLE_TABS = [TABS.home, TABS.earnings, TABS.shipment, TABS.bidding];
+
 export default function AppBottomTabs() {
+  const {isFleet} = useDriverRole();
+  const tabs = isFleet ? FLEET_TABS : SINGLE_TABS;
+
   // RN 0.83 draws Android edge-to-edge, so the tab bar renders under the system
   // nav/gesture bar (and, on tablets, the persistent taskbar). Add the bottom
   // safe-area inset so the icons + labels always sit above the system bar
@@ -58,38 +104,17 @@ export default function AppBottomTabs() {
           fontWeight: '600',
         },
       }}>
-      <Tab.Screen
-        name="HomeTab"
-        component={HomeScreen}
-        options={{
-          tabBarLabel: 'Home',
-          tabBarIcon: renderTabIcon(HomeIcon),
-        }}
-      />
-      <Tab.Screen
-        name="EarningsTab"
-        component={EarningsScreen}
-        options={{
-          tabBarLabel: 'Earnings',
-          tabBarIcon: renderTabIcon(EarningsIcon),
-        }}
-      />
-      <Tab.Screen
-        name="ScheduleTab"
-        component={ScheduleScreen}
-        options={{
-          tabBarLabel: 'Schedule',
-          tabBarIcon: renderTabIcon(ScheduleIcon),
-        }}
-      />
-      <Tab.Screen
-        name="BiddingTab"
-        component={BiddingScreen}
-        options={{
-          tabBarLabel: 'Bidding',
-          tabBarIcon: renderTabIcon(BiddingIcon),
-        }}
-      />
+      {tabs.map(tab => (
+        <Tab.Screen
+          key={tab.name}
+          name={tab.name}
+          component={tab.component}
+          options={{
+            tabBarLabel: tab.label,
+            tabBarIcon: renderTabIcon(tab.icon),
+          }}
+        />
+      ))}
     </Tab.Navigator>
   );
 }
