@@ -17,6 +17,8 @@ import SettingsIcon from '../assets/svg_icon/Settings_Tab.svg';
 import useDriverRole from '../hooks/useDriverRole';
 import {colors} from '../theme/colors';
 import {IS_TABLET, select} from '../theme/device';
+import SalaryScreen from '../screens/SalaryScreen/SalaryScreen';
+import SettingScreen from '../screens/SettingScreen/SettingScreen';
 
 const Tab = createBottomTabNavigator();
 
@@ -32,9 +34,6 @@ const renderTabIcon = Icon => ({focused}) => (
   </View>
 );
 
-// A fleet driver works for a carrier, so no bidding/shipment management: they
-// only get Home, Salary and Settings. A single (owner-operator) driver keeps
-// the full set.
 const TABS = {
   home: {name: 'HomeTab', component: HomeScreen, label: 'Home', icon: HomeIcon},
   earnings: {
@@ -57,13 +56,13 @@ const TABS = {
   },
   salary: {
     name: 'SalaryTab',
-    component: EarningsScreen,
+    component: SalaryScreen,
     label: 'Salary',
     icon: EarningsIcon,
   },
   settings: {
     name: 'SettingsTab',
-    component: Profile,
+    component: SettingScreen,
     label: 'Settings',
     icon: SettingsIcon,
   },
@@ -75,11 +74,6 @@ const SINGLE_TABS = [TABS.home, TABS.earnings, TABS.shipment, TABS.bidding];
 export default function AppBottomTabs() {
   const {isFleet} = useDriverRole();
   const tabs = isFleet ? FLEET_TABS : SINGLE_TABS;
-
-  // RN 0.83 draws Android edge-to-edge, so the tab bar renders under the system
-  // nav/gesture bar (and, on tablets, the persistent taskbar). Add the bottom
-  // safe-area inset so the icons + labels always sit above the system bar
-  // instead of being overlapped/clipped.
   const insets = useSafeAreaInsets();
   const bottomInset = Math.max(insets.bottom, moderateScale(8));
 
