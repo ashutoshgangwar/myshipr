@@ -233,10 +233,7 @@ export default function ActiveTripScreen({navigation}) {
           <GpsIcon width={verticalScale(26)} height={verticalScale(26)} fill={colors.navy} />
         )}
       </TouchableOpacity>
-
-      {/* ── Milestone confirm card ── */}
-      {/* Keyed on the milestone so a newly-arrived one always opens expanded,
-          even if the driver had collapsed the previous one. */}
+      
       <StepConfirmCard
         key={milestone?.step}
         visible={Boolean(milestone)}

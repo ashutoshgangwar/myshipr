@@ -23,6 +23,7 @@ import Zoom_in_Icon from '../../../assets/svg_icon/zoom_in_Icon.svg';
 import Zoom_in_White from '../../../assets/svg_icon/zoom-in.svg';
 import Retake_Camera from '../../../assets/svg_icon/Retake_Camera.svg';
 import Check_Icon from '../../../assets/svg_icon/check.svg';
+import {IS_TABLET} from '../../../theme/device';
 
 const TOTAL_STEPS = 4;
 const OTP_LENGTH = 6;
@@ -475,6 +476,10 @@ function PhotoPreviewModal({visible, uri, ...rest}) {
   );
 }
 
+// Tablets get roomier action icons so they stay legible next to the larger label.
+const PV_ACTION_ICON = IS_TABLET ? 24 : 18;
+const PV_HINT_ICON = IS_TABLET ? 20 : 14;
+
 function PhotoPreview({uri, onClose, onRetake, onUse}) {
   const insets = useSafeAreaInsets();
   return (
@@ -492,7 +497,7 @@ function PhotoPreview({uri, onClose, onRetake, onUse}) {
 
       <View style={[styles.podPvFooter, {paddingBottom: insets.bottom + 16}]}>
         <View style={styles.podPvHintPill}>
-          <Zoom_in_Icon width={14} height={14} />
+          <Zoom_in_Icon width={PV_HINT_ICON} height={PV_HINT_ICON} />
           <AppText style={styles.podPvHintText}>
             Pinch to zoom
           </AppText>
@@ -503,14 +508,14 @@ function PhotoPreview({uri, onClose, onRetake, onUse}) {
             style={styles.podPvRetakeBtn}
             onPress={onRetake}
             activeOpacity={0.85}>
-            <Retake_Camera width={18} height={18} />
+            <Retake_Camera width={PV_ACTION_ICON} height={PV_ACTION_ICON} />
             <AppText style={styles.podPvRetakeText}>Retake Photo</AppText>
           </TouchableOpacity>
           <TouchableOpacity
             style={styles.podPvUseBtn}
             onPress={onUse}
             activeOpacity={0.85}>
-            <Check_Icon width={18} height={18} />
+            <Check_Icon width={PV_ACTION_ICON} height={PV_ACTION_ICON} />
             <AppText style={styles.podPvUseText}>Use this Photo</AppText>
           </TouchableOpacity>
         </View>
