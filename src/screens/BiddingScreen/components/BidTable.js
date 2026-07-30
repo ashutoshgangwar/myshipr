@@ -8,10 +8,6 @@ import HeaderCell from './HeaderCell';
 import DataRow from './DataRow';
 import StopList from './StopList';
 
-/* The Load column is frozen: it lives outside the horizontal scroller, so the
-   remaining columns slide left/right underneath their own headers. The header
-   strip is a non-interactive ScrollView driven from the body's scroll offset,
-   which keeps labels above their columns without a second gesture handler. */
 export default function BidTable({data}) {
   const navigation = useNavigation();
   const headRef = useRef(null);
@@ -42,6 +38,7 @@ export default function BidTable({data}) {
                 label={c.label}
                 colStyle={[{width: c.width}, c.shaded && styles.shadedColHead]}
                 sortable={c.sortable}
+                lines={c.lines}
                 center
               />
             ))}

@@ -93,7 +93,7 @@ const CHIP_FONT = select({phone: ms(8), tablet: ms(8)});
 export const rowHeight = stopCount =>
   Math.max(ROW_MIN_H, ROW_PAD_V * 2 + stopCount * STOP_LINE_H + STOP_SUMMARY_H);
 
-export default StyleSheet.create({
+const styles = StyleSheet.create({
   safe: {
     flex: 1,
     backgroundColor: colors.screenBg,
@@ -388,6 +388,12 @@ export default StyleSheet.create({
     color: colors.nearBlack,
   },
 
+  // wrapped header labels sit tighter so two lines still clear HEADER_H
+  thTextWrap: {
+    lineHeight: IS_TABLET ? ms(11) : ms(12),
+    textAlign: 'center',
+  },
+
   thSortIcon: {
     flexShrink: 0,
   },
@@ -488,60 +494,39 @@ export default StyleSheet.create({
     textAlign: 'center',
   },
 
-  /* Auction Mode — extensions call themselves out in orange */
-  auctionModeText: {
-    fontSize: ms(11),
-    fontWeight: '500',
-    color: colors.textStrong,
-    textAlign: 'center',
-  },
-
-  auctionModeExt: {
-    color: colors.button_color,
-    fontWeight: '700',
-  },
-
-  /* Cell pills */
-  pillSoft: {
-    backgroundColor: '#FEE9CF',
+  /* ---------- Cell pills ----------
+     Geometry lives in the two base styles; the tone styles below carry colour
+     only, so a pill is always "one base + one tone". See AUCTION_TONE /
+     DRIVER_TONE at the bottom of this file for which value gets which tone. */
+  pillFilled: {
     borderRadius: ms(5),
     paddingHorizontal: ms(9),
     paddingVertical: vs(3),
-  },
-
-  pillSoftText: {
-    fontSize: ms(10),
-    fontWeight: '600',
-    color: colors.button_color,
   },
 
   pillOutline: {
     borderWidth: 1,
-    borderColor: colors.border_Color,
     borderRadius: ms(5),
     paddingHorizontal: ms(9),
     paddingVertical: vs(3),
   },
 
-  pillOutlineText: {
-    fontSize: ms(10),
-    fontWeight: '500',
-    color: colors.textStrong,
-  },
-
-  pillBlue: {
-    borderWidth: 1,
-    borderColor: colors.accentBlueDark,
-    borderRadius: ms(5),
-    paddingHorizontal: ms(9),
-    paddingVertical: vs(3),
-  },
-
-  pillBlueText: {
+  pillText: {
     fontSize: ms(10),
     fontWeight: '600',
-    color: colors.accentBlueDark,
   },
+
+  toneOrangeFill: {backgroundColor: '#FEE9CF'},
+  toneOrangeText: {color: colors.button_color},
+
+  toneBlueFill: {backgroundColor: '#DDE8F8'},
+  toneBlueText: {color: colors.accentBlue},
+
+  tonePurpleBorder: {borderColor: colors.card_drive_load},
+  tonePurpleText: {color: colors.card_drive_load},
+
+  toneAmberBorder: {borderColor: colors.warning_text},
+  toneAmberText: {color: colors.warning_text},
 
   /* ---------- Filter button + sort sheet ---------- */
   filterBtn: {
@@ -605,7 +590,7 @@ export default StyleSheet.create({
   lowestBidValue: {
     fontSize: ms(12),
     fontWeight: '700',
-    color: colors.accentBlueDark,
+    color: colors.textStrong,
     textAlign: 'center',
   },
 
@@ -731,3 +716,25 @@ export default StyleSheet.create({
   },
 
 });
+
+export default styles;
+
+/* Pill tones keyed by the value they render. Auction types are filled chips,
+   driver requirements are outlined ones — both spread as `box` / `text` so the
+   table cells and the grid-card chips tint the same way from one source. */
+export const AUCTION_TONE = {
+  Normal: {box: [styles.pillFilled, styles.toneBlueFill], text: styles.toneBlueText},
+  Instant: {box: [styles.pillFilled, styles.toneOrangeFill], text: styles.toneOrangeText},
+};
+
+export const DRIVER_TONE = {
+  Single: {box: [styles.pillOutline, styles.tonePurpleBorder], text: styles.tonePurpleText},
+  'Multi Driver': {
+    box: [styles.pillOutline, styles.toneAmberBorder],
+    text: styles.toneAmberText,
+  },
+};
+
+// Unknown values still render as a pill rather than vanishing.
+export const auctionTone = v => AUCTION_TONE[v] || AUCTION_TONE.Instant;
+export const driverTone = v => DRIVER_TONE[v] || DRIVER_TONE.Single;

@@ -55,10 +55,6 @@ export default function BiddingScreen() {
         translucent={false}
       />
 
-      {/* HEADER */}
-      {/* Height/curve/padding all ride on headerStyle — the height/padding
-          props are left off on purpose, since headerStyle is applied last and
-          would override them anyway. */}
       <DashboardHeader
         icon={<BiddingIcon width={20} height={20} />}
         style={styles.dashboardWrap}

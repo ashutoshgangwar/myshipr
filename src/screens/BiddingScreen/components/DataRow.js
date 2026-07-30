@@ -2,12 +2,11 @@ import React from 'react';
 import {View, TouchableOpacity} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 
-import styles from '../BiddingScreen.styles';
+import styles, {auctionTone, driverTone} from '../BiddingScreen.styles';
 import {COLUMNS} from '../constants';
 import AppText from '../../../theme/AppText';
 import ModeChip from './ModeChip';
 import {select} from '../../../theme/device';
-import Right_arrow_Frame from '../../../assets/svg_icon/right_arrow_Frame.svg';
 
 // Table rows carry a larger truck glyph than the card chips (card keeps its own
 // CHIP_ICON), so bumping this only affects the table view.
@@ -38,6 +37,15 @@ function Cell({col, item}) {
         </>
       );
 
+    // trip distance and dead mile read as one value — "184/8" — so the pair
+    // stays on a single line under the merged header
+    case 'distance':
+      return (
+        <AppText style={styles.cellStrong} numberOfLines={1}>
+          {item.tripDistance}/{item.deadMile}
+        </AppText>
+      );
+
     case 'lowest':
       return (
         <>
@@ -50,39 +58,29 @@ function Cell({col, item}) {
         </>
       );
 
-    case 'chevron':
-      return <Right_arrow_Frame width={14} height={14} />;
-
-    case 'auctionMode':
-      return (
-        <AppText
-          numberOfLines={1}
-          style={[
-            styles.auctionModeText,
-            item.auctionMode !== 'Original' && styles.auctionModeExt,
-          ]}>
-          {item.auctionMode}
-        </AppText>
-      );
-
-    case 'pillSoft':
-      return (
-        <Pill box={styles.pillSoft} text={styles.pillSoftText} label={item[col.field]} />
-      );
-
-    case 'pillOutline':
+    // Both pills tint by their own value — Normal reads blue against Instant's
+    // orange, Single purple against Multi Driver's amber.
+    case 'auctionType': {
+      const tone = auctionTone(item.auctionType);
       return (
         <Pill
-          box={styles.pillOutline}
-          text={styles.pillOutlineText}
-          label={item[col.field]}
+          box={tone.box}
+          text={[styles.pillText, tone.text]}
+          label={item.auctionType}
         />
       );
+    }
 
-    case 'pillBlue':
+    case 'driverRequirement': {
+      const tone = driverTone(item.driverRequirement);
       return (
-        <Pill box={styles.pillBlue} text={styles.pillBlueText} label={item[col.field]} />
+        <Pill
+          box={tone.box}
+          text={[styles.pillText, tone.text]}
+          label={item.driverRequirement}
+        />
       );
+    }
 
     default:
       return (

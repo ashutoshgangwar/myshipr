@@ -52,22 +52,13 @@ export const STATS = [
   },
 ];
 
-/* Scrollable table columns, in order. "Load" is not here — it is the frozen
-   first column and lives outside the horizontal scroller. `kind` picks the
-   cell renderer in DataRow. */
 export const COLUMNS = [
   {key: 'mode', label: 'Mode', width: ms(72), kind: 'mode', shaded: true, sortable: true},
   {key: 'pickup', label: 'Pickup Time', width: ms(76), kind: 'pickup', sortable: true},
+  {key: 'auctionType', label: 'Auction Type', width: ms(82), kind: 'auctionType', sortable: true},
+  {key: 'distance', label: 'Trip Distance / Dead Mile', width: ms(142), kind: 'distance', sortable: true},
   {key: 'lowest', label: 'Lowest Bid', width: ms(74), kind: 'lowest', sortable: true},
-  {key: 'chevron', label: '', width: ms(28), kind: 'chevron'},
-  {key: 'auctionMode', label: 'Auction Mode', width: ms(84), kind: 'auctionMode', sortable: true},
-  {key: 'auctionType', label: 'Auction Type', width: ms(82), kind: 'pillSoft', field: 'auctionType', sortable: true},
-  {key: 'deadMile', label: 'Dead Mile', width: ms(70), kind: 'text', field: 'deadMile', sortable: true},
-  {key: 'tripDistance', label: 'Trip Distance', width: ms(80), kind: 'text', field: 'tripDistance', sortable: true},
-  {key: 'frequency', label: 'Frequency', width: ms(80), kind: 'pillOutline', field: 'frequency', sortable: true},
-  {key: 'equipmentType', label: 'Equipment Type', width: ms(94), kind: 'text', field: 'equipmentType', sortable: true},
-  {key: 'dockPriority', label: 'Dock Priority', width: ms(82), kind: 'text', field: 'dockPriority', sortable: true},
-  {key: 'driverRequirement', label: 'Driver Requirement', width: ms(112), kind: 'pillBlue', field: 'driverRequirement', sortable: true},
+  {key: 'driverRequirement', label: 'Driver Requirement', width: ms(112), kind: 'driverRequirement', sortable: true},
 ];
 
 /* Sort options behind the funnel button in the filter row. */
@@ -102,9 +93,9 @@ const bid = b => ({
   lowestBid: '$4567',
   awardedAt: null,
   auctionMode: 'Original',
-  auctionType: 'Instant',
-  deadMile: '8 miles',
-  tripDistance: '184 miles',
+  auctionType: 'Normal',
+  deadMile: '8',
+  tripDistance: '184miles',
   frequency: 'One-Time',
   equipmentType: '43’ Dry Van',
   dockPriority: 'Time - Based',
@@ -151,6 +142,8 @@ export const BIDS = [
     rank: null,
     status: 'Open',
     auctionMode: 'EXTENSION 1',
+    auctionType: 'Instant',
+    driverRequirement: 'Multi Driver',
   }),
   bid({
     id: 'b5',
@@ -159,6 +152,8 @@ export const BIDS = [
     stops: stops('San Jose CA', 'Newark NJ', 'Newark NJ', 'Newark NJ'),
     rank: '#2 you',
     status: 'Open',
+    auctionType: 'Instant',
+    driverRequirement: 'Multi Driver',
   }),
   bid({
     id: 'b6',
@@ -178,6 +173,7 @@ export const BIDS = [
     rank: '#4 you',
     status: 'Awarded',
     awardedAt: '$900',
+    auctionType: 'Instant',
   }),
 
   /* ---- Past auction (closed) ---- */
@@ -204,6 +200,8 @@ export const BIDS = [
     stops: stops('San Jose CA', 'Newark NJ'),
     rank: null,
     status: 'Closed',
+    auctionType: 'Instant',
+    driverRequirement: 'Multi Driver',
   }),
   bid({
     id: 'p4',
@@ -228,6 +226,8 @@ export const BIDS = [
     stops: stops('San Jose CA', 'Newark NJ', 'Newark NJ', 'Newark NJ'),
     rank: null,
     status: 'Closed',
+    auctionType: 'Instant',
+    driverRequirement: 'Multi Driver',
   }),
   bid({
     id: 'p7',

@@ -2,7 +2,7 @@ import React from 'react';
 import {View, TouchableOpacity} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 
-import styles from '../BiddingScreen.styles';
+import styles, {auctionTone} from '../BiddingScreen.styles';
 import ModeChip from './ModeChip';
 import StopList from './StopList';
 import AppText from '../../../theme/AppText';
@@ -43,8 +43,12 @@ export default function GridCard({item}) {
               {item.date}
             </AppText>
           </View>
-          <View style={[styles.pillSoft, styles.cardChip]}>
-            <AppText style={styles.cardChipSoft} numberOfLines={1}>
+          {/* same tone map as the table cell, so a Normal auction reads blue
+              on the card too */}
+          <View style={[auctionTone(item.auctionType).box, styles.cardChip]}>
+            <AppText
+              style={[styles.cardChipSoft, auctionTone(item.auctionType).text]}
+              numberOfLines={1}>
               {item.auctionType}
             </AppText>
           </View>
