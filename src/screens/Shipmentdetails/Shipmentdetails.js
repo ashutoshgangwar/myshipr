@@ -2,7 +2,7 @@ import React, {useState} from 'react';
 import {View, ScrollView, TouchableOpacity, Linking} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
-import styles from './Shipmentdetails.styles';
+import styles from './ShipmentDetails.styles';
 import {SHIPMENT, ms} from './constants';
 import StatusBar from '../../component/StatusBar/StatusBar';
 import RouteStops from '../../component/RouteStops/RouteStops';
@@ -52,7 +52,7 @@ const DetailGrid = ({cells}) => {
   );
 };
 
-export default function Shipmentdetails({navigation, route}) {
+export default function ShipmentDetails({navigation, route}) {
   // The load comes from the shipment row the user tapped; fall back to the sample.
   const data = route?.params?.shipment || SHIPMENT;
 
