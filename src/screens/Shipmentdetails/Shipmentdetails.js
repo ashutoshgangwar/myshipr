@@ -10,6 +10,7 @@ import RouteMapThumb from '../ActiveBidding/components/RouteMapThumb';
 import AppText from '../../theme/AppText';
 import {colors} from '../../theme/colors';
 import BackArrow from '../../assets/svg_icon/Back_arrow_map.svg';
+import Bank_Icon from '../../assets/svg_icon/Bank_Icon.svg'
 import BlueTruckIcon from '../../assets/svg_icon/Truck_Frame.svg';
 import CalendarIcon from '../../assets/svg_icon/Schedule.svg';
 import TimeIcon from '../../assets/svg_icon/Time_Icon.svg';

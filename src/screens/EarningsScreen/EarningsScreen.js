@@ -16,6 +16,7 @@ import GrayTruck from '../../assets/svg_icon/gray_truck.svg';
 import Circle_two_way from '../../assets/svg_icon/circle_two_way.svg';
 import Earning_sign from '../../assets/svg_icon/earning_sign.svg';
 import {IS_TABLET} from '../../theme/device';
+import {paymentFromTransaction} from '../EarningsDetails/constants';
 
 const PERIODS = ['Weekly', 'Monthly', 'Yearly'];
 
@@ -182,15 +183,21 @@ const TRANSACTIONS = [
   },
 ];
 
-export default function EarningsScreen() {
+export default function EarningsScreen({navigation}) {
   const [period, setPeriod] = useState('Weekly');
   const [menuOpen, setMenuOpen] = useState(false);
-  // Tapping a row (or its "+N More …" chip) reveals every pickup and drop.
+  // Tapping the "+N More …" chip reveals every pickup and drop; tapping the
+  // row itself opens the payout breakdown.
   const [expandedRows, setExpandedRows] = useState({});
 
   const data = useMemo(() => PERIOD_DATA[period], [period]);
 
   const toggleRow = id => setExpandedRows(prev => ({...prev, [id]: !prev[id]}));
+
+  const openPayment = tx =>
+    navigation?.navigate('Earningsdetails', {
+      payment: paymentFromTransaction(tx),
+    });
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -248,7 +255,9 @@ export default function EarningsScreen() {
             nestedScrollEnabled
             showsVerticalScrollIndicator={false}
             renderItem={({item: tx, index}) => (
-              <View
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() => openPayment(tx)}
                 style={[
                   styles.row,
                   index === TRANSACTIONS.length - 1 && styles.rowLast,
@@ -307,7 +316,7 @@ export default function EarningsScreen() {
                     </AppText>
                   </View>
                 </View>
-              </View>
+              </TouchableOpacity>
             )}
           />
         </View>
