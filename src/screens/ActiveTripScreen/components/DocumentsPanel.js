@@ -4,6 +4,7 @@ import {Camera, useCameraDevice} from 'react-native-vision-camera';
 import AppText from '../../../theme/AppText';
 import styles from '../ActiveTripScreen.styles';
 import PanelShell from './PanelShell';
+import usePanelExpand from '../hooks/usePanelExpand';
 import {requestCameraPermission} from '../../../services/PermissionService';
 import { colors } from '../../../theme/colors';
 
@@ -13,8 +14,7 @@ export default function DocumentsPanel({
   loadId = '#TX-8821',
   route = 'Dallas → Houston',
 }) {
-  const [expanded, setExpanded] = useState(false);
-  const toggleExpand = useCallback(() => setExpanded(prev => !prev), []);
+  const {expanded, shellProps} = usePanelExpand(styles.chatPanelWrap);
   const cameraRef = useRef(null);
   const backDevice = useCameraDevice('back');
   const frontDevice = useCameraDevice('front');
@@ -94,12 +94,13 @@ export default function DocumentsPanel({
       title="Trip Documents"
       subtitle={`Load ${loadId} · ${route}`}
       subtitleStyle={{colors: colors.status}}
-      onExpand={toggleExpand}
       onClose={onClose}
-      fullscreen={expanded}
-      wrapStyle={expanded ? styles.panelWrapFullscreen : styles.chatPanelWrap}
-      panelStyle={expanded ? styles.panelFullscreen : null}>
-      <View style={[styles.cameraPreview, expanded && styles.cameraPreviewFullscreen]}>
+      {...shellProps}>
+      <View
+        style={[
+          styles.cameraPreview,
+          expanded ? styles.cameraPreviewFullscreen : styles.cameraPreviewDocked,
+        ]}>
         {cameraActive && device && (
           <View style={styles.cameraFeed} pointerEvents="none">
             <Camera

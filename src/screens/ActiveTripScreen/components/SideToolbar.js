@@ -10,14 +10,14 @@ import ChatIcon from '../../../assets/svg_icon/Chat_Icon.svg';
 import ScanIcon from '../../../assets/svg_icon/Scan_Iocn.svg';
 import BiddingIcon from '../../../assets/svg_icon/Bidding_Icon.svg';
 import NavIcon from '../../../assets/svg_icon/Nav_Icon.svg';
-import DockIcon from '../../../assets/svg_icon/fuel-price-icon.svg';
+import CallIcon from '../../../assets/svg_icon/call_Icon_black.svg';
 
 const PANEL_BUTTONS = [
   {id: 'chat', Icon: ChatIcon},
   {id: 'documents', Icon: ScanIcon},
   {id: 'bidding', Icon: BiddingIcon},
   {id: 'navigate', Icon: NavIcon},
-  {id: 'dock', Icon: DockIcon},
+  {id: 'call', Icon: CallIcon},
 ];
 
 export default function SideToolbar({panel, onSelect}) {

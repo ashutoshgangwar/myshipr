@@ -3,6 +3,7 @@ import {View, TouchableOpacity} from 'react-native';
 import AppText from '../../../theme/AppText';
 import styles from '../ActiveTripScreen.styles';
 import PanelShell from './PanelShell';
+import usePanelExpand from '../hooks/usePanelExpand';
 
 const STEPS = [
   {id: 'procured', title: 'Shipment Procured', detail: 'Load TX-88181-Assigned'},
@@ -13,9 +14,10 @@ const STEPS = [
   {id: 'dropped', title: 'Shipment Dropped', detail: 'Dock 4B, Houston'},
 ];
 
-export default function HoursOfServicePanel({onClose, onExpand}) {
+export default function HoursOfServicePanel({onClose}) {
   // Steps the driver has confirmed done (tap to toggle).
   const [done, setDone] = useState({});
+  const {expanded, shellProps} = usePanelExpand(styles.chatPanelWrap);
 
   const toggle = id => setDone(prev => ({...prev, [id]: !prev[id]}));
 
@@ -29,10 +31,9 @@ export default function HoursOfServicePanel({onClose, onExpand}) {
     <PanelShell
       title="Hours of Service"
       subtitle="Tap each step to confirm it's done"
-      onExpand={onExpand}
       onClose={onClose}
-      wrapStyle={styles.chatPanelWrap}>
-      <View style={styles.hosBodyContent}>
+      {...shellProps}>
+      <View style={[styles.hosBodyContent, expanded && styles.hosBodyFullscreen]}>
         {STEPS.map((step, i) => {
           const isDone = !!done[step.id];
           const isLast = i === STEPS.length - 1;

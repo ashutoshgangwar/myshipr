@@ -281,7 +281,6 @@ export default StyleSheet.create({
   },
   cameraPreviewFullscreen: {
     flex: 1,
-    height: undefined,
   },
   panel: {
     borderRadius: ms(12),
@@ -324,10 +323,20 @@ export default StyleSheet.create({
 
   // ── Chat panel ────────────────────────────────────────────────────────
   chatBody: {
-    maxHeight: vs(240),
     paddingVertical: vs(10),
     paddingHorizontal: s(10),
   },
+  // The height cap lives here rather than in `chatBody` — a later style setting
+  // `maxHeight: undefined` doesn't reliably clear it, so the stretched panel
+  // would keep the docked height and leave dead space under the composer.
+  chatBodyDocked: {maxHeight: vs(240)},
+  // Stretched: the body takes the space left over above the input row.
+  chatBodyFullscreen: {flex: 1},
+  chatBodyContentFullscreen: {
+    paddingHorizontal: s(6),
+    paddingBottom: vs(8),
+  },
+  chatTitleFullscreen: {fontSize: ms(18)},
   bubble: {
     maxWidth: '82%',
     borderRadius: ms(10),
@@ -347,6 +356,27 @@ export default StyleSheet.create({
   },
   bubbleTextIn: {color: colors.text_dark, fontSize: ms(11), lineHeight: ms(15)},
   bubbleTextOut: {color: colors.white, fontSize: ms(11), lineHeight: ms(15)},
+
+  // Stretched chat — roomier bubbles with a timestamp underneath each one.
+  bubbleFullscreen: {
+    maxWidth: '76%',
+    borderRadius: ms(8),
+    paddingVertical: vs(10),
+    paddingHorizontal: s(12),
+    marginBottom: vs(3),
+  },
+  // The docked bubbles clip the corner nearest their author; stretched they
+  // stay evenly rounded.
+  bubbleInFullscreen: {borderTopLeftRadius: ms(8)},
+  bubbleOutFullscreen: {borderTopRightRadius: ms(8)},
+  bubbleTextFullscreen: {fontSize: ms(13), lineHeight: ms(18)},
+  chatTime: {
+    color: colors.textMuted,
+    fontSize: ms(9),
+    marginBottom: vs(12),
+  },
+  chatTimeIn: {alignSelf: 'flex-start'},
+  chatTimeOut: {alignSelf: 'flex-end'},
 
   chatInputRow: {
     flexDirection: 'row',
@@ -374,16 +404,33 @@ export default StyleSheet.create({
     justifyContent: 'center',
     marginLeft: s(8),
   },
-  sendGlyph: {color: colors.white, fontSize: ms(15)},
+  // Stretched composer — pill input with a round send button.
+  chatInputRowFullscreen: {
+    paddingHorizontal: s(14),
+    paddingVertical: vs(12),
+  },
+  chatInputFullscreen: {
+    borderRadius: ms(10),
+    paddingHorizontal: s(14),
+    paddingVertical: Platform.OS === 'ios' ? vs(13) : vs(9),
+    fontSize: ms(13),
+  },
+  sendBtnFullscreen: {
+    width: ms(42),
+    height: ms(42),
+    borderRadius: ms(21),
+    marginLeft: s(10),
+  },
+  sendGlyphFullscreen: {fontSize: ms(19)},
 
   // ── Documents / camera panel ──────────────────────────────────────────
   cameraPreview: {
-    height: vs(300),
     backgroundColor: '#000',
     alignItems: 'center',
     justifyContent: 'flex-end',
     paddingBottom: vs(12),
   },
+  cameraPreviewDocked: {height: vs(300)},
   captureBtn: {
     width: ms(46),
     height: ms(46),
@@ -409,10 +456,12 @@ export default StyleSheet.create({
 
   // ── Bidding panel ─────────────────────────────────────────────────────
   biddingBody: {
-    height: vs(190),
     alignItems: 'center',
     justifyContent: 'center',
   },
+  // Same split as chatBody / chatBodyDocked above.
+  biddingBodyDocked: {height: vs(190)},
+  biddingBodyFullscreen: {flex: 1},
   biddingText: {color: colors.text_dark, fontSize: ms(14), fontWeight: '600'},
 
   // Bidding panel docked against the right edge (like the chat panel).
@@ -515,6 +564,7 @@ export default StyleSheet.create({
     paddingBottom: Platform.OS === 'android' ? 0 : vs(4),
     paddingHorizontal: s(14),
   },
+  hosBodyFullscreen: {flex: 1},
   hosStep: {flexDirection: 'row'},
   hosBulletCol: {alignItems: 'center', width: ms(20)},
   hosBullet: {
@@ -1145,5 +1195,83 @@ export default StyleSheet.create({
     fontSize: IS_TABLET ? ms(18) : ms(14),
     fontWeight: '700',
     marginLeft: s(5),
+  },
+
+  // ── Call panel ────────────────────────────────────────────────────────
+  // Docked against the right edge (like the chat / fuel panels), but wider so
+  // the name + role + call button row doesn't wrap.
+  callPanelWrap: {
+    width: IS_TABLET ? ms(360) : ms(300),
+    alignSelf: 'flex-end',
+    top: IS_TABLET ? vs(230) : Platform.OS === 'ios' ? vs(240) : vs(260),
+    right: s(1),
+  },
+  callBody: {maxHeight: vs(260)},
+  callBodyContent: {paddingBottom: vs(4)},
+
+  callRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: s(10),
+    paddingVertical: vs(8),
+    backgroundColor: colors.white,
+  },
+  // Fixed slot so every name starts on the same x, with or without an icon.
+  callRowIcon: {
+    width: ms(24),
+    alignItems: 'flex-start',
+    justifyContent: 'center',
+  },
+  callRowName: {
+    flex: 1,
+    color: colors.text_dark,
+    fontSize: ms(11),
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+  callRowRole: {
+    flex: 1,
+    color: colors.textMuted,
+    fontSize: ms(10),
+    textAlign: 'center',
+  },
+  callRowBtn: {
+    width: ms(28),
+    height: ms(28),
+    borderRadius: ms(14),
+    backgroundColor: colors.success,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: s(8),
+  },
+
+  callGroupHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F1F2F4',
+    paddingHorizontal: s(10),
+    paddingVertical: vs(6),
+  },
+  callGroupBadge: {
+    width: ms(20),
+    height: ms(20),
+    borderRadius: ms(10),
+    backgroundColor: colors.success,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: s(8),
+  },
+  // Drops get the red badge; pickups keep the green one above.
+  callGroupBadgeDrop: {backgroundColor: colors.danger},
+  callGroupBadgeText: {
+    color: colors.white,
+    fontSize: ms(9),
+    fontWeight: '700',
+  },
+  callGroupLabel: {
+    flex: 1,
+    color: colors.navy,
+    fontSize: ms(11),
+    fontWeight: '700',
   },
 });

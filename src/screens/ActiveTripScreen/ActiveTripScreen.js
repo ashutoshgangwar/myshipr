@@ -29,7 +29,7 @@ import ChatPanel from './components/ChatPanel';
 import DocumentsPanel from './components/DocumentsPanel';
 import BiddingPanel from './components/BiddingPanel';
 import HoursOfServicePanel from './components/HoursOfServicePanel';
-import FuelPricePanel from './components/FuelPricePanel';
+import CallPanel from './components/CallPanel';
 import TripProgressBar from './components/TripProgressBar';
 import StepConfirmCard from './components/StepConfirmCard';
 import PodModal from './components/PodModal';
@@ -38,7 +38,7 @@ import PodModal from './components/PodModal';
 const DEFAULT_CENTER = {lat: 37.7599, lng: -122.4469};
 
 // Toolbar ids that open a centre panel.
-const PANEL_IDS = ['chat', 'documents', 'bidding', 'navigate', 'dock'];
+const PANEL_IDS = ['chat', 'documents', 'bidding', 'navigate', 'call'];
 
 export default function ActiveTripScreen({navigation}) {
   const insets = useSafeAreaInsets();
@@ -215,7 +215,7 @@ export default function ActiveTripScreen({navigation}) {
       {activePanel === 'documents' && <DocumentsPanel onClose={closePanel} />}
       {activePanel === 'bidding' && <BiddingPanel onClose={closePanel} />}
       {activePanel === 'navigate' && <HoursOfServicePanel onClose={closePanel} />}
-      {activePanel === 'dock' && <FuelPricePanel onClose={closePanel} />}
+      {activePanel === 'call' && <CallPanel onClose={closePanel} />}
 
       {/* ── Floating GPS re-center button ── */}
       {/* Sits behind the panels (low zIndex), so it stays put when one opens. */}

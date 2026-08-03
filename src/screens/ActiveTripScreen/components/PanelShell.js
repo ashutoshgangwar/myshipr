@@ -14,11 +14,13 @@ const PRIMARY_GRADIENT = ['#00033E', '#0008A4'];
  * Floating card shell with a navy header (title + optional subtitle),
  * an optional expand icon and a close (×) button. Children render the body.
  */
-export default function PanelShell({title, subtitle, subtitleStyle, onExpand, onClose, children, wrapStyle, panelStyle, onLayout, fullscreen}) {
+export default function PanelShell({title, titleStyle, subtitle, subtitleStyle, onExpand, onClose, children, wrapStyle, panelStyle, panelRef, onLayout, fullscreen}) {
   const insets = useSafeAreaInsets();
   return (
     <View style={[styles.panelWrap, wrapStyle]} onLayout={onLayout}>
-      <View style={[styles.panel, panelStyle]}>
+      {/* `panelRef` lets a panel measure its own bottom edge against the
+          keyboard — see ChatPanel's composer padding. */}
+      <View ref={panelRef} style={[styles.panel, panelStyle]}>
         {/* When stretched the panel sits at top:0, so pad the header past the
             status bar / notch to keep the stretch + close icons tappable. */}
         <View style={[styles.panelHeader, fullscreen && {paddingTop: insets.top + vs(8)}]}>
@@ -29,7 +31,7 @@ export default function PanelShell({title, subtitle, subtitleStyle, onExpand, on
             style={StyleSheet.absoluteFill}
           />
           <View style={styles.panelHeaderTexts}>
-            <AppText style={styles.panelTitle}>{title}</AppText>
+            <AppText style={[styles.panelTitle, titleStyle]}>{title}</AppText>
             {!!subtitle && <AppText style={[styles.panelSubtitle, subtitleStyle]}>{subtitle}</AppText>}
           </View>
 
