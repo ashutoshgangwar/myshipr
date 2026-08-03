@@ -35,6 +35,12 @@ const DashboardHeader = ({
   // neighbours — a screen can pass a size that fits its longest label and get
   // one uniform size across the row.
   statLabelStyle,
+  // The rest of the compact stat card, so a screen can size the whole card —
+  // box, value, note — for its own layout. Applied before the accent stripe
+  // and the selected fill, which stay the component's call.
+  statCardStyle,
+  statValueStyle,
+  statNoteStyle,
   // 'chart' renders wide cards with a title, date range, value and inline
   // sparkline (the Home dashboard). Defaults to the compact stat cards.
   statsVariant = 'default',
@@ -238,6 +244,7 @@ const DashboardHeader = ({
                 onPress={() => onStatPress?.(id)}
                 style={[
                   styles.statCard,
+                  statCardStyle,
                   stat.accent && [
                     styles.statCardStripe,
                     {borderLeftColor: selected ? fill : stat.accent},
@@ -260,7 +267,7 @@ const DashboardHeader = ({
                   numberOfLines={1}
                   adjustsFontSizeToFit
                   minimumFontScale={0.7}
-                  style={[styles.statValue, onDark]}>
+                  style={[styles.statValue, statValueStyle, onDark]}>
                   {stat.value}
                 </AppText>
                 {stat.note ? (
@@ -269,6 +276,7 @@ const DashboardHeader = ({
                     adjustsFontSizeToFit
                     style={[
                       styles.statNote,
+                      statNoteStyle,
                       stat.noteColor && {color: stat.noteColor},
                       onDark,
                     ]}>

@@ -9,7 +9,7 @@ const vs = n => baseVs(n) * PHONE_FACTOR;
 
 export const DASHBOARD_STATS_OVERLAP = IS_TABLET ? baseMs(70) : Platform.OS === 'ios' ? baseMs(50) : baseMs(50);
 
-const DASHBOARD_STATS_CLEARANCE = IS_TABLET ? vs(5) : Platform.OS === 'ios' ? vs(20) : vs(50);
+const DASHBOARD_STATS_CLEARANCE = IS_TABLET ? vs(5) : Platform.OS === 'ios' ? vs(20) : vs(5);
 export const DASHBOARD_HEADER_PAD_BOTTOM =
   DASHBOARD_STATS_OVERLAP + DASHBOARD_STATS_CLEARANCE;
 

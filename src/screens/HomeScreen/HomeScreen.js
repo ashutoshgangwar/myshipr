@@ -178,8 +178,6 @@ const HomeScreen = () => {
     navigation.navigate('ActiveTripScreen');
   };
 
-  // Anchor the dropdown under the avatar (works on both tablet and phone
-  // regardless of safe-area insets) by measuring the button in-window.
   const openMenu = () => {
     const node = avatarRef.current;
     if (node?.measureInWindow) {

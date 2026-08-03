@@ -2,8 +2,7 @@ import React, {useMemo, useState} from 'react';
 import {FlatList} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
-import styles, {GRID_COLS} from './BiddingScreen.styles';
-import {DASHBOARD_STATS_OVERLAP} from '../../component/DashboardHeader/DashboardHeader.styles';
+import styles, {BIDDING_STATS_OVERLAP, GRID_COLS} from './BiddingScreen.styles';
 import {BIDS, BUCKETS, STATS} from './constants';
 import FilterRow from './components/FilterRow';
 import BidTable from './components/BidTable';
@@ -63,7 +62,10 @@ export default function BiddingScreen() {
         subtitleStyle={styles.dashboardSubtitle}
         statsStyle={styles.dashboardStats}
         statLabelStyle={styles.dashboardStatLabel}
-        statsOffset={-DASHBOARD_STATS_OVERLAP}
+        statCardStyle={styles.dashboardStatCard}
+        statValueStyle={styles.dashboardStatValue}
+        statNoteStyle={styles.dashboardStatNote}
+        statsOffset={-BIDDING_STATS_OVERLAP}
         width="100%"
         title="Bidding"
         subtitle="Live Auction"

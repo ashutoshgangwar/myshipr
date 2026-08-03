@@ -6,16 +6,12 @@ import {
   STOP_LINE_H as ROUTE_LINE_H,
   STOP_SUMMARY_H as ROUTE_SUMMARY_H,
 } from '../../component/LoadRoute/LoadRoute';
-import {
-  DASHBOARD_HEADER_PAD_BOTTOM,
-  DASHBOARD_HEADER_RADIUS,
-  DASHBOARD_TITLE_LINE_H,
-  DASHBOARD_TITLE_SIZE,
-} from '../../component/DashboardHeader/DashboardHeader.styles';
 
 const PHONE_FACTOR = select({phone: 0.82, tablet: 1});
 const ms = n => baseMs(n) * PHONE_FACTOR;
 const vs = n => baseVs(n) * PHONE_FACTOR;
+
+const IS_ANDROID_PHONE = Platform.OS === 'android' && !IS_TABLET;
 
 const CONTENT_MAX = ms(720);
 const centered = IS_TABLET
@@ -24,19 +20,17 @@ const centered = IS_TABLET
 
 const COL_GAP = ms(8);
 
-/* ---------- Stat card labels ----------
-   The four header cards are equal-width flex children of the stats row, and
-   each auto-shrinks its own label to fit. "Currently Leading" is far longer
-   than the other three, so it was the only one that shrank and the row read as
-   four different type sizes. Deriving one size that fits the longest label
-   keeps all four identical.
-
-   STATS_ROW_MARGIN / STATS_GAP are the row's own geometry (kept as constants so
-   the width maths below can never drift from the style), and STAT_CARD_PAD is
-   the card padding from DashboardHeader.styles. */
 const STATS_ROW_MARGIN = ms(16);
 const STATS_GAP = ms(8);
-const STAT_CARD_PAD = ms(9);
+
+// Android phones get a smaller card all round: tighter padding, smaller value
+// and note. iOS and tablets keep the component's ms(9)/ms(20)/ms(9).
+const STAT_CARD_PAD_V = IS_ANDROID_PHONE ? ms(6) : ms(9);
+const STAT_CARD_PAD_H = IS_ANDROID_PHONE ? ms(7) : ms(9);
+const STAT_CARD_RADIUS = IS_ANDROID_PHONE ? ms(8) : ms(10);
+const STAT_VALUE_SIZE = IS_ANDROID_PHONE ? ms(16) : ms(20);
+const STAT_VALUE_GAP = IS_ANDROID_PHONE ? vs(2) : vs(3);
+const STAT_NOTE_SIZE = IS_ANDROID_PHONE ? ms(8) : ms(9);
 
 // Width of "Currently Leading" in Poppins-Bold, in em (sum of its advance
 // widths). Any longer label added to STATS needs this re-measured.
@@ -44,27 +38,36 @@ const LONGEST_LABEL_EM = 9.1;
 
 const STAT_ROW_W = Dimensions.get('window').width;
 const STAT_LABEL_W =
-  (STAT_ROW_W - STATS_ROW_MARGIN * 2 - STATS_GAP * 3) / 4 - STAT_CARD_PAD * 2;
+  (STAT_ROW_W - STATS_ROW_MARGIN * 2 - STATS_GAP * 3) / 4 - STAT_CARD_PAD_H * 2;
+  
+const STAT_LABEL_CAP = IS_ANDROID_PHONE ? ms(10) : ms(11);
+const STAT_LABEL_SIZE = Math.min(
+  STAT_LABEL_CAP,
+  (STAT_LABEL_W / LONGEST_LABEL_EM) * 0.97,
+);
 
-// 0.97 leaves a hair of slack so rounding can't push the longest label back
-// into auto-shrinking. Capped at the shared ms(11) so wide tablets — where
-// everything already fits — keep the size they have today.
-const STAT_LABEL_SIZE = Math.min(ms(11), (STAT_LABEL_W / LONGEST_LABEL_EM) * 0.97);
-
-/* Bidding runs a shorter, flatter blue band than the other dashboard headers —
-   the four stat cards are the focus here, so the space above them is trimmed
-   rather than shared with Home/Earnings. Height stays a floor (minHeight), so
-   the header still grows if the copy ever needs more room and the cards keep
-   riding inside it. Lowering these past the content height has no further
-   effect: paddingTop + brand row + DASHBOARD_HEADER_PAD_BOTTOM is the limit. */
 const BLUE_HEADER_H = IS_TABLET
-  ? vs(160)
-  : Platform.OS === 'ios'
-  ? vs(165)
-  : vs(96);
+  ? vs(160) : Platform.OS === 'ios' ? vs(140) : vs(160);
 
-// Tablets carried a very deep curve at the shared ms(95); flatten it here.
-const BLUE_HEADER_RADIUS = IS_TABLET ? ms(60) : DASHBOARD_HEADER_RADIUS;
+const BLUE_HEADER_PAD_TOP =  vs(15);
+
+export const BIDDING_STATS_OVERLAP = IS_TABLET ? baseMs(70) : Platform.OS === 'ios' ? baseMs(45) : baseMs(40);
+
+// Breathing room left below the cards once they have ridden up.
+const BIDDING_STATS_CLEARANCE = IS_TABLET
+  ? vs(5)
+  : Platform.OS === 'ios'
+  ? vs(20)
+  : vs(5);
+
+const BLUE_HEADER_PAD_BOTTOM = BIDDING_STATS_OVERLAP + BIDDING_STATS_CLEARANCE;
+
+// Tablets carried a very deep curve at ms(95); flatten it here.
+const BLUE_HEADER_RADIUS = IS_TABLET ? ms(60) : ms(45);
+
+/* Title type, local so Bidding's header copy can be sized on its own. */
+const BIDDING_TITLE_SIZE = ms(18);
+const BIDDING_TITLE_LINE_H = Math.round(BIDDING_TITLE_SIZE * 1.5);
 
 const FILTER_H = IS_TABLET ? vs(30) : vs(34);
 const TABLE_PADDING = ms(10);
@@ -99,15 +102,15 @@ const styles = StyleSheet.create({
     backgroundColor: colors.screenBg,
   },
 
-  /* Bidding deliberately runs shorter and flatter than Home/Earnings, so the
-     height and curve come from the local BLUE_HEADER_* knobs above rather than
-     the shared constants. The bottom padding still does — it is what reserves
-     the band the floating stat cards ride up into. minHeight (not height) lets
-     the header grow if the copy ever needs more room, which keeps the cards
-     inside the header's bounds and therefore tappable. */
+  /* Bidding deliberately runs shorter and flatter than Home/Earnings, so every
+     value here comes from the local BLUE_HEADER_* knobs above. The bottom
+     padding is what reserves the band the floating stat cards ride up into, so
+     it moves with BIDDING_STATS_OVERLAP. minHeight (not height) lets the header
+     grow if the copy ever needs more room, which keeps the cards inside the
+     header's bounds and therefore tappable. */
   dashboardHeader: {
-    paddingTop: vs(15),
-    paddingBottom: DASHBOARD_HEADER_PAD_BOTTOM,
+    paddingTop: BLUE_HEADER_PAD_TOP,
+    paddingBottom: BLUE_HEADER_PAD_BOTTOM,
     minHeight: BLUE_HEADER_H,
     borderBottomLeftRadius: BLUE_HEADER_RADIUS,
     borderBottomRightRadius: BLUE_HEADER_RADIUS,
@@ -115,7 +118,7 @@ const styles = StyleSheet.create({
 
   /* The remaining DashboardHeader slots, wired up so Bidding can tune its own
      header copy and stat row without touching Home or Earnings. They are
-     seeded with the shared component's own values, so they change nothing on
+     seeded with the values the component itself uses, so they change nothing on
      their own — they are knobs, not overrides. Colours are left to the
      component (white title, muted subtitle). */
   dashboardWrap: {
@@ -125,8 +128,8 @@ const styles = StyleSheet.create({
   },
 
   dashboardTitle: {
-    fontSize: DASHBOARD_TITLE_SIZE,
-    lineHeight: DASHBOARD_TITLE_LINE_H,
+    fontSize: BIDDING_TITLE_SIZE,
+    lineHeight: BIDDING_TITLE_LINE_H,
     fontWeight: '500',
   },
 
@@ -142,6 +145,24 @@ const styles = StyleSheet.create({
   dashboardStats: {
     marginHorizontal: STATS_ROW_MARGIN,
     gap: STATS_GAP,
+  },
+
+  /* Card box + value + note, so the whole card scales together. On iOS and
+     tablets these repeat the component's own numbers and change nothing; on
+     Android phones they pull the card in. */
+  dashboardStatCard: {
+    paddingVertical: STAT_CARD_PAD_V,
+    paddingHorizontal: STAT_CARD_PAD_H,
+    borderRadius: STAT_CARD_RADIUS,
+  },
+
+  dashboardStatValue: {
+    fontSize: STAT_VALUE_SIZE,
+    marginTop: STAT_VALUE_GAP,
+  },
+
+  dashboardStatNote: {
+    fontSize: STAT_NOTE_SIZE,
   },
 
   /* One size for all four labels. Without this the cards shrink their own
