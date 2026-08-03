@@ -17,9 +17,10 @@ import CallIcon from '../../assets/svg_icon/call_icon.svg';
 import { IS_TABLET } from '../../theme/device';
 
 // One size for the chip icons so they scale together, as on ActiveBidding.
-const CHIP_ICON = IS_TABLET ? ms(10) : ms(15);
+// Stepped down with the chip text/padding so the glyph doesn't outgrow its pill.
+const CHIP_ICON = IS_TABLET ? ms(12) : ms(15);
 // The handset sits on the phone number's baseline, so it stays a notch smaller.
-const PHONE_ICON = IS_TABLET ? ms(14) : ms(15);
+const PHONE_ICON = IS_TABLET ? ms(12) : ms(15);
 
 const DetailGrid = ({cells}) => {
   const lastRow = Math.floor((cells.length - 1) / 2);
