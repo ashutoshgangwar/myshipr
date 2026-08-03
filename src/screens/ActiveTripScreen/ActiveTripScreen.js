@@ -47,6 +47,9 @@ export default function ActiveTripScreen({navigation}) {
   const [center, setCenter] = useState(DEFAULT_CENTER);
   const [sdkReady, setSdkReady] = useState(false);
   const [activePanel, setActivePanel] = useState(null);
+  // True while a panel is stretched to full screen — its navy header then sits
+  // under the status bar, so the icons have to flip to light.
+  const [panelFullscreen, setPanelFullscreen] = useState(false);
   const [podOpen, setPodOpen] = useState(false);
   const [milestone, setMilestone] = useState({
     step: 2,
@@ -169,7 +172,11 @@ export default function ActiveTripScreen({navigation}) {
 
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
-      <StatusBar barStyle="dark-content" translucent backgroundColor="transparent" />
+      <StatusBar
+        barStyle={panelFullscreen ? 'light-content' : 'dark-content'}
+        translucent
+        backgroundColor="transparent"
+      />
 
       {/* ── HERE map (Android + iOS native) ── */}
       {sdkReady ? (
@@ -211,10 +218,18 @@ export default function ActiveTripScreen({navigation}) {
       )}
 
       {/* ── Centre panels ── */}
-      {activePanel === 'chat' && <ChatPanel onClose={closePanel} />}
-      {activePanel === 'documents' && <DocumentsPanel onClose={closePanel} />}
-      {activePanel === 'bidding' && <BiddingPanel onClose={closePanel} />}
-      {activePanel === 'navigate' && <HoursOfServicePanel onClose={closePanel} />}
+      {activePanel === 'chat' && (
+        <ChatPanel onClose={closePanel} onExpandedChange={setPanelFullscreen} />
+      )}
+      {activePanel === 'documents' && (
+        <DocumentsPanel onClose={closePanel} onExpandedChange={setPanelFullscreen} />
+      )}
+      {activePanel === 'bidding' && (
+        <BiddingPanel onClose={closePanel} onExpandedChange={setPanelFullscreen} />
+      )}
+      {activePanel === 'navigate' && (
+        <HoursOfServicePanel onClose={closePanel} onExpandedChange={setPanelFullscreen} />
+      )}
       {activePanel === 'call' && <CallPanel onClose={closePanel} />}
 
       {/* ── Floating GPS re-center button ── */}

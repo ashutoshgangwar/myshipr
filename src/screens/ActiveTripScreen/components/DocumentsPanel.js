@@ -13,8 +13,12 @@ export default function DocumentsPanel({
   onCapture,
   loadId = '#TX-8821',
   route = 'Dallas → Houston',
+  onExpandedChange,
 }) {
-  const {expanded, shellProps} = usePanelExpand(styles.chatPanelWrap);
+  const {expanded, shellProps} = usePanelExpand(
+    styles.chatPanelWrap,
+    onExpandedChange,
+  );
   const cameraRef = useRef(null);
   const backDevice = useCameraDevice('back');
   const frontDevice = useCameraDevice('front');

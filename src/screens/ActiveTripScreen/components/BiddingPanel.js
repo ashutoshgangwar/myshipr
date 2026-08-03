@@ -5,8 +5,11 @@ import styles from '../ActiveTripScreen.styles';
 import PanelShell from './PanelShell';
 import usePanelExpand from '../hooks/usePanelExpand';
 
-export default function BiddingPanel({onClose, children}) {
-  const {expanded, shellProps} = usePanelExpand(styles.biddingPanelWrap);
+export default function BiddingPanel({onClose, children, onExpandedChange}) {
+  const {expanded, shellProps} = usePanelExpand(
+    styles.biddingPanelWrap,
+    onExpandedChange,
+  );
 
   return (
     <PanelShell title="Bidding" onClose={onClose} {...shellProps}>

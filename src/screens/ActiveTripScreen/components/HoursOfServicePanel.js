@@ -14,10 +14,13 @@ const STEPS = [
   {id: 'dropped', title: 'Shipment Dropped', detail: 'Dock 4B, Houston'},
 ];
 
-export default function HoursOfServicePanel({onClose}) {
+export default function HoursOfServicePanel({onClose, onExpandedChange}) {
   // Steps the driver has confirmed done (tap to toggle).
   const [done, setDone] = useState({});
-  const {expanded, shellProps} = usePanelExpand(styles.chatPanelWrap);
+  const {expanded, shellProps} = usePanelExpand(
+    styles.chatPanelWrap,
+    onExpandedChange,
+  );
 
   const toggle = id => setDone(prev => ({...prev, [id]: !prev[id]}));
 

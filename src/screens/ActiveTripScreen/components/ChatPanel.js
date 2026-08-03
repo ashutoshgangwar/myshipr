@@ -28,7 +28,7 @@ const DEFAULT_MESSAGES = [
   {id: 4, from: 'out', time: '2:14 PM', text: "Hey Deeveja, you're on track."},
 ];
 
-export default function ChatPanel({onClose, messages = DEFAULT_MESSAGES, onSend}) {
+export default function ChatPanel({onClose, messages = DEFAULT_MESSAGES, onSend, onExpandedChange}) {
   const [draft, setDraft] = useState('');
   // Messages typed in this session, appended after whatever the parent passes
   // so a sent bubble shows up straight away at the bottom of the thread.
@@ -40,10 +40,10 @@ export default function ChatPanel({onClose, messages = DEFAULT_MESSAGES, onSend}
   const panelRef = useRef(null);
 
   const {keyboardShift, keyboardTop, onPanelLayout} = useKeyboardShift();
-  const {expanded, shellProps} = usePanelExpand([
-    styles.chatPanelWrap,
-    {transform: [{translateY: -keyboardShift}]},
-  ]);
+  const {expanded, shellProps} = usePanelExpand(
+    [styles.chatPanelWrap, {transform: [{translateY: -keyboardShift}]}],
+    onExpandedChange,
+  );
 
   // Fires on mount and on every new bubble, so the newest message is always the
   // one in view.
