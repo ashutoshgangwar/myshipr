@@ -20,7 +20,7 @@ export default StyleSheet.create({
     backgroundColor: colors.primary,
     paddingHorizontal: ms(16),
     paddingTop: vs(10),
-    paddingBottom: vs(12),
+    paddingBottom: vs(10),
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -64,14 +64,14 @@ export default StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#E4ECFF',
     borderRadius: ms(15),
-    paddingHorizontal: ms(8),
-    paddingVertical: vs(4),
+    paddingHorizontal:IS_TABLET ? ms(8) : ms(5),
+    paddingVertical:IS_TABLET ? vs(2) : vs(4),
     marginRight: ms(8),
   },
 
   modePillText: {
     marginLeft: ms(5),
-    fontSize: ms(10),
+    fontSize: IS_TABLET ? ms(8) : ms(10),
     color: colors.accentBlue,
     fontWeight: '700',
   },
@@ -82,13 +82,13 @@ export default StyleSheet.create({
     marginRight: ms(8),
     backgroundColor: colors.lightbg_gray,
     borderRadius: ms(15),
-    paddingHorizontal: ms(8),
-    paddingVertical: vs(4),
+      paddingHorizontal:IS_TABLET ? ms(8) : ms(5),
+    paddingVertical:IS_TABLET ? vs(2) : vs(4),
   },
 
   metaChipText: {
     marginLeft: ms(4),
-    fontSize: ms(10),
+    fontSize: IS_TABLET ? ms(8) : ms(10),
     color: colors.textMuted,
     fontWeight: '500',
   },
@@ -96,13 +96,13 @@ export default StyleSheet.create({
   statusBadge: {
     backgroundColor: colors.button_color,
     borderRadius: ms(4),
-    paddingHorizontal: ms(10),
-    paddingVertical: vs(5),
+        paddingHorizontal:IS_TABLET ? ms(8) : ms(5),
+    paddingVertical:IS_TABLET ? vs(2) : vs(4),
     marginLeft: ms(8),
   },
 
   statusBadgeText: {
-    fontSize: ms(11),
+    fontSize:IS_TABLET ? ms(10) : ms(12),
     color: colors.white,
     fontWeight: '700',
     letterSpacing: 0.5,
@@ -110,7 +110,7 @@ export default StyleSheet.create({
 
   /* ---------- Route title ---------- */
   routeTitle: {
-    fontSize: IS_TABLET ? ms(22) : ms(20),
+    fontSize: IS_TABLET ? ms(18) : ms(15),
     color: colors.textStrong,
     fontWeight: '700',
     marginTop: vs(8),
@@ -130,9 +130,14 @@ export default StyleSheet.create({
 
   // minWidth 0 lets the long stop labels ellipsize instead of pushing the map
   // past the sheet's right edge on narrow phones.
+  // paddingLeft insets the whole route block — summary, markers, dashed
+  // connector and labels move together — so the dots don't sit flush against
+  // the sheet edge. Screen-local: it rides in on RouteStops' `style` prop, so
+  // ActiveBidding and the other callers keep their original alignment.
   routeStopsCol: {
     flex: 1,
     minWidth: 0,
+    paddingLeft: ms(8),
   },
 
   // Taller than the auction thumbnail because this block has four stops beside

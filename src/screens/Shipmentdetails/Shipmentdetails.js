@@ -14,11 +14,12 @@ import BlueTruckIcon from '../../assets/svg_icon/Truck_Frame.svg';
 import CalendarIcon from '../../assets/svg_icon/Schedule.svg';
 import TimeIcon from '../../assets/svg_icon/Time_Icon.svg';
 import CallIcon from '../../assets/svg_icon/call_icon.svg';
+import { IS_TABLET } from '../../theme/device';
 
 // One size for the chip icons so they scale together, as on ActiveBidding.
-const CHIP_ICON = ms(15);
+const CHIP_ICON = IS_TABLET ? ms(10) : ms(15);
 // The handset sits on the phone number's baseline, so it stays a notch smaller.
-const PHONE_ICON = ms(14);
+const PHONE_ICON = IS_TABLET ? ms(14) : ms(15);
 
 const DetailGrid = ({cells}) => {
   const lastRow = Math.floor((cells.length - 1) / 2);
@@ -81,7 +82,7 @@ export default function Shipmentdetails({navigation, route}) {
           style={styles.backBtn}
           activeOpacity={0.8}
           onPress={goBack}>
-          <BackArrow width={18} height={18} />
+          <BackArrow width={ IS_TABLET ? 24 : 18} height={ IS_TABLET ? 24 : 18} />
         </TouchableOpacity>
       </View>
 
