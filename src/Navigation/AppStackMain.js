@@ -24,6 +24,7 @@ import TruckAnimationScreen from '../screens/TruckAnimationScreen/TruckAnimation
 import TripCompletedScreen from '../screens/TripCompletedScreen/TripCompletedScreen';
 import CoinTestScreen from '../screens/CoinTestScreen/CoinTestScreen';
 import ActiveBidding from '../screens/ActiveBidding/ActiveBidding';
+import Shipmentdetails from '../screens/Shipmentdetails/Shipmentdetails';
 
 
 const Stack = createNativeStackNavigator();
@@ -52,6 +53,8 @@ export default function AppStackMain() {
       <Stack.Screen name="FavoriteDestination" component={FavoriteDestination} />
       <Stack.Screen name="RadarSetupScreen" component={RadarSetupScreen} />
       <Stack.Screen name="RadarMapScreen" component={RadarMapScreen} />
+      <Stack.Screen name="Shipmentdetails" component={Shipmentdetails} />
+
 
       {/* Extra flows (no bottom tab) */}
       <Stack.Screen name="Profile" component={Profile} />

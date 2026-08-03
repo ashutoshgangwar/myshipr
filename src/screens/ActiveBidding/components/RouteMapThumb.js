@@ -66,12 +66,16 @@ const Pin = ({color, svgRef}) => (
  * pannable/zoomable; while a finger is down on it the parent tells its
  * ScrollView to stop scrolling via onInteractStart/End so the drag reaches the
  * native map instead of scrolling the page.
+ *
+ * `style` overrides the thumbnail's own box (size/margins) for callers whose
+ * route block is a different shape — Shipmentdetails lists four stops beside it.
  */
 export default function RouteMapThumb({
   pickup,
   drop,
   onInteractStart,
   onInteractEnd,
+  style,
 }) {
   const mapRef = useRef(null);
   const pickupPinRef = useRef(null);
@@ -225,7 +229,9 @@ export default function RouteMapThumb({
 
   if (!sdkReady || !hasCoords) {
     return (
-      <View style={[styles.mapImage, styles.mapLoading]} onLayout={onLayout}>
+      <View
+        style={[styles.mapImage, styles.mapLoading, style]}
+        onLayout={onLayout}>
         <ActivityIndicator size="small" color={colors.accentBlue} />
         {rasteriser}
       </View>
@@ -234,7 +240,7 @@ export default function RouteMapThumb({
 
   return (
     <View
-      style={styles.mapImage}
+      style={[styles.mapImage, style]}
       onLayout={onLayout}
       onTouchStart={onInteractStart}
       onTouchEnd={onInteractEnd}

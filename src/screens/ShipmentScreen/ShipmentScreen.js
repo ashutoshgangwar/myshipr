@@ -80,7 +80,7 @@ const SHIPMENTS = {
   ],
 };
 
-export default function ShipmentScreen() {
+export default function ShipmentScreen({navigation}) {
   const [selectedKey, setSelectedKey] = useState('d8');
   const [tab, setTab] = useState('upcoming');
   // Tapping a row (or its "+N More …" chip) reveals every pickup and drop.
@@ -179,7 +179,11 @@ export default function ShipmentScreen() {
             nestedScrollEnabled
             showsVerticalScrollIndicator={false}
             renderItem={({item, index}) => (
-              <View
+              <TouchableOpacity
+                activeOpacity={0.7}
+                onPress={() =>
+                  navigation?.navigate('Shipmentdetails', {shipment: item.details})
+                }
                 style={[
                   styles.row,
                   index === shipments.length - 1 && styles.rowLast,
@@ -241,7 +245,7 @@ export default function ShipmentScreen() {
                     </AppText>
                   </View>
                 </View>
-              </View>
+              </TouchableOpacity>
             )}
           />
         </View>
