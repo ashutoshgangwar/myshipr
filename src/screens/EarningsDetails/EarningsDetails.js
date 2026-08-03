@@ -5,12 +5,13 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import styles from './EarningsDetails.styles';
 import {PAYMENT, STATUS_COLOR, STEP_STATE, ms} from './constants';
 import StatusBar from '../../component/StatusBar/StatusBar';
+import DashboardHeader from '../../component/DashboardHeader/DashboardHeader';
 import AppText from '../../theme/AppText';
 import {colors} from '../../theme/colors';
 import BackArrow from '../../assets/svg_icon/Back_arrow_map.svg';
 import BlueTruckIcon from '../../assets/svg_icon/Truck_Frame.svg';
 import CalendarIcon from '../../assets/svg_icon/Schedule.svg';
-import Bank_Icon_Svg from '../../assets/svg_icon/Bank_Icon.svg'
+import Bank_Icon_Svg from '../../assets/svg_icon/Bank_Icon.svg';
 import {IS_TABLET} from '../../theme/device';
 
 // One size for the chip icons so they scale together, as on ShipmentDetails.
@@ -48,7 +49,6 @@ const DetailGrid = ({cells}) => {
   );
 };
 
-
 export default function EarningsDetails({navigation, route}) {
   // The payout comes from the earnings row the user tapped; fall back to the sample.
   const data = route?.params?.payment || PAYMENT;
@@ -64,24 +64,29 @@ export default function EarningsDetails({navigation, route}) {
       />
 
       <View style={styles.page}>
-        {/* HEADER */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backBtn}
-            activeOpacity={0.8}
-            onPress={goBack}>
-            <BackArrow
-              width={IS_TABLET ? 24 : 18}
-              height={IS_TABLET ? 24 : 18}
-            />
-          </TouchableOpacity>
-          <AppText style={styles.headerTitle}>PAYMENT DETAILS</AppText>
-        </View>
-
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
           showsVerticalScrollIndicator={false}>
+          {/* HEADER — the payout card rides up over its bottom edge, so the
+              header scrolls with the content instead of sitting above it. */}
+          <DashboardHeader
+            title="PAYMENT DETAILS"
+            headerStyle={styles.dashboardHeader}
+            titleStyle={styles.headerTitle}
+            icon={
+              <TouchableOpacity
+                style={styles.backBtn}
+                activeOpacity={0.8}
+                onPress={goBack}>
+                <BackArrow
+                  width={IS_TABLET ? 24 : 18}
+                  height={IS_TABLET ? 24 : 18}
+                />
+              </TouchableOpacity>
+            }
+          />
+
           {/* PAYOUT SUMMARY */}
           <View style={styles.payoutCard}>
             <View style={styles.payoutTopRow}>
@@ -130,53 +135,57 @@ export default function EarningsDetails({navigation, route}) {
             </View>
           </View>
 
-          {/* BILL OF LADING */}
-          <AppText style={styles.sectionLabel}>Bill of Lading Details</AppText>
-          <DetailGrid cells={data.bol} />
-
-          {/* PAYMENT STATUS */}
-          <AppText style={styles.sectionLabel}>Payment Status</AppText>
-          <View style={styles.statusCard}>
-            {data.steps.map((step, index) => (
-              <View
-                key={step.id}
-                style={[
-                  styles.statusRow,
-                  index === data.steps.length - 1 && styles.statusRowLast,
-                ]}>
-                <View
-                  style={[
-                    styles.stepDot,
-                    {
-                      backgroundColor:
-                        STEP_DOT_COLOR[step.state] ?? colors.status,
-                    },
-                  ]}
-                />
-                <AppText
-                  style={[
-                    styles.stepLabel,
-                    step.state === STEP_STATE.UPCOMING &&
-                      styles.stepLabelMuted,
-                  ]}
-                  numberOfLines={1}>
-                  {step.label}
-                </AppText>
-                <AppText style={styles.stepWhen}>{step.when}</AppText>
-              </View>
-            ))}
-          </View>
-
-          {/* PAYOUT ACCOUNT */}
-          <AppText style={styles.sectionLabel}>Payout Account</AppText>
-          <View style={styles.accountCard}>
-            <Bank_Icon_Svg/>
-            {/* <BankGlyph /> */}
-            <AppText style={styles.accountText}>
-              {data.account.label} ···· {data.account.mask}
+          <View style={styles.body}>
+            {/* BILL OF LADING */}
+            <AppText style={styles.sectionLabel}>
+              Bill of Lading Details
             </AppText>
+            <DetailGrid cells={data.bol} />
+
+            {/* PAYMENT STATUS */}
+            <AppText style={styles.sectionLabel}>Payment Status</AppText>
+            <View style={styles.statusCard}>
+              {data.steps.map((step, index) => (
+                <View
+                  key={step.id}
+                  style={[
+                    styles.statusRow,
+                    index === data.steps.length - 1 && styles.statusRowLast,
+                  ]}>
+                  <View
+                    style={[
+                      styles.stepDot,
+                      {
+                        backgroundColor:
+                          STEP_DOT_COLOR[step.state] ?? colors.status,
+                      },
+                    ]}
+                  />
+                  <AppText
+                    style={[
+                      styles.stepLabel,
+                      step.state === STEP_STATE.UPCOMING &&
+                        styles.stepLabelMuted,
+                    ]}
+                    numberOfLines={1}>
+                    {step.label}
+                  </AppText>
+                  <AppText style={styles.stepWhen}>{step.when}</AppText>
+                </View>
+              ))}
+            </View>
+
+            {/* PAYOUT ACCOUNT */}
+            <AppText style={styles.sectionLabel}>Payout Account</AppText>
+            <View style={styles.accountCard}>
+              <Bank_Icon_Svg />
+              {/* <BankGlyph /> */}
+              <AppText style={styles.accountText}>
+                {data.account.label} ···· {data.account.mask}
+              </AppText>
+            </View>
+            <AppText style={styles.accountNote}>{data.account.note}</AppText>
           </View>
-          <AppText style={styles.accountNote}>{data.account.note}</AppText>
         </ScrollView>
       </View>
     </SafeAreaView>

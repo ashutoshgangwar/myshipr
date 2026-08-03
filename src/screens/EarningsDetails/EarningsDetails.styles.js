@@ -3,6 +3,11 @@ import {colors} from '../../theme/colors';
 import {ms, vs} from './constants';
 import {IS_TABLET} from '../../theme/device';
 
+// How far the payout card rides up over the blue header, and the blue left
+// under it. Local to this screen — the shared header is untouched.
+const HEADER_OVERLAP = IS_TABLET ? vs(38) : vs(34);
+const HEADER_CLEARANCE = IS_TABLET ? vs(20) : vs(24);
+
 export default StyleSheet.create({
   safe: {
     flex: 1,
@@ -15,28 +20,29 @@ export default StyleSheet.create({
   },
 
   /* ---------- Header ---------- */
-  header: {
-    backgroundColor: colors.primary,
+  // Screen-local sizing for the shared DashboardHeader: this screen has no
+  // floating stat cards, so it keeps the shorter padding the old inline header
+  // used. Passed as `headerStyle`, so no other screen is affected.
+  dashboardHeader: {
     paddingHorizontal: IS_TABLET ? ms(14) : ms(16),
     paddingTop: IS_TABLET ? vs(8) : vs(10),
-    paddingBottom: IS_TABLET ? vs(20) : vs(24),
+    // Extra blue below the title so the payout card can overlap it and still
+    // leave a band of header showing above the card.
+    paddingBottom: HEADER_CLEARANCE + HEADER_OVERLAP,
     borderBottomLeftRadius: ms(36),
     borderBottomRightRadius: ms(36),
-    flexDirection: 'row',
-    alignItems: 'center',
   },
 
+  // Fills the header's white badge so the whole square stays tappable.
   backBtn: {
-    width: ms(38),
-    height: ms(38),
-    borderRadius: ms(10),
-    backgroundColor: colors.white,
+    width: '100%',
+    height: '100%',
     alignItems: 'center',
     justifyContent: 'center',
   },
 
   headerTitle: {
-    marginLeft: ms(14),
+    marginLeft: ms(4),
     color: colors.white,
     fontSize: IS_TABLET ? ms(16) : ms(18),
     fontWeight: '700',
@@ -49,17 +55,23 @@ export default StyleSheet.create({
     backgroundColor: colors.white,
   },
 
+  // No horizontal padding here: the header inside the scroll must run edge to
+  // edge. The sections below the payout card get their inset from `body`.
   scrollContent: {
-    paddingHorizontal: IS_TABLET ? ms(14) : ms(16),
-    // Leaves room for the payout card's shadow to render un-clipped.
-    paddingTop: IS_TABLET ? vs(8) : vs(10),
     paddingBottom: IS_TABLET ? vs(30) : vs(32),
+  },
+
+  body: {
+    paddingHorizontal: IS_TABLET ? ms(14) : ms(16),
   },
 
   /* ---------- Payout card ---------- */
   payoutCard: {
+    marginTop: -HEADER_OVERLAP,
+    marginHorizontal: IS_TABLET ? ms(14) : ms(16),
+    zIndex: 1,
     backgroundColor: colors.white,
-    borderRadius: ms(10),
+    borderRadius: ms(5),
     paddingHorizontal: IS_TABLET ? ms(12) : ms(14),
     paddingTop: IS_TABLET ? vs(10) : vs(12),
     paddingBottom: IS_TABLET ? vs(8) : vs(10),
@@ -312,5 +324,4 @@ export default StyleSheet.create({
     fontWeight: '400',
     marginTop: vs(6),
   },
-
 });
