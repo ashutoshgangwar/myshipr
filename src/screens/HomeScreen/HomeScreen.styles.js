@@ -32,7 +32,7 @@ export default StyleSheet.create({
   /* Taller blue header — shares its height/padding with Earnings through the
      DashboardHeader constants so the two dashboards match exactly. */
   dashboardHeader: {
-    paddingTop: vs(15),
+    paddingTop: vs(8),
     paddingBottom: DASHBOARD_HEADER_PAD_BOTTOM,
     minHeight: DASHBOARD_HEADER_H,
     borderBottomLeftRadius: DASHBOARD_HEADER_RADIUS,
@@ -280,7 +280,7 @@ export default StyleSheet.create({
     flexDirection: COLUMN_DIRECTION,
     alignItems: 'stretch',
     paddingHorizontal: ms(12),
-    paddingTop: vs(20),
+    paddingTop: vs(10),
     gap: ms(8),
   },
 
@@ -356,7 +356,7 @@ export default StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'flex-start',
     gap: ms(8),
-    marginTop: vs(5),
+    marginTop: vs(1),
   },
 
   payoutValue: {
@@ -383,13 +383,13 @@ export default StyleSheet.create({
   tripStatsDivider: {
     height: 1,
     backgroundColor: colors.cardBorder,
-    marginTop: vs(6),
+    marginTop: vs(5),
   },
 
   tripStatsRow: {
     flexDirection: 'row',
     alignItems: 'flex-start',
-    marginTop: vs(8),
+    marginTop:IS_TABLET ? vs(5) : vs(10),
   },
 
   tripStatItem: {
@@ -424,8 +424,8 @@ export default StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginTop: vs(10),
-    marginBottom: vs(6),
+    marginTop:IS_TABLET ? vs(4) : vs(10),
+    marginBottom:IS_TABLET ? vs(5) : vs(10),
   },
 
   progressCaption: {
@@ -461,7 +461,7 @@ export default StyleSheet.create({
   primaryBtn: {
     borderRadius: ms(10),
     paddingVertical:IS_TABLET ? vs(5) : vs(8),
-    marginTop: vs(12),
+    marginTop: IS_TABLET ? vs(8) : vs(10),
   },
 
   primaryBtnText: {

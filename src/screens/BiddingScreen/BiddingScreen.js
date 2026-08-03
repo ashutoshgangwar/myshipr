@@ -13,6 +13,7 @@ import DieselBadge from '../../component/DieselBadge/DieselBadge';
 import {colors} from '../../theme/colors';
 
 import BiddingIcon from '../../assets/svg_icon/Bidding_Icon.svg';
+import { IS_TABLET } from '../../theme/device';
 
 export default function BiddingScreen() {
   const [mode, setMode] = useState('All Modes');
@@ -55,7 +56,8 @@ export default function BiddingScreen() {
       />
 
       <DashboardHeader
-        icon={<BiddingIcon width={20} height={20} />}
+        icon={<BiddingIcon  width={IS_TABLET ? 28 : 16}
+                      height={IS_TABLET ? 28 : 16} />}
         style={styles.dashboardWrap}
         headerStyle={styles.dashboardHeader}
         titleStyle={styles.dashboardTitle}

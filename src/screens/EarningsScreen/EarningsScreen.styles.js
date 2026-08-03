@@ -32,7 +32,7 @@ export default StyleSheet.create({
     // Clearance below the status bar so the EARNINGS badge/title aren't pinned
     // to the top edge. The gross block below gives the height back (see
     // grossValue marginTop) so the floating stat cards stay where they are.
-    paddingTop: vs(26),
+   paddingTop: vs(10),
     paddingBottom: DASHBOARD_HEADER_PAD_BOTTOM,
     minHeight: DASHBOARD_HEADER_H,
     borderBottomLeftRadius: DASHBOARD_HEADER_RADIUS,

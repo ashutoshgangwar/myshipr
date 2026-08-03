@@ -101,7 +101,9 @@ export default function ShipmentScreen({navigation}) {
       <View style={styles.page}>
         {/* HEADER */}
         <DashboardHeader
-          icon={<ScheduleIcon width={18} height={18} color={colors.primary} />}
+          icon={<ScheduleIcon  width={IS_TABLET ? 28 : 16}
+                        height={IS_TABLET ? 28 : 16}
+                         color={colors.primary} />}
           title="SHIPMENT"
           subtitle="Jun 2026 • 3 Bids"
           right={

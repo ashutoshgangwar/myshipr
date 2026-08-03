@@ -235,7 +235,8 @@ const HomeScreen = () => {
         overScrollMode="never">
         {/* HEADER */}
         <DashboardHeader
-          icon={<TruckIcon width={20} height={20} />}
+          icon={<TruckIcon  width={IS_TABLET ? 28 : 16}
+                        height={IS_TABLET ? 28 : 16}/>}
           title="CARRIER"
           headerStyle={styles.dashboardHeader}
           statsOffset={-DASHBOARD_STATS_OVERLAP}
@@ -278,7 +279,7 @@ const HomeScreen = () => {
               </View>
 
               <View style={[styles.pill, styles.pillStartsIn]}>
-                <AppText style={styles.pillStartsInText} numberOfLines={1}>
+                <AppText style={styles.pillStartsInText} >
                   Starts in 1h 28 mins
                 </AppText>
               </View>
