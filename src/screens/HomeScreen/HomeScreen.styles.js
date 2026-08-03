@@ -28,9 +28,7 @@ export default StyleSheet.create({
   scrollContentWithBanner: {
     paddingBottom: vs(90),
   },
-
-  /* Taller blue header — shares its height/padding with Earnings through the
-     DashboardHeader constants so the two dashboards match exactly. */
+  
   dashboardHeader: {
     paddingTop: vs(8),
     paddingBottom: DASHBOARD_HEADER_PAD_BOTTOM,

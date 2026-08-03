@@ -25,19 +25,17 @@ import Right_Arrow from '../../assets/svg_icon/right_Arrow.svg';
 import Strech_arrow_bottom from '../../assets/svg_icon/Strech_arrow_bottom.svg';
 import StarIcon from '../../assets/svg_icon/Star_Vector.svg';
 import Dropdown_icon from '../../assets/svg_icon/Dropdown_icon.svg';
-import Profile_icon from '../../assets/svg_icon/profile_icon.svg';
 import RouteStops from '../../component/RouteStops/RouteStops';
 import LoadRoute from '../../component/LoadRoute/LoadRoute';
 import DieselBadge from '../../component/DieselBadge/DieselBadge';
 import {clearSession} from '../../services/api/AuthService';
-import { ms } from '../../theme/scale';
+import {ms} from '../../theme/scale';
 import Setting_Icon from '../../assets/svg_icon/Setting_Icon.svg';
-import Logout_Icon from '../../assets/svg_icon/Logout_Icon.svg'
+import Logout_Icon from '../../assets/svg_icon/Logout_Icon.svg';
 import Circle_two_way from '../../assets/svg_icon/circle_two_way.svg';
 import Earning_sign from '../../assets/svg_icon/earning_sign.svg';
 import Total_trip_Icon from '../../assets/svg_icon/Total_trip_Icon.svg';
 import useDriverRole from '../../hooks/useDriverRole';
-
 
 const {width: SCREEN_W} = Dimensions.get('window');
 
@@ -235,8 +233,12 @@ const HomeScreen = () => {
         overScrollMode="never">
         {/* HEADER */}
         <DashboardHeader
-          icon={<TruckIcon  width={IS_TABLET ? 28 : 16}
-                        height={IS_TABLET ? 28 : 16}/>}
+          icon={
+            <TruckIcon
+              width={IS_TABLET ? 28 : 16}
+              height={IS_TABLET ? 28 : 16}
+            />
+          }
           title="CARRIER"
           headerStyle={styles.dashboardHeader}
           statsOffset={-DASHBOARD_STATS_OVERLAP}
@@ -279,7 +281,7 @@ const HomeScreen = () => {
               </View>
 
               <View style={[styles.pill, styles.pillStartsIn]}>
-                <AppText style={styles.pillStartsInText} >
+                <AppText style={styles.pillStartsInText}>
                   Starts in 1h 28 mins
                 </AppText>
               </View>
@@ -290,7 +292,11 @@ const HomeScreen = () => {
               </View>
 
               <View style={styles.routeBox}>
-                <RouteStops stops={CURRENT_TRIP_STOPS} showSummary liveCurrentLocation />
+                <RouteStops
+                  stops={CURRENT_TRIP_STOPS}
+                  showSummary
+                  liveCurrentLocation
+                />
               </View>
 
               <View style={styles.tripStatsDivider} />
@@ -326,7 +332,7 @@ const HomeScreen = () => {
                 title={tripStarted ? 'TRIP ONGOING' : 'START TRIP'}
                 onPress={openMap_Here}
                 backgroundColor={
-                  tripStarted ? colors.warning_text :colors.accentBlueLight
+                  tripStarted ? colors.warning_text : colors.accentBlueLight
                 }
                 textColor={colors.white}
                 style={styles.primaryBtn}
@@ -401,7 +407,7 @@ const HomeScreen = () => {
               </AppText>
               <AppText style={styles.rewardsBody} numberOfLines={3}>
                 Enter the diesel price at your nearest{'\n'}
-                 station. Every verified report earns you{'\n'}
+                station. Every verified report earns you{'\n'}
                 points — redeem for bonuses & perks.
               </AppText>
 
