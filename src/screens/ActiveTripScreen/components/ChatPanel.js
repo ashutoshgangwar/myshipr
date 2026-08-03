@@ -1,7 +1,7 @@
 import React, {useState, useRef, useMemo, useCallback, useEffect} from 'react';
 import {View, ScrollView, TextInput, TouchableOpacity} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
-import {moderateScale as ms} from 'react-native-size-matters';
+import {moderateScale as ms, verticalScale as vs} from 'react-native-size-matters';
 import AppText from '../../../theme/AppText';
 import {colors} from '../../../theme/colors';
 import styles from '../ActiveTripScreen.styles';
@@ -17,6 +17,9 @@ function clockLabel(date) {
   const hours = date.getHours() % 12 || 12;
   return `${hours}:${minutes} ${suffix}`;
 }
+
+// Breathing room between the composer and the top of the keyboard.
+const KEYBOARD_GAP = vs(20);
 
 const DEFAULT_MESSAGES = [
   {id: 1, from: 'in', time: '2:14 PM', text: "Hey Deeveja, you're on track.\nWeather looks clear on I-45 S."},
@@ -75,7 +78,7 @@ export default function ChatPanel({onClose, messages = DEFAULT_MESSAGES, onSend}
       panelRef.current?.measureInWindow((x, y, width, height) => {
         if (cancelled) return;
         const overlap = y + height - keyboardTop;
-        setComposerLift(overlap > 0 ? overlap : 0);
+        setComposerLift((overlap > 0 ? overlap : 0) + KEYBOARD_GAP);
         stickToBottom();
       });
 
@@ -120,8 +123,6 @@ export default function ChatPanel({onClose, messages = DEFAULT_MESSAGES, onSend}
         ]}
         contentContainerStyle={expanded ? styles.chatBodyContentFullscreen : null}
         onContentSizeChange={stickToBottom}
-        // The list's own height changes when the keyboard resizes the window —
-        // that's the signal that the newest bubble has scrolled out of view.
         onLayout={stickToBottom}
         keyboardShouldPersistTaps="handled">
         {thread.map(m => {

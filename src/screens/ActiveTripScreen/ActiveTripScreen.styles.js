@@ -357,23 +357,23 @@ export default StyleSheet.create({
   bubbleTextIn: {color: colors.text_dark, fontSize: ms(11), lineHeight: ms(15)},
   bubbleTextOut: {color: colors.white, fontSize: ms(11), lineHeight: ms(15)},
 
-  // Stretched chat — roomier bubbles with a timestamp underneath each one.
+  // Stretched chat — a timestamp under each bubble.
   bubbleFullscreen: {
-    maxWidth: '76%',
+    maxWidth: '70%',
     borderRadius: ms(8),
-    paddingVertical: vs(10),
-    paddingHorizontal: s(12),
-    marginBottom: vs(3),
+    paddingVertical: vs(6),
+    paddingHorizontal: s(9),
+    marginBottom: vs(2),
   },
   // The docked bubbles clip the corner nearest their author; stretched they
   // stay evenly rounded.
   bubbleInFullscreen: {borderTopLeftRadius: ms(8)},
   bubbleOutFullscreen: {borderTopRightRadius: ms(8)},
-  bubbleTextFullscreen: {fontSize: ms(13), lineHeight: ms(18)},
+  bubbleTextFullscreen: {fontSize: ms(11), lineHeight: ms(15)},
   chatTime: {
     color: colors.textMuted,
-    fontSize: ms(9),
-    marginBottom: vs(12),
+    fontSize: ms(8),
+    marginBottom: vs(8),
   },
   chatTimeIn: {alignSelf: 'flex-start'},
   chatTimeOut: {alignSelf: 'flex-end'},
