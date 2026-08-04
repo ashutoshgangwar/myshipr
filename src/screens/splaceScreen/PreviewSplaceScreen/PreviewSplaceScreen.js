@@ -5,6 +5,8 @@ import {
   TouchableOpacity,
   ScrollView,
   useWindowDimensions,
+  ActivityIndicator,
+  StyleSheet,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import publicIP from 'react-native-public-ip';
@@ -14,6 +16,10 @@ import StatusBar from '../../../component/StatusBar/StatusBar';
 import Button from '../../../component/Button/Button';
 import AppText from '../../../theme/AppText';
 import useDeviceType from '../../../hooks/useDeviceType';
+import {restoreSession} from '../../../config/api';
+
+// How long the splash stays up no matter how fast the session check finishes.
+const SPLASH_MIN_MS = 3500;
 
 const HERO_IMAGES = [
   require('../../../assets/Image/bg_image_login.jpg'),
@@ -33,19 +39,57 @@ const PreviewSplaceScreen = ({navigation}) => {
   const {isTablet} = useDeviceType();
   const heroSliderRef = useRef(null);
   const [activeSlide, setActiveSlide] = useState(0);
+  // True only when the session check outlives the splash and the user is
+  // actually left waiting (e.g. a refresh call on a slow connection).
+  const [restoring, setRestoring] = useState(false);
 
   // On tablets the hero fills more of the larger screen instead of staying a
   // fixed scaled height that leaves a big empty band below it.
   const heroHeight = isTablet ? Math.round(height * 0.82) : undefined;
 
-  // Auto-navigate to the login splash screen after 3.5 seconds
+  // Decide where to go while the splash is on screen: straight to the home
+  // screen when a stored session is still good (refreshing it first if the
+  // access token expired), otherwise on to the login flow.
   useEffect(() => {
-    const timer = setTimeout(() => {
-      navigation.replace('LoginSplashScreen');
-    }, 3500);
+    let cancelled = false;
 
-    return () => clearTimeout(timer);
+    const splashHeld = new Promise(resolve => setTimeout(resolve, SPLASH_MIN_MS));
+    const loaderTimer = setTimeout(() => {
+      if (!cancelled) setRestoring(true);
+    }, SPLASH_MIN_MS);
+
+    (async () => {
+      let authenticated = false;
+      try {
+        ({authenticated} = await restoreSession());
+      } catch (_) {
+        // Never strand the user on the splash — fall back to the login flow.
+        authenticated = false;
+      }
+
+      await splashHeld;
+      if (cancelled) return;
+
+      clearTimeout(loaderTimer);
+      navigation.replace(authenticated ? 'MainApp' : 'LoginSplashScreen');
+    })();
+
+    return () => {
+      cancelled = true;
+      clearTimeout(loaderTimer);
+    };
   }, [navigation]);
+
+  // Log the public IP once per mount (not on every render).
+  useEffect(() => {
+    let cancelled = false;
+    publicIP()
+      .then(ip => !cancelled && console.log('ip:', ip))
+      .catch(error => console.log(error));
+    return () => {
+      cancelled = true;
+    };
+  }, []);
 
   const onHeroScrollEnd = event => {
     const nextSlide = Math.round(event.nativeEvent.contentOffset.x / width);
@@ -66,16 +110,6 @@ const PreviewSplaceScreen = ({navigation}) => {
   const handleSignupPress = () => {
     navigation.navigate('SignupScreen');
   };
-  
-  // To fetch the public IP address
-(async () => {
-  try {
-    const ip = await publicIP();
-    console.log('ip:', ip);
-  } catch (error) {
-    console.log(error);
-  }
-})();
 
   return (
     <ScrollView
@@ -133,9 +167,34 @@ const PreviewSplaceScreen = ({navigation}) => {
             </View>
           </View>
         </View>
+
+        {restoring && (
+          <View style={restoreStyles.overlay} pointerEvents="auto">
+            <ActivityIndicator size="large" color={colors.white} />
+            <AppText style={restoreStyles.text}>Signing you in…</AppText>
+          </View>
+        )}
       </View>
     </ScrollView>
   );
 };
+
+const restoreStyles = StyleSheet.create({
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.45)',
+  },
+  text: {
+    marginTop: 12,
+    color: colors.white,
+    fontSize: 15,
+  },
+});
 
 export default PreviewSplaceScreen;

@@ -28,7 +28,7 @@ import Dropdown_icon from '../../assets/svg_icon/Dropdown_icon.svg';
 import RouteStops from '../../component/RouteStops/RouteStops';
 import LoadRoute from '../../component/LoadRoute/LoadRoute';
 import DieselBadge from '../../component/DieselBadge/DieselBadge';
-import {clearSession} from '../../services/api/AuthService';
+import {logout} from '../../config/api';
 import {ms} from '../../theme/scale';
 import Setting_Icon from '../../assets/svg_icon/Setting_Icon.svg';
 import Logout_Icon from '../../assets/svg_icon/Logout_Icon.svg';
@@ -199,9 +199,11 @@ const HomeScreen = () => {
   const handleLogout = async () => {
     closeMenu();
     try {
-      await clearSession();
+      // Revokes the refresh token server-side, then clears local storage —
+      // otherwise the stored refresh token would outlive the sign-out.
+      await logout();
     } catch (e) {
-      // Even if clearing storage fails, still return the user to login.
+      // Even if that fails, still return the user to login.
     }
     navigation.reset({index: 0, routes: [{name: 'LoginScreen'}]});
   };

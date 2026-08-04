@@ -11,7 +11,6 @@ import {
   TouchableWithoutFeedback,
 } from 'react-native';
 
-import DeviceInfo from 'react-native-device-info';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import makeStyles from './Login.styles';
@@ -24,10 +23,10 @@ import TruckIcon from '../../assets/svg_icon/Frame.svg';
 import StatusBar from '../../component/StatusBar/StatusBar';
 import AppText from '../../theme/AppText';
 import {ms, vs} from '../../theme/scale';
-import React, {useState, useRef, useMemo} from 'react';
+import React, {useState, useRef, useMemo, useEffect, useCallback} from 'react';
 import BiometricLoginButton from '../../component/BiometricLoginButton/BiometricLoginButton';
 import useDeviceType from '../../hooks/useDeviceType';
-import {loginWithPassword} from '../../services/api/AuthService';
+import {login, validateLogin, restoreSession} from '../../config/api';
 import ErrorModal from '../../component/ErrorModal/ErrorModal';
 import useErrorModal from '../../hooks/useErrorModal';
 
@@ -35,8 +34,6 @@ const Login = () => {
   const {isTablet} = useDeviceType();
   const {modalProps, showError, showMessage} = useErrorModal();
   const styles = useMemo(() => makeStyles(isTablet), [isTablet]);
-  const [deviceId, setDeviceId] = useState('');
-  const [deviceName, setDeviceName] = useState('');
   const navigation = useNavigation();
   const [phone, setPhone] = useState('');
   const [email, setEmail] = useState('');
@@ -45,89 +42,39 @@ const Login = () => {
   const [loading, setLoading] = useState(false);
   const emailRef = useRef(null);
   const passwordRef = useRef(null);
-  const isLoginDisabled =
-    loading || (!phone.trim() && !email.trim()) || !password.trim();
-
-  console.log('device name', deviceName);
-  console.log('device id', deviceId);
-
-  // Fetch device info only once on mount
-  React.useEffect(() => {
-    let mounted = true;
-    const fetchDeviceInfo = async () => {
-      try {
-        const id = await DeviceInfo.getBrand();
-        const name = await DeviceInfo.getDeviceName();
-        if (mounted) {
-          setDeviceId(id);
-          setDeviceName(name);
-        }
-      } catch (e) {
-        if (mounted) {
-          setDeviceId('Unavailable');
-          setDeviceName('Unavailable');
-        }
-      }
-    };
-    fetchDeviceInfo();
+  // Guards the state updates that follow an await, in case the user navigated
+  // away (or the screen was reset) while the request was still running.
+  const isMounted = useRef(true);
+  useEffect(() => {
+    isMounted.current = true;
     return () => {
-      mounted = false;
+      isMounted.current = false;
     };
   }, []);
+
+  const isLoginDisabled =
+    loading || (!phone.trim() && !email.trim()) || !password.trim();
 
   const toggleShowPassword = () => {
     setShowPassword(prev => !prev);
   };
 
-  const handleLogin = async () => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const phoneRegex = /^\+?\d{10,15}$/;
+  // Signed in — drop Login from the stack so Back cannot return to it.
+  const goToHome = useCallback(() => {
+    navigation.reset({index: 0, routes: [{name: 'MainApp'}]});
+  }, [navigation]);
 
-    const identifier = phone.trim() || email.trim();
+  const handleLogin = useCallback(async () => {
+    // Whichever field the user filled in is the identifier we send.
+    const identifier = email.trim() || phone.trim();
 
-    if (!identifier) {
+    // Rules live in config/api.js; the screen only renders the verdict.
+    const check = validateLogin(identifier, password);
+    if (!check.ok) {
       showMessage({
         variant: 'warning',
-        title: 'Required Field',
-        message: 'Please enter email or mobile number',
-      });
-      return;
-    }
-
-    // The single field accepts either an email or a phone number.
-    const isEmail = identifier.includes('@');
-    if (isEmail) {
-      if (!emailRegex.test(identifier)) {
-        showMessage({
-          variant: 'warning',
-          title: 'Invalid Email',
-          message: 'Please enter a valid email address',
-        });
-        return;
-      }
-    } else if (!phoneRegex.test(identifier)) {
-      showMessage({
-        variant: 'warning',
-        title: 'Invalid Input',
-        message: 'Please enter a valid email or mobile number',
-      });
-      return;
-    }
-
-    if (!password) {
-      showMessage({
-        variant: 'warning',
-        title: 'Required Field',
-        message: 'Please enter your password',
-      });
-      return;
-    }
-
-    if (password.length < 4) {
-      showMessage({
-        variant: 'warning',
-        title: 'Invalid Password',
-        message: 'Password must be at least 4 characters',
+        title: check.title,
+        message: check.message,
       });
       return;
     }
@@ -136,35 +83,58 @@ const Login = () => {
     setLoading(true);
 
     try {
-      await loginWithPassword({identifier, password, role: 'DRIVER'});
-      navigation.reset({
-        index: 0,
-        routes: [{name: 'MainApp'}],
-      });
+      // login() stores the access + refresh tokens and resolves with the
+      // session; anything else (bad credentials, network, a 200 without a
+      // token) throws and we stay on this screen.
+      const session = await login({identifier, password});
+      if (!session?.accessToken) {
+        throw new Error('Login failed. Please try again.');
+      }
+
+      if (!isMounted.current) return;
+      goToHome();
     } catch (err) {
+      if (!isMounted.current) return;
       showError(err, {
         title: 'Login Failed',
         confirmText: 'Retry',
         onConfirm: handleLogin,
       });
     } finally {
-      setLoading(false);
+      if (isMounted.current) setLoading(false);
     }
-  };
+  }, [email, phone, password, showError, showMessage, goToHome]);
+
+  // Biometrics only prove who is holding the phone — the stored session still
+  // has to be valid (refreshing it if the access token expired) before we let
+  // anyone into the app.
+  const handleBiometricSuccess = useCallback(async () => {
+    setLoading(true);
+    try {
+      const {authenticated, reason} = await restoreSession();
+      if (!isMounted.current) return;
+
+      if (authenticated) {
+        goToHome();
+        return;
+      }
+      showMessage({
+        variant: 'warning',
+        title: reason === 'offline' ? 'No Connection' : 'Login Required',
+        message:
+          reason === 'offline'
+            ? 'Could not reach the server. Check your connection and try again.'
+            : 'Your session has expired. Please log in with your password.',
+      });
+    } finally {
+      if (isMounted.current) setLoading(false);
+    }
+  }, [goToHome, showMessage]);
+
   const handleForgotPassword = () => {
     if (loading) return;
     navigation.navigate('ResetPassword');
   };
-
-  // const handleCreateAccount = () => {
-  //   if (loading) return;
-  //   navigation.navigate('SignupScreen');
-  // };
-
-  // const handleGoogleLogin = () => {
-  //   if (loading) return;
-  //   Alert.alert('Coming Soon', 'Google login will be available soon.');
-  // };
 
   return (
     <KeyboardAvoidingView
@@ -239,6 +209,11 @@ const Login = () => {
                   onChangeText={setPhone}
                   onSubmitEditing={() => emailRef.current?.focus()}
                   returnKeyType="next"
+                  // Keep the keyboard up while focus moves to the next field
+                  // (iOS otherwise dismisses and re-opens it).
+                  submitBehavior="submit"
+                  textContentType="telephoneNumber"
+                  autoComplete="tel"
                   style={[styles.input, loading && styles.disabledInput]}
                   accessibilityLabel="Phone number input"
                   editable={!loading}
@@ -262,6 +237,9 @@ const Login = () => {
                   onChangeText={setEmail}
                   onSubmitEditing={() => passwordRef.current?.focus()}
                   returnKeyType="next"
+                  submitBehavior="submit"
+                  textContentType="emailAddress"
+                  autoComplete="email"
                   style={[styles.input, loading && styles.disabledInput]}
                   accessibilityLabel="Email input"
                   editable={!loading}
@@ -280,6 +258,9 @@ const Login = () => {
                     onChangeText={setPassword}
                     onSubmitEditing={handleLogin}
                     returnKeyType="done"
+                    // Lets the iOS keychain offer the saved password here.
+                    textContentType="password"
+                    autoComplete="password"
                     style={[
                       styles.input,
                       styles.passwordInput,
@@ -345,9 +326,7 @@ const Login = () => {
                     textStyle={styles.biometricButtonText}
                     iconColor={colors.primary}
                     loaderColor={colors.primary}
-                    onSuccess={() => {
-                      navigation.reset({index: 0, routes: [{name: 'MainApp'}]});
-                    }}
+                    onSuccess={handleBiometricSuccess}
                     onError={err => {
                       if (err)
                         showError(err, {title: 'Biometric Login Failed'});

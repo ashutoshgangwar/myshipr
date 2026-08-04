@@ -4,6 +4,18 @@ import AppStackMain from './src/Navigation/AppStackMain';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { hydrateLocationCache } from './src/services/LocationService';
 import { initFirebaseMessaging } from './src/services/FirebaseMessagingService';
+import { navigationRef, resetTo, getCurrentRouteName } from './src/Navigation/navigationRef';
+import { onSessionExpired } from './src/config/api';
+
+// Screens that are already part of the signed-out flow — a late session-expiry
+// callback must not yank the user off the login form they are typing into.
+const AUTH_ROUTES = [
+  'PreviewSplashScreen',
+  'LoginSplashScreen',
+  'LoginScreen',
+  'SignupScreen',
+  'ResetPassword',
+];
 
 export default function App() {
   console.log('App Loaded');
@@ -34,9 +46,22 @@ export default function App() {
       }
     };
   }, []);
+
+  // The refresh token is gone or was rejected: the stored session is already
+  // cleared, so send the user back to the login flow from wherever they were.
+  useEffect(
+    () =>
+      onSessionExpired(() => {
+        if (!AUTH_ROUTES.includes(getCurrentRouteName())) {
+          resetTo('LoginSplashScreen');
+        }
+      }),
+    [],
+  );
+
   return (
     <SafeAreaProvider>
-      <NavigationContainer>
+      <NavigationContainer ref={navigationRef}>
         <AppStackMain />
       </NavigationContainer>
     </SafeAreaProvider>

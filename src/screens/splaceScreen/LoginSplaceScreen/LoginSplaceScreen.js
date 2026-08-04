@@ -1,4 +1,4 @@
-import React, {useRef, useState, useMemo} from 'react';
+import React, {useRef, useState, useMemo, useEffect} from 'react';
 import {
   View,
   ImageBackground,
@@ -6,10 +6,11 @@ import {
   ScrollView,
   useWindowDimensions,
   Alert,
+  ActivityIndicator,
+  StyleSheet,
 } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
 import {scale} from 'react-native-size-matters';
-import publicIP from 'react-native-public-ip';
 import makeStyles from './LoginSplaceScreen.styles';
 import {colors} from '../../../theme/colors';
 import Button from '../../../component/Button/Button';
@@ -17,6 +18,7 @@ import AppText from '../../../theme/AppText';
 import StatusBar from '../../../component/StatusBar/StatusBar';
 import useDeviceType from '../../../hooks/useDeviceType';
 import BiometricLoginButton from '../../../component/BiometricLoginButton/BiometricLoginButton';
+import {restoreSession} from '../../../config/api';
 
 const HERO_IMAGES = [
   require('../../../assets/Image/bg_image_login.jpg'),
@@ -37,6 +39,15 @@ const LoginSplashScreen = ({navigation}) => {
   const styles = useMemo(() => makeStyles(isTablet), [isTablet]);
   const heroSliderRef = useRef(null);
   const [activeSlide, setActiveSlide] = useState(0);
+  const [checkingSession, setCheckingSession] = useState(false);
+  const isMounted = useRef(true);
+
+  useEffect(() => {
+    isMounted.current = true;
+    return () => {
+      isMounted.current = false;
+    };
+  }, []);
 
   const heroHeight = isTablet ? Math.round(height * 0.55) : undefined;
   const tabletContent = isTablet
@@ -55,29 +66,45 @@ const LoginSplashScreen = ({navigation}) => {
     heroSliderRef.current?.scrollTo({x: index * width, animated: true});
   };
 
-  const handleBiometricSuccess = () => {
-    navigation.reset({index: 0, routes: [{name: 'MainApp'}]});
+  // Passing biometrics is not a login on its own — the stored session must
+  // still be usable (refreshed first if the access token expired).
+  const handleBiometricSuccess = async () => {
+    setCheckingSession(true);
+    try {
+      const {authenticated, reason} = await restoreSession();
+      if (!isMounted.current) return;
+
+      if (authenticated) {
+        navigation.reset({index: 0, routes: [{name: 'MainApp'}]});
+        return;
+      }
+
+      if (reason === 'offline') {
+        Alert.alert(
+          'No Connection',
+          'Could not reach the server. Check your connection and try again.',
+        );
+        return;
+      }
+
+      Alert.alert(
+        'Login Required',
+        'Your session has expired. Please log in with your username and password.',
+        [{text: 'OK', onPress: () => navigation.navigate('LoginScreen')}],
+      );
+    } finally {
+      if (isMounted.current) setCheckingSession(false);
+    }
   };
 
   const handleBiometricError = err => {
-    if (err) showError(err, {title: 'Biometric Login Failed'});
+    if (!err) return;
+    Alert.alert('Biometric Login Failed', err?.message || 'Please try again.');
   };
 
   const handleCredentialsPress = () => {
-    navigation.reset({index: 0, routes: [{name: 'MainApp'}]});
-    // navigation.navigate('HereSearchScreen');
-    // navigation.navigate('FavoriteDestination');
+    navigation.navigate('LoginScreen');
   };
-  
-  // To fetch the public IP address
-(async () => {
-  try {
-    const ip = await publicIP();
-    console.log('ip:', ip);
-  } catch (error) {
-    console.log(error);
-  }
-})();
 
   return (
     <ScrollView
@@ -177,9 +204,34 @@ const LoginSplashScreen = ({navigation}) => {
           </LinearGradient>
           </View>
         </View>
+
+        {checkingSession && (
+          <View style={sessionStyles.overlay}>
+            <ActivityIndicator size="large" color={colors.white} />
+            <AppText style={sessionStyles.text}>Signing you in…</AppText>
+          </View>
+        )}
       </View>
     </ScrollView>
   );
 };
+
+const sessionStyles = StyleSheet.create({
+  overlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.45)',
+  },
+  text: {
+    marginTop: 12,
+    color: colors.white,
+    fontSize: 15,
+  },
+});
 
 export default LoginSplashScreen;
