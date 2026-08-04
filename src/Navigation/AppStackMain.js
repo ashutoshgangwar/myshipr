@@ -26,6 +26,7 @@ import CoinTestScreen from '../screens/CoinTestScreen/CoinTestScreen';
 import ActiveBidding from '../screens/ActiveBidding/ActiveBidding';
 import EarningsDetails from '../screens/EarningsDetails/EarningsDetails';
 import ShipmentDetails from '../screens/ShipmentDetails/ShipmentDetails';
+import NotificationScreen from '../screens/NotificationScreen/NotificationScreen';
 
 
 
@@ -57,6 +58,7 @@ export default function AppStackMain() {
       <Stack.Screen name="RadarMapScreen" component={RadarMapScreen} />
       <Stack.Screen name="Shipmentdetails" component={ShipmentDetails} />
       <Stack.Screen name="Earningsdetails" component={EarningsDetails} />
+      <Stack.Screen name="NotificationScreen" component={NotificationScreen} />
 
 
       {/* Extra flows (no bottom tab) */}

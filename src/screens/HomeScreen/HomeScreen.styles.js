@@ -110,6 +110,13 @@ export default StyleSheet.create({
     gap: ms(10),
   },
 
+  // Centres the bell in its own tap target so the icon keeps its optical
+  // alignment with the diesel badge beside it.
+  notificationBtn: {
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
   avatarBtn: {
     flexDirection: 'row',
     alignItems: 'center',

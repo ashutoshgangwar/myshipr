@@ -35,6 +35,7 @@ import Logout_Icon from '../../assets/svg_icon/Logout_Icon.svg';
 import Circle_two_way from '../../assets/svg_icon/circle_two_way.svg';
 import Earning_sign from '../../assets/svg_icon/earning_sign.svg';
 import Total_trip_Icon from '../../assets/svg_icon/Total_trip_Icon.svg';
+import Notifcation_Icon from '../../assets/svg_icon/Notifcation_Icon.svg'
 import useDriverRole from '../../hooks/useDriverRole';
 
 const {width: SCREEN_W} = Dimensions.get('window');
@@ -245,6 +246,16 @@ const HomeScreen = () => {
           statsVariant="chart"
           right={
             <View style={styles.headerRight}>
+              <TouchableOpacity
+                style={styles.notificationBtn}
+                activeOpacity={0.8}
+                hitSlop={{top: 8, bottom: 8, left: 8, right: 8}}
+                onPress={() => navigation.navigate('NotificationScreen')}>
+                <Notifcation_Icon
+                  width={IS_TABLET ? 35 : 25}
+                  height={IS_TABLET ? 35 : 25}
+                />
+              </TouchableOpacity>
               <DieselBadge value="$3.89/gal" />
               <TouchableOpacity
                 ref={avatarRef}
