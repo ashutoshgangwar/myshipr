@@ -21,13 +21,16 @@ export const API_ENDPOINTS = {
 // The single debug switch for API traffic. Set DEBUG=false in .env.production.
 const DEBUG_ENABLED = String(DEBUG).toLowerCase() === 'true';
 
-// Masks passwords/tokens so credentials can never reach a Metro log.
+// Masks passwords/tokens so credentials can never reach a Metro log. Walks
+// nested objects — login responses carry the tokens under `data`, so a
+// top-level-only pass would print them in full.
 const safe = value => {
   if (!value || typeof value !== 'object') return value;
+  if (Array.isArray(value)) return value.map(safe);
   return Object.fromEntries(
     Object.entries(value).map(([key, val]) => [
       key,
-      /pass|token|secret|authorization/i.test(key) ? '***' : val,
+      /pass|token|secret|authorization/i.test(key) ? '***' : safe(val),
     ]),
   );
 };
@@ -35,6 +38,8 @@ const safe = value => {
 const log = (...args) => {
   if (DEBUG_ENABLED) console.log('[API]', ...args);
 };
+
+log('base url', `${BASE_URL}/${API_PREFIX}`);
 
 if (!BASE_URL) {
   console.warn('[API] API_BASE_URL is not set in .env — requests will fail.');
@@ -255,7 +260,7 @@ export const restoreSession = async () => {
 // On 401, refresh once and replay the original request.
 apiClient.interceptors.response.use(
   response => {
-    log(`← ${response.status} ${response.config.url}`, response.data);
+    log(`← ${response.status} ${response.config.url}`, safe(response.data));
     return response;
   },
   async error => {

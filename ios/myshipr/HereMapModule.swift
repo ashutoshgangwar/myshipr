@@ -34,6 +34,11 @@ class HereMapModule: NSObject {
             accessKeySecret: accessKeySecret
         )
         let options = SDKOptions(authenticationMode: authMode)
+        // HERE logs its whole startup at info level (ACS, OfflineAwareNetwork,
+        // DecisionStorage) plus an error for LocationInitializer, which only
+        // exists in the navigate edition — we ship explore. Keep fatal only.
+        // Raise to .logLevelInfo when debugging map/routing calls.
+        LogControl.enableLoggingToConsole(level: .logLevelFatal)
         do {
             try SDKNativeEngine.makeSharedInstance(options: options)
             sdkInitialized = true
