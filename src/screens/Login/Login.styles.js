@@ -7,7 +7,7 @@ const isIOS = Platform.OS === 'ios';
 const makeStyles = (isTablet = false) => {
   const contentMaxWidth = isTablet ? scale(460) : '100%';
   const {height: windowHeight} = Dimensions.get('window');
-  const heroHeight = isTablet ? windowHeight * 0.35 : windowHeight * 0.40;
+  const heroHeight = isTablet ? windowHeight * 0.35 : windowHeight * 0.4;
   const buttonPaddingV = isTablet ? verticalScale(6) : verticalScale(12);
   const buttonRadius = moderateScale(10);
 
@@ -21,16 +21,19 @@ const makeStyles = (isTablet = false) => {
       flex: 1,
       backgroundColor: 'transparent',
     },
-    container: {
-      flexGrow: 1,
-      justifyContent: 'flex-start',
-      minHeight: '100%',
+
+    scroll: {
       backgroundColor: colors.white,
     },
 
+    container: {
+      flexGrow: 1,
+      justifyContent: 'flex-start',
+      backgroundColor: colors.white,
+    },
+    
     screenShell: {
       width: '100%',
-      minHeight: '100%',
       flexGrow: 1,
       marginTop: 0,
       backgroundColor: colors.white,
@@ -52,7 +55,7 @@ const makeStyles = (isTablet = false) => {
     heroOverlay: {
       flex: 1,
       justifyContent: 'flex-end',
-      paddingHorizontal: -scale(10),
+      paddingHorizontal: 0,
       paddingBottom: isIOS ? verticalScale(20) : verticalScale(15),
     },
 
@@ -166,13 +169,18 @@ const makeStyles = (isTablet = false) => {
     },
 
     input: {
-      borderWidth: scale(1),
+      borderWidth: 1,
       borderColor: colors.border_Color,
-      borderRadius: moderateScale(14),
       backgroundColor: colors.gray400,
       borderRadius: moderateScale(12),
-      paddingVertical: isTablet ? verticalScale(6) : verticalScale(10),
+      // Android measures a TextInput from its font metrics, so padding alone
+      // leaves the box height drifting with the text. A fixed height plus
+      // centered alignment keeps the field steady while typing.
+      height: isTablet ? verticalScale(38) : verticalScale(44),
+      paddingVertical: 0,
       paddingHorizontal: scale(16),
+      textAlignVertical: 'center',
+      includeFontPadding: false,
       fontSize: isTablet ? moderateScale(14) : moderateScale(15),
       marginBottom: verticalScale(16),
       color: colors.text_dark || '#111827',
@@ -181,7 +189,6 @@ const makeStyles = (isTablet = false) => {
     },
 
     disabledInput: {
-      borderRadius: moderateScale(14),
       backgroundColor: '#F3F4F6',
       opacity: 0.7,
     },
@@ -274,7 +281,7 @@ const makeStyles = (isTablet = false) => {
     },
     buttonContainer: {
       marginTop: isTablet ? 'auto' : verticalScale(80),
-      paddingTop: isTablet ? verticalScale(14) : -verticalScale(10),
+      paddingTop: isTablet ? verticalScale(14) : 0,
     },
 
     button: {

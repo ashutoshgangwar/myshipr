@@ -8,7 +8,6 @@ import {
   ScrollView,
   ActivityIndicator,
   Keyboard,
-  TouchableWithoutFeedback,
 } from 'react-native';
 
 import {SafeAreaView} from 'react-native-safe-area-context';
@@ -29,6 +28,8 @@ import useDeviceType from '../../hooks/useDeviceType';
 import {login, validateLogin, restoreSession} from '../../config/api';
 import ErrorModal from '../../component/ErrorModal/ErrorModal';
 import useErrorModal from '../../hooks/useErrorModal';
+
+const isIOS = Platform.OS === 'ios';
 
 const Login = () => {
   const {isTablet} = useDeviceType();
@@ -136,209 +137,220 @@ const Login = () => {
     navigation.navigate('ResetPassword');
   };
 
+  // The hero is static, so keep it out of the re-render that every keystroke
+  // in the fields below triggers.
+  const hero = useMemo(
+    () => (
+      <View style={styles.heroSection}>
+        <Image
+          source={require('../../assets/Image/bg_image_login.jpg')}
+          style={styles.heroBackground}
+          resizeMode="cover"
+        />
+        <LinearGradient
+          colors={[
+            colors.overlayDarkStartTransparent,
+            colors.overlayDarkMidStrong,
+            colors.surfaceDarkPrimary,
+          ]}
+          start={{x: 0, y: 0}}
+          end={{x: 0, y: 1}}
+          style={styles.heroOverlay}>
+          <View style={styles.heroContent}>
+            <AppText style={styles.title}>Log In</AppText>
+            <AppText style={styles.subtitle}>
+              Login to continue using the app.
+            </AppText>
+
+            <TouchableOpacity
+              style={styles.roleBadge}
+              activeOpacity={0.85}
+              accessibilityRole="button"
+              accessibilityLabel="Carrier role selected">
+              <AppText style={styles.roleBadgeText}>CARRIER</AppText>
+              <TruckIcon width={ms(20)} height={ms(20)} />
+            </TouchableOpacity>
+          </View>
+        </LinearGradient>
+      </View>
+    ),
+    [styles],
+  );
+
   return (
+    // Android's manifest already declares windowSoftInputMode="adjustResize",
+    // so the window shrinks on its own when the keyboard opens. Giving
+    // KeyboardAvoidingView a behavior there would shrink the layout a second
+    // time and make every focus change jump — iOS is the only platform that
+    // needs it.
     <KeyboardAvoidingView
       style={styles.keyboardAvoiding}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? vs(6) : 0}>
-      <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-        <SafeAreaView
-          style={[styles.safe, {backgroundColor: colors.white}]}
-          edges={['bottom']}>
-          <StatusBar
-            backgroundColor="transparent"
-            barStyle="light-content"
-            translucent={true}
-          />
-          <ScrollView
-            style={{backgroundColor: colors.white}}
-            contentContainerStyle={[
-              styles.container,
-              {backgroundColor: colors.white},
-            ]}
-            keyboardShouldPersistTaps="handled"
-            showsVerticalScrollIndicator={false}
-            bounces={false}
-            alwaysBounceVertical={false}
-            overScrollMode="never"
-            contentInsetAdjustmentBehavior="never"
-            endFillColor={colors.white}>
-            <View style={styles.screenShell}>
-              <View style={styles.heroSection}>
-                <Image
-                  source={require('../../assets/Image/bg_image_login.jpg')}
-                  style={styles.heroBackground}
-                  resizeMode="cover"
-                />
-                <LinearGradient
-                  colors={[
-                    colors.overlayDarkStartTransparent,
-                    colors.overlayDarkMidStrong,
-                    colors.surfaceDarkPrimary,
-                  ]}
-                  start={{x: 0, y: 0}}
-                  end={{x: 0, y: 1}}
-                  style={styles.heroOverlay}>
-                  <View style={styles.heroContent}>
-                    <AppText style={styles.title}>Log In</AppText>
-                    <AppText style={styles.subtitle}>
-                      Login to continue using the app.
-                    </AppText>
+      behavior={isIOS ? 'padding' : undefined}
+      keyboardVerticalOffset={isIOS ? vs(6) : 0}>
+      <SafeAreaView
+        style={[styles.safe, {backgroundColor: colors.white}]}
+        edges={['bottom']}>
+        <StatusBar
+          backgroundColor="transparent"
+          barStyle="light-content"
+          translucent={true}
+        />
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.container}
+          // "handled" already dismisses the keyboard when a tap lands on
+          // non-touchable content, so no full-screen touch wrapper is needed.
+          keyboardShouldPersistTaps="handled"
+          keyboardDismissMode={isIOS ? 'interactive' : 'on-drag'}
+          showsVerticalScrollIndicator={false}
+          bounces={false}
+          alwaysBounceVertical={false}
+          overScrollMode="never"
+          contentInsetAdjustmentBehavior="never"
+          endFillColor={colors.white}>
+          <View style={styles.screenShell}>
+            {hero}
 
-                    <TouchableOpacity
-                      style={styles.roleBadge}
-                      activeOpacity={0.85}
-                      accessibilityRole="button"
-                      accessibilityLabel="Carrier role selected">
-                      <AppText style={styles.roleBadgeText}>CARRIER</AppText>
-                      <TruckIcon width={ms(20)} height={ms(20)} />
-                    </TouchableOpacity>
-                  </View>
-                </LinearGradient>
+            <View style={styles.card} accessibilityLabel="Login form">
+              <AppText style={styles.label}>Phone Number</AppText>
+              <TextInput
+                placeholder="Enter your Phone Number"
+                placeholderTextColor={colors.placeholder || '#9CA3AF'}
+                keyboardType="phone-pad"
+                autoCapitalize="none"
+                autoCorrect={false}
+                value={phone}
+                onChangeText={setPhone}
+                onSubmitEditing={() => emailRef.current?.focus()}
+                returnKeyType="next"
+                // Keep the keyboard up while focus moves to the next field
+                // (iOS otherwise dismisses and re-opens it).
+                submitBehavior="submit"
+                textContentType="telephoneNumber"
+                autoComplete="tel"
+                style={[styles.input, loading && styles.disabledInput]}
+                accessibilityLabel="Phone number input"
+                editable={!loading}
+              />
+
+              <View style={styles.dividerRow}>
+                <View style={styles.dividerLine} />
+                <AppText style={styles.dividerText}>Or Login With</AppText>
+                <View style={styles.dividerLine} />
               </View>
 
-              <View style={styles.card} accessibilityLabel="Login form">
-                <AppText style={styles.label}>Phone Number</AppText>
+              <AppText style={styles.label}>Email Address</AppText>
+              <TextInput
+                ref={emailRef}
+                placeholder="Enter your Email Address"
+                placeholderTextColor={colors.placeholder || '#9CA3AF'}
+                keyboardType="email-address"
+                autoCapitalize="none"
+                autoCorrect={false}
+                value={email}
+                onChangeText={setEmail}
+                onSubmitEditing={() => passwordRef.current?.focus()}
+                returnKeyType="next"
+                submitBehavior="submit"
+                textContentType="emailAddress"
+                autoComplete="email"
+                style={[styles.input, loading && styles.disabledInput]}
+                accessibilityLabel="Email input"
+                editable={!loading}
+              />
+
+              <AppText style={styles.label}>Password</AppText>
+              <View style={styles.passwordContainer}>
                 <TextInput
-                  placeholder="Enter your Phone Number"
-                  placeholderTextColor={colors.placeholder || '#9CA3AF'}
-                  keyboardType="phone-pad"
+                  ref={passwordRef}
+                  placeholder="Enter a password"
+                  placeholderTextColor={colors.placeholder}
+                  secureTextEntry={!showPassword}
                   autoCapitalize="none"
                   autoCorrect={false}
-                  value={phone}
-                  onChangeText={setPhone}
-                  onSubmitEditing={() => emailRef.current?.focus()}
-                  returnKeyType="next"
-                  // Keep the keyboard up while focus moves to the next field
-                  // (iOS otherwise dismisses and re-opens it).
-                  submitBehavior="submit"
-                  textContentType="telephoneNumber"
-                  autoComplete="tel"
-                  style={[styles.input, loading && styles.disabledInput]}
-                  accessibilityLabel="Phone number input"
+                  value={password}
+                  onChangeText={setPassword}
+                  onSubmitEditing={handleLogin}
+                  returnKeyType="done"
+                  // Lets the iOS keychain offer the saved password here.
+                  textContentType="password"
+                  autoComplete="password"
+                  style={[
+                    styles.input,
+                    styles.passwordInput,
+                    loading && styles.disabledInput,
+                  ]}
+                  accessibilityLabel="Password input"
                   editable={!loading}
                 />
-
-                <View style={styles.dividerRow}>
-                  <View style={styles.dividerLine} />
-                  <AppText style={styles.dividerText}>Or Login With</AppText>
-                  <View style={styles.dividerLine} />
-                </View>
-
-                <AppText style={styles.label}>Email Address</AppText>
-                <TextInput
-                  ref={emailRef}
-                  placeholder="Enter your Email Address"
-                  placeholderTextColor={colors.placeholder || '#9CA3AF'}
-                  keyboardType="email-address"
-                  autoCapitalize="none"
-                  autoCorrect={false}
-                  value={email}
-                  onChangeText={setEmail}
-                  onSubmitEditing={() => passwordRef.current?.focus()}
-                  returnKeyType="next"
-                  submitBehavior="submit"
-                  textContentType="emailAddress"
-                  autoComplete="email"
-                  style={[styles.input, loading && styles.disabledInput]}
-                  accessibilityLabel="Email input"
-                  editable={!loading}
-                />
-
-                <AppText style={styles.label}>Password</AppText>
-                <View style={styles.passwordContainer}>
-                  <TextInput
-                    ref={passwordRef}
-                    placeholder="Enter a password"
-                    placeholderTextColor={colors.placeholder}
-                    secureTextEntry={!showPassword}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    value={password}
-                    onChangeText={setPassword}
-                    onSubmitEditing={handleLogin}
-                    returnKeyType="done"
-                    // Lets the iOS keychain offer the saved password here.
-                    textContentType="password"
-                    autoComplete="password"
-                    style={[
-                      styles.input,
-                      styles.passwordInput,
-                      loading && styles.disabledInput,
-                    ]}
-                    accessibilityLabel="Password input"
-                    editable={!loading}
-                  />
-
-                  <TouchableOpacity
-                    onPress={toggleShowPassword}
-                    style={styles.showHideButton}
-                    disabled={loading}
-                    activeOpacity={0.7}
-                    accessibilityLabel={
-                      showPassword ? 'Hide password' : 'Show password'
-                    }
-                    accessibilityRole="button">
-                    {showPassword ? (
-                      <Eye_off width={ms(24)} height={ms(24)} />
-                    ) : (
-                      <Eye_outline width={ms(24)} height={ms(24)} />
-                    )}
-                  </TouchableOpacity>
-                </View>
 
                 <TouchableOpacity
-                  onPress={handleForgotPassword}
-                  style={styles.forgotPasswordContainer}
+                  onPress={toggleShowPassword}
+                  style={styles.showHideButton}
                   disabled={loading}
-                  activeOpacity={0.7}>
-                  <AppText style={styles.forgotPasswordText}>
-                    Forgot Password?
-                  </AppText>
-                </TouchableOpacity>
-
-                <View style={styles.buttonContainer}>
-                  {loading ? (
-                    <View style={[styles.primaryButton, styles.loadingButton]}>
-                      <ActivityIndicator
-                        color={colors.button_color}
-                        size="small"
-                      />
-                    </View>
+                  activeOpacity={0.7}
+                  accessibilityLabel={
+                    showPassword ? 'Hide password' : 'Show password'
+                  }
+                  accessibilityRole="button">
+                  {showPassword ? (
+                    <Eye_off width={ms(24)} height={ms(24)} />
                   ) : (
-                    <Button
-                      title="Login"
-                      onPress={handleLogin}
-                      backgroundColor={colors.primary}
-                      textColor={colors.white}
-                      style={[
-                        styles.primaryButton,
-                        isLoginDisabled && styles.disabledButton,
-                      ]}
-                      textStyle={styles.primaryButtonText}
-                      disabled={isLoginDisabled}
-                    />
+                    <Eye_outline width={ms(24)} height={ms(24)} />
                   )}
-                  <AppText style={styles.altLogin}>Or</AppText>
-                  {/* Biometric Login Button */}
-                  <BiometricLoginButton
-                    buttonStyle={styles.biometricButton}
-                    textStyle={styles.biometricButtonText}
-                    iconColor={colors.primary}
-                    loaderColor={colors.primary}
-                    onSuccess={handleBiometricSuccess}
-                    onError={err => {
-                      if (err)
-                        showError(err, {title: 'Biometric Login Failed'});
-                    }}
+                </TouchableOpacity>
+              </View>
+
+              <TouchableOpacity
+                onPress={handleForgotPassword}
+                style={styles.forgotPasswordContainer}
+                disabled={loading}
+                activeOpacity={0.7}>
+                <AppText style={styles.forgotPasswordText}>
+                  Forgot Password?
+                </AppText>
+              </TouchableOpacity>
+
+              <View style={styles.buttonContainer}>
+                {loading ? (
+                  <View style={[styles.primaryButton, styles.loadingButton]}>
+                    <ActivityIndicator
+                      color={colors.button_color}
+                      size="small"
+                    />
+                  </View>
+                ) : (
+                  <Button
+                    title="Login"
+                    onPress={handleLogin}
+                    backgroundColor={colors.primary}
+                    textColor={colors.white}
+                    style={[
+                      styles.primaryButton,
+                      isLoginDisabled && styles.disabledButton,
+                    ]}
+                    textStyle={styles.primaryButtonText}
+                    disabled={isLoginDisabled}
                   />
-                </View>
+                )}
+                <AppText style={styles.altLogin}>Or</AppText>
+                {/* Biometric Login Button */}
+                <BiometricLoginButton
+                  buttonStyle={styles.biometricButton}
+                  textStyle={styles.biometricButtonText}
+                  iconColor={colors.primary}
+                  loaderColor={colors.primary}
+                  onSuccess={handleBiometricSuccess}
+                  onError={err => {
+                    if (err) showError(err, {title: 'Biometric Login Failed'});
+                  }}
+                />
               </View>
             </View>
-          </ScrollView>
-          <ErrorModal {...modalProps} />
-        </SafeAreaView>
-      </TouchableWithoutFeedback>
+          </View>
+        </ScrollView>
+        <ErrorModal {...modalProps} />
+      </SafeAreaView>
     </KeyboardAvoidingView>
   );
 };
