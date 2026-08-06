@@ -96,6 +96,20 @@ const Login = () => {
       goToHome();
     } catch (err) {
       if (!isMounted.current) return;
+
+      // Rate limited (429): the message already carries the cooldown, and no
+      // Retry button is offered — tapping it inside the window would only
+      // spend another attempt and reset the limit.
+      if (err?.rateLimited) {
+        showMessage({
+          variant: 'warning',
+          title: 'Too Many Attempts',
+          message: err.message,
+          closeText: 'OK',
+        });
+        return;
+      }
+
       showError(err, {
         title: 'Login Failed',
         confirmText: 'Retry',

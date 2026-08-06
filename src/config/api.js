@@ -299,8 +299,33 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_REGEX = /^\+?\d{10,15}$/;
 const MIN_PASSWORD_LENGTH = 4;
 
+/**
+ * Seconds left on a rate-limit window. `Retry-After` is either a delay in
+ * seconds or an HTTP date, and plenty of gateways send neither — null means
+ * "rate limited, duration unknown".
+ */
+const parseRetryAfter = headers => {
+  const raw = headers?.['retry-after'] ?? headers?.['Retry-After'];
+  if (raw == null || raw === '') return null;
+
+  const seconds = Number(raw);
+  if (Number.isFinite(seconds)) return Math.max(0, Math.round(seconds));
+
+  const retryAt = Date.parse(raw);
+  if (!Number.isFinite(retryAt)) return null;
+  return Math.max(0, Math.round((retryAt - Date.now()) / 1000));
+};
+
+/** "45 seconds" / "3 minutes" — rounded up so we never tell the user to retry early. */
+const formatWait = seconds => {
+  if (!seconds) return '';
+  if (seconds < 60) return `${seconds} second${seconds === 1 ? '' : 's'}`;
+  const minutes = Math.ceil(seconds / 60);
+  return `${minutes} minute${minutes === 1 ? '' : 's'}`;
+};
+
 // Turns a backend status code into something worth showing the user.
-const messageForStatus = (status, body) => {
+const messageForStatus = (status, body, retryAfterSeconds) => {
   const serverMessage = body?.message;
   switch (status) {
     case 400:
@@ -310,8 +335,16 @@ const messageForStatus = (status, body) => {
       return serverMessage || 'Incorrect email/phone or password.';
     case 423:
       return serverMessage || 'Account locked. Please try again later.';
-    case 429:
-      return serverMessage || 'Too many requests. Please try again later.';
+    case 429: {
+      // A concrete wait beats the server's wording — it tells the user when
+      // trying again is actually worth it.
+      const wait = formatWait(retryAfterSeconds);
+      if (wait) return `Too many login attempts. Please try again in ${wait}.`;
+      return (
+        serverMessage ||
+        'Too many login attempts. Please wait a few minutes before trying again.'
+      );
+    }
     default:
       return serverMessage || 'Login failed. Please try again.';
   }
@@ -411,10 +444,18 @@ export const login = async ({identifier, password}) => {
   } catch (err) {
     if (err.response) {
       // Server answered with a non-2xx status.
-      const error = new Error(
-        messageForStatus(err.response.status, err.response.data),
-      );
-      error.status = err.response.status;
+      const {status, data, headers} = err.response;
+      const retryAfterSeconds =
+        status === 429 ? parseRetryAfter(headers) : null;
+
+      const error = new Error(messageForStatus(status, data, retryAfterSeconds));
+      error.status = status;
+      if (status === 429) {
+        // Flagged so the screen can drop the Retry action — retrying inside
+        // the window only spends another attempt on the same 429.
+        error.rateLimited = true;
+        error.retryAfterSeconds = retryAfterSeconds;
+      }
       throw error;
     }
     if (err.code === 'ECONNABORTED') {
