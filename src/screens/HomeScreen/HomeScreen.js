@@ -22,7 +22,7 @@ import {IS_TABLET} from '../../theme/device';
 import AppText from '../../theme/AppText';
 import TruckIcon from '../../assets/svg_icon/Frame_black.svg';
 import Right_Arrow from '../../assets/svg_icon/right_Arrow.svg';
-import Strech_arrow_bottom from '../../assets/svg_icon/Strech_arrow_bottom.svg';
+// import Strech_arrow_bottom from '../../assets/svg_icon/Strech_arrow_bottom.svg';
 import StarIcon from '../../assets/svg_icon/Star_Vector.svg';
 import Dropdown_icon from '../../assets/svg_icon/Dropdown_icon.svg';
 import RouteStops from '../../component/RouteStops/RouteStops';
@@ -491,7 +491,7 @@ const HomeScreen = () => {
               </View>
 
               <TouchableOpacity style={styles.loadChevron} activeOpacity={0.7}>
-                <Strech_arrow_bottom width={20} height={20} />
+               
               </TouchableOpacity>
             </View>
           </View>
