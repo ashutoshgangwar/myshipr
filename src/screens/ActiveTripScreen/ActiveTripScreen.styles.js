@@ -876,6 +876,110 @@ export default StyleSheet.create({
     fontWeight: '700',
   },
 
+  // ── Stop verification (pickup / drop) ─────────────────────────────────
+  // Sits above the trip-progress card; the component adds that card's measured
+  // height and the bottom safe-area inset on top of this offset.
+  verifyActionBtn: {
+    position: 'absolute',
+    left: s(BAR_GAP),
+    right: s(BAR_GAP),
+    bottom: vs(BAR_GAP),
+    backgroundColor: colors.navy,
+    borderRadius: ms(10),
+    paddingVertical: IS_TABLET ? vs(10) : vs(15),
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 45,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOpacity: 0.18,
+        shadowRadius: 10,
+        shadowOffset: {width: 0, height: 4},
+      },
+      android: {elevation: 9},
+    }),
+  },
+  verifyActionText: {
+    color: colors.white,
+    fontSize: ms(15),
+    fontWeight: '700',
+    letterSpacing: 0.6,
+  },
+
+  // The sheet's own code row — same boxes as the POD flow, tighter spacing.
+  verifyOtpRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: vs(12),
+  },
+  verifyResend: {
+    color: colors.text_dark,
+    fontSize: ms(11),
+    fontWeight: '600',
+    textDecorationLine: 'underline',
+    marginBottom: vs(16),
+  },
+
+  // "Shipment Procured" confirmation card
+  verifyDoneOverlay: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: 'rgba(0,0,0,0.35)',
+  },
+  verifyDoneCard: {
+    width: IS_TABLET ? ms(320) : ms(268),
+    backgroundColor: colors.white,
+    borderRadius: ms(6),
+    overflow: 'hidden',
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOpacity: 0.2,
+        shadowRadius: 14,
+        shadowOffset: {width: 0, height: 6},
+      },
+      android: {elevation: 12},
+    }),
+  },
+  verifyDoneHeader: {
+    backgroundColor: colors.navy,
+    paddingVertical: vs(10),
+    paddingHorizontal: s(14),
+  },
+  verifyDoneHeaderText: {
+    color: colors.white,
+    fontSize: ms(13),
+    fontWeight: '700',
+  },
+  verifyDoneBody: {
+    alignItems: 'center',
+    paddingVertical: vs(24),
+    paddingHorizontal: s(16),
+  },
+  verifyDoneBadge: {
+    width: ms(46),
+    height: ms(46),
+    borderRadius: ms(23),
+    backgroundColor: colors.navy,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: vs(14),
+  },
+  verifyDoneTitle: {
+    color: colors.textStrong,
+    fontSize: ms(12),
+    fontWeight: '700',
+    textAlign: 'center',
+  },
+  verifyDoneSub: {
+    color: colors.textMuted,
+    fontSize: ms(9),
+    marginTop: vs(4),
+    textAlign: 'center',
+  },
+
   // ── Proof-of-Delivery modal ───────────────────────────────────────────
   podOverlay: {
     flex: 1,

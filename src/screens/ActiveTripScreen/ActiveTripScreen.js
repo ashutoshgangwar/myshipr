@@ -50,6 +50,8 @@ import HoursOfServicePanel from './components/HoursOfServicePanel';
 import CallPanel from './components/CallPanel';
 import TripProgressBar from './components/TripProgressBar';
 import StepConfirmCard from './components/StepConfirmCard';
+import VerifyStopButton from './components/VerifyStopButton';
+import StopVerifyModal from './components/StopVerifyModal';
 import PodModal from './components/PodModal';
 
 // San Francisco fallback (matches the design mock-up region).
@@ -62,6 +64,50 @@ const PANEL_IDS = ['chat', 'documents', 'bidding', 'navigate', 'call'];
 const REROUTE_MIN_INTERVAL_MS = 10_000;
 const CAMERA_DISTANCE_METERS = 350;
 const CAMERA_ZOOM_STEP = 1.6;
+
+/**
+ * The stop-by-stop checklist the driver works through: confirm the step, then
+ * verify the stop with the shipper's one-time code. Purely a trip-paperwork
+ * flow — it never touches routing or guidance.
+ */
+const MILESTONES = [
+  {
+    step: 1,
+    title: 'Pre Trip Inspection',
+    action: 'VERIFY PICKUP',
+    doneTitle: 'Shipment Procured',
+    doneText: 'Ride verified at Pickup 1',
+    otpDesc: 'Ask the shipper to share OTP to Start the Shipment',
+  },
+  {
+    step: 2,
+    title: 'Shipment Procured at Pickup 2',
+    action: 'VERIFY PICKUP',
+    doneTitle: 'Shipment Procured',
+    doneText: 'Ride verified at Pickup 2',
+    otpDesc: 'Ask the shipper to share OTP to Start the Shipment',
+  },
+  {
+    step: 3,
+    title: 'Arrived at Drop 1',
+    action: 'VERIFY DROP',
+    doneTitle: 'Shipment Delivered',
+    doneText: 'Ride verified at Drop 1',
+    otpDesc: 'Ask the receiver to share OTP to complete the drop',
+  },
+  {
+    step: 4,
+    title: 'Arrived at Drop 2',
+    action: 'VERIFY DROP',
+    doneTitle: 'Shipment Delivered',
+    doneText: 'Ride verified at Drop 2',
+    otpDesc: 'Ask the receiver to share OTP to complete the drop',
+  },
+];
+
+// The bar draws one segment per stop, so a verified stop clears exactly one.
+const TRIP_START_PROGRESS = 0.63;
+const PROGRESS_PER_STOP = 0.2;
 
 /** Distance to the next maneuver, snapped the way a nav readout counts down. */
 function formatMeters(meters) {
@@ -96,11 +142,25 @@ export default function ActiveTripScreen({navigation, route}) {
   const [activePanel, setActivePanel] = useState(null);
   const [panelFullscreen, setPanelFullscreen] = useState(false);
   const [podOpen, setPodOpen] = useState(false);
-  const [milestone, setMilestone] = useState({
-    step: 2,
-    totalSteps: 4,
-    title: 'Shipment Procured at Pickup 2',
-  });
+
+  // ── Stop checklist: card → verify button → OTP → verified ──────────────
+  const [milestoneIndex, setMilestoneIndex] = useState(0);
+  // 'card' | 'action' | 'otp' | 'verified' — one stage at a time, so the
+  // milestone card and the verify button are never on screen together.
+  const [milestoneStage, setMilestoneStage] = useState('card');
+  const [barHeight, setBarHeight] = useState(0);
+  const milestone = MILESTONES[milestoneIndex] ?? null;
+
+  /** Stop cleared: bank the progress and move on to the next milestone. */
+  const completeMilestone = useCallback(() => {
+    setMilestoneIndex(i => i + 1);
+    setMilestoneStage('card');
+  }, []);
+
+  const tripProgress = Math.min(
+    1,
+    TRIP_START_PROGRESS + milestoneIndex * PROGRESS_PER_STOP,
+  );
 
   // ── Trip route + guidance ───────────────────────────────────────────────
   // The route currently previewed or being navigated (see HereRouting).
@@ -713,18 +773,37 @@ export default function ActiveTripScreen({navigation, route}) {
       
       <StepConfirmCard
         key={milestone?.step}
-        visible={Boolean(milestone)}
+        visible={Boolean(milestone) && milestoneStage === 'card'}
         step={milestone?.step}
-        totalSteps={milestone?.totalSteps}
+        totalSteps={MILESTONES.length}
         title={milestone?.title}
-        onConfirm={() => setMilestone(null)}
+        onConfirm={() => setMilestoneStage('action')}
+      />
+
+      {/* ── Verify this stop ── */}
+      <VerifyStopButton
+        visible={Boolean(milestone) && milestoneStage === 'action'}
+        label={milestone?.action}
+        barHeight={barHeight}
+        onPress={() => setMilestoneStage('otp')}
+      />
+
+      <StopVerifyModal
+        stage={milestone ? milestoneStage : null}
+        desc={milestone?.otpDesc}
+        doneTitle={milestone?.doneTitle}
+        doneText={milestone?.doneText}
+        onVerify={() => setMilestoneStage('verified')}
+        onBack={() => setMilestoneStage('action')}
+        onDone={completeMilestone}
       />
 
       {/* ── Bottom trip progress ── */}
       <TripProgressBar
-        progress={0.63}
+        progress={tripProgress}
         withCheckbox={activePanel === 'bidding'}
         onEndTrip={() => setPodOpen(true)}
+        onMeasure={setBarHeight}
       />
 
       {/* ── Proof-of-Delivery flow ── */}

@@ -24,6 +24,9 @@ export default function TripProgressBar({
   stops = DEFAULT_STOPS,
   withCheckbox = false,
   onEndTrip,
+  // Reports this card's rendered height, so anything floating above it (the
+  // verify-stop button) can sit flush without a hard-coded offset.
+  onMeasure,
 }) {
   const pct = Math.max(0, Math.min(1, progress));
 
@@ -41,7 +44,8 @@ export default function TripProgressBar({
       style={[
         styles.bottomBar,
         {bottom: styles.bottomBar.bottom + insets.bottom},
-      ]}>
+      ]}
+      onLayout={e => onMeasure?.(e.nativeEvent.layout.height)}>
       <View style={styles.progressInfo}>
         <View style={styles.progressTopRow}>
           <AppText style={styles.progressLabel}>Trip Progress</AppText>
