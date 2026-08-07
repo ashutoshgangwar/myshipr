@@ -710,7 +710,7 @@ export default function ActiveTripScreen({navigation, route}) {
           <GpsIcon width={verticalScale(26)} height={verticalScale(26)} fill={colors.navy} />
         )}
       </TouchableOpacity>
-{/*       
+      
       <StepConfirmCard
         key={milestone?.step}
         visible={Boolean(milestone)}
@@ -718,7 +718,7 @@ export default function ActiveTripScreen({navigation, route}) {
         totalSteps={milestone?.totalSteps}
         title={milestone?.title}
         onConfirm={() => setMilestone(null)}
-      /> */}
+      />
 
       {/* ── Bottom trip progress ── */}
       <TripProgressBar
