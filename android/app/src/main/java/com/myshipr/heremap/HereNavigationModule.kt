@@ -66,12 +66,20 @@ class HereNavigationModule(
         // vehicle but derives tilt and zoom from speed, so a real drive that
         // starts parked opens flat and far out — nothing like the tilted
         // road-ahead view a simulated run at 6× shows. These pin it instead.
-        private const val DEFAULT_CAMERA_TILT = 60.0
+        //
+        // Tilt and the principal point together decide whether the horizon
+        // falls inside the viewport: the top edge sits roughly 40° above the
+        // camera axis at this anchor, so anything past ~50° of tilt aims the
+        // top of the screen beyond the horizon and the scene's sky band shows
+        // as a blue-grey wash across the top of the map. Keep tilt + that
+        // offset under 90°; if a sliver of sky still shows on a taller screen,
+        // lower the tilt rather than the anchor.
+        private const val DEFAULT_CAMERA_TILT = 45.0
         private const val DEFAULT_CAMERA_DISTANCE = 350.0
 
-        // Vehicle sits three-quarters down the screen, so the road ahead fills
-        // the frame — the "looking up the road" framing drivers expect.
-        private const val DEFAULT_CAMERA_PRINCIPAL_Y = 0.75
+        // Vehicle sits about two-thirds down the screen, so the road ahead
+        // fills the frame — the "looking up the road" framing drivers expect.
+        private const val DEFAULT_CAMERA_PRINCIPAL_Y = 0.68
 
         // Guard rails for the zoom controls: closer than ~50 m clips through
         // the vehicle, further than ~5 km stops being a driving view.

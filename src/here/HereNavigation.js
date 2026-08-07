@@ -138,13 +138,15 @@ export function setRoute(routeId) {
  * @param {string}  [camera.mode] `'fixed'` follows at a constant tilt/zoom,
  *   `'dynamic'` lets the SDK vary them with speed, `'free'` releases the camera
  *   so the user's pan/pinch/rotate gestures stick.
- * @param {number}  [camera.tiltDegrees] 0 = top-down, ~60 = driving view
+ * @param {number}  [camera.tiltDegrees] 0 = top-down, ~45 = driving view. Past
+ *   ~50 the top of the screen aims beyond the horizon and the scene's sky band
+ *   washes blue-grey across the top of the map.
  * @param {number}  [camera.distanceMeters] camera-to-vehicle distance; clamped
  *   to 50–5000 m natively
  * @param {?number} [camera.bearingDegrees] null follows the vehicle heading,
  *   which is what makes the road run up the screen
- * @param {number}  [camera.principalPointY] 0–1; 0.75 puts the vehicle in the
- *   lower quarter so the road ahead fills the frame
+ * @param {number}  [camera.principalPointY] 0–1; 0.68 puts the vehicle about
+ *   two-thirds down so the road ahead fills the frame
  * @returns {Promise<Object>} the settings actually in force, post-clamping
  */
 export function setCameraBehavior(camera) {

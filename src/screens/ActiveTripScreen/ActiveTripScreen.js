@@ -16,7 +16,7 @@ import {
   TouchableWithoutFeedback,
   Keyboard,
 } from 'react-native';
-import {SafeAreaView, useSafeAreaInsets} from 'react-native-safe-area-context';
+import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {verticalScale} from 'react-native-size-matters';
 
 import styles from './ActiveTripScreen.styles';
@@ -60,10 +60,6 @@ const PANEL_IDS = ['chat', 'documents', 'bidding', 'navigate', 'call'];
 
 // A reroute costs a routing request, so deviations are only acted on this often.
 const REROUTE_MIN_INTERVAL_MS = 10_000;
-
-// Camera-to-vehicle distance for the driving view, and the step each zoom press
-// applies. Multiplicative, so a press feels the same far out as it does close
-// in. Native clamps the result to 50–5000 m.
 const CAMERA_DISTANCE_METERS = 350;
 const CAMERA_ZOOM_STEP = 1.6;
 
@@ -77,12 +73,6 @@ function formatMeters(meters) {
 
 export default function ActiveTripScreen({navigation, route}) {
   const insets = useSafeAreaInsets();
-
-  // The trip to drive, handed over by whoever opened this screen (HomeScreen's
-  // START TRIP, and later the assigned-load API). Only the drop is expected —
-  // the pickup is the driver's live position — but an explicit `sourceLocation`
-  // is honoured if one is ever passed. Without a destination the screen still
-  // works; it just shows the driver's own position instead of a route.
   const trip = useMemo(() => {
     const params = route?.params ?? {};
     const source = normalizeLocation(params.sourceLocation);
@@ -102,12 +92,8 @@ export default function ActiveTripScreen({navigation, route}) {
       ? {lat: trip.source.latitude, lng: trip.source.longitude}
       : DEFAULT_CENTER,
   );
-  // True once <HereMapView> has mounted its native surface — only then do the
-  // imperative map calls work.
   const [mapReady, setMapReady] = useState(false);
   const [activePanel, setActivePanel] = useState(null);
-  // True while a panel is stretched to full screen — its navy header then sits
-  // under the status bar, so the icons have to flip to light.
   const [panelFullscreen, setPanelFullscreen] = useState(false);
   const [podOpen, setPodOpen] = useState(false);
   const [milestone, setMilestone] = useState({
@@ -190,11 +176,6 @@ export default function ActiveTripScreen({navigation, route}) {
 
   const [locating, setLocating] = useState(false);
   const showMyLocation = useCallback(async ({animate = true} = {}) => {
-    // While guiding, the navigator owns the vehicle marker and the camera, so
-    // this button re-centres instead: it puts the follow camera back after the
-    // driver has panned or rotated the map away. Even setCenter is off limits
-    // here — the view manager re-snaps the camera on any prop update, which
-    // would yank it off the driver.
     if (isNavigatingRef.current) {
       HereNavigation.setCameraBehavior({mode: 'fixed'}).catch(() => {});
       return;
@@ -565,7 +546,10 @@ export default function ActiveTripScreen({navigation, route}) {
   }, [activeRoute, isNavigating, navInfo]);
 
   return (
-    <SafeAreaView style={styles.container} edges={['top']}>
+    // No top safe-area inset: insetting the root would leave the container's
+    // navy showing as a band above the map. The top bar pads itself past the
+    // status bar instead (see topBar.paddingTop), so the map stays full-bleed.
+    <View style={styles.container}>
       <StatusBar
         barStyle={panelFullscreen ? 'light-content' : 'dark-content'}
         translucent
@@ -688,9 +672,7 @@ export default function ActiveTripScreen({navigation, route}) {
 
       {/* ── Left toolbar ── */}
       <SideToolbar panel={activePanel} onSelect={handleToolSelect} />
-
-      {/* Tap-anywhere-outside backdrop to dismiss the keyboard. Sits above the
-          map but below the floating panels, and only while the keyboard is up. */}
+      
       {keyboardVisible && (
         <TouchableWithoutFeedback accessible={false} onPress={Keyboard.dismiss}>
           <View style={styles.keyboardBackdrop} />
@@ -763,6 +745,6 @@ export default function ActiveTripScreen({navigation, route}) {
           style={[styles.revealCircle, {transform: [{scale: revealScale}]}]}
         />
       )}
-    </SafeAreaView>
+    </View>
   );
 }
