@@ -29,9 +29,12 @@ enum HEREOptions {
         return nil
     }
 
+    /// `Int32(someDouble)` traps on NaN, infinity and anything outside Int32's
+    /// range, so an out-of-range figure typed into the truck-details form is
+    /// clamped rather than allowed to kill the app.
     static func int32(_ value: Any?) -> Int32? {
-        guard let value = double(value) else { return nil }
-        return Int32(value)
+        guard let value = double(value), value.isFinite else { return nil }
+        return Int32(min(max(value.rounded(.towardZero), Double(Int32.min)), Double(Int32.max)))
     }
 
     static func bool(_ value: Any?) -> Bool? {

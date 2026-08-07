@@ -126,6 +126,7 @@ class HereMapView: UIView {
 
     override init(frame: CGRect) {
         super.init(frame: frame)
+        HereMapView.register(self)
 #if canImport(heresdk)
         addSubview(mapView)
         mapView.translatesAutoresizingMaskIntoConstraints = false
@@ -152,11 +153,64 @@ class HereMapView: UIView {
         fatalError("init(coder:) has not been implemented")
     }
 
+    deinit {
+#if canImport(heresdk)
+        // Navigation renders into this map — it has to let go before the view
+        // goes away.
+        HereNavigationModule.shared?.onMapViewDestroyed(self)
+#endif
+        HereMapView.unregister(self)
+    }
+
+    // MARK: - Instance registry
+    //
+    // Modules address the map by React tag, but the app only ever shows one at
+    // a time, so "most recently mounted, still alive" is the right default —
+    // and it is what HereNavigationModule renders into. Mirrors Android's
+    // HereMapViewManager.resolveViewOrActive.
+
+    private static var activeRef: WeakMapViewRef?
+
+    private static func register(_ view: HereMapView) {
+        activeRef = WeakMapViewRef(view)
+    }
+
+    private static func unregister(_ view: HereMapView) {
+        if activeRef?.value === view { activeRef = nil }
+    }
+
+    /// The map a tag-less call should act on, or nil when none is mounted.
+    static func activeInstance() -> HereMapView? { activeRef?.value }
+
     // MARK: - Event props (wired up in HereMapViewManager.m)
 
     @objc var onMapTap: RCTDirectEventBlock?
     @objc var onMapLongPress: RCTDirectEventBlock?
     @objc var onPoiTap: RCTDirectEventBlock?
+    @objc var onMapError: RCTDirectEventBlock?
+
+    // MARK: - Camera props
+    //
+    // Applied once both coordinates have arrived: React sets props one at a
+    // time, so acting on the first would centre the map on (lat, 0).
+
+    @objc var centerLat: NSNumber? { didSet { applyInitialCameraIfReady() } }
+    @objc var centerLng: NSNumber? { didSet { applyInitialCameraIfReady() } }
+    @objc var zoomLevel: NSNumber? { didSet { applyInitialCameraIfReady() } }
+
+    private var hasAppliedInitialCamera = false
+
+    private func applyInitialCameraIfReady() {
+#if canImport(heresdk)
+        guard !hasAppliedInitialCamera,
+              let lat = centerLat?.doubleValue,
+              let lng = centerLng?.doubleValue,
+              lat != 0 || lng != 0
+        else { return }
+        hasAppliedInitialCamera = true
+        setCenter(lat: lat, lng: lng, zoom: zoomLevel?.doubleValue ?? 14)
+#endif
+    }
 
     /// Map style, e.g. "normalDay", "satellite", "logisticsDay".
     @objc var mapScheme: NSString? {
@@ -180,6 +234,32 @@ class HereMapView: UIView {
 
 #if canImport(heresdk)
 
+    /// The HERE surface, for `VisualNavigator.startRendering(mapView:)`.
+    var hereMapView: MapView { mapView }
+
+    /// Resolves once the scene is renderable, optionally switching scheme
+    /// first — the "tell me when the map is usable" hook. Completing with nil
+    /// means success; a string is the SDK's error text.
+    func awaitMapReady(scheme: String?, completion: @escaping (String?) -> Void) {
+        if let scheme = scheme, !scheme.isEmpty, !setMapScheme(scheme) {
+            completion("Unknown map scheme: \(scheme)")
+            return
+        }
+        whenSceneReady { completion(nil) }
+    }
+
+    /// Centres the map without animating — the plain "go here" camera call.
+    func setCenter(lat: Double, lng: Double, zoom: Double) {
+        moveCamera(lat: lat, lng: lng, zoom: zoom, animate: false)
+    }
+
+    /// Draws route geometry calculated elsewhere — the vertices returned by
+    /// `HereRoutingModule`, or a stored route resolved from `HereRouteStore`.
+    /// Replaces whatever was drawn before, so `clearRoute` removes it either way.
+    func drawRouteGeometry(coords: [[Double]], color: UIColor?, widthPixels: Double) {
+        drawRoutePolyline(coords: coords, color: color, widthPixels: widthPixels)
+    }
+
     // MARK: - Map Load
 
     private func loadMap() {
@@ -187,7 +267,11 @@ class HereMapView: UIView {
         mapView.mapScene.loadScene(mapScheme: currentScheme) { [weak self] error in
             guard let self = self else { return }
             guard error == nil else {
-                print("[HereMapView] Map load error: \(String(describing: error))")
+                let message = String(describing: error)
+                print("[HereMapView] Map load error: \(message)")
+                // Tell JS, so a dead map says why instead of showing a blank
+                // rectangle (see <HereMapView>'s onMapError handling).
+                self.onMapError?(["code": "MAP_SCENE_FAILED", "message": message])
                 return
             }
             // Force map labels (place / city / road names) to English so the map
@@ -1151,3 +1235,10 @@ extension HereMapView: LongPressDelegate {
 }
 
 #endif
+
+/// Weak box for the active-map registry: the registry must never be the reason
+/// a dropped map view stays alive.
+final class WeakMapViewRef {
+    weak var value: HereMapView?
+    init(_ value: HereMapView) { self.value = value }
+}

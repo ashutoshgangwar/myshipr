@@ -52,6 +52,129 @@ class HereMapModule: NSObject {
 #endif
     }
 
+    // MARK: - Map lifecycle
+
+    /// Resolves once the map scene is renderable, optionally switching scheme
+    /// first: `{ scheme? }`. The view starts loading its scene as soon as it
+    /// mounts, so this is the "wait until the map is usable" hook.
+    @objc(loadMap:options:resolver:rejecter:)
+    func loadMap(
+        _ viewTag: NSNumber,
+        options: NSDictionary?,
+        resolver resolve: @escaping RCTPromiseResolveBlock,
+        rejecter reject: @escaping RCTPromiseRejectBlock
+    ) {
+#if canImport(heresdk)
+        DispatchQueue.main.async {
+            guard let mapView = self.findHereMapView() else {
+                reject("NO_MAP", "HereMapView not found", nil)
+                return
+            }
+            mapView.awaitMapReady(scheme: options?["scheme"] as? String) { error in
+                if let error = error {
+                    reject("HERE_MAP_ERROR", error, nil)
+                } else {
+                    resolve(true)
+                }
+            }
+        }
+#else
+        reject("SDK_MISSING", "HERE SDK is not embedded in the Xcode project", nil)
+#endif
+    }
+
+    /// Centres the map on a coordinate at `zoom`, without animating.
+    @objc(setCenter:latitude:longitude:zoom:resolver:rejecter:)
+    func setCenter(
+        _ viewTag: NSNumber,
+        latitude: Double,
+        longitude: Double,
+        zoom: Double,
+        resolver resolve: @escaping RCTPromiseResolveBlock,
+        rejecter reject: @escaping RCTPromiseRejectBlock
+    ) {
+#if canImport(heresdk)
+        DispatchQueue.main.async {
+            self.findHereMapView()?.setCenter(lat: latitude, lng: longitude, zoom: zoom)
+            resolve(nil)
+        }
+#else
+        reject("SDK_MISSING", "HERE SDK is not embedded in the Xcode project", nil)
+#endif
+    }
+
+    /// Draws an already-calculated route: pass the `routeId` from
+    /// `HereRoutingModule`, or explicit `coordinates: [{lat, lng}]`.
+    @objc(drawRouteGeometry:options:resolver:rejecter:)
+    func drawRouteGeometry(
+        _ viewTag: NSNumber,
+        options: NSDictionary,
+        resolver resolve: @escaping RCTPromiseResolveBlock,
+        rejecter reject: @escaping RCTPromiseRejectBlock
+    ) {
+#if canImport(heresdk)
+        var coords: [[Double]] = []
+
+        if let routeId = options["routeId"] as? String {
+            guard let route = HereRouteStore.shared.get(routeId) else {
+                reject("HERE_ROUTE_ERROR", "Unknown routeId: \(routeId)", nil)
+                return
+            }
+            coords = route.geometry.vertices.map { [$0.latitude, $0.longitude] }
+        } else if let raw = options["coordinates"] as? [NSDictionary] {
+            coords = raw.compactMap { point in
+                guard let lat = Self.double(point["lat"] ?? point["latitude"]),
+                      let lng = Self.double(point["lng"] ?? point["longitude"])
+                else { return nil }
+                return [lat, lng]
+            }
+        } else {
+            reject("INVALID_ARGS", "routeId or coordinates is required", nil)
+            return
+        }
+
+        guard coords.count >= 2 else {
+            reject("INVALID_ARGS", "route geometry needs at least 2 points", nil)
+            return
+        }
+
+        let width = Self.double(options["width"]) ?? 26.0
+        let color = (options["color"] as? String).flatMap(Self.color(fromHex:))
+
+        DispatchQueue.main.async {
+            self.findHereMapView()?.drawRouteGeometry(
+                coords: coords, color: color, widthPixels: width
+            )
+            resolve(coords.count)
+        }
+#else
+        reject("SDK_MISSING", "HERE SDK is not embedded in the Xcode project", nil)
+#endif
+    }
+
+    /// "#RRGGBB" / "#AARRGGBB" → UIColor; nil lets the view use its default.
+    private static func color(fromHex hex: String) -> UIColor? {
+        var value = hex.trimmingCharacters(in: .whitespacesAndNewlines)
+        if value.hasPrefix("#") { value.removeFirst() }
+        guard let intValue = UInt32(value, radix: 16) else { return nil }
+
+        let r, g, b, a: CGFloat
+        if value.count == 8 {
+            a = CGFloat((intValue >> 24) & 0xFF) / 255
+            r = CGFloat((intValue >> 16) & 0xFF) / 255
+            g = CGFloat((intValue >> 8) & 0xFF) / 255
+            b = CGFloat(intValue & 0xFF) / 255
+        } else if value.count == 6 {
+            a = 1
+            r = CGFloat((intValue >> 16) & 0xFF) / 255
+            g = CGFloat((intValue >> 8) & 0xFF) / 255
+            b = CGFloat(intValue & 0xFF) / 255
+        } else {
+            return nil
+        }
+        return UIColor(red: r, green: g, blue: b, alpha: a)
+    }
+
     // MARK: - Map Camera
 
     /// moveCamera({ lat, lng, distanceMeters? | zoom? })
@@ -332,7 +455,7 @@ class HereMapModule: NSObject {
         let markerSize = (options["markerSize"] as? NSNumber).map { CGFloat(truncating: $0) }
         // Segment index + animation duration drive the native smooth-follow
         // animation and the grey "passed" polyline overlay (parity with Android).
-        let segmentIndex = Int(Self.double(options["segmentIndex"]) ?? -1)
+        let segmentIndex = Self.int(options["segmentIndex"], default: -1)
         let animationMs = Self.double(options["animationDuration"]) ?? 180.0
         DispatchQueue.main.async {
             self.findHereMapView()?.updateNavigationMarker(
@@ -429,7 +552,7 @@ class HereMapModule: NSObject {
         resolver resolve: @escaping RCTPromiseResolveBlock,
         rejecter reject: @escaping RCTPromiseRejectBlock
     ) {
-        let index = Int(Self.double(options["trimIndex"]) ?? 0)
+        let index = Self.int(options["trimIndex"], default: 0)
         DispatchQueue.main.async {
             self.findHereMapView()?.trimPolyline(upToIndex: index)
             resolve(nil)
@@ -655,8 +778,15 @@ class HereMapModule: NSObject {
     /// Coerces an NSNumber / NSString JS value into a Double.
     private static func double(_ value: Any?) -> Double? {
         if let n = value as? NSNumber { return n.doubleValue }
-        if let s = value as? String  { return Double(s) }
+        if let s = value as? String  { return Double(s.trimmingCharacters(in: .whitespaces)) }
         return nil
+    }
+
+    /// `Int(someDouble)` traps on NaN, infinity and out-of-range values, so the
+    /// index-style options that come off the JS side are converted here.
+    private static func int(_ value: Any?, default fallback: Int) -> Int {
+        guard let value = double(value), value.isFinite else { return fallback }
+        return Int(min(max(value.rounded(.towardZero), Double(Int32.min)), Double(Int32.max)))
     }
 
     /// Decodes a base64 PNG string (with or without a `data:` URI prefix) into Data.

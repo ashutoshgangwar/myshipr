@@ -19,6 +19,18 @@
 # Keep Google Maps models used via JNI
 -keep class com.google.android.gms.maps.** { *; }
 
+# HERE SDK Navigate — the whole SDK is a JNI bridge: the native layer resolves
+# Java classes, fields and listener callbacks by name, so R8 must not rename or
+# strip any of it (this includes the public data classes we serialise to JS).
+-keep class com.here.** { *; }
+-keep interface com.here.** { *; }
+-keepclassmembers class com.here.** { *; }
+-dontwarn com.here.**
+
+# androidx.car is an optional HERE dependency (LocationEngine vehicle sensors)
+# that we don't ship.
+-dontwarn androidx.car.app.**
+
 # The Radar SDK has an OPTIONAL Firebase Cloud Messaging integration
 # (RadarFirebaseMessagingService). We don't ship firebase-messaging, so R8 can't
 # resolve these classes during minification. We don't use FCM, so silence them.

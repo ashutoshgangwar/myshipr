@@ -27,6 +27,14 @@
 		EEBC38502153550CF55B9CE9 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
 		F0079D9A380C94255B34B2F3 /* HERESDKManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A7D762A901244F77286D876 /* HERESDKManager.swift */; };
 		F1E2D3C4B5A6978877665544 /* heresdk.xcframework in Frameworks */ = {isa = PBXBuildFile; fileRef = E3B7A1C2D4E5F67890123456 /* heresdk.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
+		CC2B0524116D53668429E389 /* HereSdkModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3AB68A8F1CE5F8993226CAD /* HereSdkModule.swift */; };
+		9DEA832F7656554F9C75F688 /* HereSdkModule.m in Sources */ = {isa = PBXBuildFile; fileRef = A56BC71615C059E39E38A081 /* HereSdkModule.m */; };
+		F26EB19B5FAA5F009EC8E4B3 /* HereRouteStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3D7691FC8AF6526494CD3BDD /* HereRouteStore.swift */; };
+		3C7186A9108B5C0885A0C165 /* HereRoutingModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = C27E731FBE035BBAA3230C32 /* HereRoutingModule.swift */; };
+		7DF9823907CA559CA9F082CE /* HereRoutingModule.m in Sources */ = {isa = PBXBuildFile; fileRef = 31570583BEAE5FC6A1967BFA /* HereRoutingModule.m */; };
+		0BFE4FD9D95055EA81FC765F /* HereSerialization.swift in Sources */ = {isa = PBXBuildFile; fileRef = 006913F6E73251DAA7C0F681 /* HereSerialization.swift */; };
+		619ACA571CF05BE2B4D4AE41 /* HereNavigationModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 495410959A76587189CC0F24 /* HereNavigationModule.swift */; };
+		8689DAF124A7535AB76082B2 /* HereNavigationModule.m in Sources */ = {isa = PBXBuildFile; fileRef = D4694C39BD675FB2B250A0F8 /* HereNavigationModule.m */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -69,6 +77,14 @@
 		E3B7A1C2D4E5F67890123456 /* heresdk.xcframework */ = {isa = PBXFileReference; expectedSignature = "AppleDeveloperProgram:PQEP8H94J7:HERE Deutschland GmbH"; lastKnownFileType = wrapper.xcframework; name = heresdk.xcframework; path = Frameworks/heresdk.xcframework; sourceTree = "<group>"; };
 		EB11681B4C6B6E55E8A9D889 /* HERERoutingService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HERERoutingService.swift; path = myshipr/HERERoutingService.swift; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
+		D3AB68A8F1CE5F8993226CAD /* HereSdkModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = HereSdkModule.swift; path = myshipr/HereSdkModule.swift; sourceTree = "<group>"; };
+		A56BC71615C059E39E38A081 /* HereSdkModule.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = HereSdkModule.m; path = myshipr/HereSdkModule.m; sourceTree = "<group>"; };
+		3D7691FC8AF6526494CD3BDD /* HereRouteStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = HereRouteStore.swift; path = myshipr/HereRouteStore.swift; sourceTree = "<group>"; };
+		C27E731FBE035BBAA3230C32 /* HereRoutingModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = HereRoutingModule.swift; path = myshipr/HereRoutingModule.swift; sourceTree = "<group>"; };
+		31570583BEAE5FC6A1967BFA /* HereRoutingModule.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = HereRoutingModule.m; path = myshipr/HereRoutingModule.m; sourceTree = "<group>"; };
+		006913F6E73251DAA7C0F681 /* HereSerialization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = HereSerialization.swift; path = myshipr/HereSerialization.swift; sourceTree = "<group>"; };
+		495410959A76587189CC0F24 /* HereNavigationModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = HereNavigationModule.swift; path = myshipr/HereNavigationModule.swift; sourceTree = "<group>"; };
+		D4694C39BD675FB2B250A0F8 /* HereNavigationModule.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = HereNavigationModule.m; path = myshipr/HereNavigationModule.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -101,6 +117,14 @@
 				C4B0B38154B1F8E7065C3236 /* HEREGeocodingService.swift */,
 				652A87127241BC53E7DD7CBE /* HEREMapView.swift */,
 				A1B2C3D4E5F60123456789A0 /* HereMapModule.swift */,
+				D3AB68A8F1CE5F8993226CAD /* HereSdkModule.swift */,
+				A56BC71615C059E39E38A081 /* HereSdkModule.m */,
+				3D7691FC8AF6526494CD3BDD /* HereRouteStore.swift */,
+				C27E731FBE035BBAA3230C32 /* HereRoutingModule.swift */,
+				31570583BEAE5FC6A1967BFA /* HereRoutingModule.m */,
+				006913F6E73251DAA7C0F681 /* HereSerialization.swift */,
+				495410959A76587189CC0F24 /* HereNavigationModule.swift */,
+				D4694C39BD675FB2B250A0F8 /* HereNavigationModule.m */,
 				9A1B2C3D4E5F6A7089ABCDEF /* HereMapModule.m */,
 				A1B2C3D4E5F60123456789A2 /* HereMapViewManager.swift */,
 				8B1C2D3E4F5A6B7098CDEFAB /* HereMapViewManager.m */,
@@ -339,6 +363,14 @@
 				9A1B2C3D4E5F6A7089ABCDE0 /* HereMapModule.m in Sources */,
 				8B1C2D3E4F5A6B7098CDEF0A /* HereMapViewManager.m in Sources */,
 				A1B2C3D4E5F60123456789A1 /* HereMapModule.swift in Sources */,
+				CC2B0524116D53668429E389 /* HereSdkModule.swift in Sources */,
+				9DEA832F7656554F9C75F688 /* HereSdkModule.m in Sources */,
+				F26EB19B5FAA5F009EC8E4B3 /* HereRouteStore.swift in Sources */,
+				3C7186A9108B5C0885A0C165 /* HereRoutingModule.swift in Sources */,
+				7DF9823907CA559CA9F082CE /* HereRoutingModule.m in Sources */,
+				0BFE4FD9D95055EA81FC765F /* HereSerialization.swift in Sources */,
+				619ACA571CF05BE2B4D4AE41 /* HereNavigationModule.swift in Sources */,
+				8689DAF124A7535AB76082B2 /* HereNavigationModule.m in Sources */,
 				A1B2C3D4E5F60123456789A3 /* HereMapViewManager.swift in Sources */,
 				2F91C33DC25251ED85C36910 /* HEREBridge.swift in Sources */,
 			);

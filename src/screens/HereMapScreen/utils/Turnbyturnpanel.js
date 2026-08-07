@@ -109,6 +109,33 @@ export function computeIndices(actions, snapSegmentIndex, metersToNext) {
   return {activeActionIdx, nextActionIdx, isApproaching};
 }
 
+// ─── resolveIndices ────────────────────────────────────────────────────────
+// Same result as computeIndices, but preferring the maneuver index the HERE
+// VisualNavigator reports directly (RouteProgress.maneuverProgress[0]) over
+// inferring it from a polyline segment.
+//
+// `maneuverIndex` is the UPCOMING maneuver, so the step being executed right
+// now is the one before it. Falls back to computeIndices when the caller has no
+// navigator index (route preview, or the legacy segment-snapping path).
+export function resolveIndices(
+  actions,
+  {maneuverIndex = null, snapSegmentIndex = -1, metersToNext = null} = {},
+) {
+  if (!Number.isInteger(maneuverIndex) || maneuverIndex < 0 || !actions.length) {
+    return computeIndices(actions, snapSegmentIndex, metersToNext ?? Infinity);
+  }
+
+  const nextActionIdx = Math.min(maneuverIndex, actions.length - 1);
+  const activeActionIdx = Math.max(0, nextActionIdx - 1);
+  const isApproaching =
+    nextActionIdx !== activeActionIdx &&
+    Number.isFinite(metersToNext) &&
+    metersToNext >= 0 &&
+    metersToNext <= LOOKAHEAD_METERS;
+
+  return {activeActionIdx, nextActionIdx, isApproaching};
+}
+
 // ─── StepRow ──────────────────────────────────────────────────────────────
 const StepRow = React.memo(({item, index, isActive, isNext, isLast, onPress}) => {
   const scaleAnim = useRef(new Animated.Value(isActive ? 1.02 : 1)).current;
@@ -289,8 +316,15 @@ const NextStepBanner = ({
 
 // ─── TurnByTurnPanel ──────────────────────────────────────────────────────
 export default function TurnByTurnPanel({
+  // Either pass `steps` (the flat maneuver list from HereRouting) or the legacy
+  // REST-shaped `routeResponse`.
+  steps: stepsProp,
+  summary: summaryProp,
   routeResponse,
   isNavigating     = false,
+  // Upcoming-maneuver index straight from the HERE navigator; preferred over
+  // `snapSegmentIndex` when present.
+  maneuverIndex    = null,
   snapSegmentIndex = -1,
   metersToNext     = null,
   style,
@@ -301,24 +335,28 @@ export default function TurnByTurnPanel({
   const slideAnim = useRef(new Animated.Value(0)).current;
 
   const steps = useMemo(() => {
+    if (Array.isArray(stepsProp)) return stepsProp;
     try { return routeResponse?.routes?.[0]?.sections?.[0]?.actions ?? []; }
     catch (_) { return []; }
-  }, [routeResponse]);
+  }, [stepsProp, routeResponse]);
 
+  // `{length, duration}` for the panel header. `summary` may be passed directly
+  // alongside `steps`; otherwise it is read off the legacy route response.
   const summary = useMemo(() => {
+    if (summaryProp) return summaryProp;
     try { return routeResponse?.routes?.[0]?.sections?.[0]?.summary ?? null; }
     catch (_) { return null; }
-  }, [routeResponse]);
+  }, [summaryProp, routeResponse]);
 
   // On every new route (start / reroute): collapse banner, clear manual selection
   useEffect(() => {
     setManualIndex(null);
     setExpanded(false);
-  }, [routeResponse]);
+  }, [steps]);
 
   const {activeActionIdx, nextActionIdx, isApproaching} = useMemo(
-    () => computeIndices(steps, snapSegmentIndex, metersToNext ?? Infinity),
-    [steps, snapSegmentIndex, metersToNext],
+    () => resolveIndices(steps, {maneuverIndex, snapSegmentIndex, metersToNext}),
+    [steps, maneuverIndex, snapSegmentIndex, metersToNext],
   );
 
   const displayIndex = manualIndex ?? activeActionIdx;

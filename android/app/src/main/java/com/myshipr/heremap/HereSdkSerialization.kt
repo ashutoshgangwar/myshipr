@@ -231,7 +231,7 @@ object HereSdkSerialization {
      * Emits the REST-router `action` shape the turn-by-turn panel renders from:
      * `{ action, direction, offset, length, duration, instruction }`.
      */
-    private fun maneuverToMap(maneuver: Maneuver): WritableMap {
+    internal fun maneuverToMap(maneuver: Maneuver): WritableMap {
         val (action, direction) = maneuverAction(maneuver.action)
         return Arguments.createMap().apply {
             putString("action", action)

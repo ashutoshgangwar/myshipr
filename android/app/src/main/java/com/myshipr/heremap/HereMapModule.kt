@@ -66,8 +66,39 @@ class HereMapModule(
     }
 
     // -------------------------------------------------------------------------
+    // Map lifecycle
+    // -------------------------------------------------------------------------
+
+    /**
+     * Resolves once the map scene is renderable, optionally switching scheme
+     * first: `{ scheme?: 'normalDay' | 'satellite' | 'logisticsDay' | … }`.
+     *
+     * The view starts loading its scene as soon as it mounts, so this is the
+     * "wait until the map is usable" hook rather than a required setup step.
+     */
+    @ReactMethod
+    fun loadMap(viewTag: Int, options: ReadableMap?, promise: Promise) {
+        val scheme = options?.getString("scheme")
+        runOnView(viewTag, promise) { view ->
+            view.loadMap(scheme) { error ->
+                if (error == null) promise.resolve(true)
+                else promise.reject("HERE_MAP_ERROR", error)
+            }
+        }
+    }
+
+    // -------------------------------------------------------------------------
     // Camera
     // -------------------------------------------------------------------------
+
+    /** Centres the map on a coordinate at [zoom], without animating. */
+    @ReactMethod
+    fun setCenter(viewTag: Int, latitude: Double, longitude: Double, zoom: Double, promise: Promise) {
+        runOnView(viewTag, promise) { view ->
+            view.setCenter(latitude, longitude, zoom)
+            promise.resolve(null)
+        }
+    }
 
     /**
      * @param viewTag   React tag of the <HereMapView> component
@@ -224,6 +255,45 @@ class HereMapModule(
                 },
                 onError = { msg -> promise.reject("ROUTE_ERROR", msg) }
             )
+        }
+    }
+
+    /**
+     * Draws an already-calculated route. Pass either the `routeId` returned by
+     * [HereRoutingModule], or explicit `coordinates: [{lat, lng}]`.
+     *
+     * Options: `{ routeId?, coordinates?, color?, width? }`.
+     * Replaces any previously drawn route; [clearRoute] removes it.
+     */
+    @ReactMethod
+    fun drawRouteGeometry(viewTag: Int, options: ReadableMap, promise: Promise) {
+        val color = if (options.hasKey("color")) options.getString("color") ?: "#4285F4" else "#4285F4"
+        val width = if (options.hasKey("width")) options.getDouble("width") else 26.0
+
+        val routeId = if (options.hasKey("routeId")) options.getString("routeId") else null
+        val vertices: List<GeoCoordinates> = if (routeId != null) {
+            val route = RouteStore.get(routeId)
+                ?: return promise.reject("HERE_ROUTE_ERROR", "Unknown routeId: $routeId")
+            route.geometry?.vertices.orEmpty()
+        } else {
+            val coordsArray = options.getArray("coordinates")
+                ?: return promise.reject("INVALID_ARGS", "routeId or coordinates is required")
+            (0 until coordsArray.size()).mapNotNull { index ->
+                coordsArray.getMap(index)?.let { point ->
+                    val lat = point.getDoubleOrNull("lat") ?: point.getDoubleOrNull("latitude")
+                    val lng = point.getDoubleOrNull("lng") ?: point.getDoubleOrNull("longitude")
+                    if (lat != null && lng != null) GeoCoordinates(lat, lng) else null
+                }
+            }
+        }
+
+        if (vertices.size < 2) {
+            return promise.reject("INVALID_ARGS", "route geometry needs at least 2 points")
+        }
+
+        runOnView(viewTag, promise) { view ->
+            view.drawRouteGeometry(vertices, color, width)
+            promise.resolve(vertices.size)
         }
     }
 

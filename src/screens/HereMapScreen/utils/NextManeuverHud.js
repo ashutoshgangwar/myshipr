@@ -11,7 +11,7 @@
 // It is platform-agnostic (pure RN), so iOS and Android render identically.
 import React, {useEffect, useMemo, useRef} from 'react';
 import {Animated, StyleSheet, Text, View} from 'react-native';
-import {computeIndices, resolveIcon, resolveColor} from './Turnbyturnpanel';
+import {resolveIndices, resolveIcon, resolveColor} from './Turnbyturnpanel';
 
 // Round to a tidy countdown value. Google snaps the close-range readout to the
 // nearest 10 m, which gives the 50→40→30→20→10 cadence the design asks for.
@@ -26,23 +26,28 @@ function formatCountdown(m) {
 }
 
 export default function NextManeuverHud({
+  // Either the flat maneuver list from HereRouting, or the legacy REST response.
+  steps: stepsProp,
   routeResponse,
   isNavigating = false,
+  // Upcoming-maneuver index from the HERE navigator; preferred when present.
+  maneuverIndex = null,
   snapSegmentIndex = -1,
   metersToNext = null,
   style,
 }) {
   const steps = useMemo(() => {
+    if (Array.isArray(stepsProp)) return stepsProp;
     try {
       return routeResponse?.routes?.[0]?.sections?.[0]?.actions ?? [];
     } catch (_) {
       return [];
     }
-  }, [routeResponse]);
+  }, [stepsProp, routeResponse]);
 
   const {nextActionIdx} = useMemo(
-    () => computeIndices(steps, snapSegmentIndex, metersToNext ?? Infinity),
-    [steps, snapSegmentIndex, metersToNext],
+    () => resolveIndices(steps, {maneuverIndex, snapSegmentIndex, metersToNext}),
+    [steps, maneuverIndex, snapSegmentIndex, metersToNext],
   );
 
   // The maneuver we are driving TOWARD (the one `metersToNext` measures to).

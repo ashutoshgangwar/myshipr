@@ -22,6 +22,7 @@ import com.here.sdk.core.GeoPolyline
 import com.here.sdk.core.LanguageCode
 import com.here.sdk.core.Location
 import com.here.sdk.core.Point2D
+import com.here.sdk.core.engine.SDKNativeEngine
 import com.here.sdk.core.Rectangle2D
 import com.here.sdk.core.Size2D
 import com.here.sdk.gestures.GestureState
@@ -57,6 +58,7 @@ class HereMapView(context: Context) : FrameLayout(context) {
         private const val DEFAULT_ZOOM = 14.0
         // Fixed pixel width for native drawRoute fallback
         private const val DEFAULT_ROUTE_WIDTH_PX = 26.0
+        private const val DEFAULT_ROUTE_COLOR    = "#4285F4"
 
         // Side of the square hit-test box used when picking an embedded POI.
         private const val POI_PICK_BOX_PX = 48.0
@@ -80,7 +82,20 @@ class HereMapView(context: Context) : FrameLayout(context) {
         }
     }
 
-    val mapView: MapView = MapView(context)
+    /**
+     * The HERE surface. Null until [attachMapView] succeeds.
+     *
+     * `MapView`'s constructor throws when the shared [SDKNativeEngine] does not
+     * exist yet, and that used to escape `createViewInstance` and tear down the
+     * whole React host. So the surface is created only once the engine is up;
+     * until then this view is inert and reports the problem to JS.
+     */
+    private var _mapView: MapView? = null
+
+    /** Non-null only after the surface is attached — see [isMapAttached]. */
+    val mapView: MapView get() = _mapView!!
+
+    fun isMapAttached(): Boolean = _mapView != null
 
     private var routingEngine:           RoutingEngine?            = null
     private var currentPolyline:         MapPolyline?              = null
@@ -102,33 +117,85 @@ class HereMapView(context: Context) : FrameLayout(context) {
     private var isSceneLoaded = false
     private var pendingScheme: MapScheme? = null
 
-    private fun polylines(): PolylineManager =
-        polylineManager ?: PolylineManager(mapView).also { polylineManager = it }
+    /**
+     * onDestroy arrives twice — once from the host lifecycle and once when React
+     * drops the view — and the second `mapView.onDestroy()` crashes in the SDK.
+     */
+    private var isDestroyed = false
 
-    private fun navMarkers(): NavigationMarkerManager =
-        navMarkerManager ?: NavigationMarkerManager(mapView).also { mgr ->
+    /** Callbacks waiting for the current [loadScene] to finish. */
+    private val sceneLoadCallbacks = mutableListOf<(String?) -> Unit>()
+
+    // The helper managers all wrap the map surface, so they only exist once it
+    // has been attached — every accessor is null until then.
+
+    private fun polylines(): PolylineManager? {
+        val map = _mapView ?: return null
+        return polylineManager ?: PolylineManager(map).also { polylineManager = it }
+    }
+
+    private fun navMarkers(): NavigationMarkerManager? {
+        val map = _mapView ?: return null
+        return navMarkerManager ?: NavigationMarkerManager(map).also { mgr ->
             mgr.polylineManager = polylines()
             navMarkerManager    = mgr
         }
+    }
 
-    private fun navigationCamera(): NavigationCameraManager =
-        navigationCameraManager
-            ?: NavigationCameraManager(mapView).also { navigationCameraManager = it }
+    private fun navigationCamera(): NavigationCameraManager? {
+        val map = _mapView ?: return null
+        return navigationCameraManager
+            ?: NavigationCameraManager(map).also { navigationCameraManager = it }
+    }
 
     init {
-        layoutParams         = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
-        mapView.layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
-        addView(mapView)
-        
-        Log.d(TAG, "✅ HereMapView initialized")
-        Log.d(TAG, "✅ MapView added to hierarchy with MATCH_PARENT layout")
-        
-        // Call onCreate with null SavedInstanceState
-        mapView.onCreate(null)
-        Log.d(TAG, "✅ mapView.onCreate() called")
+        layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
+        attachMapView()
+    }
 
-        loadScene(MapScheme.NORMAL_DAY) { initRoutingEngine() }
-        attachGestureListeners()
+    /**
+     * Creates the HERE surface and runs its `onCreate` step. Safe to call more
+     * than once; returns false while the SDK engine is still missing, which is
+     * the "JS mounted the map before HereSdk.initialize() resolved" case.
+     */
+    fun attachMapView(): Boolean {
+        if (_mapView != null) return true
+
+        if (SDKNativeEngine.getSharedInstance() == null) {
+            Log.w(TAG, "HERE SDK not initialised yet — map surface not created")
+            emitEvent("topMapError", Arguments.createMap().apply {
+                putString("code", "SDK_NOT_INITIALIZED")
+                putString(
+                    "message",
+                    "HERE SDK is not initialised — call HereSdk.initialize() " +
+                        "before mounting <HereMapView>"
+                )
+            })
+            return false
+        }
+
+        return try {
+            val view = MapView(context)
+            view.layoutParams = LayoutParams(LayoutParams.MATCH_PARENT, LayoutParams.MATCH_PARENT)
+            addView(view)
+            view.onCreate(null)
+            _mapView = view
+            Log.d(TAG, "✅ HERE map surface attached")
+
+            loadScene(MapScheme.NORMAL_DAY) { initRoutingEngine() }
+            attachGestureListeners()
+            // React mounts views into an already-resumed host, so no
+            // onHostResume follows — resume here or the surface never renders.
+            view.onResume()
+            true
+        } catch (e: Exception) {
+            Log.e(TAG, "map surface creation failed: ${e.message}", e)
+            emitEvent("topMapError", Arguments.createMap().apply {
+                putString("code", "MAP_CREATE_FAILED")
+                putString("message", e.message ?: "HERE MapView could not be created")
+            })
+            false
+        }
     }
 
     /**
@@ -136,9 +203,11 @@ class HereMapView(context: Context) : FrameLayout(context) {
      * watermark position and any enabled map features (3D buildings, traffic…).
      */
     private fun loadScene(scheme: MapScheme, onLoaded: (() -> Unit)? = null) {
+        val mapView = _mapView ?: return notifySceneLoaded("HERE map surface is not attached")
         mapView.mapScene.loadScene(scheme) { err ->
             if (err != null) {
                 Log.e(TAG, "❌ Scene load error: $err")
+                notifySceneLoaded(err.toString())
                 return@loadScene
             }
             Log.d(TAG, "✅ Map scene loaded successfully")
@@ -161,6 +230,7 @@ class HereMapView(context: Context) : FrameLayout(context) {
             }
 
             onLoaded?.invoke()
+            notifySceneLoaded(null)
 
             // A scheme requested while this load was in flight wins.
             pendingScheme?.let { requested ->
@@ -170,27 +240,83 @@ class HereMapView(context: Context) : FrameLayout(context) {
         }
     }
 
+    private fun notifySceneLoaded(error: String?) {
+        val waiting = sceneLoadCallbacks.toList()
+        sceneLoadCallbacks.clear()
+        waiting.forEach { it(error) }
+    }
+
+    /**
+     * Resolves once the map scene is renderable, optionally switching to
+     * [schemeName] first. The view starts loading `NORMAL_DAY` in its
+     * constructor, so this is really "tell me when the map is ready" — calling
+     * it after the scene is already up completes immediately.
+     *
+     * [onResult] receives null on success or the SDK's error text on failure.
+     */
+    fun loadMap(schemeName: String?, onResult: (String?) -> Unit) {
+        // A view mounted before HereSdk.initialize() finished has no surface —
+        // now that JS is asking for the map, try again.
+        if (!attachMapView()) {
+            onResult("HERE SDK is not initialised — call HereSdk.initialize() first")
+            return
+        }
+
+        val requested = schemeName?.let { parseMapScheme(it) }
+        if (schemeName != null && requested == null) {
+            onResult("Unknown map scheme: $schemeName")
+            return
+        }
+
+        if (isSceneLoaded && (requested == null || requested == currentScheme)) {
+            onResult(null)
+            return
+        }
+
+        sceneLoadCallbacks.add(onResult)
+        when {
+            // A load is already in flight — the callback above rides along with it.
+            !isSceneLoaded -> requested?.let { pendingScheme = it }
+            else -> loadScene(requested!!)
+        }
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // Lifecycle
     // ─────────────────────────────────────────────────────────────────────────
 
     fun onResume()  {
+        if (isDestroyed) return
+        val mapView = _mapView ?: return
         Log.d(TAG, "onResume called")
         mapView.onResume()
     }
     fun onPause()   {
+        if (isDestroyed) return
+        val mapView = _mapView ?: return
         Log.d(TAG, "onPause called")
         mapView.onPause()
     }
     fun onDestroy() {
+        if (isDestroyed) return
+        isDestroyed = true
+        val mapView = _mapView ?: return
         Log.d(TAG, "onDestroy called")
+        // Navigation renders into this MapView — it has to let go before the
+        // native surface is torn down.
+        HereNavigationModule.instance?.onMapViewDestroyed(this)
+        sceneLoadCallbacks.clear()
         locationIndicator?.disable()
         clearBlueDot()
         navMarkerManager?.remove()
         polylineManager?.clear()
         navigationCameraManager?.reset()
         mapView.onDestroy()
+        _mapView = null
     }
+
+    /** False once the native surface has been torn down — never draw after this. */
+    fun isAlive(): Boolean = !isDestroyed
 
     // ─────────────────────────────────────────────────────────────────────────
     // Camera
@@ -202,6 +328,7 @@ class HereMapView(context: Context) : FrameLayout(context) {
         bearing: Double = 0.0, tilt: Double = 0.0,
         animate: Boolean = false, animationDurationMs: Int = 800
     ) {
+        val mapView = _mapView ?: return
         Log.d(TAG, "moveCamera: lat=$lat, lng=$lng, zoom=$zoomLevel, animate=$animate")
         val target      = GeoCoordinates(lat, lng)
         val measure     = MapMeasure(MapMeasure.Kind.DISTANCE_IN_METERS, zoomLevelToDistance(zoomLevel))
@@ -225,6 +352,10 @@ class HereMapView(context: Context) : FrameLayout(context) {
         }
     }
 
+    /** Centres the map without animating — the plain "go here" camera call. */
+    fun setCenter(lat: Double, lng: Double, zoomLevel: Double = DEFAULT_ZOOM) =
+        moveCamera(lat, lng, zoomLevel, animate = false)
+
     private fun zoomLevelToDistance(zoom: Double): Double {
         val z = zoom.coerceIn(3.0, 22.0)
         return (40_000_000.0 / Math.pow(2.0, z)).coerceAtMost(5_000_000.0)
@@ -232,6 +363,7 @@ class HereMapView(context: Context) : FrameLayout(context) {
 
     /** Live camera orientation/position — JS uses it to drive the compass button. */
     fun getCameraState(): Map<String, Double> {
+        val mapView = _mapView ?: return emptyMap()
         val s = mapView.camera.state
         return mapOf(
             "lat" to s.targetCoordinates.latitude,
@@ -244,6 +376,7 @@ class HereMapView(context: Context) : FrameLayout(context) {
 
     /** Animate the map back to north-up (bearing 0, tilt 0), keeping target + zoom. */
     fun resetNorth() {
+        val mapView = _mapView ?: return
         val s = mapView.camera.state
         val target      = GeoCoordinatesUpdate(s.targetCoordinates.latitude, s.targetCoordinates.longitude)
         val measure     = MapMeasure(MapMeasure.Kind.DISTANCE_IN_METERS, s.distanceToTargetInMeters)
@@ -300,6 +433,7 @@ class HereMapView(context: Context) : FrameLayout(context) {
      * `EXTRUDED_BUILDINGS` is what turns on 3D building rendering.
      */
     fun setMapFeatures(enable: Map<String, String>, disable: List<String>) {
+        val mapView = _mapView ?: return
         disable.forEach { enabledFeatures.remove(it) }
         enabledFeatures.putAll(enable)
 
@@ -331,13 +465,14 @@ class HereMapView(context: Context) : FrameLayout(context) {
 
     /** The feature keys/modes this SDK build supports — handy for debugging. */
     fun getSupportedMapFeatures(): Map<String, List<String>> =
-        mapView.mapScene.supportedFeatures ?: emptyMap()
+        _mapView?.mapScene?.supportedFeatures ?: emptyMap()
 
     // ─────────────────────────────────────────────────────────────────────────
     // Map interaction — tap / long-press, including embedded POIs
     // ─────────────────────────────────────────────────────────────────────────
 
     private fun attachGestureListeners() {
+        val mapView = _mapView ?: return
         mapView.gestures.tapListener = TapListener { point ->
             emitTouchEvent("topMapTap", point)
             pickPlaceAt(point) { picked ->
@@ -356,6 +491,7 @@ class HereMapView(context: Context) : FrameLayout(context) {
      * to the search engine for full details.
      */
     private fun pickPlaceAt(point: Point2D, callback: (com.here.sdk.core.PickedPlace?) -> Unit) {
+        val mapView = _mapView ?: return callback(null)
         try {
             // A small box around the finger — a 1px hit test almost never lands
             // on the POI icon itself.
@@ -374,7 +510,7 @@ class HereMapView(context: Context) : FrameLayout(context) {
     }
 
     private fun emitTouchEvent(eventName: String, point: Point2D) {
-        val coords = mapView.viewToGeoCoordinates(point) ?: return
+        val coords = _mapView?.viewToGeoCoordinates(point) ?: return
         emitEvent(eventName, Arguments.createMap().apply {
             putDouble("latitude", coords.latitude)
             putDouble("longitude", coords.longitude)
@@ -414,6 +550,7 @@ class HereMapView(context: Context) : FrameLayout(context) {
         imageBase64: String? = null,
         markerSizePx: Int? = null
     ) {
+        val mapView = _mapView ?: return
         val customImage = decodeMarkerImage(imageBase64, markerSizePx)
         val m = if (customImage != null) {
             // JS-supplied teardrop pin → anchor at the bottom-centre tip.
@@ -444,6 +581,7 @@ class HereMapView(context: Context) : FrameLayout(context) {
     }
 
     fun clearMarkers() {
+        val mapView = _mapView ?: return
         markers.forEach { mapView.mapScene.removeMapMarker(it) }
         markers.clear()
     }
@@ -458,6 +596,7 @@ class HereMapView(context: Context) : FrameLayout(context) {
         bearing: Double = 0.0,
         style: String = "navigation"
     ) {
+        val mapView = _mapView ?: return
         // "pedestrian" → solid blue dot marker, "navigation" → green direction arrow.
         if (style.equals("pedestrian", ignoreCase = true)) {
             showBlueDot(lat, lng)
@@ -481,6 +620,7 @@ class HereMapView(context: Context) : FrameLayout(context) {
 
     /** Solid blue location dot drawn natively, shown as a centre-anchored marker. */
     private fun showBlueDot(lat: Double, lng: Double) {
+        val mapView = _mapView ?: return
         // The built-in NAVIGATION indicator and the blue dot are mutually exclusive.
         locationIndicator?.disable()
         locationIndicator = null
@@ -494,7 +634,7 @@ class HereMapView(context: Context) : FrameLayout(context) {
     }
 
     private fun clearBlueDot() {
-        blueDotMarker?.let { mapView.mapScene.removeMapMarker(it) }
+        blueDotMarker?.let { marker -> _mapView?.mapScene?.removeMapMarker(marker) }
         blueDotMarker = null
     }
 
@@ -553,31 +693,62 @@ class HereMapView(context: Context) : FrameLayout(context) {
     }
 
     private fun renderRoute(route: Route): Pair<Double, Double> {
+        drawRouteGeometry(route.geometry.vertices, DEFAULT_ROUTE_COLOR, DEFAULT_ROUTE_WIDTH_PX)
+        return Pair(route.lengthInMeters.toDouble(), route.duration.seconds.toDouble())
+    }
+
+    /**
+     * Draws route geometry that was calculated elsewhere — the vertices returned
+     * by [HereRoutingModule], or a stored route resolved from [RouteStore].
+     *
+     * Replaces whatever [drawRoute]/[drawRouteGeometry] drew before, so
+     * [clearRoute] removes it either way.
+     */
+    fun drawRouteGeometry(
+        vertices: List<GeoCoordinates>,
+        colorHex: String = DEFAULT_ROUTE_COLOR,
+        widthPx: Double = DEFAULT_ROUTE_WIDTH_PX
+    ) {
+        val mapView = _mapView ?: return
+        if (isDestroyed || vertices.size < 2) return
+
         currentPolyline?.let { mapView.mapScene.removeMapPolyline(it) }
-        // FIX: was hardcoded 10.0 DIP — now 16px fixed
+        val fill = parseColor(colorHex)
         currentPolyline = MapPolyline(
-            GeoPolyline(route.geometry.vertices),
+            GeoPolyline(vertices),
             MapPolyline.SolidRepresentation(
-                MapMeasureDependentRenderSize(
-                    RenderSize.Unit.PIXELS,          // ✅ PIXELS not DENSITY_INDEPENDENT_PIXELS
-                    DEFAULT_ROUTE_WIDTH_PX
-                ),
-                HereColor.valueOf(0.259f, 0.522f, 0.957f, 1.0f),
-                MapMeasureDependentRenderSize(
-                    RenderSize.Unit.PIXELS,          // ✅ PIXELS not DENSITY_INDEPENDENT_PIXELS
-                    DEFAULT_ROUTE_WIDTH_PX * 0.15
-                ),
-                HereColor.valueOf(0.0f, 0.3f, 0.8f, 1.0f),
+                // PIXELS, not density-independent: the route keeps the same
+                // on-screen thickness on every device.
+                MapMeasureDependentRenderSize(RenderSize.Unit.PIXELS, widthPx),
+                fill,
+                MapMeasureDependentRenderSize(RenderSize.Unit.PIXELS, widthPx * 0.15),
+                darken(fill),
                 LineCap.ROUND
             )
         )
         mapView.mapScene.addMapPolyline(currentPolyline!!)
-        return Pair(route.lengthInMeters.toDouble(), route.duration.seconds.toDouble())
     }
 
     fun clearRoute() {
-        currentPolyline?.let { mapView.mapScene.removeMapPolyline(it); currentPolyline = null }
+        currentPolyline?.let { line -> _mapView?.mapScene?.removeMapPolyline(line); currentPolyline = null }
     }
+
+    /** "#RRGGBB" / "#AARRGGBB" → HERE colour, falling back to the route blue. */
+    private fun parseColor(hex: String): HereColor = try {
+        HereColor.valueOf(AndroidColor.parseColor(hex))
+    } catch (e: IllegalArgumentException) {
+        Log.w(TAG, "unparseable colour '$hex', using default")
+        HereColor.valueOf(AndroidColor.parseColor(DEFAULT_ROUTE_COLOR))
+    }
+
+    /** Outline colour — the fill at 60% brightness reads as a border at any hue. */
+    private fun darken(color: HereColor): HereColor =
+        HereColor.valueOf(
+            color.red() * 0.6f,
+            color.green() * 0.6f,
+            color.blue() * 0.6f,
+            color.alpha()
+        )
 
     // ─────────────────────────────────────────────────────────────────────────
     // Navigation marker
@@ -589,13 +760,13 @@ class HereMapView(context: Context) : FrameLayout(context) {
         segmentIndex: Int = -1, iconImageBase64: String? = null
     ) {
         if (locationIndicator != null) { locationIndicator!!.disable(); locationIndicator = null }
-        navMarkers().update(lat, lng, bearing, durationMs, markerSize, iconAsset, segmentIndex, iconImageBase64)
+        navMarkers()?.update(lat, lng, bearing, durationMs, markerSize, iconAsset, segmentIndex, iconImageBase64)
     }
 
     fun updateNavigationCamera(
         lat: Double, lng: Double, bearing: Double,
         speedMps: Double?, animationDurationMs: Int, forceInstant: Boolean
-    ) = navigationCamera().update(lat, lng, bearing, speedMps, animationDurationMs, forceInstant)
+    ) { navigationCamera()?.update(lat, lng, bearing, speedMps, animationDurationMs, forceInstant) }
 
     fun resetNavigationCamera()  { navigationCameraManager?.reset() }
     fun removeNavigationMarker() { navMarkerManager?.remove() }
@@ -605,7 +776,7 @@ class HereMapView(context: Context) : FrameLayout(context) {
     // ─────────────────────────────────────────────────────────────────────────
 
     fun drawPolyline(coordinates: List<GeoCoordinates>, color: String, width: Double) {
-        polylines().draw(coordinates, color, width)
+        polylines()?.draw(coordinates, color, width) ?: return
         navMarkerManager?.polylineManager = polylineManager
     }
 

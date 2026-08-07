@@ -15,7 +15,16 @@ class HereMapPackage : ReactPackage {
 
     override fun createNativeModules(
         reactContext: ReactApplicationContext
-    ): List<NativeModule> = listOf(HereMapModule(reactContext))
+    ): List<NativeModule> = listOf(
+        // SDK lifetime — must be initialised before any of the others work.
+        HereSdkModule(reactContext),
+        // Map view commands (camera, markers, polylines, search).
+        HereMapModule(reactContext),
+        // Route calculation for car / truck / EV.
+        HereRoutingModule(reactContext),
+        // Turn-by-turn guidance, tracking and location simulation.
+        HereNavigationModule(reactContext)
+    )
 
     override fun createViewManagers(
         reactContext: ReactApplicationContext

@@ -25,6 +25,7 @@ export function NavigationControls({
   onLocation,
   onRoute,
   onNavigate,
+  onClear,
   isNavigating,
 }) {
   if (isNavigating) return null;
@@ -33,6 +34,7 @@ export function NavigationControls({
     <View style={styles.toolbar}>
       <ToolbarButton label="📍 Current" onPress={onLocation} />
       <ToolbarButton label="🛣️ Route" onPress={onRoute} />
+      {onClear ? <ToolbarButton label="✕ Clear" onPress={onClear} /> : null}
       <ToolbarButton label="🧭 Navigate" onPress={onNavigate} highlight />
     </View>
   );

@@ -2,6 +2,7 @@ package com.myshipr.heremap
 
 import android.view.View
 import android.util.Log
+import com.facebook.react.bridge.LifecycleEventListener
 import com.facebook.react.bridge.ReactApplicationContext
 import com.facebook.react.uimanager.SimpleViewManager
 import com.facebook.react.uimanager.ThemedReactContext
@@ -24,9 +25,15 @@ class HereMapViewManager(
         // Keeps a lightweight mapping between React tag and native HereMapView.
         private val viewRegistry = ConcurrentHashMap<Int, WeakReference<HereMapView>>()
 
+        // The map the navigation module renders into when JS does not name one.
+        // Apps show a single map at a time, so "most recently mounted" is the
+        // right default.
+        private var activeViewRef: WeakReference<HereMapView>? = null
+
         fun registerView(view: HereMapView) {
             if (view.id != View.NO_ID) {
                 viewRegistry[view.id] = WeakReference(view)
+                activeViewRef = WeakReference(view)
                 Log.d(TAG, "Registered HereMapView with ID: ${view.id}")
             }
         }
@@ -36,22 +43,38 @@ class HereMapViewManager(
                 viewRegistry.remove(view.id)
                 Log.d(TAG, "Unregistered HereMapView with ID: ${view.id}")
             }
+            if (activeViewRef?.get() === view) activeViewRef = null
         }
 
         fun resolveView(tag: Int): HereMapView? {
             return viewRegistry[tag]?.get()
         }
+
+        /**
+         * The map view a tag-less call should act on: [tag] when it resolves,
+         * otherwise the most recently mounted live map.
+         */
+        fun resolveViewOrActive(tag: Int?): HereMapView? {
+            val byTag = tag?.takeIf { it > 0 }?.let { resolveView(it) }
+            val view = byTag ?: activeViewRef?.get()
+            return view?.takeIf { it.isAlive() }
+        }
     }
 
     override fun getName(): String = REACT_CLASS
 
+    // The lifecycle listener registered for each view, so it can be removed when
+    // the view goes away. Without this every remount leaks a listener that keeps
+    // calling into a MapView React has already dropped.
+    private val lifecycleListeners = mutableMapOf<HereMapView, LifecycleEventListener>()
+
     override fun createViewInstance(reactContext: ThemedReactContext): HereMapView {
         Log.d(TAG, "Creating HereMapView instance")
+        // HereMapView's constructor performs the MapView onCreate step.
         val view = HereMapView(reactContext)
 
         // Hook into the activity lifecycle via ReactContext
-        reactContext.addLifecycleEventListener(object :
-            com.facebook.react.bridge.LifecycleEventListener {
+        val listener = object : LifecycleEventListener {
             override fun onHostResume() {
                 Log.d(TAG, "onHostResume - calling mapView.onResume()")
                 view.onResume()
@@ -64,7 +87,9 @@ class HereMapViewManager(
                 Log.d(TAG, "onHostDestroy - calling mapView.onDestroy()")
                 view.onDestroy()
             }
-        })
+        }
+        reactContext.addLifecycleEventListener(listener)
+        lifecycleListeners[view] = listener
 
         return view
     }
@@ -120,13 +145,19 @@ class HereMapViewManager(
         mutableMapOf(
             "topMapTap" to mapOf("registrationName" to "onMapTap"),
             "topMapLongPress" to mapOf("registrationName" to "onMapLongPress"),
-            "topPoiTap" to mapOf("registrationName" to "onPoiTap")
+            "topPoiTap" to mapOf("registrationName" to "onPoiTap"),
+            "topMapError" to mapOf("registrationName" to "onMapError")
         )
 
     override fun onAfterUpdateTransaction(view: HereMapView) {
         super.onAfterUpdateTransaction(view)
         registerView(view)
-        
+
+        // A view mounted before HereSdk.initialize() finished has no surface.
+        // Props arriving now mean JS is still using it, so retry the attach —
+        // by this point the engine has usually come up.
+        if (!view.isMapAttached() && !view.attachMapView()) return
+
         pendingProps[view]?.let { props ->
             val lat = props.centerLat
             val lng = props.centerLng
@@ -141,7 +172,11 @@ class HereMapViewManager(
 
     override fun onDropViewInstance(view: HereMapView) {
         Log.d(TAG, "onDropViewInstance")
+        lifecycleListeners.remove(view)?.let { reactContext.removeLifecycleEventListener(it) }
         unregisterView(view)
         pendingProps.remove(view)
+        // React is done with this view; release the native map surface with it.
+        view.onDestroy()
+        super.onDropViewInstance(view)
     }
 }

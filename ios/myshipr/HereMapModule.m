@@ -10,6 +10,28 @@ RCT_EXTERN_METHOD(
   rejecter:(RCTPromiseRejectBlock)reject
 )
 
+// ── Map lifecycle ──────────────────────────────────────────────────────────
+RCT_EXTERN_METHOD(
+  loadMap:(nonnull NSNumber *)viewTag options:(NSDictionary *)options
+  resolver:(RCTPromiseResolveBlock)resolve
+  rejecter:(RCTPromiseRejectBlock)reject
+)
+
+RCT_EXTERN_METHOD(
+  setCenter:(nonnull NSNumber *)viewTag
+  latitude:(double)latitude
+  longitude:(double)longitude
+  zoom:(double)zoom
+  resolver:(RCTPromiseResolveBlock)resolve
+  rejecter:(RCTPromiseRejectBlock)reject
+)
+
+RCT_EXTERN_METHOD(
+  drawRouteGeometry:(nonnull NSNumber *)viewTag options:(NSDictionary *)options
+  resolver:(RCTPromiseResolveBlock)resolve
+  rejecter:(RCTPromiseRejectBlock)reject
+)
+
 // ── Map Camera ─────────────────────────────────────────────────────────────
 RCT_EXTERN_METHOD(
   moveCamera:(nonnull NSNumber *)viewTag options:(NSDictionary *)options

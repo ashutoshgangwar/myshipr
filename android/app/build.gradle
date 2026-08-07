@@ -19,15 +19,17 @@ android {
 
     defaultConfig {
         applicationId "com.myshipr"
-        minSdkVersion rootProject.ext.minSdkVersion
+        // HERE SDK Navigate 4.27 requires API 24+ (see its bundled manifest).
+        minSdkVersion Math.max(24, rootProject.ext.minSdkVersion as int)
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
         versionName "1.0"
 
+        // HERE credentials are NOT declared here. They are read from .env by JS
+        // and passed to SDKNativeEngine.makeSharedInstance() through
+        // HereSdk.initialize(), so .env stays the single source of truth.
         manifestPlaceholders = [
-            GOOGLE_MAPS_API_KEY: "AIzaSyDH6IejmpyYR5CpKxBEBmeLe_tbG6voOjg",
-            HERE_ACCESS_KEY_ID: "YOUR_HERE_ACCESS_KEY_ID",
-            HERE_ACCESS_KEY_SECRET: "YOUR_HERE_ACCESS_KEY_SECRET"
+            GOOGLE_MAPS_API_KEY: "AIzaSyDH6IejmpyYR5CpKxBEBmeLe_tbG6voOjg"
         ]
     }
 
@@ -86,10 +88,11 @@ dependencies {
 
     implementation("com.facebook.react:react-android")
 
-    implementation(
-        name: 'heresdk-explore-android-4.26.0.0.286360',
-        ext: 'aar'
-    )
+    // HERE SDK Navigate ships as a local .aar in android/app/libs. Picking it up
+    // by fileTree rather than by exact artifact name means dropping in a newer
+    // heresdk-navigate-android-*.aar needs no Gradle edit — just delete the old
+    // one so exactly one HERE .aar remains in the folder.
+    implementation fileTree(dir: 'libs', include: ['*.aar'])
 
     implementation "com.google.android.gms:play-services-location:21.0.1"
     implementation 'com.caverock:androidsvg-aar:1.4'

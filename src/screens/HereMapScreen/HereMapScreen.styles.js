@@ -882,4 +882,95 @@ export default StyleSheet.create({
     fontWeight: '600',
     textTransform: 'capitalize',
   },
+
+  // ── Map error banner ─────────────────────────────────────────────────────
+  // Shown over the map when the SDK or the native surface reports a failure,
+  // so a dead map always says why.
+  mapErrorBanner: {
+    position: 'absolute',
+    top: verticalScale(14),
+    left: scale(14),
+    right: scale(14),
+    backgroundColor: '#FEF2F2',
+    borderWidth: 1,
+    borderColor: '#FCA5A5',
+    borderRadius: moderateScale(10),
+    paddingVertical: verticalScale(8),
+    paddingHorizontal: moderateScale(12),
+    zIndex: 1000,
+    elevation: moderateScale(10),
+  },
+  mapErrorText: {
+    color: '#991B1B',
+    fontSize: moderateScale(12),
+  },
+
+  // ── Posted speed limit (navigation) ──────────────────────────────────────
+  // Circular road-sign badge, top-right. Sits where the compass does in
+  // preview mode — the two are never visible at the same time.
+  speedLimitBadge: {
+    position: 'absolute',
+    top: verticalScale(14),
+    right: scale(14),
+    width: scale(54),
+    height: scale(54),
+    borderRadius: moderateScale(27),
+    borderWidth: moderateScale(4),
+    borderColor: '#CBD5E1',
+    backgroundColor: '#ffffff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 999,
+    elevation: moderateScale(8),
+  },
+  speedLimitBadgeAlert: {
+    borderColor: '#DC2626',
+  },
+  speedLimitValue: {
+    fontSize: moderateScale(18),
+    fontWeight: '700',
+    color: '#0f172a',
+  },
+  speedLimitUnit: {
+    fontSize: moderateScale(9),
+    color: '#64748b',
+  },
+
+  // ── Voice guidance banner ────────────────────────────────────────────────
+  voiceBanner: {
+    backgroundColor: '#EFF6FF',
+    borderRadius: moderateScale(10),
+    paddingVertical: verticalScale(8),
+    paddingHorizontal: moderateScale(12),
+    marginBottom: verticalScale(8),
+  },
+  voiceBannerText: {
+    fontSize: moderateScale(13),
+    color: '#1e40af',
+  },
+
+  // ── Simulated-navigation toggle ──────────────────────────────────────────
+  simulateRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: verticalScale(14),
+    paddingTop: verticalScale(12),
+    borderTopWidth: 1,
+    borderTopColor: '#e2e8f0',
+  },
+  simulateTextCol: {
+    flex: 1,
+    paddingRight: moderateScale(12),
+  },
+  simulateLabel: {
+    fontSize: moderateScale(14),
+    fontWeight: '600',
+    color: '#0f172a',
+  },
+  simulateHint: {
+    marginTop: verticalScale(2),
+    fontSize: moderateScale(11),
+    color: '#64748b',
+  },
 });

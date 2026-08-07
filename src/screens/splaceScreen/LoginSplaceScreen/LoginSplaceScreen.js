@@ -103,7 +103,11 @@ const LoginSplashScreen = ({navigation}) => {
   };
 
   const handleCredentialsPress = () => {
-    navigation.navigate('LoginScreen');
+    // 'MainApp' is the bottom-tab navigator; its first tab is HomeTab (HomeScreen).
+    navigation.reset({index: 0, routes: [{name: 'MainApp', params: {screen: 'HomeTab'}}]});
+    // navigation.navigate('HereNavigationDemo');
+    // navigation.navigate('ActiveTripScreen');
+    // navigation.navigate('HereSearchScreen');
   };
 
   return (

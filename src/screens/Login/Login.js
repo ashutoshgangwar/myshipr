@@ -84,9 +84,6 @@ const Login = () => {
     setLoading(true);
 
     try {
-      // login() stores the access + refresh tokens and resolves with the
-      // session; anything else (bad credentials, network, a 200 without a
-      // token) throws and we stay on this screen.
       const session = await login({identifier, password});
       if (!session?.accessToken) {
         throw new Error('Login failed. Please try again.');
@@ -96,10 +93,6 @@ const Login = () => {
       goToHome();
     } catch (err) {
       if (!isMounted.current) return;
-
-      // Rate limited (429): the message already carries the cooldown, and no
-      // Retry button is offered — tapping it inside the window would only
-      // spend another attempt and reset the limit.
       if (err?.rateLimited) {
         showMessage({
           variant: 'warning',
@@ -120,9 +113,6 @@ const Login = () => {
     }
   }, [email, phone, password, showError, showMessage, goToHome]);
 
-  // Biometrics only prove who is holding the phone — the stored session still
-  // has to be valid (refreshing it if the access token expired) before we let
-  // anyone into the app.
   const handleBiometricSuccess = useCallback(async () => {
     setLoading(true);
     try {

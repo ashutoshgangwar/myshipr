@@ -23,7 +23,7 @@ import com.here.sdk.transport.PedestrianSpecification
 import com.here.sdk.transport.ScooterSpecification
 import com.here.sdk.transport.TransportMode
 import com.here.sdk.transport.TransportSpecification
-import com.here.sdk.transport.TruckType
+import com.here.sdk.transport.TruckCategory
 import com.here.sdk.transport.TunnelCategory
 import com.here.sdk.transport.VehicleSpecification
 import java.util.Date
@@ -44,7 +44,8 @@ object HereRoutingService {
     @Volatile
     private var engine: RoutingEngine? = null
 
-    private fun routingEngine(): RoutingEngine {
+    /** Shared engine — [HereRoutingModule] reuses it instead of creating a second. */
+    internal fun routingEngine(): RoutingEngine {
         engine?.let { return it }
         synchronized(this) {
             engine?.let { return it }
@@ -247,9 +248,11 @@ object HereRoutingService {
             vehicle.getNumberOrNull("payloadCapacity")?.let { payloadCapacityInKilograms = it }
             vehicle.getBooleanOrNull("isTruckLight")?.let { isTruckLight = it }
 
+            // Navigate 4.27 renamed VehicleSpecification.truckType to
+            // truckCategory (TruckSpecifications still calls it truckType).
             when (vehicle.getStringOrNull("truckType")?.lowercase()) {
-                "tractor" -> truckType = TruckType.TRACTOR
-                "straight" -> truckType = TruckType.STRAIGHT
+                "tractor" -> truckCategory = TruckCategory.TRACTOR
+                "straight" -> truckCategory = TruckCategory.STRAIGHT
                 else -> Unit
             }
 
