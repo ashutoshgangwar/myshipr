@@ -22,6 +22,12 @@ RCT_EXTERN_METHOD(
 )
 
 RCT_EXTERN_METHOD(
+  setCameraBehavior:(NSDictionary *)camera
+  resolver:(RCTPromiseResolveBlock)resolve
+  rejecter:(RCTPromiseRejectBlock)reject
+)
+
+RCT_EXTERN_METHOD(
   startTracking:(NSDictionary *)options
   resolver:(RCTPromiseResolveBlock)resolve
   rejecter:(RCTPromiseRejectBlock)reject

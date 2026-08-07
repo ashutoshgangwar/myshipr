@@ -74,6 +74,97 @@ export default StyleSheet.create({
       android: {elevation: 6},
     }),
   },
+  // ── Trip route + HERE navigation card ─────────────────────────────────
+  // Top-right, clear of the SOS/service column above it. Sits below the
+  // floating panels (45) so an open panel covers it rather than fighting it.
+  tripCard: {
+    position: 'absolute',
+    top: vs(150),
+    left: s(14),
+    width: IS_TABLET ? ms(230) : ms(190),
+    backgroundColor: colors.white,
+    borderRadius: ms(12),
+    borderWidth: 1,
+    borderColor: colors.border_Color,
+    paddingHorizontal: s(12),
+    paddingTop: vs(10),
+    paddingBottom: vs(12),
+    zIndex: 35,
+    ...Platform.select({
+      ios: {
+        shadowColor: '#000',
+        shadowOpacity: 0.15,
+        shadowRadius: 8,
+        shadowOffset: {width: 0, height: 3},
+      },
+      android: {elevation: 8},
+    }),
+  },
+  tripCardLabel: {
+    color: colors.textMuted,
+    fontSize: ms(9),
+    letterSpacing: 0.6,
+  },
+  tripCardTitle: {
+    color: colors.textStrong,
+    fontSize: ms(13),
+    fontWeight: 'bold',
+    marginTop: vs(2),
+  },
+  tripCardStats: {color: colors.textMuted, fontSize: ms(11), marginTop: vs(4)},
+  tripCardError: {color: colors.danger, fontSize: ms(10), marginTop: vs(4)},
+  tripCardDivider: {
+    height: 1,
+    backgroundColor: colors.border_Color,
+    marginVertical: vs(8),
+  },
+  tripCardManeuverDist: {
+    color: colors.accentBlue,
+    fontSize: ms(16),
+    fontWeight: '800',
+  },
+  tripCardManeuver: {
+    color: colors.text_dark,
+    fontSize: ms(11),
+    fontWeight: '600',
+    marginTop: vs(2),
+  },
+  navBtn: {
+    backgroundColor: colors.accentBlue,
+    borderRadius: ms(8),
+    paddingVertical: vs(8),
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: vs(30),
+    marginTop: vs(10),
+  },
+  navBtnStop: {backgroundColor: colors.danger},
+  navBtnText: {color: colors.white, fontSize: ms(12), fontWeight: '700'},
+  // Zoom lives on the card rather than as floating buttons: the left edge is
+  // already the toolbar and the GPS button, and the right edge is the step card.
+  zoomRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: vs(8),
+  },
+  zoomBtns: {flexDirection: 'row'},
+  zoomBtn: {
+    width: ms(28),
+    height: ms(28),
+    borderRadius: ms(8),
+    backgroundColor: colors.primaryLight,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginLeft: s(6),
+  },
+  zoomBtnText: {
+    color: colors.white,
+    fontSize: ms(16),
+    fontWeight: '700',
+    lineHeight: ms(19),
+  },
+
   // ── Top bar ───────────────────────────────────────────────────────────
   topBar: {
     position: 'absolute',

@@ -387,6 +387,13 @@ class HereMapView: UIView {
     private func attachGestureDelegates() {
         mapView.gestures.tapDelegate = self
         mapView.gestures.longPressDelegate = self
+        // While guidance runs, the navigator re-applies its follow camera on
+        // every location fix — which silently undoes any pan, pinch or rotate
+        // the driver makes. This delegate reports that they have taken the
+        // camera over so the navigator can let go of it; the re-centre button
+        // hands it back. It observes gestures rather than handling them, so the
+        // map's own default pan/zoom behaviour is untouched.
+        mapView.gestures.mapInteractionDelegate = self
     }
 
     /// Picks the embedded (carto) POI under a screen point. HERE returns these
@@ -1231,6 +1238,18 @@ extension HereMapView: LongPressDelegate {
             "x": origin.x,
             "y": origin.y
         ])
+    }
+}
+
+extension HereMapView: MapInteractionDelegate {
+    func onMapInteraction(gestureType: GestureType, mapInteractionState: MapInteractionState) {
+        guard mapInteractionState == .begin else { return }
+        switch gestureType {
+        case .pan, .pinchRotate, .twoFingerPan, .doubleTap:
+            HereNavigationModule.shared?.onUserTookCamera(self)
+        default:
+            break
+        }
     }
 }
 

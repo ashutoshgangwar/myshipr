@@ -98,6 +98,10 @@ export function addListeners(handlers) {
  * @param {string}  [options.unitSystem='metric'] 'metric'|'imperialUs'|'imperialUk'
  * @param {number}  [options.mapViewTag] specific <HereMapView> to render into;
  *   defaults to the mounted one
+ * @param {Object}  [options.camera] driving-view camera — see
+ *   {@link setCameraBehavior}. Worth passing `{mode: 'fixed'}`: the SDK default
+ *   picks tilt and zoom from speed, so pulling away from a standstill opens
+ *   flat and far out rather than on the road ahead.
  * @returns {Promise<{started:boolean, simulated:boolean, distanceMeters:number, durationSeconds:number}>}
  */
 export function startNavigation(routeId = null, options = null) {
@@ -116,6 +120,35 @@ export function setRoute(routeId) {
     return Promise.resolve(false);
   }
   return HereNavigationModule.setRoute(routeId);
+}
+
+/**
+ * Retunes the camera that follows the vehicle. Safe to call before guidance
+ * starts — the settings are remembered and applied when it does.
+ *
+ * The SDK's own default derives tilt and zoom from speed, so a drive that
+ * begins parked opens flat and zoomed out. Guidance therefore starts on a
+ * `fixed` behaviour instead, and this is how you adjust it: a zoom step sends
+ * `distanceMeters` alone, and every absent key keeps its current value.
+ *
+ * @param {Object} camera
+ * @param {string}  [camera.mode] `'fixed'` follows at a constant tilt/zoom,
+ *   `'dynamic'` lets the SDK vary them with speed, `'free'` releases the camera
+ *   so the user's pan/pinch/rotate gestures stick.
+ * @param {number}  [camera.tiltDegrees] 0 = top-down, ~60 = driving view
+ * @param {number}  [camera.distanceMeters] camera-to-vehicle distance; clamped
+ *   to 50–5000 m natively
+ * @param {?number} [camera.bearingDegrees] null follows the vehicle heading,
+ *   which is what makes the road run up the screen
+ * @param {number}  [camera.principalPointY] 0–1; 0.75 puts the vehicle in the
+ *   lower quarter so the road ahead fills the frame
+ * @returns {Promise<Object>} the settings actually in force, post-clamping
+ */
+export function setCameraBehavior(camera) {
+  if (!HereNavigationModule) {
+    return Promise.resolve(null);
+  }
+  return HereNavigationModule.setCameraBehavior(camera ?? null);
 }
 
 /** Ends guidance and stops the location feed. */
@@ -170,6 +203,7 @@ export default {
   addListeners,
   startNavigation,
   setRoute,
+  setCameraBehavior,
   stopNavigation,
   startTracking,
   stopTracking,

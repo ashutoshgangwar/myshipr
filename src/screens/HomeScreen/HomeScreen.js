@@ -90,6 +90,19 @@ const TRIPS_STAT = {
 const FLEET_STATS = [MILES_STAT, TRIPS_STAT];
 const SINGLE_STATS = [MILES_STAT, EARNINGS_STAT];
 
+// Trip handed to ActiveTripScreen by START TRIP. Only the drop is given —
+// the pickup is always the driver's live GPS position, so this is the exact
+// shape the assigned load's drop-off will take once the API supplies it.
+// Static for now: edit the coordinate to change where the trip goes.
+const STATIC_TRIP = {
+  destinationLocation: {
+    latitude: 28.4225019,
+    longitude: 76.8252699,
+    description: 'Gurgaon, Haryana, India',
+  },
+  destinationText: 'Gurgaon, Haryana, India',
+};
+
 const TRIP_STATS = [
   {value: '245 mi', label: 'Distance'},
   {value: '4h 10m', label: 'Est. time'},
@@ -174,7 +187,7 @@ const HomeScreen = () => {
 
   const openMap_Here = () => {
     setTripStarted(true);
-    navigation.navigate('ActiveTripScreen');
+    navigation.navigate('ActiveTripScreen', STATIC_TRIP);
   };
 
   const openMenu = () => {
@@ -502,7 +515,7 @@ const HomeScreen = () => {
         <TouchableOpacity
           style={styles.tripBanner}
           activeOpacity={0.85}
-          onPress={() => navigation.navigate('ActiveTripScreen')}>
+          onPress={() => navigation.navigate('ActiveTripScreen', STATIC_TRIP)}>
           <View style={styles.tripBannerTextWrap}>
             <AppText style={styles.tripBannerTitle}>Trip in Progress</AppText>
             <AppText style={styles.tripBannerSubtitle}>TAP to return</AppText>

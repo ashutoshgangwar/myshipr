@@ -1,7 +1,14 @@
-import React, {useEffect, useRef, useState, useCallback} from 'react';
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import {
   View,
   ActivityIndicator,
+  Alert,
   StatusBar,
   Animated,
   Easing,
@@ -16,12 +23,23 @@ import styles from './ActiveTripScreen.styles';
 import {colors} from '../../theme/colors';
 import AppText from '../../theme/AppText';
 
-import {HereMapView, HereMapModule} from '../HereMapScreen/components/HereMap/index';
-import {HERE_ACCESS_KEY_ID, HERE_ACCESS_KEY_SECRET} from '@env';
+import {
+  HereMapView,
+  HereNavigation,
+  HereRouting,
+  NavigationEvents,
+} from '../../here';
+import {
+  buildTripInfo,
+  fitCameraToRoute,
+  normalizeLocation,
+} from '../../utils/here/mapHelpers';
+import {
+  NAVIGATION_ROUTE_WIDTH,
+  OFF_ROUTE_THRESHOLD,
+} from '../HereMapScreen/constants/navigationConstants';
 import {getCurrentLocation} from '../../services/LocationService';
 import GpsIcon from '../../assets/svg_icon/gps-svg.svg';
-
-const hasHereCredentials = Boolean(HERE_ACCESS_KEY_ID && HERE_ACCESS_KEY_SECRET);
 
 import TripTopBar from './components/TripTopBar';
 import SideToolbar from './components/SideToolbar';
@@ -40,12 +58,53 @@ const DEFAULT_CENTER = {lat: 37.7599, lng: -122.4469};
 // Toolbar ids that open a centre panel.
 const PANEL_IDS = ['chat', 'documents', 'bidding', 'navigate', 'call'];
 
-export default function ActiveTripScreen({navigation}) {
+// A reroute costs a routing request, so deviations are only acted on this often.
+const REROUTE_MIN_INTERVAL_MS = 10_000;
+
+// Camera-to-vehicle distance for the driving view, and the step each zoom press
+// applies. Multiplicative, so a press feels the same far out as it does close
+// in. Native clamps the result to 50–5000 m.
+const CAMERA_DISTANCE_METERS = 350;
+const CAMERA_ZOOM_STEP = 1.6;
+
+/** Distance to the next maneuver, snapped the way a nav readout counts down. */
+function formatMeters(meters) {
+  if (!Number.isFinite(meters) || meters < 0) return '';
+  if (meters < 10) return 'Now';
+  if (meters < 1000) return `${Math.round(meters / 10) * 10} m`;
+  return `${(meters / 1000).toFixed(1)} km`;
+}
+
+export default function ActiveTripScreen({navigation, route}) {
   const insets = useSafeAreaInsets();
 
+  // The trip to drive, handed over by whoever opened this screen (HomeScreen's
+  // START TRIP, and later the assigned-load API). Only the drop is expected —
+  // the pickup is the driver's live position — but an explicit `sourceLocation`
+  // is honoured if one is ever passed. Without a destination the screen still
+  // works; it just shows the driver's own position instead of a route.
+  const trip = useMemo(() => {
+    const params = route?.params ?? {};
+    const source = normalizeLocation(params.sourceLocation);
+    const destination = normalizeLocation(params.destinationLocation);
+    return {
+      source,
+      destination,
+      destinationText:
+        params.destinationText || destination?.description || 'Destination',
+      truckDetails: params.truckDetails ?? null,
+    };
+  }, [route?.params]);
+
   const mapRef = useRef(null);
-  const [center, setCenter] = useState(DEFAULT_CENTER);
-  const [sdkReady, setSdkReady] = useState(false);
+  const [center, setCenter] = useState(
+    trip.source
+      ? {lat: trip.source.latitude, lng: trip.source.longitude}
+      : DEFAULT_CENTER,
+  );
+  // True once <HereMapView> has mounted its native surface — only then do the
+  // imperative map calls work.
+  const [mapReady, setMapReady] = useState(false);
   const [activePanel, setActivePanel] = useState(null);
   // True while a panel is stretched to full screen — its navy header then sits
   // under the status bar, so the icons have to flip to light.
@@ -56,6 +115,36 @@ export default function ActiveTripScreen({navigation}) {
     totalSteps: 4,
     title: 'Shipment Procured at Pickup 2',
   });
+
+  // ── Trip route + guidance ───────────────────────────────────────────────
+  // The route currently previewed or being navigated (see HereRouting).
+  const [activeRoute, setActiveRoute] = useState(null);
+  const [routeLoading, setRouteLoading] = useState(false);
+  const [routeError, setRouteError] = useState(null);
+  const [isNavigating, setIsNavigating] = useState(false);
+
+  // Live guidance state — every field below is fed by a navigator event.
+  const [navInfo, setNavInfo] = useState(null);
+  const [nextManeuver, setNextManeuver] = useState(null);
+  const [metersToNext, setMetersToNext] = useState(null);
+  const [speedKph, setSpeedKph] = useState(0);
+  const [cameraDistance, setCameraDistance] = useState(CAMERA_DISTANCE_METERS);
+
+  // Mirror refs, so event callbacks always see current values without
+  // re-subscribing on every render.
+  const isNavigatingRef = useRef(false);
+  const destinationRef = useRef(null);
+  const truckDetailsRef = useRef(null);
+  const lastRerouteAtRef = useRef(0);
+  const rerouteInFlightRef = useRef(false);
+
+  useEffect(() => {
+    isNavigatingRef.current = isNavigating;
+  }, [isNavigating]);
+  useEffect(() => {
+    destinationRef.current = trip.destination;
+    truckDetailsRef.current = trip.truckDetails;
+  }, [trip]);
 
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   useEffect(() => {
@@ -97,37 +186,24 @@ export default function ActiveTripScreen({navigation}) {
     });
   }, [navigation, revealScale]);
 
-  // Initialise the HERE SDK before mounting the native map view.
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      if (!hasHereCredentials) {
-        return;
-      }
-      try {
-        await HereMapModule.initSDK(HERE_ACCESS_KEY_ID, HERE_ACCESS_KEY_SECRET);
-        if (!cancelled) {
-          setSdkReady(true);
-        }
-      } catch (e) {
-        console.error('[ActiveTripScreen] HERE SDK init failed:', e?.message);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
   const [locating, setLocating] = useState(false);
   const showMyLocation = useCallback(async ({animate = true} = {}) => {
+    // While guiding, the navigator owns the vehicle marker and the camera, so
+    // this button re-centres instead: it puts the follow camera back after the
+    // driver has panned or rotated the map away. Even setCenter is off limits
+    // here — the view manager re-snaps the camera on any prop update, which
+    // would yank it off the driver.
+    if (isNavigatingRef.current) {
+      HereNavigation.setCameraBehavior({mode: 'fixed'}).catch(() => {});
+      return;
+    }
+
     setLocating(true);
     try {
       const pos = await getCurrentLocation({highAccuracy: false});
       if (!pos?.latitude || !pos?.longitude) return;
       setCenter({lat: pos.latitude, lng: pos.longitude});
-      await mapRef.current?.showCurrentLocation({
-        lat: pos.latitude,
-        lng: pos.longitude,
+      await mapRef.current?.showCurrentLocation(pos.latitude, pos.longitude, {
         bearing: Number.isFinite(pos.heading) ? pos.heading : 0,
       });
       if (animate) {
@@ -146,13 +222,293 @@ export default function ActiveTripScreen({navigation}) {
     }
   }, []);
 
+  // With a trip to show, the route framing owns the camera; only fall back to
+  // "centre on me" when this screen was opened without one.
   useEffect(() => {
-    if (!sdkReady) return undefined;
+    if (!mapReady || trip.destination) return undefined;
     const timer = setTimeout(() => {
       showMyLocation({animate: false});
     }, 700);
     return () => clearTimeout(timer);
-  }, [sdkReady, showMyLocation]);
+  }, [mapReady, trip.destination, showMyLocation]);
+
+  // ── Route preview ────────────────────────────────────────────────────────
+
+  /**
+   * Resolves the pickup: the driver's live position, unless the caller passed
+   * an explicit source. Runs the location service's preflight, so this is also
+   * what gets GPS switched on and ACCESS_FINE_LOCATION granted before the
+   * navigator asks for the device feed.
+   */
+  const resolvePickup = useCallback(async () => {
+    if (trip.source) return trip.source;
+    try {
+      return normalizeLocation(await getCurrentLocation({detectMock: true}));
+    } catch (_) {
+      return null;
+    }
+  }, [trip.source]);
+
+  /**
+   * Calculates the trip's truck route and draws it: the driver at the pickup,
+   * a drop marker, the route polyline, and a camera framing the whole thing.
+   */
+  const drawTripPreview = useCallback(async () => {
+    const destination = trip.destination;
+    if (!destination) return;
+
+    setRouteLoading(true);
+    setRouteError(null);
+
+    const origin = await resolvePickup();
+    if (!origin) {
+      setRouteError(
+        'Waiting for a GPS fix — turn location on, then tap Start Navigation.',
+      );
+      setRouteLoading(false);
+      return;
+    }
+
+    try {
+      const hereRoute = await HereRouting.calculateTruckRoute(
+        origin.latitude,
+        origin.longitude,
+        destination.latitude,
+        destination.longitude,
+        trip.truckDetails,
+      );
+      setActiveRoute(hereRoute);
+
+      await Promise.all([
+        mapRef.current?.clearMarkers(),
+        mapRef.current?.clearRoute(),
+      ]);
+      // The pickup is the driver, so it gets the position indicator rather than
+      // a pin — a pin there would read as a stop they still have to reach.
+      if (trip.source) {
+        await mapRef.current?.addMarker({
+          latitude: origin.latitude,
+          longitude: origin.longitude,
+          color: '#22C55E',
+        });
+      } else {
+        await mapRef.current?.showCurrentLocation(
+          origin.latitude,
+          origin.longitude,
+          {style: 'navigation'},
+        );
+      }
+      await mapRef.current?.addMarker({
+        latitude: destination.latitude,
+        longitude: destination.longitude,
+        color: '#FF3366',
+      });
+      // Native draws the stored route's own geometry — nothing to decode in JS.
+      await mapRef.current?.drawRoute({
+        routeId: hereRoute.routeId,
+        color: '#2563EB',
+        width: NAVIGATION_ROUTE_WIDTH,
+      });
+      await fitCameraToRoute(mapRef, hereRoute.polyline);
+    } catch (e) {
+      setRouteError(e?.message || 'Unable to build the route');
+    } finally {
+      setRouteLoading(false);
+    }
+  }, [resolvePickup, trip]);
+
+  // Draw on arrival, and again after guidance ends — stopping hands the map
+  // back with the navigator's layers removed.
+  useEffect(() => {
+    if (!mapReady || isNavigating) return;
+    drawTripPreview();
+  }, [mapReady, isNavigating, drawTripPreview]);
+
+  // ── Navigation ───────────────────────────────────────────────────────────
+
+  /**
+   * Zoom while guiding. The navigator re-applies its camera on every location
+   * fix, so a pinch is undone within the second — the tracking distance itself
+   * has to move instead. Native clamps and returns what it settled on.
+   */
+  const zoomBy = useCallback(
+    async factor => {
+      try {
+        const applied = await HereNavigation.setCameraBehavior({
+          distanceMeters: cameraDistance * factor,
+        });
+        if (Number.isFinite(applied?.distanceMeters)) {
+          setCameraDistance(applied.distanceMeters);
+        }
+      } catch (e) {
+        console.warn('[ActiveTripScreen] camera zoom failed:', e?.message);
+      }
+    },
+    [cameraDistance],
+  );
+
+  const handleStopNavigation = useCallback(async () => {
+    try {
+      await HereNavigation.stopNavigation();
+    } catch (e) {
+      console.warn('[ActiveTripScreen] stopNavigation failed:', e?.message);
+    }
+    setIsNavigating(false);
+    setNavInfo(null);
+    setNextManeuver(null);
+    setMetersToNext(null);
+    setSpeedKph(0);
+  }, []);
+
+  const handleStartNavigation = useCallback(async () => {
+    if (isNavigating) {
+      handleStopNavigation();
+      return;
+    }
+
+    const destination = trip.destination;
+    if (!destination) {
+      Alert.alert('Navigation', 'This trip has no destination yet.');
+      return;
+    }
+
+    setRouteLoading(true);
+    try {
+      // Guidance runs on the device's own GPS, so it has to start from where
+      // the driver actually is — routing from the previewed origin would begin
+      // with an instant deviation the moment they move.
+      const from = await resolvePickup();
+      if (!from) {
+        Alert.alert(
+          'Navigation',
+          'Current GPS location is not available yet. Turn location on and try again.',
+        );
+        return;
+      }
+
+      const navRoute = await HereRouting.calculateTruckRoute(
+        from.latitude,
+        from.longitude,
+        destination.latitude,
+        destination.longitude,
+        trip.truckDetails,
+      );
+      setActiveRoute(navRoute);
+      setRouteError(null);
+
+      // Hand the map to the navigator: it renders the route, the maneuver
+      // arrows and the vehicle itself, so our preview layers must come off or
+      // they would be drawn twice.
+      await Promise.all([
+        mapRef.current?.clearMarkers(),
+        mapRef.current?.clearRoute(),
+        mapRef.current?.hideCurrentLocation(),
+      ]);
+
+      await HereNavigation.startNavigation(navRoute.routeId, {
+        simulate: false,
+        voiceGuidance: true,
+        // Bind to this screen's map explicitly. Without a tag the navigator
+        // renders into whichever HereMapView most recently took a prop update,
+        // which is the wrong one as soon as a second map exists anywhere in the
+        // tree (HomeScreen's floating map, HereMapScreen behind us).
+        mapViewTag: mapRef.current?.getTag() ?? undefined,
+        // Without this the SDK picks tilt and zoom from speed, so pulling away
+        // from a standstill opens flat and far out instead of on the road
+        // ahead. Pin the driving view, at whatever zoom was last chosen.
+        camera: {
+          mode: 'fixed',
+          distanceMeters: cameraDistance,
+        },
+      });
+
+      lastRerouteAtRef.current = Date.now();
+      setIsNavigating(true);
+    } catch (e) {
+      Alert.alert('Navigation', e?.message || 'Unable to start navigation');
+    } finally {
+      setRouteLoading(false);
+    }
+  }, [cameraDistance, handleStopNavigation, isNavigating, resolvePickup, trip]);
+
+  /**
+   * Recalculates from the driver's actual position and hands the fresh route to
+   * the running navigator. Throttled, and skipped while one is already in
+   * flight, so a sustained detour cannot queue a burst of routing requests.
+   */
+  const handleRouteDeviation = useCallback(
+    async event => {
+      const off = event?.deviationDistanceMeters;
+      if (!Number.isFinite(off) || off < OFF_ROUTE_THRESHOLD) return;
+      if (rerouteInFlightRef.current) return;
+      if (Date.now() - lastRerouteAtRef.current < REROUTE_MIN_INTERVAL_MS) return;
+
+      const destination = destinationRef.current;
+      const from = normalizeLocation(event.currentLocation);
+      if (!destination || !from) return;
+
+      rerouteInFlightRef.current = true;
+      lastRerouteAtRef.current = Date.now();
+      try {
+        const fresh = await HereRouting.calculateTruckRoute(
+          from.latitude,
+          from.longitude,
+          destination.latitude,
+          destination.longitude,
+          truckDetailsRef.current,
+        );
+        setActiveRoute(fresh);
+        await HereNavigation.setRoute(fresh.routeId);
+      } catch (e) {
+        console.warn('[ActiveTripScreen] reroute failed:', e?.message);
+      } finally {
+        rerouteInFlightRef.current = false;
+      }
+    },
+    [],
+  );
+
+  useEffect(() => {
+    const unsubscribe = HereNavigation.addListeners({
+      [NavigationEvents.ROUTE_PROGRESS]: progress => {
+        setNavInfo(
+          buildTripInfo(
+            progress.remainingDistanceMeters,
+            progress.remainingDurationSeconds,
+          ),
+        );
+        setMetersToNext(
+          Number.isFinite(progress.distanceToNextManeuverMeters)
+            ? progress.distanceToNextManeuverMeters
+            : null,
+        );
+      },
+
+      [NavigationEvents.MANEUVER]: next => setNextManeuver(next),
+
+      [NavigationEvents.LOCATION]: position =>
+        setSpeedKph(
+          Number.isFinite(position.speedKph) ? Math.round(position.speedKph) : 0,
+        ),
+
+      [NavigationEvents.ROUTE_DEVIATION]: handleRouteDeviation,
+
+      [NavigationEvents.DESTINATION_REACHED]: () => {
+        handleStopNavigation();
+        Alert.alert('Arrived', 'You have reached your destination.');
+      },
+    });
+
+    return unsubscribe;
+  }, [handleRouteDeviation, handleStopNavigation]);
+
+  // Guidance runs natively, so it survives this screen unmounting — stop it.
+  useEffect(
+    () => () => {
+      HereNavigation.stopNavigation().catch(() => {});
+    },
+    [],
+  );
 
   const handleToolSelect = useCallback(id => {
     if (id === 'collapse') {
@@ -170,6 +526,16 @@ export default function ActiveTripScreen({navigation}) {
   const closePanel = useCallback(() => setActivePanel(null), []);
   const goBack = useCallback(() => navigation?.goBack?.(), [navigation]);
 
+  // Whole-trip figures while previewing; what is left of it while guiding.
+  const tripSummary = useMemo(() => {
+    if (isNavigating) return navInfo;
+    if (!activeRoute) return null;
+    return buildTripInfo(
+      activeRoute.distanceMeters,
+      activeRoute.durationSeconds,
+    );
+  }, [activeRoute, isNavigating, navInfo]);
+
   return (
     <SafeAreaView style={styles.container} edges={['top']}>
       <StatusBar
@@ -179,24 +545,18 @@ export default function ActiveTripScreen({navigation}) {
       />
 
       {/* ── HERE map (Android + iOS native) ── */}
-      {sdkReady ? (
-        <HereMapView
-          ref={mapRef}
-          style={styles.map}
-          centerLat={center.lat}
-          centerLng={center.lng}
-          zoomLevel={13}
-        />
-      ) : (
-        <View style={styles.mapLoading} pointerEvents="none">
-          <ActivityIndicator color={colors.navy} />
-          <AppText style={styles.mapLoadingText}>
-            {hasHereCredentials
-              ? 'Initializing HERE SDK…'
-              : 'Add HERE credentials to .env'}
-          </AppText>
-        </View>
-      )}
+      {/* HereMapView initialises the SDK itself and renders its own
+          "initializing" / error state, so it is mounted unconditionally —
+          gating it here would only hide the reason when something fails. */}
+      <HereMapView
+        ref={mapRef}
+        style={styles.map}
+        centerLat={center.lat}
+        centerLng={center.lng}
+        zoomLevel={13}
+        onMapReady={() => setMapReady(true)}
+        onMapError={detail => setRouteError(detail.message)}
+      />
 
       {/* ── Top bar ── */}
       <TripTopBar
@@ -205,6 +565,83 @@ export default function ActiveTripScreen({navigation}) {
         onSOS={() => {}}
         onService={() => {}}
       />
+
+      {/* ── Trip route + HERE turn-by-turn navigation ── */}
+      {trip.destination && (
+        <View style={styles.tripCard}>
+          <AppText style={styles.tripCardLabel}>
+            {isNavigating ? 'NAVIGATING TO' : 'NEXT STOP'}
+          </AppText>
+          <AppText style={styles.tripCardTitle} numberOfLines={1}>
+            {trip.destinationText}
+          </AppText>
+
+          {routeError ? (
+            <AppText style={styles.tripCardError} numberOfLines={3}>
+              {routeError}
+            </AppText>
+          ) : (
+            <AppText style={styles.tripCardStats}>
+              {tripSummary
+                ? `${tripSummary.distKm} km · ${tripSummary.etaText}`
+                : 'Calculating route…'}
+            </AppText>
+          )}
+
+          {isNavigating && (
+            <>
+              <View style={styles.tripCardDivider} />
+              {formatMeters(metersToNext) ? (
+                <AppText style={styles.tripCardManeuverDist}>
+                  {formatMeters(metersToNext)}
+                </AppText>
+              ) : null}
+              <AppText style={styles.tripCardManeuver} numberOfLines={2}>
+                {nextManeuver?.instruction ||
+                  nextManeuver?.roadName ||
+                  'Follow the route'}
+              </AppText>
+              <AppText style={styles.tripCardStats}>
+                {speedKph} km/h · ETA {navInfo?.arrivalStr ?? '—'}
+              </AppText>
+
+              {/* The follow camera overrides pinch on every location fix, so
+                  zoom has to move the tracking distance instead. */}
+              <View style={styles.zoomRow}>
+                <AppText style={styles.tripCardLabel}>ZOOM</AppText>
+                <View style={styles.zoomBtns}>
+                  <TouchableOpacity
+                    style={styles.zoomBtn}
+                    onPress={() => zoomBy(CAMERA_ZOOM_STEP)}
+                    activeOpacity={0.7}>
+                    <AppText style={styles.zoomBtnText}>−</AppText>
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.zoomBtn}
+                    onPress={() => zoomBy(1 / CAMERA_ZOOM_STEP)}
+                    activeOpacity={0.7}>
+                    <AppText style={styles.zoomBtnText}>+</AppText>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </>
+          )}
+
+          <TouchableOpacity
+            style={[styles.navBtn, isNavigating && styles.navBtnStop]}
+            onPress={handleStartNavigation}
+            disabled={routeLoading}
+            activeOpacity={0.85}>
+            {routeLoading ? (
+              <ActivityIndicator size="small" color={colors.white} />
+            ) : (
+              <AppText style={styles.navBtnText}>
+                {isNavigating ? 'End Navigation' : 'Start Navigation'}
+              </AppText>
+            )}
+          </TouchableOpacity>
+        </View>
+      )}
 
       {/* ── Left toolbar ── */}
       <SideToolbar panel={activePanel} onSelect={handleToolSelect} />
@@ -248,7 +685,7 @@ export default function ActiveTripScreen({navigation}) {
           <GpsIcon width={verticalScale(26)} height={verticalScale(26)} fill={colors.navy} />
         )}
       </TouchableOpacity>
-      
+{/*       
       <StepConfirmCard
         key={milestone?.step}
         visible={Boolean(milestone)}
@@ -256,7 +693,7 @@ export default function ActiveTripScreen({navigation}) {
         totalSteps={milestone?.totalSteps}
         title={milestone?.title}
         onConfirm={() => setMilestone(null)}
-      />
+      /> */}
 
       {/* ── Bottom trip progress ── */}
       <TripProgressBar

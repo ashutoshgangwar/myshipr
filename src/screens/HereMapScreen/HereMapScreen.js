@@ -29,6 +29,12 @@ import {
   NavigationEvents,
 } from '../../here';
 
+import {
+  buildTripInfo,
+  fitCameraToRoute,
+  normalizeLocation,
+} from '../../utils/here/mapHelpers';
+
 import MarkerRasterizer from './components/MarkerRasterizer';
 import MarkerPin from './components/MarkerPin';
 import {NavigationControls} from './components/NavigationControls';
@@ -72,16 +78,6 @@ const CURRENCY_SYMBOL = {INR: '₹', USD: '$', EUR: '€'};
 
 // ── Helpers ────────────────────────────────────────────────────────────────
 
-function normalizeLocation(loc) {
-  if (!loc) return null;
-  const latitude = Number(loc.latitude);
-  const longitude = Number(loc.longitude);
-  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) return null;
-  // (0,0) is the classic "no fix yet" sentinel, never a real destination here.
-  if (latitude === 0 && longitude === 0) return null;
-  return {latitude, longitude, description: loc.description || ''};
-}
-
 /** `{total, currency}` from HereRouting → a display string. */
 function formatTollTotal(tolls) {
   if (!tolls || typeof tolls.total !== 'number') return '—';
@@ -94,54 +90,6 @@ function formatFare(price, currency) {
   if (typeof price !== 'number') return '—';
   const symbol = CURRENCY_SYMBOL[currency] ?? currency ?? '';
   return `${symbol}${price.toFixed(2)}`;
-}
-
-/** `{distKm, etaText, arrivalStr}` from metres + seconds remaining. */
-function buildTripInfo(distanceMeters, durationSeconds) {
-  if (!Number.isFinite(distanceMeters) || !Number.isFinite(durationSeconds)) {
-    return null;
-  }
-  const totalMinutes = Math.ceil(durationSeconds / 60);
-  const hours = Math.floor(totalMinutes / 60);
-  const minutes = totalMinutes % 60;
-  return {
-    distKm: (distanceMeters / 1000).toFixed(1),
-    etaText: hours > 0 ? `${hours} hr ${minutes} min` : `${minutes} min`,
-    arrivalStr: new Date(Date.now() + durationSeconds * 1000).toLocaleTimeString(
-      [],
-      {hour: '2-digit', minute: '2-digit'},
-    ),
-  };
-}
-
-/** Frames a whole route by picking a zoom from its bounding-box span. */
-async function fitCameraToRoute(mapRef, polyline) {
-  if (!mapRef?.current || !polyline || polyline.length < 2) return;
-  try {
-    const lats = polyline.map(p => p.lat);
-    const lngs = polyline.map(p => p.lng);
-    const minLat = Math.min(...lats);
-    const maxLat = Math.max(...lats);
-    const minLng = Math.min(...lngs);
-    const maxLng = Math.max(...lngs);
-    const spanDeg = Math.max(maxLat - minLat, maxLng - minLng);
-    // Short hop → 15, cross-country → 5.
-    const zoom = Math.max(
-      5,
-      Math.min(15, 14 - Math.log2(Math.max(spanDeg, 0.001) * 111)),
-    );
-    await mapRef.current.moveCamera({
-      lat: (minLat + maxLat) / 2,
-      lng: (minLng + maxLng) / 2,
-      zoom,
-      bearing: 0,
-      tilt: 0,
-      animate: true,
-      animationDuration: 800,
-    });
-  } catch (err) {
-    console.warn('[HereMapScreen] fitCameraToRoute failed:', err);
-  }
 }
 
 // ───────────────────────────────────────────────────────────────────────────

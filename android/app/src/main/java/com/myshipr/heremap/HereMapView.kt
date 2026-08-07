@@ -26,7 +26,10 @@ import com.here.sdk.core.engine.SDKNativeEngine
 import com.here.sdk.core.Rectangle2D
 import com.here.sdk.core.Size2D
 import com.here.sdk.gestures.GestureState
+import com.here.sdk.gestures.GestureType
 import com.here.sdk.gestures.LongPressListener
+import com.here.sdk.gestures.MapInteractionListener
+import com.here.sdk.gestures.MapInteractionState
 import com.here.sdk.gestures.TapListener
 import com.here.sdk.mapview.LineCap
 import com.here.sdk.mapview.MapCameraAnimationFactory
@@ -483,6 +486,24 @@ class HereMapView(context: Context) : FrameLayout(context) {
         mapView.gestures.longPressListener = LongPressListener { state, point ->
             if (state == GestureState.BEGIN) emitTouchEvent("topMapLongPress", point)
         }
+
+        // While guidance runs, the navigator re-applies its follow camera on
+        // every location fix — which silently undoes any pan, pinch or rotate
+        // the driver makes. This listener reports that they have taken the
+        // camera over so the navigator can let go of it; the re-centre button
+        // hands it back. It is a listener, not a gesture handler, so the map's
+        // own default pan/zoom behaviour is untouched.
+        mapView.gestures.mapInteractionListener =
+            MapInteractionListener { gestureType, state ->
+                if (state != MapInteractionState.BEGIN) return@MapInteractionListener
+                if (gestureType == GestureType.PAN ||
+                    gestureType == GestureType.PINCH_ROTATE ||
+                    gestureType == GestureType.TWO_FINGER_PAN ||
+                    gestureType == GestureType.DOUBLE_TAP
+                ) {
+                    HereNavigationModule.instance?.onUserTookCamera(this)
+                }
+            }
     }
 
     /**

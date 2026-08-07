@@ -44,11 +44,36 @@ class HereNavigationModule: RCTEventEmitter {
     /// Where the navigator's location fixes come from.
     private enum LocationSource { case simulated, device }
 
+    /// Driving-view camera defaults. The SDK's own default follows the vehicle
+    /// but derives tilt and zoom from speed, so a real drive that starts parked
+    /// opens flat and far out — nothing like the tilted road-ahead view a
+    /// simulated run at 6× shows. These pin it instead.
+    private enum CameraDefaults {
+        static let tilt = 60.0
+        static let distance = 350.0
+        /// Vehicle sits three-quarters down the screen, so the road ahead fills
+        /// the frame — the "looking up the road" framing drivers expect.
+        static let principalY = 0.75
+        /// Guard rails for the zoom controls: closer than ~50 m clips through
+        /// the vehicle, further than ~5 km stops being a driving view.
+        static let minDistance = 50.0
+        static let maxDistance = 5000.0
+    }
+
     private var hasJsListeners = false
     /// Guards against re-emitting onManeuver for every progress tick.
     private var lastManeuverIndex: Int32 = -1
     /// Remembered so a reroute restarts the simulation at the same pace.
     private var simulationSpeedFactor: Double = 1.0
+
+    /// The live driving-camera settings. Kept here rather than read back off the
+    /// behavior so a zoom step preserves the tilt and framing, and so the same
+    /// view is restored when guidance is handed a new navigator.
+    private var cameraTilt = CameraDefaults.tilt
+    private var cameraDistance = CameraDefaults.distance
+    private var cameraPrincipalY = CameraDefaults.principalY
+    private var cameraBearing: Double?
+    private var cameraMode = "fixed"
 
 #if canImport(heresdk)
     private var visualNavigator: VisualNavigator?
@@ -106,6 +131,8 @@ class HereNavigationModule: RCTEventEmitter {
             navigator.route = route
 
             self.attachToMap(navigator)
+            self.readCameraOptions(options?["camera"] as? NSDictionary)
+            self.applyCameraBehavior(navigator)
 
             let simulate = (options?["simulate"] as? Bool) ?? true
             try self.startLocationSource(
@@ -177,6 +204,28 @@ class HereNavigationModule: RCTEventEmitter {
 #endif
     }
 
+    /// Retunes the camera while guidance is running — what the zoom controls and
+    /// the re-centre button call. Takes the same block `startNavigation` accepts
+    /// under `camera`.
+    @objc(setCameraBehavior:resolver:rejecter:)
+    func setCameraBehavior(
+        _ camera: NSDictionary?,
+        resolver resolve: @escaping RCTPromiseResolveBlock,
+        rejecter reject: @escaping RCTPromiseRejectBlock
+    ) {
+#if canImport(heresdk)
+        onMain(reject) {
+            self.readCameraOptions(camera)
+            if let navigator = self.visualNavigator {
+                self.applyCameraBehavior(navigator)
+            }
+            resolve(self.cameraState())
+        }
+#else
+        resolve(false)
+#endif
+    }
+
     // MARK: - Tracking (free driving, no route)
 
     /// Route-less tracking: the map follows the vehicle and speed events keep
@@ -198,6 +247,8 @@ class HereNavigationModule: RCTEventEmitter {
             navigator.route = nil
 
             self.attachToMap(navigator)
+            self.readCameraOptions(options?["camera"] as? NSDictionary)
+            self.applyCameraBehavior(navigator)
             try self.startLocationSource(
                 navigator: navigator, route: nil, source: .device, speedFactor: 1.0
             )
@@ -291,6 +342,83 @@ class HereNavigationModule: RCTEventEmitter {
         }
     }
 
+    /// Pins the camera to a driving view instead of leaving it on the SDK's
+    /// speed-derived default.
+    ///
+    /// `mode` picks what follows the vehicle:
+    ///   - `fixed`   — constant tilt and distance (the default here)
+    ///   - `dynamic` — the SDK varies tilt/zoom with speed
+    ///   - `free`    — nobody follows; the map keeps whatever the user's pan,
+    ///                 pinch and rotate gestures leave it at
+    private func applyCameraBehavior(_ navigator: VisualNavigator) {
+        let principalPoint = Anchor2D(horizontal: 0.5, vertical: cameraPrincipalY)
+        switch cameraMode {
+        case "free":
+            navigator.cameraBehavior = nil
+        case "dynamic":
+            let behavior = DynamicCameraBehavior()
+            behavior.normalizedPrincipalPoint = principalPoint
+            navigator.cameraBehavior = behavior
+        default:
+            let behavior = FixedCameraBehavior()
+            behavior.normalizedPrincipalPoint = principalPoint
+            behavior.cameraTiltInDegrees = cameraTilt
+            // A nil bearing means "point where the vehicle is heading", which
+            // is what makes the road run up the screen.
+            behavior.cameraBearingInDegrees = cameraBearing
+            behavior.zoom = MapMeasure(kind: .distanceInMeters, value: cameraDistance)
+            navigator.cameraBehavior = behavior
+        }
+    }
+
+    /// The driver panned, pinched or rotated the map the navigator is drawing
+    /// into. Hand them the camera — otherwise the next location fix snaps it
+    /// straight back and the gesture looks broken. `setCameraBehavior` with
+    /// `mode: 'fixed'` (the re-centre button) takes it back.
+    func onUserTookCamera(_ view: HereMapView) {
+        guard view === boundView, cameraMode != "free" else { return }
+        cameraMode = "free"
+        DispatchQueue.main.async {
+            if let navigator = self.visualNavigator {
+                self.applyCameraBehavior(navigator)
+            }
+        }
+    }
+
+    /// Folds a camera options block into the remembered settings. Absent keys
+    /// keep their current value, so a zoom step can send `distanceMeters` alone
+    /// without flattening the tilt.
+    private func readCameraOptions(_ camera: NSDictionary?) {
+        guard let camera = camera else { return }
+        if let mode = camera["mode"] as? String { cameraMode = mode }
+        if let tilt = (camera["tiltDegrees"] as? NSNumber)?.doubleValue {
+            cameraTilt = tilt
+        }
+        if let distance = (camera["distanceMeters"] as? NSNumber)?.doubleValue {
+            cameraDistance = min(
+                max(distance, CameraDefaults.minDistance), CameraDefaults.maxDistance
+            )
+        }
+        if let principalY = (camera["principalPointY"] as? NSNumber)?.doubleValue {
+            cameraPrincipalY = min(max(principalY, 0.0), 1.0)
+        }
+        // Absent leaves the current setting; an explicit null means heading-up.
+        if camera["bearingDegrees"] != nil {
+            cameraBearing = (camera["bearingDegrees"] as? NSNumber)?.doubleValue
+        }
+    }
+
+    /// The settings actually in force, so JS need not mirror the clamping.
+    private func cameraState() -> [String: Any] {
+        [
+            "mode": cameraMode,
+            "tiltDegrees": cameraTilt,
+            "distanceMeters": cameraDistance,
+            "principalPointY": cameraPrincipalY,
+            "bearingDegrees": cameraBearing as Any,
+        ]
+    }
+
     private func applyGuidanceOptions(_ navigator: VisualNavigator, _ options: NSDictionary?) {
         var notifications = ManeuverNotificationOptions()
         notifications.language = Self.language(options?["language"] as? String)
@@ -369,12 +497,63 @@ class HereNavigationModule: RCTEventEmitter {
             let engine = try locationEngine ?? LocationEngine()
             locationEngine = engine
             engine.addLocationDelegate(locationDelegate: navigator)
-            let status = engine.start(locationAccuracy: .navigation)
-            guard status == .engineStarted || status == .alreadyStarted else {
+
+            // HERE Positioning refuses to start until the app declares that
+            // HERE's privacy notice is covered by its own — see
+            // confirmPrivacyNotice(). Declare it before the first start.
+            var confirmation = confirmPrivacyNotice(engine)
+            var status = engine.start(locationAccuracy: .navigation)
+
+            // The declaration is forwarded to the SDK's positioning client,
+            // which does not exist until a start has built it — so the first one
+            // can be dropped on a cold engine. Declare again and retry.
+            if status == .privacyNoticeUnconfirmed {
+                confirmation = confirmPrivacyNotice(engine)
+                status = engine.start(locationAccuracy: .navigation)
+                if status == .privacyNoticeUnconfirmed {
+                    engine.removeLocationDelegate(locationDelegate: navigator)
+                    throw HereNavigationError.positioningFailed(
+                        "HERE Positioning rejected the privacy-notice confirmation "
+                            + "(\(confirmation)). Check that the HERE credentials are "
+                            + "licensed for positioning."
+                    )
+                }
+            }
+
+            guard Self.isPositioningStarted(status) else {
                 engine.removeLocationDelegate(locationDelegate: navigator)
                 throw HereNavigationError.positioningFailed(String(describing: status))
             }
         }
+    }
+
+    /// Whether a `LocationEngine.start` result means positioning is running.
+    ///
+    /// Three of the enum's cases mean success, not one: `.engineStarted` for a
+    /// cold start, `.alreadyStarted` when a feed is up, and a bare `.ok` — which
+    /// is what a start returns once the privacy-notice confirmation has been
+    /// accepted. Everything else is a genuine failure.
+    private static func isPositioningStarted(_ status: LocationEngineStatus) -> Bool {
+        status == .engineStarted || status == .alreadyStarted || status == .ok
+    }
+
+    /// Declares to the SDK that this app's own privacy notice covers HERE's.
+    ///
+    /// HERE Positioning is a data-collecting service, so the SDK will not start
+    /// it until the app states that it has told its users — until then every
+    /// `start()` answers `.privacyNoticeUnconfirmed`. This is a one-off
+    /// declaration by the app, not a consent dialog for the driver.
+    ///
+    /// The obligation behind it is real: MyShipr's privacy notice has to
+    /// actually include the HERE positioning disclosure for this call to be
+    /// truthful. `.pending` means the SDK is still writing the confirmation,
+    /// which is fine — the retry that follows picks it up.
+    private func confirmPrivacyNotice(_ engine: LocationEngine) -> ConfirmationStatus {
+        let status = engine.confirmHEREPrivacyNoticeInclusion()
+        if status != .ok && status != .pending {
+            NSLog("[HereNavigationModule] privacy-notice confirmation returned \(status)")
+        }
+        return status
     }
 
     private func stopLocationSources() {

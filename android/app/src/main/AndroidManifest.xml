@@ -13,6 +13,11 @@
  <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
 <uses-permission android:name="android.permission.WAKE_LOCK" />
 <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+<!-- HERE Positioning fixes the vehicle from Wi-Fi and cell observations as well
+     as GNSS. Without these it falls back to satellites alone, which is slow to
+     first fix and unusable indoors or in street canyons. -->
+<uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+<uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
 <uses-permission android:name="android.permission.RECORD_AUDIO"/>
 <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
 

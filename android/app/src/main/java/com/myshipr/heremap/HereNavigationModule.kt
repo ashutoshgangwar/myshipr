@@ -10,13 +10,18 @@ import com.facebook.react.bridge.ReadableMap
 import com.facebook.react.bridge.UiThreadUtil
 import com.facebook.react.bridge.WritableMap
 import com.facebook.react.modules.core.DeviceEventManagerModule
+import com.here.sdk.core.Anchor2D
 import com.here.sdk.core.LanguageCode
 import com.here.sdk.core.UnitSystem
+import com.here.sdk.location.ConfirmationStatus
 import com.here.sdk.location.LocationAccuracy
 import com.here.sdk.location.LocationEngine
 import com.here.sdk.location.LocationEngineStatus
+import com.here.sdk.mapview.MapMeasure
 import com.here.sdk.navigation.DestinationReachedListener
+import com.here.sdk.navigation.DynamicCameraBehavior
 import com.here.sdk.navigation.EventTextListener
+import com.here.sdk.navigation.FixedCameraBehavior
 import com.here.sdk.navigation.LocationSimulator
 import com.here.sdk.navigation.LocationSimulatorOptions
 import com.here.sdk.navigation.ManeuverNotificationOptions
@@ -57,6 +62,22 @@ class HereNavigationModule(
         private const val EVENT_VOICE_GUIDANCE = "onVoiceGuidance"
         private const val EVENT_LOCATION = "onNavigationLocation"
 
+        // Driving-view camera defaults. The SDK's own default follows the
+        // vehicle but derives tilt and zoom from speed, so a real drive that
+        // starts parked opens flat and far out — nothing like the tilted
+        // road-ahead view a simulated run at 6× shows. These pin it instead.
+        private const val DEFAULT_CAMERA_TILT = 60.0
+        private const val DEFAULT_CAMERA_DISTANCE = 350.0
+
+        // Vehicle sits three-quarters down the screen, so the road ahead fills
+        // the frame — the "looking up the road" framing drivers expect.
+        private const val DEFAULT_CAMERA_PRINCIPAL_Y = 0.75
+
+        // Guard rails for the zoom controls: closer than ~50 m clips through
+        // the vehicle, further than ~5 km stops being a driving view.
+        private const val MIN_CAMERA_DISTANCE = 50.0
+        private const val MAX_CAMERA_DISTANCE = 5000.0
+
         /**
          * The live instance, so the map view can detach the navigator before its
          * surface is destroyed and [HereSdkModule] can tear navigation down
@@ -82,6 +103,17 @@ class HereNavigationModule(
 
     /** Remembered so a reroute restarts the simulation at the same pace. */
     private var simulationSpeedFactor = 1.0
+
+    /**
+     * The live driving-camera settings. Kept here rather than read back off the
+     * behavior so a zoom step preserves the tilt and framing, and so the same
+     * view is restored when guidance is handed a new navigator.
+     */
+    private var cameraTilt = DEFAULT_CAMERA_TILT
+    private var cameraDistance = DEFAULT_CAMERA_DISTANCE
+    private var cameraPrincipalY = DEFAULT_CAMERA_PRINCIPAL_Y
+    private var cameraBearing: Double? = null
+    private var cameraMode = "fixed"
 
     init {
         instance = this
@@ -111,7 +143,11 @@ class HereNavigationModule(
      *   speedFactor?: Double,    // simulation speed multiplier, default 1.0
      *   voiceGuidance?: Boolean, // default true — emit onVoiceGuidance texts
      *   language?: String,       // LanguageCode name, e.g. 'EN_US'
-     *   unitSystem?: String      // 'metric' | 'imperialUs' | 'imperialUk'
+     *   unitSystem?: String,     // 'metric' | 'imperialUs' | 'imperialUk'
+     *   camera?: {               // driving view; see setCameraBehavior
+     *     mode?: 'fixed' | 'dynamic' | 'free',
+     *     tiltDegrees?, distanceMeters?, principalPointY?, bearingDegrees?
+     *   }
      * }
      * ```
      */
@@ -131,6 +167,8 @@ class HereNavigationModule(
             navigator.route = route
 
             attachToMap(navigator, options?.getIntOrNull("mapViewTag"))
+            readCameraOptions(options?.getMap("camera"))
+            applyCameraBehavior(navigator)
 
             val simulate = options?.getBooleanOrNull("simulate") ?: true
             startLocationSource(
@@ -211,6 +249,8 @@ class HereNavigationModule(
             navigator.route = null
 
             attachToMap(navigator, options?.getIntOrNull("mapViewTag"))
+            readCameraOptions(options?.getMap("camera"))
+            applyCameraBehavior(navigator)
             startLocationSource(navigator, route = null, source = LocationSource.DEVICE)
 
             true
@@ -293,6 +333,93 @@ class HereNavigationModule(
             navigator.stopRendering()
             navigator.startRendering(view.mapView)
             boundView = view
+        }
+    }
+
+    /**
+     * Pins the camera to a driving view instead of leaving it on the SDK's
+     * speed-derived default.
+     *
+     * `mode` picks what follows the vehicle:
+     *   - `fixed`   — constant tilt and distance (the default here)
+     *   - `dynamic` — the SDK varies tilt/zoom with speed
+     *   - `free`    — nobody follows; the map keeps whatever the user's pan,
+     *                 pinch and rotate gestures leave it at
+     */
+    private fun applyCameraBehavior(navigator: VisualNavigator) {
+        val principalPoint = Anchor2D(0.5, cameraPrincipalY)
+        navigator.cameraBehavior = when (cameraMode) {
+            "free" -> null
+            "dynamic" -> DynamicCameraBehavior().apply {
+                normalizedPrincipalPoint = principalPoint
+            }
+            else -> FixedCameraBehavior().apply {
+                normalizedPrincipalPoint = principalPoint
+                cameraTiltInDegrees = cameraTilt
+                // null bearing means "point where the vehicle is heading",
+                // which is what makes the road run up the screen.
+                cameraBearingInDegrees = cameraBearing
+                zoom = MapMeasure(MapMeasure.Kind.DISTANCE_IN_METERS, cameraDistance)
+            }
+        }
+    }
+
+    /**
+     * The driver panned, pinched or rotated the map the navigator is drawing
+     * into. Hand them the camera — otherwise the next location fix snaps it
+     * straight back and the gesture looks broken. [setCameraBehavior] with
+     * `mode: 'fixed'` (the re-centre button) takes it back.
+     */
+    fun onUserTookCamera(view: HereMapView) {
+        if (view !== boundView || cameraMode == "free") return
+        cameraMode = "free"
+        UiThreadUtil.runOnUiThread {
+            visualNavigator?.let { applyCameraBehavior(it) }
+        }
+    }
+
+    /**
+     * Folds a camera options block into the remembered settings. Absent keys
+     * keep their current value, so a zoom step can send `distanceMeters` alone
+     * without flattening the tilt.
+     */
+    private fun readCameraOptions(camera: ReadableMap?) {
+        if (camera == null) return
+        camera.getStringOrNull("mode")?.let { cameraMode = it }
+        camera.getDoubleOrNull("tiltDegrees")?.let { cameraTilt = it }
+        camera.getDoubleOrNull("distanceMeters")?.let {
+            cameraDistance = it.coerceIn(MIN_CAMERA_DISTANCE, MAX_CAMERA_DISTANCE)
+        }
+        camera.getDoubleOrNull("principalPointY")?.let {
+            cameraPrincipalY = it.coerceIn(0.0, 1.0)
+        }
+        // Absent leaves the current setting; an explicit null means heading-up.
+        if (camera.hasKey("bearingDegrees")) {
+            cameraBearing = camera.getDoubleOrNull("bearingDegrees")
+        }
+    }
+
+    /** The settings actually in force, so JS need not mirror the clamping. */
+    private fun cameraState(): WritableMap = Arguments.createMap().apply {
+        putString("mode", cameraMode)
+        putDouble("tiltDegrees", cameraTilt)
+        putDouble("distanceMeters", cameraDistance)
+        putDouble("principalPointY", cameraPrincipalY)
+        if (cameraBearing != null) putDouble("bearingDegrees", cameraBearing!!)
+        else putNull("bearingDegrees")
+    }
+
+    /**
+     * Retunes the camera while guidance is running — what the zoom controls and
+     * the re-centre button call. Takes the same block [startNavigation] accepts
+     * under `camera`.
+     */
+    @ReactMethod
+    fun setCameraBehavior(camera: ReadableMap?, promise: Promise) {
+        onUiThread(promise) {
+            readCameraOptions(camera)
+            visualNavigator?.let { applyCameraBehavior(it) }
+            cameraState()
         }
     }
 
@@ -427,10 +554,30 @@ class HereNavigationModule(
             LocationSource.DEVICE -> {
                 val engine = locationEngine ?: LocationEngine().also { locationEngine = it }
                 engine.addLocationListener(navigator)
-                val status = engine.start(LocationAccuracy.NAVIGATION)
-                if (status != LocationEngineStatus.ENGINE_STARTED &&
-                    status != LocationEngineStatus.ALREADY_STARTED
-                ) {
+
+                // HERE Positioning refuses to start until the app declares that
+                // HERE's privacy notice is covered by its own — see
+                // confirmPrivacyNotice(). Declare it before the first start.
+                var confirmation = confirmPrivacyNotice(engine)
+                var status = engine.start(LocationAccuracy.NAVIGATION)
+
+                // The declaration is forwarded to the SDK's positioning client,
+                // which does not exist until a start has built it — so the first
+                // one can be dropped on a cold engine. Declare again and retry.
+                if (status == LocationEngineStatus.PRIVACY_NOTICE_UNCONFIRMED) {
+                    confirmation = confirmPrivacyNotice(engine)
+                    status = engine.start(LocationAccuracy.NAVIGATION)
+                    if (status == LocationEngineStatus.PRIVACY_NOTICE_UNCONFIRMED) {
+                        engine.removeLocationListener(navigator)
+                        throw IllegalStateException(
+                            "HERE Positioning rejected the privacy-notice " +
+                                "confirmation ($confirmation). Check that the " +
+                                "HERE credentials are licensed for positioning."
+                        )
+                    }
+                }
+
+                if (!isPositioningStarted(status)) {
                     engine.removeLocationListener(navigator)
                     throw IllegalStateException(
                         "Device positioning could not start: $status"
@@ -438,6 +585,49 @@ class HereNavigationModule(
                 }
             }
         }
+    }
+
+    /**
+     * Whether a [LocationEngine.start] result means positioning is running.
+     *
+     * Three of the enum's members mean success, not one: ENGINE_STARTED for a
+     * cold start, ALREADY_STARTED when a feed is up, and a bare OK — which is
+     * what a start returns once the privacy-notice confirmation has been
+     * accepted. Everything else is a genuine failure.
+     */
+    private fun isPositioningStarted(status: LocationEngineStatus): Boolean =
+        status == LocationEngineStatus.ENGINE_STARTED ||
+            status == LocationEngineStatus.ALREADY_STARTED ||
+            status == LocationEngineStatus.OK
+
+    /**
+     * Declares to the SDK that this app's own privacy notice covers HERE's.
+     *
+     * HERE Positioning is a data-collecting service, so the SDK will not start
+     * it until the app states that it has told its users — until then every
+     * `start()` answers PRIVACY_NOTICE_UNCONFIRMED. This is a one-off
+     * declaration by the app, not a consent dialog for the driver.
+     *
+     * The obligation behind it is real: MyShipr's privacy notice has to
+     * actually include the HERE positioning disclosure for this call to be
+     * truthful. PENDING means the SDK is still writing the confirmation, which
+     * is fine — the retry that follows picks it up.
+     *
+     * Returns null when the SDK threw: internally this hands the flag to a
+     * positioning client it dereferences without a null check, so on a cold
+     * engine it can fail rather than answer. That is recoverable — the caller
+     * starts the engine and declares again — so it must not take the whole
+     * navigation session down with it.
+     */
+    private fun confirmPrivacyNotice(engine: LocationEngine): ConfirmationStatus? = try {
+        engine.confirmHEREPrivacyNoticeInclusion().also { status ->
+            if (status != ConfirmationStatus.OK && status != ConfirmationStatus.PENDING) {
+                Log.w(TAG, "privacy-notice confirmation returned $status")
+            }
+        }
+    } catch (e: Exception) {
+        Log.w(TAG, "privacy-notice confirmation threw: ${e.message}")
+        null
     }
 
     private fun stopLocationSources() {
