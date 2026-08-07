@@ -95,6 +95,9 @@ class HereNavigationModule(
     private var locationSimulator: LocationSimulator? = null
     private var locationEngine: LocationEngine? = null
 
+    /** Says the maneuvers out loud; the SDK only writes them. */
+    private var speaker: HereSpeaker? = null
+
     /** The map currently being rendered into, if any. */
     private var boundView: HereMapView? = null
 
@@ -425,17 +428,48 @@ class HereNavigationModule(
 
     private fun applyGuidanceOptions(navigator: VisualNavigator, options: ReadableMap?) {
         val voiceGuidance = options?.getBooleanOrNull("voiceGuidance") ?: true
+        // The SDK writes the instruction but never says it, so speaking is a
+        // separate switch: a screen that wants to run its own TTS off the
+        // onVoiceGuidance event can keep the text and silence this one.
+        val speak = options?.getBooleanOrNull("speak") ?: true
+        val language = options?.getStringOrNull("language")
 
         navigator.maneuverNotificationOptions = ManeuverNotificationOptions().apply {
-            language = parseLanguage(options?.getStringOrNull("language"))
+            this.language = parseLanguage(language)
             unitSystem = parseUnitSystem(options?.getStringOrNull("unitSystem"))
         }
+
+        if (voiceGuidance && speak) {
+            val speaker = ensureSpeaker()
+            speaker.setLanguage(language)
+            speaker.enabled = true
+        } else {
+            this.speaker?.enabled = false
+        }
+
         // Dropping the listener is what actually silences guidance; the options
         // above only shape the text.
         navigator.eventTextListener =
             if (voiceGuidance) EventTextListener { eventText ->
+                speaker?.speak(eventText.text)
                 emit(EVENT_VOICE_GUIDANCE, HereNavigationSerialization.eventText(eventText))
             } else null
+    }
+
+    private fun ensureSpeaker(): HereSpeaker =
+        speaker ?: HereSpeaker(reactContext).also { speaker = it }
+
+    /**
+     * Mutes or unmutes spoken guidance mid-trip. The `onVoiceGuidance` events
+     * keep arriving either way, so the on-screen instruction stays live while
+     * the cab is quiet.
+     */
+    @ReactMethod
+    fun setSpeechEnabled(enabled: Boolean, promise: Promise) {
+        onUiThread(promise) {
+            if (enabled) ensureSpeaker().enabled = true else speaker?.enabled = false
+            enabled
+        }
     }
 
     private fun parseLanguage(raw: String?): LanguageCode {
@@ -646,6 +680,9 @@ class HereNavigationModule(
 
     private fun teardown() {
         stopLocationSources()
+        // Cut off any half-spoken instruction — guidance for a trip that just
+        // ended is worse than silence.
+        speaker?.stop()
         visualNavigator?.let { navigator ->
             navigator.route = null
             navigator.stopRendering()
@@ -676,6 +713,8 @@ class HereNavigationModule(
     fun releaseForShutdown() = runOnUiThreadNow {
         try {
             teardown()
+            speaker?.shutdown()
+            speaker = null
             locationEngine = null
             visualNavigator = null
         } catch (e: Exception) {

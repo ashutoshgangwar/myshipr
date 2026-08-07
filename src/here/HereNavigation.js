@@ -93,7 +93,10 @@ export function addListeners(handlers) {
  * @param {boolean} [options.simulate=true] drive the route with LocationSimulator
  *   instead of the device GPS
  * @param {number}  [options.speedFactor=1] simulation speed multiplier
- * @param {boolean} [options.voiceGuidance=true] emit `onVoiceGuidance` texts
+ * @param {boolean} [options.voiceGuidance=true] produce guidance texts at all —
+ *   both the spoken instruction and the `onVoiceGuidance` event
+ * @param {boolean} [options.speak=true] say those texts aloud. Turn it off to
+ *   keep the events and run your own TTS off them instead.
  * @param {string}  [options.language='EN_US'] HERE LanguageCode name
  * @param {string}  [options.unitSystem='metric'] 'metric'|'imperialUs'|'imperialUk'
  * @param {number}  [options.mapViewTag] specific <HereMapView> to render into;
@@ -151,6 +154,23 @@ export function setCameraBehavior(camera) {
   return HereNavigationModule.setCameraBehavior(camera ?? null);
 }
 
+/**
+ * Mutes or unmutes spoken guidance mid-trip.
+ *
+ * The SDK writes the instruction text but never says it — the native speaker
+ * added alongside it does. `onVoiceGuidance` keeps firing either way, so the
+ * on-screen instruction stays live while the cab is quiet.
+ *
+ * @param {boolean} enabled
+ * @returns {Promise<boolean>} the state actually applied
+ */
+export function setSpeechEnabled(enabled) {
+  if (!HereNavigationModule) {
+    return Promise.resolve(false);
+  }
+  return HereNavigationModule.setSpeechEnabled(!!enabled);
+}
+
 /** Ends guidance and stops the location feed. */
 export function stopNavigation() {
   if (!HereNavigationModule) {
@@ -204,6 +224,7 @@ export default {
   startNavigation,
   setRoute,
   setCameraBehavior,
+  setSpeechEnabled,
   stopNavigation,
   startTracking,
   stopTracking,

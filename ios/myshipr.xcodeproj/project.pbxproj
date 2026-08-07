@@ -34,6 +34,7 @@
 		7DF9823907CA559CA9F082CE /* HereRoutingModule.m in Sources */ = {isa = PBXBuildFile; fileRef = 31570583BEAE5FC6A1967BFA /* HereRoutingModule.m */; };
 		0BFE4FD9D95055EA81FC765F /* HereSerialization.swift in Sources */ = {isa = PBXBuildFile; fileRef = 006913F6E73251DAA7C0F681 /* HereSerialization.swift */; };
 		619ACA571CF05BE2B4D4AE41 /* HereNavigationModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 495410959A76587189CC0F24 /* HereNavigationModule.swift */; };
+		BE5A11C0FEED4A0100000001 /* HereSpeaker.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE5A11C0FEED4A0100000002 /* HereSpeaker.swift */; };
 		8689DAF124A7535AB76082B2 /* HereNavigationModule.m in Sources */ = {isa = PBXBuildFile; fileRef = D4694C39BD675FB2B250A0F8 /* HereNavigationModule.m */; };
 /* End PBXBuildFile section */
 
@@ -84,6 +85,7 @@
 		31570583BEAE5FC6A1967BFA /* HereRoutingModule.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = HereRoutingModule.m; path = myshipr/HereRoutingModule.m; sourceTree = "<group>"; };
 		006913F6E73251DAA7C0F681 /* HereSerialization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = HereSerialization.swift; path = myshipr/HereSerialization.swift; sourceTree = "<group>"; };
 		495410959A76587189CC0F24 /* HereNavigationModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = HereNavigationModule.swift; path = myshipr/HereNavigationModule.swift; sourceTree = "<group>"; };
+		BE5A11C0FEED4A0100000002 /* HereSpeaker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = HereSpeaker.swift; path = myshipr/HereSpeaker.swift; sourceTree = "<group>"; };
 		D4694C39BD675FB2B250A0F8 /* HereNavigationModule.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = HereNavigationModule.m; path = myshipr/HereNavigationModule.m; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -124,6 +126,7 @@
 				31570583BEAE5FC6A1967BFA /* HereRoutingModule.m */,
 				006913F6E73251DAA7C0F681 /* HereSerialization.swift */,
 				495410959A76587189CC0F24 /* HereNavigationModule.swift */,
+				BE5A11C0FEED4A0100000002 /* HereSpeaker.swift */,
 				D4694C39BD675FB2B250A0F8 /* HereNavigationModule.m */,
 				9A1B2C3D4E5F6A7089ABCDEF /* HereMapModule.m */,
 				A1B2C3D4E5F60123456789A2 /* HereMapViewManager.swift */,
@@ -370,6 +373,7 @@
 				7DF9823907CA559CA9F082CE /* HereRoutingModule.m in Sources */,
 				0BFE4FD9D95055EA81FC765F /* HereSerialization.swift in Sources */,
 				619ACA571CF05BE2B4D4AE41 /* HereNavigationModule.swift in Sources */,
+				BE5A11C0FEED4A0100000001 /* HereSpeaker.swift in Sources */,
 				8689DAF124A7535AB76082B2 /* HereNavigationModule.m in Sources */,
 				A1B2C3D4E5F60123456789A3 /* HereMapViewManager.swift in Sources */,
 				2F91C33DC25251ED85C36910 /* HEREBridge.swift in Sources */,

@@ -129,6 +129,8 @@ export default function ActiveTripScreen({navigation, route}) {
   const [metersToNext, setMetersToNext] = useState(null);
   const [speedKph, setSpeedKph] = useState(0);
   const [cameraDistance, setCameraDistance] = useState(CAMERA_DISTANCE_METERS);
+  const [voiceText, setVoiceText] = useState(null);
+  const [speechOn, setSpeechOn] = useState(true);
 
   // Mirror refs, so event callbacks always see current values without
   // re-subscribing on every render.
@@ -358,7 +360,19 @@ export default function ActiveTripScreen({navigation, route}) {
     setNextManeuver(null);
     setMetersToNext(null);
     setSpeedKph(0);
+    setVoiceText(null);
   }, []);
+
+  /** Mutes the cab without stopping guidance — the text keeps coming. */
+  const toggleSpeech = useCallback(async () => {
+    const next = !speechOn;
+    setSpeechOn(next);
+    try {
+      await HereNavigation.setSpeechEnabled(next);
+    } catch (e) {
+      console.warn('[ActiveTripScreen] toggling speech failed:', e?.message);
+    }
+  }, [speechOn]);
 
   const handleStartNavigation = useCallback(async () => {
     if (isNavigating) {
@@ -408,6 +422,9 @@ export default function ActiveTripScreen({navigation, route}) {
       await HereNavigation.startNavigation(navRoute.routeId, {
         simulate: false,
         voiceGuidance: true,
+        // The SDK writes "Turn right onto Elm Street" but never says it; this
+        // is what hands the text to the native speaker.
+        speak: speechOn,
         // Bind to this screen's map explicitly. Without a tag the navigator
         // renders into whichever HereMapView most recently took a prop update,
         // which is the wrong one as soon as a second map exists anywhere in the
@@ -429,7 +446,14 @@ export default function ActiveTripScreen({navigation, route}) {
     } finally {
       setRouteLoading(false);
     }
-  }, [cameraDistance, handleStopNavigation, isNavigating, resolvePickup, trip]);
+  }, [
+    cameraDistance,
+    handleStopNavigation,
+    isNavigating,
+    resolvePickup,
+    speechOn,
+    trip,
+  ]);
 
   /**
    * Recalculates from the driver's actual position and hands the fresh route to
@@ -490,6 +514,10 @@ export default function ActiveTripScreen({navigation, route}) {
         setSpeedKph(
           Number.isFinite(position.speedKph) ? Math.round(position.speedKph) : 0,
         ),
+
+      // The native speaker has already said this; showing it too covers the
+      // driver who has the cab muted or missed it.
+      [NavigationEvents.VOICE_GUIDANCE]: guidance => setVoiceText(guidance.text),
 
       [NavigationEvents.ROUTE_DEVIATION]: handleRouteDeviation,
 
@@ -597,7 +625,8 @@ export default function ActiveTripScreen({navigation, route}) {
                 </AppText>
               ) : null}
               <AppText style={styles.tripCardManeuver} numberOfLines={2}>
-                {nextManeuver?.instruction ||
+                {voiceText ||
+                  nextManeuver?.instruction ||
                   nextManeuver?.roadName ||
                   'Follow the route'}
               </AppText>
@@ -624,6 +653,20 @@ export default function ActiveTripScreen({navigation, route}) {
                   </TouchableOpacity>
                 </View>
               </View>
+
+              <TouchableOpacity
+                style={styles.zoomRow}
+                onPress={toggleSpeech}
+                activeOpacity={0.7}>
+                <AppText style={styles.tripCardLabel}>VOICE</AppText>
+                <View style={styles.zoomBtns}>
+                  <View style={[styles.zoomBtn, speechOn && styles.zoomBtnOn]}>
+                    <AppText style={styles.zoomBtnText}>
+                      {speechOn ? '🔊' : '🔇'}
+                    </AppText>
+                  </View>
+                </View>
+              </TouchableOpacity>
             </>
           )}
 

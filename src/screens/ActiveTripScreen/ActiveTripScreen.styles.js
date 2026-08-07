@@ -158,6 +158,7 @@ export default StyleSheet.create({
     justifyContent: 'center',
     marginLeft: s(6),
   },
+  zoomBtnOn: {backgroundColor: colors.accentBlue},
   zoomBtnText: {
     color: colors.white,
     fontSize: ms(16),

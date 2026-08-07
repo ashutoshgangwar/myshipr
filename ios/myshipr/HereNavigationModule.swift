@@ -61,6 +61,8 @@ class HereNavigationModule: RCTEventEmitter {
     }
 
     private var hasJsListeners = false
+    /// Says the maneuvers out loud; the SDK only writes them.
+    private var speaker: HereSpeaker?
     /// Guards against re-emitting onManeuver for every progress tick.
     private var lastManeuverIndex: Int32 = -1
     /// Remembered so a reroute restarts the simulation at the same pace.
@@ -198,6 +200,29 @@ class HereNavigationModule: RCTEventEmitter {
         onMain(reject) {
             self.teardown()
             resolve(true)
+        }
+#else
+        resolve(false)
+#endif
+    }
+
+    /// Mutes or unmutes spoken guidance mid-trip. The `onVoiceGuidance` events
+    /// keep arriving either way, so the on-screen instruction stays live while
+    /// the cab is quiet.
+    @objc(setSpeechEnabled:resolver:rejecter:)
+    func setSpeechEnabled(
+        _ enabled: Bool,
+        resolver resolve: @escaping RCTPromiseResolveBlock,
+        rejecter reject: @escaping RCTPromiseRejectBlock
+    ) {
+#if canImport(heresdk)
+        onMain(reject) {
+            if enabled {
+                self.ensureSpeaker().enabled = true
+            } else {
+                self.speaker?.enabled = false
+            }
+            resolve(enabled)
         }
 #else
         resolve(false)
@@ -429,6 +454,25 @@ class HereNavigationModule: RCTEventEmitter {
         // above only shape the text.
         let voiceGuidance = (options?["voiceGuidance"] as? Bool) ?? true
         navigator.eventTextDelegate = voiceGuidance ? self : nil
+
+        // The SDK writes the instruction but never says it, so speaking is a
+        // separate switch: a screen that wants to run its own TTS off the
+        // onVoiceGuidance event can keep the text and silence this one.
+        let speak = (options?["speak"] as? Bool) ?? true
+        if voiceGuidance && speak {
+            let speaker = ensureSpeaker()
+            speaker.setLanguage(options?["language"] as? String)
+            speaker.enabled = true
+        } else {
+            self.speaker?.enabled = false
+        }
+    }
+
+    private func ensureSpeaker() -> HereSpeaker {
+        if let existing = speaker { return existing }
+        let created = HereSpeaker()
+        speaker = created
+        return created
     }
 
     private static func language(_ raw: String?) -> LanguageCode {
@@ -572,6 +616,9 @@ class HereNavigationModule: RCTEventEmitter {
 
     private func teardown() {
         stopLocationSources()
+        // Cut off any half-spoken instruction — guidance for a trip that just
+        // ended is worse than silence.
+        speaker?.stop()
         if let navigator = visualNavigator {
             navigator.route = nil
             navigator.stopRendering()
@@ -591,6 +638,7 @@ class HereNavigationModule: RCTEventEmitter {
     func releaseForShutdown() {
         let work = {
             self.teardown()
+            self.speaker = nil
             self.locationEngine = nil
             self.visualNavigator = nil
         }
@@ -702,6 +750,7 @@ extension HereNavigationModule: DestinationReachedDelegate {
 
 extension HereNavigationModule: EventTextDelegate {
     func onEventTextUpdated(_ eventText: EventText) {
+        speaker?.speak(eventText.text)
         emit(Event.voiceGuidance, HereSerialization.eventText(eventText))
     }
 }

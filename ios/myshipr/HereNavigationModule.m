@@ -28,6 +28,12 @@ RCT_EXTERN_METHOD(
 )
 
 RCT_EXTERN_METHOD(
+  setSpeechEnabled:(BOOL)enabled
+  resolver:(RCTPromiseResolveBlock)resolve
+  rejecter:(RCTPromiseRejectBlock)reject
+)
+
+RCT_EXTERN_METHOD(
   startTracking:(NSDictionary *)options
   resolver:(RCTPromiseResolveBlock)resolve
   rejecter:(RCTPromiseRejectBlock)reject
