@@ -1,6 +1,9 @@
 import axios from 'axios';
+import {Platform} from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import DeviceInfo from 'react-native-device-info';
 import {API_BASE_URL, API_TIMEOUT, DEBUG} from '@env';
+import {getFcmToken} from '../services/FirebaseMessagingService';
 
 // --- Config --------------------------------------------------------------
 
@@ -15,6 +18,7 @@ export const API_ENDPOINTS = {
     login: '/auth/login',
     refresh: '/auth/refresh',
     logout: '/auth/logout',
+    registerDevice: '/auth/devices/register',
   },
 };
 
@@ -404,6 +408,72 @@ export const validateLogin = (identifier, password) => {
 };
 
 /**
+ * Registers this device for push notifications against the logged-in user.
+ *
+ * POST /api/v1/auth/devices/register
+ * → { fcmRegistrationToken, platform: 'ANDROID' | 'IOS', deviceName,
+ *     firebaseInstallationId? }
+ *
+ * The endpoint is authenticated: pass the `accessToken` the login response just
+ * returned and it goes out as `Authorization: Bearer <token>`. Without it the
+ * request interceptor still attaches whatever token is in storage, so an
+ * already-logged-in caller can omit it.
+ *
+ * `firebaseInstallationId` is optional and is only sent when a caller supplies
+ * one; reading it would need the @react-native-firebase/installations package,
+ * which is not part of this app.
+ *
+ * @param {{fcmRegistrationToken?: string, firebaseInstallationId?: string,
+ *          accessToken?: string}} [params]
+ * @returns {Promise<object|null>} the response body, or null when there is no
+ *   FCM token to register (permission denied / token minting failed)
+ */
+export const registerDevice = async ({
+  fcmRegistrationToken,
+  firebaseInstallationId,
+  accessToken,
+} = {}) => {
+  // The caller usually already has the token; fall back to asking FCM for it.
+  const token = fcmRegistrationToken || (await getFcmToken());
+  if (!token) {
+    log('device register skipped — no FCM token');
+    return null;
+  }
+
+  // getDeviceName() is the user-set name ("Ashutosh's iPhone", "Pixel 8"); it
+  // is the only async call here and a native failure must not break the flow,
+  // so we fall back to the model name.
+  const deviceName =
+    (await DeviceInfo.getDeviceName().catch(() => null)) || DeviceInfo.getModel();
+
+  const body = {
+    fcmRegistrationToken: token,
+    platform: Platform.OS === 'ios' ? 'IOS' : 'ANDROID',
+    deviceName,
+  };
+  if (firebaseInstallationId) {
+    body.firebaseInstallationId = firebaseInstallationId;
+  }
+
+  // Explicit header when the caller hands us the token straight from the login
+  // response — it removes any dependency on the write to storage having landed.
+  // Otherwise the request interceptor fills in the stored one.
+  const config = accessToken
+    ? {headers: {Authorization: `Bearer ${accessToken}`}}
+    : undefined;
+
+  log('device register payload', {...body, fcmRegistrationToken: token});
+
+  const {data} = await apiClient.post(
+    API_ENDPOINTS.auth.registerDevice,
+    body,
+    config,
+  );
+  log('device registered', {platform: body.platform, deviceName});
+  return data;
+};
+
+/**
  * Logs in with a phone number OR an email address, plus the password, and
  * stores the returned session.
  *
@@ -421,6 +491,32 @@ export const login = async ({identifier, password}) => {
   const payload = entered.includes('@')
     ? {email: entered, password}
     : {phoneNumber: entered.replace(/[\s()-]/g, ''), password};
+
+  // Registers this device for push at login time. getFcmToken() never throws —
+  // it returns null when permission is denied or the token can't be minted, and
+  // a missing token must not block the login, so the key is simply omitted.
+  const fcmRegistrationToken = await getFcmToken();
+  if (fcmRegistrationToken) {
+    payload.fcmRegistrationToken = fcmRegistrationToken;
+  }
+
+  // getDeviceName() is the only async one (it reads the user-set name, e.g.
+  // "Ashutosh's iPhone") and needs a permission-free native call, so a failure
+  // must not take the login down with it.
+  const deviceName = await DeviceInfo.getDeviceName().catch(() => null);
+  const deviceInfo = {
+    deviceName,
+    devicePlatform: Platform.OS, // 'android' | 'ios'
+    deviceOsVersion: DeviceInfo.getSystemVersion(),
+    deviceModel: DeviceInfo.getModel(),
+    isTablet: DeviceInfo.isTablet(),
+  };
+
+  // safe() masks every *token key, so the FCM token is put back in full — it is
+  // a device address, not a credential, and seeing it is the point of this log.
+  // The password stays masked.
+  log('login payload', {...safe(payload), fcmRegistrationToken});
+  log('device info', deviceInfo);
 
   try {
     const {data: body} = await apiClient.post(API_ENDPOINTS.auth.login, payload);
@@ -440,6 +536,18 @@ export const login = async ({identifier, password}) => {
       hasRefreshToken: Boolean(data.refreshToken),
       expiresIn: data.expiresIn,
     });
+
+    // Push registration is a side effect of logging in, not part of it: it runs
+    // after the session is stored (the endpoint needs the bearer token) and is
+    // deliberately not awaited, so a slow or failing /devices/register can
+    // neither delay the user nor turn a successful login into an error.
+    registerDevice({
+      fcmRegistrationToken,
+      accessToken: data.accessToken,
+    }).catch(err =>
+      log('device register failed', err?.response?.status || err?.message),
+    );
+
     return data;
   } catch (err) {
     if (err.response) {

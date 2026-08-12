@@ -5,7 +5,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { hydrateLocationCache } from './src/services/LocationService';
 import { initFirebaseMessaging } from './src/services/FirebaseMessagingService';
 import { navigationRef, resetTo, getCurrentRouteName } from './src/Navigation/navigationRef';
-import { onSessionExpired } from './src/config/api';
+import { onSessionExpired, registerDevice, hasSession } from './src/config/api';
 
 // Screens that are already part of the signed-out flow — a late session-expiry
 // callback must not yank the user off the login form they are typing into.
@@ -37,6 +37,26 @@ export default function App() {
         console.log('[App] Foreground notification:', message?.notification),
       onNotificationOpen: message =>
         console.log('[App] Notification opened app:', message?.data),
+      // FCM rotates the token (app restore, reinstall, data cleared). Login
+      // already registered the old one, so the server keeps pushing to a dead
+      // address unless we re-register here. Signed-out users have no bearer
+      // token to send with it — their next login registers the fresh token.
+      onTokenRefreshed: async token => {
+        console.log('[App] FCM token refreshed:', token);
+        if (!(await hasSession())) {
+          console.log('[App] No session — device register deferred to next login');
+          return;
+        }
+        try {
+          await registerDevice({fcmRegistrationToken: token});
+          console.log('[App] Device re-registered with rotated FCM token');
+        } catch (err) {
+          console.warn(
+            '[App] Device re-register failed:',
+            err?.response?.status || err?.message,
+          );
+        }
+      },
     }).then(unsubscribe => {
       cleanup = unsubscribe;
     });
