@@ -21,8 +21,10 @@ import styles from './HereNavigationDemo.styles';
  * emulator with no GPS fix.
  */
 
-const ORIGIN = {latitude: 50.1109, longitude: 8.6821, label: 'Frankfurt'};
-const DESTINATION = {latitude: 48.1374, longitude: 11.5755, label: 'Munich'};
+// const ORIGIN = {latitude: 38.5281383, longitude: -121.4089137, label: 'Frankfurt'};
+// const DESTINATION = {latitude: 38.6434742, longitude: -90.5102509, label: 'Munich'};
+const ORIGIN = {latitude: 40.708282, longitude: -74.0873504, label: 'US. 202, New Jersey'};
+const DESTINATION = {latitude: 40.9036133, longitude:-74.3779209, label: 'US. 202, New Jersey'};
 
 const formatDistance = meters =>
   meters == null ? '—' : `${(meters / 1000).toFixed(1)} km`;
@@ -151,7 +153,7 @@ export default function HereNavigationDemo({navigation}) {
     try {
       await HereNavigation.startNavigation(route.routeId, {
         simulate: true,
-        speedFactor: 8,
+        speedFactor: 4,
         voiceGuidance: true,
       });
       setNavigating(true);

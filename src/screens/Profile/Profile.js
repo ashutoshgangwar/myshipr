@@ -1,118 +1,246 @@
-import React from 'react';
+import React, {useState} from 'react';
 import {
   View,
-  Text,
-  StyleSheet,
-  SafeAreaView,
   ScrollView,
+  TextInput,
+  TouchableOpacity,
+  Image,
 } from 'react-native';
+import {SafeAreaView} from 'react-native-safe-area-context';
+
 import styles from './Profile.styles';
+import {
+  CONTACT_FIELDS,
+  DETAIL_SECTIONS,
+  DRIVER,
+  GRID_COLUMNS,
+  INSURANCE,
+  ONBOARDING_NOTICE,
+  ms,
+} from './constants';
 import StatusBar from '../../component/StatusBar/StatusBar';
-import { colors } from '../../theme/colors';
+import DashboardHeader from '../../component/DashboardHeader/DashboardHeader';
 import AppText from '../../theme/AppText';
+import {colors} from '../../theme/colors';
+import {IS_TABLET} from '../../theme/device';
+import BackArrow from '../../assets/svg_icon/Back_arrow_map.svg';
+import Chevron from '../../assets/svg_icon/Chevron_Down.svg';
+import CameraIcon from '../../assets/svg_icon/camera_icon.svg';
+import LockIcon from '../../assets/svg_icon/lock.svg';
+import {openCamera} from '../../services/MediaService';
 
-const Profile = () => {
+const BACK_ICON = IS_TABLET ? 24 : 18;
+const CHEVRON = IS_TABLET ? ms(20) : ms(18);
+
+// A label over a boxed input. Read-only fields keep the filled box but stop
+// taking taps, so the form reads the same whether or not it can be edited.
+const Field = ({
+  label,
+  placeholder,
+  value,
+  onChangeText,
+  keyboardType,
+  editable = false,
+  columns = 1,
+}) => (
+  <View style={[styles.field, {width: `${100 / columns}%`}]}>
+    <AppText style={styles.fieldLabel} numberOfLines={1}>
+      {label}
+    </AppText>
+    <TextInput
+      style={[styles.input, editable && styles.inputEditable]}
+      value={value}
+      onChangeText={onChangeText}
+      placeholder={placeholder}
+      placeholderTextColor={colors.textMuted}
+      keyboardType={keyboardType}
+      editable={editable}
+      autoCapitalize={keyboardType === 'email-address' ? 'none' : 'sentences'}
+    />
+  </View>
+);
+
+// White card with the navy title strip the detail sections share.
+const Section = ({title, children}) => (
+  <View style={styles.section}>
+    <View style={styles.sectionHeader}>
+      <AppText style={styles.sectionTitle}>{title}</AppText>
+    </View>
+    <View style={styles.sectionBody}>{children}</View>
+  </View>
+);
+
+export default function Profile({navigation}) {
+  const [contact, setContact] = useState({
+    phone: DRIVER.phone,
+    email: DRIVER.email,
+  });
+  const [faceLock, setFaceLock] = useState(DRIVER.faceLockEnabled);
+  const [avatarUri, setAvatarUri] = useState(DRIVER.avatarUri ?? null);
+
+  const setField = (key, text) =>
+    setContact(prev => ({...prev, [key]: text}));
+
+  // openCamera resolves to null when the shot is cancelled or the permission
+  // is denied, so the current photo survives either way.
+  const changeAvatar = async () => {
+    const asset = await openCamera();
+    if (asset?.uri) {
+      setAvatarUri(asset.uri);
+    }
+  };
+
+  const goBack = () => navigation?.goBack();
+
   return (
-    <SafeAreaView style={styles.container}>
-       <StatusBar
-            backgroundColor={colors.primary}
-            barStyle="light-content"
-            translucent={false}
-          />
-      <ScrollView showsVerticalScrollIndicator={false}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View style={styles.avatar} />
-          <AppText style={styles.name}>Ashutosh Gangwar</AppText>
-          <AppText style={styles.subTitle}>CDL Class A • ID: DRV-4521</AppText>
+    <SafeAreaView style={styles.safe} edges={['top']}>
+      <StatusBar
+        backgroundColor={colors.primary}
+        barStyle="light-content"
+        translucent={false}
+      />
 
-          <View style={styles.badgeRow}>
-            <View style={styles.verifiedBadge}>
-              <AppText style={styles.badgeText}>Verified</AppText>
+      <View style={styles.page}>
+        <ScrollView
+          style={styles.scroll}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}>
+          <DashboardHeader
+            title="Profile Settings"
+            subtitle="Manage your login and contact details"
+            headerStyle={styles.dashboardHeader}
+            titleStyle={styles.headerTitle}
+            subtitleStyle={styles.headerSubtitle}
+            icon={
+              <TouchableOpacity
+                style={styles.backBtn}
+                activeOpacity={0.8}
+                onPress={goBack}>
+                <BackArrow width={BACK_ICON} height={BACK_ICON} />
+              </TouchableOpacity>
+            }
+          />
+
+          <View style={styles.body}>
+            {/* IDENTITY */}
+            <View style={styles.identityCard}>
+              <View style={styles.avatarWrap}>
+                {avatarUri ? (
+                  <Image source={{uri: avatarUri}} style={styles.avatar} />
+                ) : (
+                  <View style={styles.avatar} />
+                )}
+                <TouchableOpacity
+                  style={styles.avatarBadge}
+                  activeOpacity={0.8}
+                  onPress={changeAvatar}>
+                  <CameraIcon width={ms(11)} height={ms(11)} />
+                </TouchableOpacity>
+              </View>
+
+              <View style={styles.identityText}>
+                <AppText style={styles.driverName} numberOfLines={1}>
+                  {DRIVER.name}
+                </AppText>
+                <AppText style={styles.driverRole}>{DRIVER.role}</AppText>
+              </View>
             </View>
-            <View style={styles.ratingBadge}>
-              <AppText style={styles.badgeText}>⭐ 4.9</AppText>
+
+            {/* CONTACT — the only editable section */}
+            <Section title="Contact and Security">
+              <View style={styles.fieldRow}>
+                {CONTACT_FIELDS.map(field => (
+                  <Field
+                    key={field.key}
+                    label={field.label}
+                    placeholder={field.placeholder}
+                    keyboardType={field.keyboardType}
+                    value={contact[field.key]}
+                    onChangeText={text => setField(field.key, text)}
+                    editable
+                    columns={2}
+                  />
+                ))}
+              </View>
+
+              {/* Flips the stored preference. Re-enrolling the face itself
+                  happens in the biometric prompt this row will hand off to. */}
+              <TouchableOpacity
+                style={styles.faceLockRow}
+                activeOpacity={0.85}
+                onPress={() => setFaceLock(prev => !prev)}>
+                <View style={styles.faceLockText}>
+                  <AppText style={styles.faceLockTitle}>Face Lock</AppText>
+                  <AppText style={styles.faceLockSub}>
+                    {faceLock ? 'Enabled' : 'Disabled'} · Tap to Change
+                  </AppText>
+                </View>
+                <View style={styles.chevron}>
+                  <Chevron
+                    width={CHEVRON}
+                    height={CHEVRON}
+                    color={colors.textMuted}
+                  />
+                </View>
+              </TouchableOpacity>
+            </Section>
+
+            <View style={styles.notice}>
+              <LockIcon
+                width={ms(13)}
+                height={ms(13)}
+                color={colors.white}
+              />
+              <AppText style={styles.noticeText}>{ONBOARDING_NOTICE}</AppText>
             </View>
+
+            {/* ONBOARDING DETAILS — read-only, owned by the Carrier Portal */}
+            {DETAIL_SECTIONS.map(section => (
+              <Section key={section.key} title={section.title}>
+                <View style={styles.fieldRow}>
+                  {section.fields.map(field => (
+                    <Field
+                      key={field.key}
+                      label={field.label}
+                      placeholder="Not provided"
+                      value={DRIVER.details[field.key]}
+                      columns={field.full ? 1 : GRID_COLUMNS}
+                    />
+                  ))}
+                </View>
+              </Section>
+            ))}
+
+            <Section title="Insurance Details">
+              <View style={styles.insuranceRow}>
+                <View style={styles.insuranceText}>
+                  <AppText style={styles.insuranceTitle}>
+                    {INSURANCE.title}
+                  </AppText>
+                  <AppText style={styles.insuranceSub}>
+                    {INSURANCE.subtitle}
+                  </AppText>
+                </View>
+
+                <View
+                  style={[
+                    styles.insurancePill,
+                    !DRIVER.companyInsured && styles.insurancePillOff,
+                  ]}>
+                  <AppText
+                    style={[
+                      styles.insurancePillText,
+                      !DRIVER.companyInsured && styles.insurancePillTextOff,
+                    ]}>
+                    {DRIVER.companyInsured ? 'Yes' : 'No'}
+                  </AppText>
+                </View>
+              </View>
+            </Section>
           </View>
-        </View>
-
-        {/* Stats Card */}
-        <View style={styles.card}>
-          <View style={styles.statRow}>
-            <Stat title="247" subtitle="Total Deliveries" />
-            <Stat title="98.5%" subtitle="On-Time Rate" />
-          </View>
-
-          <View style={styles.statRow}>
-            <Stat title="$156k" subtitle="Total Earnings" />
-            <Stat title="5 yrs" subtitle="Experience" />
-          </View>
-        </View>
-
-        {/* Documents */}
-        <View style={styles.card}>
-          <AppText style={styles.sectionTitle}>Documents & Verification</AppText>
-
-          <DocItem
-            title="CDL License"
-            subtitle="Expires: May 20, 2028"
-            status="Verified"
-          />
-
-          <DocItem
-            title="DOT Medical"
-            subtitle="Expires: Jan 15, 2027"
-            status="Verified"
-          />
-
-          <DocItem
-            title="Insurance"
-            subtitle="Expires: Dec 31, 2026"
-            status="Verified"
-          />
-
-          <DocItem
-            title="Vehicle Registration"
-            status="Pending"
-            pending
-          />
-        </View>
-
-        {/* Vehicle */}
-        <View style={styles.card}>
-          <AppText style={styles.sectionTitle}>Assigned Vehicle</AppText>
-          <AppText style={styles.vehicleTitle}>Semi-Truck 18-Wheeler</AppText>
-          <AppText style={styles.vehicleSub}>CA • ABC1234</AppText>
-        </View>
-      </ScrollView>
+        </ScrollView>
+      </View>
     </SafeAreaView>
   );
-};
-
-/* ---------- Components ---------- */
-
-const Stat = ({ title, subtitle }) => (
-  <View style={styles.statBox}>
-    <AppText style={styles.statTitle}>{title}</AppText>
-    <AppText style={styles.statSub}>{subtitle}</AppText>
-  </View>
-);
-
-const DocItem = ({ title, subtitle, status, pending }) => (
-  <View style={styles.docRow}>
-    <View>
-      <AppText style={styles.docTitle}>{title}</AppText>
-      {subtitle && <AppText style={styles.docSub}>{subtitle}</AppText>}
-    </View>
-    <View
-      style={[
-        styles.statusBadge,
-        pending ? styles.pending : styles.verified,
-      ]}
-    >
-      <AppText style={styles.statusText}>{status}</AppText>
-    </View>
-  </View>
-);
-
-export default Profile;
+}

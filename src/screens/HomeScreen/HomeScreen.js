@@ -96,11 +96,11 @@ const SINGLE_STATS = [MILES_STAT, EARNINGS_STAT];
 // Static for now: edit the coordinate to change where the trip goes.
 const STATIC_TRIP = {
   destinationLocation: {
-    latitude: 28.4225019,
-    longitude: 76.8252699,
-    description: 'Gurgaon, Haryana, India',
+    latitude: 28.6050923,
+    longitude: 77.2776434,
+    description: 'Mayur Vihar Phase 1, Delhi, India',
   },
-  destinationText: 'Gurgaon, Haryana, India',
+  destinationText: 'Mayur Vihar Phase 1, Delhi, India',
 };
 
 const TRIP_STATS = [

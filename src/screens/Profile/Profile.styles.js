@@ -1,149 +1,297 @@
-import { StyleSheet } from 'react-native';
-import { moderateScale, verticalScale } from 'react-native-size-matters';
-import { colors } from '../../theme/colors';
+import {StyleSheet} from 'react-native';
+import {colors} from '../../theme/colors';
+import {IS_TABLET} from '../../theme/device';
+import {ms, vs} from './constants';
 
-const styles = StyleSheet.create({
-  container: {
+// Half a gutter of padding on every field, cancelled by the same negative
+// margin on the row — keeps the outer columns flush with the card edge.
+export const FIELD_GUTTER = ms(14);
+
+export default StyleSheet.create({
+  safe: {
     flex: 1,
-    backgroundColor: colors.white || '#0F172A',
+    backgroundColor: colors.navy,
   },
 
-  header: {
-    backgroundColor: colors.primary || '#2563EB',
-    padding: moderateScale(20),
+  page: {
+    flex: 1,
+    backgroundColor: colors.screenBg,
+  },
+
+  scroll: {
+    flex: 1,
+  },
+
+  scrollContent: {
+    paddingBottom: vs(32),
+  },
+
+  /* ---------- Header ---------- */
+  dashboardHeader: {
+    paddingHorizontal: ms(16),
+    paddingTop: vs(10),
+    paddingBottom: vs(22),
+    borderBottomLeftRadius: 0,
+    borderBottomRightRadius: 0,
+  },
+
+  // Fills the header's white badge so the whole square stays tappable.
+  backBtn: {
+    width: '100%',
+    height: '100%',
     alignItems: 'center',
-    borderBottomLeftRadius: moderateScale(25),
-    borderBottomRightRadius: moderateScale(25),
+    justifyContent: 'center',
+  },
+
+  headerTitle: {
+    marginLeft: ms(4),
+    color: colors.white,
+    fontSize: IS_TABLET ? ms(17) : ms(19),
+    fontWeight: '700',
+  },
+
+  headerSubtitle: {
+    color: colors.onDarkMedium,
+    fontSize: IS_TABLET ? ms(11) : ms(12),
+  },
+
+  /* ---------- Identity card ---------- */
+  body: {
+    paddingHorizontal: ms(16),
+    paddingTop: vs(16),
+  },
+
+  identityCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.white,
+    borderRadius: ms(14),
+    paddingHorizontal: ms(16),
+    paddingVertical: vs(16),
+    gap: ms(14),
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
+  },
+
+  avatarWrap: {
+    width: ms(56),
+    height: ms(56),
   },
 
   avatar: {
-    width: moderateScale(70),
-    height: moderateScale(70),
-    borderRadius: moderateScale(35),
-    backgroundColor: colors.gray200 || '#E5E7EB',
-    marginBottom: verticalScale(10),
+    width: '100%',
+    height: '100%',
+    borderRadius: ms(28),
+    backgroundColor: colors.gray400,
   },
 
-  name: {
-    color: colors.white || '#fff',
-    fontSize: moderateScale(22),
+  // Camera affordance pinned to the lower-right of the avatar.
+  avatarBadge: {
+    position: 'absolute',
+    right: -ms(1),
+    bottom: 0,
+    width: ms(20),
+    height: ms(20),
+    borderRadius: ms(10),
+    backgroundColor: colors.splashSubtitle,
+    borderWidth: 1,
+    borderColor: colors.border_Color,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  identityText: {
+    flex: 1,
+    minWidth: 0,
+  },
+
+  driverName: {
+    color: colors.textStrong,
+    fontSize: ms(18),
     fontWeight: '700',
   },
 
-  subTitle: {
-    color: colors.lightBlue || '#E0E7FF',
-    fontSize: moderateScale(14),
-    marginTop: verticalScale(4),
+  driverRole: {
+    color: colors.textMuted,
+    fontSize: ms(12),
+    fontWeight: '500',
+    marginTop: vs(3),
   },
 
-  badgeRow: {
-    flexDirection: 'row',
-    marginTop: verticalScale(10),
-    gap: moderateScale(10),
+  /* ---------- Section card ---------- */
+  section: {
+    backgroundColor: colors.white,
+    borderRadius: ms(12),
+    marginTop: vs(16),
+    overflow: 'hidden',
+    shadowColor: '#000',
+    shadowOffset: {width: 0, height: 2},
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
   },
 
-  verifiedBadge: {
-    backgroundColor: colors.success || '#22C55E',
-    paddingHorizontal: moderateScale(12),
-    paddingVertical: verticalScale(4),
-    borderRadius: moderateScale(20),
-  },
-
-  ratingBadge: {
-    backgroundColor: colors.warning || '#FACC15',
-    paddingHorizontal: moderateScale(12),
-    paddingVertical: verticalScale(4),
-    borderRadius: moderateScale(20),
-  },
-
-  badgeText: {
-    color: colors.black || '#000',
-    fontWeight: '600',
-    fontSize: moderateScale(12),
-  },
-
-  card: {
-    backgroundColor: colors.white || '#fff',
-    margin: moderateScale(16),
-    borderRadius: moderateScale(16),
-    padding: moderateScale(16),
-  },
-
-  statRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    marginBottom: verticalScale(16),
-  },
-
-  statBox: {
-    width: '48%',
-  },
-
-  statTitle: {
-    fontSize: moderateScale(22),
-    fontWeight: '700',
-    color: colors.darkBlue || '#0F172A',
-  },
-
-  statSub: {
-    fontSize: moderateScale(13),
-    color: colors.gray500 || '#64748B',
+  sectionHeader: {
+    backgroundColor: colors.navy,
+    paddingHorizontal: ms(14),
+    paddingVertical: vs(9),
   },
 
   sectionTitle: {
-    fontSize: moderateScale(16),
-    fontWeight: '700',
-    marginBottom: verticalScale(12),
+    color: colors.white,
+    fontSize: ms(13),
+    fontWeight: '600',
   },
 
-  docRow: {
+  sectionBody: {
+    paddingHorizontal: ms(14),
+    paddingTop: vs(14),
+    paddingBottom: vs(6),
+  },
+
+  /* ---------- Fields ---------- */
+  fieldRow: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexWrap: 'wrap',
+    marginHorizontal: -FIELD_GUTTER / 2,
+  },
+
+  field: {
+    paddingHorizontal: FIELD_GUTTER / 2,
+    marginBottom: vs(14),
+  },
+
+  fieldLabel: {
+    color: colors.textStrong,
+    fontSize: ms(12),
+    fontWeight: '600',
+    marginBottom: vs(6),
+  },
+
+  input: {
+    backgroundColor: colors.gray400,
+    borderRadius: ms(8),
+    paddingHorizontal: ms(12),
+    paddingVertical: vs(9),
+    fontSize: ms(13),
+    fontWeight: '500',
+    color: colors.textStrong,
+    // RN's default input padding fights the fixed height on Android.
+    includeFontPadding: false,
+  },
+
+  inputEditable: {
+    backgroundColor: colors.white,
+    borderWidth: 1,
+    borderColor: colors.border_Color,
+  },
+
+  /* ---------- Face lock row ---------- */
+  faceLockRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    paddingVertical: verticalScale(12),
-    borderBottomWidth: 0.5,
-    borderColor: colors.gray200 || '#E5E7EB',
+    borderTopWidth: 1,
+    borderTopColor: colors.border_Color,
+    paddingTop: vs(12),
+    paddingBottom: vs(10),
+    gap: ms(12),
   },
 
-  docTitle: {
-    fontSize: moderateScale(15),
+  faceLockText: {
+    flex: 1,
+    minWidth: 0,
+  },
+
+  faceLockTitle: {
+    color: colors.textStrong,
+    fontSize: ms(14),
     fontWeight: '600',
   },
 
-  docSub: {
-    fontSize: moderateScale(12),
-    color: colors.gray600 || '#6B7280',
+  faceLockSub: {
+    color: colors.textMuted,
+    fontSize: ms(11),
+    fontWeight: '500',
+    marginTop: vs(2),
   },
 
-  statusBadge: {
-    paddingHorizontal: moderateScale(12),
-    paddingVertical: verticalScale(4),
-    borderRadius: moderateScale(20),
+  // Chevron_Down points down, so the row rotates it into a right chevron.
+  chevron: {
+    transform: [{rotate: '-90deg'}],
   },
 
-  verified: {
-    backgroundColor: colors.success || '#22C55E',
+  /* ---------- Insurance row ---------- */
+  insuranceRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: vs(4),
+    paddingBottom: vs(10),
+    gap: ms(12),
   },
 
-  pending: {
-    backgroundColor: colors.warningLight || '#FDE68A',
+  insuranceText: {
+    flex: 1,
+    minWidth: 0,
   },
 
-  statusText: {
-    fontSize: moderateScale(12),
+  insuranceTitle: {
+    color: colors.textStrong,
+    fontSize: ms(14),
     fontWeight: '600',
   },
 
-  vehicleTitle: {
-    fontSize: moderateScale(16),
+  insuranceSub: {
+    color: colors.textMuted,
+    fontSize: ms(11),
+    fontWeight: '500',
+    marginTop: vs(2),
+  },
+
+  insurancePill: {
+    minWidth: ms(56),
+    alignItems: 'center',
+    borderRadius: ms(6),
+    borderWidth: 1,
+    paddingHorizontal: ms(14),
+    paddingVertical: vs(5),
+    backgroundColor: colors.successLight,
+    borderColor: colors.sucess_border,
+  },
+
+  insurancePillOff: {
+    backgroundColor: colors.gray400,
+    borderColor: colors.border_Color,
+  },
+
+  insurancePillText: {
+    color: colors.success_text,
+    fontSize: ms(12),
     fontWeight: '600',
   },
 
-  vehicleSub: {
-    fontSize: moderateScale(13),
-    color: colors.gray600 || '#6B7280',
-    marginTop: verticalScale(4),
+  insurancePillTextOff: {
+    color: colors.textMuted,
+  },
+
+  /* ---------- Onboarding notice ---------- */
+  notice: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: colors.lightbg_gray2,
+    borderRadius: ms(6),
+    paddingHorizontal: ms(12),
+    paddingVertical: vs(8),
+    marginTop: vs(14),
+    gap: ms(8),
+  },
+
+  noticeText: {
+    flex: 1,
+    color: colors.white,
+    fontSize: ms(11),
+    fontWeight: '500',
   },
 });
-
-export default styles;
