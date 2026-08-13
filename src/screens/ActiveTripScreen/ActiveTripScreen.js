@@ -21,7 +21,6 @@ import {verticalScale} from 'react-native-size-matters';
 
 import styles from './ActiveTripScreen.styles';
 import {colors} from '../../theme/colors';
-import AppText from '../../theme/AppText';
 
 import {
   HereMapView,
@@ -40,8 +39,10 @@ import {
 } from '../HereMapScreen/constants/navigationConstants';
 import {getCurrentLocation} from '../../services/LocationService';
 import GpsIcon from '../../assets/svg_icon/gps-svg.svg';
+import NavigationIcon from '../../assets/svg_icon/Navigation_Icon.svg';
 
 import TripTopBar from './components/TripTopBar';
+import DirectionCard from './components/DirectionCard';
 import SideToolbar from './components/SideToolbar';
 import ChatPanel from './components/ChatPanel';
 import DocumentsPanel from './components/DocumentsPanel';
@@ -63,7 +64,6 @@ const PANEL_IDS = ['chat', 'documents', 'bidding', 'navigate', 'call'];
 // A reroute costs a routing request, so deviations are only acted on this often.
 const REROUTE_MIN_INTERVAL_MS = 10_000;
 const CAMERA_DISTANCE_METERS = 350;
-const CAMERA_ZOOM_STEP = 1.6;
 
 /**
  * The stop-by-stop checklist the driver works through: confirm the step, then
@@ -73,6 +73,7 @@ const CAMERA_ZOOM_STEP = 1.6;
 const MILESTONES = [
   {
     step: 1,
+    code: 'P1',
     title: 'Pre Trip Inspection',
     action: 'VERIFY PICKUP',
     doneTitle: 'Shipment Procured',
@@ -81,6 +82,7 @@ const MILESTONES = [
   },
   {
     step: 2,
+    code: 'P2',
     title: 'Shipment Procured at Pickup 2',
     action: 'VERIFY PICKUP',
     doneTitle: 'Shipment Procured',
@@ -89,6 +91,7 @@ const MILESTONES = [
   },
   {
     step: 3,
+    code: 'D1',
     title: 'Arrived at Drop 1',
     action: 'VERIFY DROP',
     doneTitle: 'Shipment Delivered',
@@ -97,6 +100,7 @@ const MILESTONES = [
   },
   {
     step: 4,
+    code: 'D2',
     title: 'Arrived at Drop 2',
     action: 'VERIFY DROP',
     doneTitle: 'Shipment Delivered',
@@ -104,18 +108,6 @@ const MILESTONES = [
     otpDesc: 'Ask the receiver to share OTP to complete the drop',
   },
 ];
-
-// The bar draws one segment per stop, so a verified stop clears exactly one.
-const TRIP_START_PROGRESS = 0.63;
-const PROGRESS_PER_STOP = 0.2;
-
-/** Distance to the next maneuver, snapped the way a nav readout counts down. */
-function formatMeters(meters) {
-  if (!Number.isFinite(meters) || meters < 0) return '';
-  if (meters < 10) return 'Now';
-  if (meters < 1000) return `${Math.round(meters / 10) * 10} m`;
-  return `${(meters / 1000).toFixed(1)} km`;
-}
 
 export default function ActiveTripScreen({navigation, route}) {
   const insets = useSafeAreaInsets();
@@ -157,10 +149,24 @@ export default function ActiveTripScreen({navigation, route}) {
     setMilestoneStage('card');
   }, []);
 
-  const tripProgress = Math.min(
-    1,
-    TRIP_START_PROGRESS + milestoneIndex * PROGRESS_PER_STOP,
-  );
+  // ── Trip progress ───────────────────────────────────────────────────────
+  // Driven by the route itself — total distance against what is still left —
+  // so the bar creeps forward as the truck moves instead of only stepping when
+  // a stop is verified. `total` is banked rather than read off the live route:
+  // a reroute returns a route measured from wherever the driver now is, which
+  // on its own would reset the bar to empty mid-trip.
+  const [leg, setLeg] = useState({total: null, remaining: null});
+  const legRef = useRef(leg);
+  useEffect(() => {
+    legRef.current = leg;
+  }, [leg]);
+
+  const tripProgress = useMemo(() => {
+    const {total, remaining} = leg;
+    if (!Number.isFinite(total) || total <= 0) return 0;
+    if (!Number.isFinite(remaining)) return 0;
+    return Math.max(0, Math.min(1, 1 - remaining / total));
+  }, [leg]);
 
   // ── Trip route + guidance ───────────────────────────────────────────────
   // The route currently previewed or being navigated (see HereRouting).
@@ -173,10 +179,6 @@ export default function ActiveTripScreen({navigation, route}) {
   const [navInfo, setNavInfo] = useState(null);
   const [nextManeuver, setNextManeuver] = useState(null);
   const [metersToNext, setMetersToNext] = useState(null);
-  const [speedKph, setSpeedKph] = useState(0);
-  const [cameraDistance, setCameraDistance] = useState(CAMERA_DISTANCE_METERS);
-  const [voiceText, setVoiceText] = useState(null);
-  const [speechOn, setSpeechOn] = useState(true);
 
   // Mirror refs, so event callbacks always see current values without
   // re-subscribing on every render.
@@ -321,6 +323,11 @@ export default function ActiveTripScreen({navigation, route}) {
         trip.truckDetails,
       );
       setActiveRoute(hereRoute);
+      // Nothing driven yet, so the whole route is what is left.
+      setLeg({
+        total: hereRoute.distanceMeters,
+        remaining: hereRoute.distanceMeters,
+      });
 
       await Promise.all([
         mapRef.current?.clearMarkers(),
@@ -369,27 +376,6 @@ export default function ActiveTripScreen({navigation, route}) {
 
   // ── Navigation ───────────────────────────────────────────────────────────
 
-  /**
-   * Zoom while guiding. The navigator re-applies its camera on every location
-   * fix, so a pinch is undone within the second — the tracking distance itself
-   * has to move instead. Native clamps and returns what it settled on.
-   */
-  const zoomBy = useCallback(
-    async factor => {
-      try {
-        const applied = await HereNavigation.setCameraBehavior({
-          distanceMeters: cameraDistance * factor,
-        });
-        if (Number.isFinite(applied?.distanceMeters)) {
-          setCameraDistance(applied.distanceMeters);
-        }
-      } catch (e) {
-        console.warn('[ActiveTripScreen] camera zoom failed:', e?.message);
-      }
-    },
-    [cameraDistance],
-  );
-
   const handleStopNavigation = useCallback(async () => {
     try {
       await HereNavigation.stopNavigation();
@@ -400,20 +386,7 @@ export default function ActiveTripScreen({navigation, route}) {
     setNavInfo(null);
     setNextManeuver(null);
     setMetersToNext(null);
-    setSpeedKph(0);
-    setVoiceText(null);
   }, []);
-
-  /** Mutes the cab without stopping guidance — the text keeps coming. */
-  const toggleSpeech = useCallback(async () => {
-    const next = !speechOn;
-    setSpeechOn(next);
-    try {
-      await HereNavigation.setSpeechEnabled(next);
-    } catch (e) {
-      console.warn('[ActiveTripScreen] toggling speech failed:', e?.message);
-    }
-  }, [speechOn]);
 
   const handleStartNavigation = useCallback(async () => {
     if (isNavigating) {
@@ -450,6 +423,12 @@ export default function ActiveTripScreen({navigation, route}) {
       );
       setActiveRoute(navRoute);
       setRouteError(null);
+      // Guidance routes from the driver's real position, so this is the
+      // distance the progress bar measures against for the rest of the trip.
+      setLeg({
+        total: navRoute.distanceMeters,
+        remaining: navRoute.distanceMeters,
+      });
 
       // Hand the map to the navigator: it renders the route, the maneuver
       // arrows and the vehicle itself, so our preview layers must come off or
@@ -464,8 +443,9 @@ export default function ActiveTripScreen({navigation, route}) {
         simulate: false,
         voiceGuidance: true,
         // The SDK writes "Turn right onto Elm Street" but never says it; this
-        // is what hands the text to the native speaker.
-        speak: speechOn,
+        // is what hands the text to the native speaker. Voice is simply on for
+        // the trip — there is no mute control on this screen.
+        speak: true,
         // Bind to this screen's map explicitly. Without a tag the navigator
         // renders into whichever HereMapView most recently took a prop update,
         // which is the wrong one as soon as a second map exists anywhere in the
@@ -473,10 +453,10 @@ export default function ActiveTripScreen({navigation, route}) {
         mapViewTag: mapRef.current?.getTag() ?? undefined,
         // Without this the SDK picks tilt and zoom from speed, so pulling away
         // from a standstill opens flat and far out instead of on the road
-        // ahead. Pin the driving view, at whatever zoom was last chosen.
+        // ahead. Pin the driving view.
         camera: {
           mode: 'fixed',
-          distanceMeters: cameraDistance,
+          distanceMeters: CAMERA_DISTANCE_METERS,
         },
       });
 
@@ -487,14 +467,7 @@ export default function ActiveTripScreen({navigation, route}) {
     } finally {
       setRouteLoading(false);
     }
-  }, [
-    cameraDistance,
-    handleStopNavigation,
-    isNavigating,
-    resolvePickup,
-    speechOn,
-    trip,
-  ]);
+  }, [handleStopNavigation, isNavigating, resolvePickup, trip]);
 
   /**
    * Recalculates from the driver's actual position and hands the fresh route to
@@ -523,6 +496,14 @@ export default function ActiveTripScreen({navigation, route}) {
           truckDetailsRef.current,
         );
         setActiveRoute(fresh);
+        // Keep what has already been driven and re-base the total on the new
+        // way round, so a detour lengthens the bar instead of resetting it.
+        const {total, remaining} = legRef.current;
+        const driven = Math.max(0, (total ?? 0) - (remaining ?? 0));
+        setLeg({
+          total: driven + fresh.distanceMeters,
+          remaining: fresh.distanceMeters,
+        });
         await HereNavigation.setRoute(fresh.routeId);
       } catch (e) {
         console.warn('[ActiveTripScreen] reroute failed:', e?.message);
@@ -547,18 +528,13 @@ export default function ActiveTripScreen({navigation, route}) {
             ? progress.distanceToNextManeuverMeters
             : null,
         );
+        // What is left of the drive — the progress bar's numerator.
+        if (Number.isFinite(progress.remainingDistanceMeters)) {
+          setLeg(prev => ({...prev, remaining: progress.remainingDistanceMeters}));
+        }
       },
 
       [NavigationEvents.MANEUVER]: next => setNextManeuver(next),
-
-      [NavigationEvents.LOCATION]: position =>
-        setSpeedKph(
-          Number.isFinite(position.speedKph) ? Math.round(position.speedKph) : 0,
-        ),
-
-      // The native speaker has already said this; showing it too covers the
-      // driver who has the cab muted or missed it.
-      [NavigationEvents.VOICE_GUIDANCE]: guidance => setVoiceText(guidance.text),
 
       [NavigationEvents.ROUTE_DEVIATION]: handleRouteDeviation,
 
@@ -592,6 +568,19 @@ export default function ActiveTripScreen({navigation, route}) {
     }
   }, []);
 
+  /**
+   * The floating navigate button: one meaning, "put me in the driving view".
+   * Idle that means starting guidance; mid-trip it re-locks the follow camera
+   * on the vehicle after the driver has panned the map away from it.
+   */
+  const handleNavigatePress = useCallback(() => {
+    if (isNavigating) {
+      HereNavigation.setCameraBehavior({mode: 'fixed'}).catch(() => {});
+      return;
+    }
+    handleStartNavigation();
+  }, [handleStartNavigation, isNavigating]);
+
   const closePanel = useCallback(() => setActivePanel(null), []);
   const goBack = useCallback(() => navigation?.goBack?.(), [navigation]);
 
@@ -604,6 +593,37 @@ export default function ActiveTripScreen({navigation, route}) {
       activeRoute.durationSeconds,
     );
   }, [activeRoute, isNavigating, navInfo]);
+
+  /**
+   * What the green next-turn card shows. It belongs to guidance, so it stays
+   * off the map until the driver taps the navigate button. Once guidance is
+   * running the navigator feeds it; the route's own maneuver list stands in for
+   * the first few seconds, before the first MANEUVER event lands.
+   */
+  const direction = useMemo(() => {
+    if (!isNavigating) return null;
+    if (nextManeuver) return {maneuver: nextManeuver, meters: metersToNext};
+
+    const list = activeRoute?.maneuvers;
+    if (!Array.isArray(list) || list.length === 0) return null;
+
+    // The first entry is the depart leg — the turn worth showing is the one
+    // after it, and that leg's length is how far there is to drive to reach it.
+    const turnIndex = list.findIndex(m => m.action !== 'depart');
+    const turn = turnIndex > 0 ? list[turnIndex] : list[0];
+    const meters = list
+      .slice(0, Math.max(turnIndex, 0))
+      .reduce((sum, m) => sum + (Number.isFinite(m.length) ? m.length : 0), 0);
+
+    return {maneuver: turn, meters: meters || turn.length};
+  }, [activeRoute, isNavigating, metersToNext, nextManeuver]);
+
+  // The line under the progress bar: "12 min · 18 km · ETA 5:38 PM". With the
+  // trip card gone this is also the only place a routing failure can surface,
+  // so an error takes the slot instead.
+  const legSummary = tripSummary
+    ? `${tripSummary.etaText} · ${tripSummary.distKm} km · ETA ${tripSummary.arrivalStr}`
+    : 'Calculating route…';
 
   return (
     // No top safe-area inset: insetting the root would leave the container's
@@ -638,97 +658,12 @@ export default function ActiveTripScreen({navigation, route}) {
         onService={() => {}}
       />
 
-      {/* ── Trip route + HERE turn-by-turn navigation ── */}
-      {trip.destination && (
-        <View style={styles.tripCard}>
-          <AppText style={styles.tripCardLabel}>
-            {isNavigating ? 'NAVIGATING TO' : 'NEXT STOP'}
-          </AppText>
-          <AppText style={styles.tripCardTitle} numberOfLines={1}>
-            {trip.destinationText}
-          </AppText>
-
-          {routeError ? (
-            <AppText style={styles.tripCardError} numberOfLines={3}>
-              {routeError}
-            </AppText>
-          ) : (
-            <AppText style={styles.tripCardStats}>
-              {tripSummary
-                ? `${tripSummary.distKm} km · ${tripSummary.etaText}`
-                : 'Calculating route…'}
-            </AppText>
-          )}
-
-          {isNavigating && (
-            <>
-              <View style={styles.tripCardDivider} />
-              {formatMeters(metersToNext) ? (
-                <AppText style={styles.tripCardManeuverDist}>
-                  {formatMeters(metersToNext)}
-                </AppText>
-              ) : null}
-              <AppText style={styles.tripCardManeuver} numberOfLines={2}>
-                {voiceText ||
-                  nextManeuver?.instruction ||
-                  nextManeuver?.roadName ||
-                  'Follow the route'}
-              </AppText>
-              <AppText style={styles.tripCardStats}>
-                {speedKph} km/h · ETA {navInfo?.arrivalStr ?? '—'}
-              </AppText>
-
-              {/* The follow camera overrides pinch on every location fix, so
-                  zoom has to move the tracking distance instead. */}
-              <View style={styles.zoomRow}>
-                <AppText style={styles.tripCardLabel}>ZOOM</AppText>
-                <View style={styles.zoomBtns}>
-                  <TouchableOpacity
-                    style={styles.zoomBtn}
-                    onPress={() => zoomBy(CAMERA_ZOOM_STEP)}
-                    activeOpacity={0.7}>
-                    <AppText style={styles.zoomBtnText}>−</AppText>
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.zoomBtn}
-                    onPress={() => zoomBy(1 / CAMERA_ZOOM_STEP)}
-                    activeOpacity={0.7}>
-                    <AppText style={styles.zoomBtnText}>+</AppText>
-                  </TouchableOpacity>
-                </View>
-              </View>
-
-              <TouchableOpacity
-                style={styles.zoomRow}
-                onPress={toggleSpeech}
-                activeOpacity={0.7}>
-                <AppText style={styles.tripCardLabel}>VOICE</AppText>
-                <View style={styles.zoomBtns}>
-                  <View style={[styles.zoomBtn, speechOn && styles.zoomBtnOn]}>
-                    <AppText style={styles.zoomBtnText}>
-                      {speechOn ? '🔊' : '🔇'}
-                    </AppText>
-                  </View>
-                </View>
-              </TouchableOpacity>
-            </>
-          )}
-
-          <TouchableOpacity
-            style={[styles.navBtn, isNavigating && styles.navBtnStop]}
-            onPress={handleStartNavigation}
-            disabled={routeLoading}
-            activeOpacity={0.85}>
-            {routeLoading ? (
-              <ActivityIndicator size="small" color={colors.white} />
-            ) : (
-              <AppText style={styles.navBtnText}>
-                {isNavigating ? 'End Navigation' : 'Start Navigation'}
-              </AppText>
-            )}
-          </TouchableOpacity>
-        </View>
-      )}
+      {/* ── Next turn ── */}
+      <DirectionCard
+        visible={Boolean(direction)}
+        maneuver={direction?.maneuver}
+        metersToNext={direction?.meters}
+      />
 
       {/* ── Left toolbar ── */}
       <SideToolbar panel={activePanel} onSelect={handleToolSelect} />
@@ -754,8 +689,10 @@ export default function ActiveTripScreen({navigation, route}) {
       )}
       {activePanel === 'call' && <CallPanel onClose={closePanel} />}
 
-      {/* ── Floating GPS re-center button ── */}
-      {/* Sits behind the panels (low zIndex), so it stays put when one opens. */}
+      {/* ── Floating map buttons ── */}
+      {/* Both sit behind the panels (low zIndex), so they stay put when one
+          opens. GPS re-centres the map on the driver; navigate hands the map to
+          the guidance view. */}
       <TouchableOpacity
         style={[
           styles.gpsButton,
@@ -767,7 +704,28 @@ export default function ActiveTripScreen({navigation, route}) {
         {locating ? (
           <ActivityIndicator size="small" color={colors.navy} />
         ) : (
-          <GpsIcon width={verticalScale(26)} height={verticalScale(26)} fill={colors.navy} />
+          <GpsIcon
+            width={verticalScale(26)}
+            height={verticalScale(26)}
+            fill={colors.navy}
+          />
+        )}
+      </TouchableOpacity>
+
+      <TouchableOpacity
+        style={[
+          styles.navFloatBtn,
+          {bottom: styles.navFloatBtn.bottom + insets.bottom},
+        ]}
+        onPress={handleNavigatePress}
+        disabled={routeLoading}
+        activeOpacity={0.8}>
+        {routeLoading ? (
+          <ActivityIndicator size="small" color={colors.accentBlue} />
+        ) : (
+          // The glyph is square inside a 44×30 viewBox, so equal width/height
+          // letterboxes it — it lands centred in the circle either way.
+          <NavigationIcon width={verticalScale(32)} height={verticalScale(32)} />
         )}
       </TouchableOpacity>
       
@@ -801,6 +759,10 @@ export default function ActiveTripScreen({navigation, route}) {
       {/* ── Bottom trip progress ── */}
       <TripProgressBar
         progress={tripProgress}
+        fromLabel={MILESTONES[milestoneIndex - 1]?.code ?? 'Current'}
+        toLabel={milestone?.code ?? 'Done'}
+        summary={routeError || legSummary}
+        summaryIsError={Boolean(routeError)}
         withCheckbox={activePanel === 'bidding'}
         onEndTrip={() => setPodOpen(true)}
         onMeasure={setBarHeight}

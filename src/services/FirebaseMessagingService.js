@@ -89,7 +89,7 @@ export async function getFcmToken() {
     }
 
     const token = await getToken(messaging);
-    console.log('[FCM] Token:', token);
+    console.log('[FCM] Token----:', token);
     return token;
   } catch (error) {
     console.warn('[FCM] getFcmToken error:', error);

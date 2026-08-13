@@ -16,6 +16,38 @@ const BAR_GAP = 12;
 
 // Reveal circle: diameter = 2× screen diagonal so it fully covers the screen
 // (from its centred origin) once scaled to 1.
+// Next-turn card green. Deliberately darker and flatter than colors.success —
+// it sits on the map, where the brighter green vibrates against the park fill.
+const DIRECTION_GREEN = '#3F7A5F';
+
+// The round white map buttons that flank the progress card. Shared shell so the
+// pair can't drift apart in size or height; each style below adds its own edge.
+const FLOAT_BTN = {
+  position: 'absolute',
+  // Sits above the floating progress card, which itself clears the bottom edge
+  // by BAR_GAP. The component adds the bottom safe-area inset on top.
+  bottom: vs(85 + BAR_GAP),
+  width: ms(46),
+  height: ms(46),
+  borderRadius: ms(23),
+  backgroundColor: colors.white,
+  alignItems: 'center',
+  justifyContent: 'center',
+  // Sit below the side toolbar (40), panels (45), top bar (50) and the
+  // ride-complete reveal animation (100) so those layers cover these buttons
+  // instead of them floating on top.
+  zIndex: 30,
+  ...Platform.select({
+    ios: {
+      shadowColor: '#3b82f6',
+      shadowOpacity: 0.35,
+      shadowRadius: 8,
+      shadowOffset: {width: 0, height: 2},
+    },
+    android: {elevation: 6},
+  }),
+};
+
 const {width: SCREEN_W, height: SCREEN_H} = Dimensions.get('window');
 const REVEAL_DIAMETER = Math.ceil(Math.hypot(SCREEN_W, SCREEN_H) * 2);
 
@@ -47,123 +79,49 @@ export default StyleSheet.create({
   },
   mapLoadingText: {color: colors.textMuted, fontSize: ms(13), marginTop: vs(8)},
 
-  // ── Floating GPS (re-center) button ───────────────────────────────────
-  gpsButton: {
+  // ── Floating map buttons (GPS left / navigate right) ──────────────────
+  // Both flank the progress card at the same height; only the edge differs.
+  gpsButton: {...FLOAT_BTN, left: s(12)},
+  navFloatBtn: {...FLOAT_BTN, right: s(12)},
+  // ── Next-turn direction card ──────────────────────────────────────────
+  // Tucked under the back button on the left, where the driver's eye already
+  // goes. Only on screen while guidance is running, so nothing sits here while
+  // the trip is being previewed.
+  directionCard: {
     position: 'absolute',
-    left: s(12),
-    // Sits above the floating progress card, which itself clears the bottom
-    // edge by BAR_GAP. The component adds the bottom safe-area inset on top.
-    bottom: vs(85 + BAR_GAP),
-    width: ms(46),
-    height: ms(46),
-    borderRadius: ms(23),
-    backgroundColor: colors.white,
-    alignItems: 'center',
-    justifyContent: 'center',
-    // Sit below the side toolbar (40), panels (45), top bar (50) and the
-    // ride-complete reveal animation (100) so those layers cover the GPS
-    // button instead of it floating on top of them.
-    zIndex: 30,
-    ...Platform.select({
-      ios: {
-        shadowColor: '#3b82f6',
-        shadowOpacity: 0.35,
-        shadowRadius: 8,
-        shadowOffset: {width: 0, height: 2},
-      },
-      android: {elevation: 6},
-    }),
-  },
-  // ── Trip route + HERE navigation card ─────────────────────────────────
-  // Top-right, clear of the SOS/service column above it. Sits below the
-  // floating panels (45) so an open panel covers it rather than fighting it.
-  tripCard: {
-    position: 'absolute',
-    top: vs(150),
+    top: IS_TABLET ? vs(75) : vs(95),
     left: s(14),
-    width: IS_TABLET ? ms(230) : ms(190),
-    backgroundColor: colors.white,
+    minWidth: IS_TABLET ? ms(80) : ms(68),
+    backgroundColor: DIRECTION_GREEN,
     borderRadius: ms(12),
-    borderWidth: 1,
-    borderColor: colors.border_Color,
-    paddingHorizontal: s(12),
-    paddingTop: vs(10),
-    paddingBottom: vs(12),
-    zIndex: 35,
+    paddingHorizontal: s(8),
+    paddingTop: vs(9),
+    paddingBottom: vs(8),
+    alignItems: 'center',
+    // Above the trip card (35), below the toolbar (40) and the panels (45).
+    zIndex: 36,
     ...Platform.select({
       ios: {
         shadowColor: '#000',
-        shadowOpacity: 0.15,
+        shadowOpacity: 0.2,
         shadowRadius: 8,
         shadowOffset: {width: 0, height: 3},
       },
       android: {elevation: 8},
     }),
   },
-  tripCardLabel: {
-    color: colors.textMuted,
-    fontSize: ms(9),
-    letterSpacing: 0.6,
-  },
-  tripCardTitle: {
-    color: colors.textStrong,
-    fontSize: ms(13),
-    fontWeight: 'bold',
-    marginTop: vs(2),
-  },
-  tripCardStats: {color: colors.textMuted, fontSize: ms(11), marginTop: vs(4)},
-  tripCardError: {color: colors.danger, fontSize: ms(10), marginTop: vs(4)},
-  tripCardDivider: {
-    height: 1,
-    backgroundColor: colors.border_Color,
-    marginVertical: vs(8),
-  },
-  tripCardManeuverDist: {
-    color: colors.accentBlue,
-    fontSize: ms(16),
-    fontWeight: '800',
-  },
-  tripCardManeuver: {
-    color: colors.text_dark,
-    fontSize: ms(11),
-    fontWeight: '600',
-    marginTop: vs(2),
-  },
-  navBtn: {
-    backgroundColor: colors.accentBlue,
-    borderRadius: ms(8),
-    paddingVertical: vs(8),
-    alignItems: 'center',
-    justifyContent: 'center',
-    minHeight: vs(30),
-    marginTop: vs(10),
-  },
-  navBtnStop: {backgroundColor: colors.danger},
-  navBtnText: {color: colors.white, fontSize: ms(12), fontWeight: '700'},
-  // Zoom lives on the card rather than as floating buttons: the left edge is
-  // already the toolbar and the GPS button, and the right edge is the step card.
-  zoomRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginTop: vs(8),
-  },
-  zoomBtns: {flexDirection: 'row'},
-  zoomBtn: {
-    width: ms(28),
-    height: ms(28),
-    borderRadius: ms(8),
-    backgroundColor: colors.primaryLight,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: s(6),
-  },
-  zoomBtnOn: {backgroundColor: colors.accentBlue},
-  zoomBtnText: {
+  directionLabel: {
     color: colors.white,
-    fontSize: ms(16),
+    fontSize: ms(11),
     fontWeight: '700',
-    lineHeight: ms(19),
+    marginTop: vs(6),
+    textAlign: 'center',
+  },
+  directionDistance: {
+    color: colors.onDarkMedium,
+    fontSize: ms(9),
+    marginTop: vs(1),
+    textAlign: 'center',
   },
 
   // ── Top bar ───────────────────────────────────────────────────────────
@@ -837,21 +795,38 @@ export default StyleSheet.create({
     fontWeight: '700',
   },
 
-  // Milestone segments (Start / P1 / P2 / D1 / D2). Equal-width columns so the
-  // labels line up with the start of the segment they belong to; the gap lives
-  // on the segment itself rather than the column to keep that alignment.
-  segmentRow: {flexDirection: 'row'},
-  segmentCol: {flex: 1},
-  segment: {
-    height: vs(7),
-    borderRadius: ms(2),
+  // One continuous bar for the leg being driven — the stop just cleared on the
+  // left, the one being driven to on the right. The fill colour carries the
+  // progress (see the ramp in TripProgressBar), so the track stays neutral.
+  progressTrack: {
+    height: vs(8),
+    borderRadius: ms(6),
     backgroundColor: colors.border_Color,
-    marginRight: s(4),
+    overflow: 'hidden',
   },
-  segmentLast: {marginRight: 0},
-  segmentDone: {backgroundColor: colors.success},
-  segmentActive: {backgroundColor: colors.accentBlue},
-  segmentLabel: {color: colors.textMuted, fontSize: ms(9), marginTop: vs(5)},
+  progressFill: {height: '100%', borderRadius: ms(6)},
+  progressStopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: vs(6),
+  },
+  // The stop codes bracket the summary: fixed-width ends keep the middle line
+  // centred on the bar however long the labels get.
+  progressStopLabel: {
+    width: ms(38),
+    color: colors.textMuted,
+    fontSize: ms(9),
+  },
+  progressStopLabelEnd: {textAlign: 'right'},
+  progressSummary: {
+    flex: 1,
+    color: colors.textMuted,
+    fontSize: ms(10),
+    textAlign: 'center',
+  },
+  // A routing failure takes the same slot — this is the only place it can be
+  // reported now that the trip card is gone.
+  progressSummaryError: {color: colors.danger},
 
   endTripBtn: {
     flexDirection: 'row',

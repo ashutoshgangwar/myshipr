@@ -1,27 +1,32 @@
-import React from 'react';
-import {View, TouchableOpacity} from 'react-native';
+import React, {useEffect, useRef} from 'react';
+import {View, TouchableOpacity, Animated, Easing} from 'react-native';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import AppText from '../../../theme/AppText';
 import styles from '../ActiveTripScreen.styles';
 
-// Trip milestones, in order: the origin, the pickups, then the drops. Each one
-// owns an equal slice of the bar, so `progress` maps onto a milestone index.
-const DEFAULT_STOPS = [
-  {key: 'start', label: 'Start'},
-  {key: 'p1', label: 'P1'},
-  {key: 'p2', label: 'P2'},
-  {key: 'd1', label: 'D1'},
-  {key: 'd2', label: 'D2'},
-];
+/**
+ * The fill ramp. It starts pale on a fresh leg and deepens as the driver closes
+ * on the stop, so how far along they are reads from the colour alone — a glance
+ * from the driving position, without parsing the percentage.
+ */
+const FILL_EARLY = '#A5DEB1';
+const FILL_MID = '#5BBF74';
+const FILL_LATE = '#2E9E44';
 
 /**
- * Bottom trip-progress bar: a segment per milestone (green = cleared,
- * blue = in progress, grey = still ahead) plus the End Trip button.
+ * Bottom trip-progress card: one continuous bar from the last stop to the next,
+ * the leg's distance/ETA under it, and the End Trip button.
  * `withCheckbox` renders the bidding-variant checkbox before the label.
  */
 export default function TripProgressBar({
   progress = 0.63,
-  stops = DEFAULT_STOPS,
+  // The stop just cleared and the one being driven to (e.g. "Current" → "P1").
+  fromLabel = 'Current',
+  toLabel = '',
+  // Leg summary line, e.g. "12 min · 18 km · ETA 5:38 PM". This is also where a
+  // routing failure surfaces, in which case `summaryIsError` colours it.
+  summary = '',
+  summaryIsError = false,
   withCheckbox = false,
   onEndTrip,
   // Reports this card's rendered height, so anything floating above it (the
@@ -30,9 +35,19 @@ export default function TripProgressBar({
 }) {
   const pct = Math.max(0, Math.min(1, progress));
 
-  // Which milestone the driver is on. At 100% this lands past the last index so
-  // every segment reads as cleared, which is what we want.
-  const activeIndex = Math.floor(pct * stops.length);
+  // Progress arrives in jumps (a location fix, a cleared stop); the bar grows
+  // into each new value rather than snapping, which is what makes the colour
+  // deepening read as movement.
+  const fill = useRef(new Animated.Value(pct)).current;
+  useEffect(() => {
+    Animated.timing(fill, {
+      toValue: pct,
+      duration: 600,
+      easing: Easing.out(Easing.cubic),
+      // Width and backgroundColor are not native-drivable.
+      useNativeDriver: false,
+    }).start();
+  }, [fill, pct]);
 
   // RN 0.83 draws Android edge-to-edge, so without the bottom inset the card
   // would overlap the system nav/gesture bar (and the iOS home indicator).
@@ -49,27 +64,46 @@ export default function TripProgressBar({
       <View style={styles.progressInfo}>
         <View style={styles.progressTopRow}>
           <AppText style={styles.progressLabel}>Trip Progress</AppText>
-          <AppText style={styles.progressPercent}>{Math.round(pct * 100)}%</AppText>
+          <AppText style={styles.progressPercent}>
+            {Math.round(pct * 100)}%
+          </AppText>
         </View>
 
-        <View style={styles.segmentRow}>
-          {stops.map((stop, i) => (
-            <View key={stop.key} style={styles.segmentCol}>
-              <View
-                style={[
-                  styles.segment,
-                  i < activeIndex && styles.segmentDone,
-                  i === activeIndex && styles.segmentActive,
-                  i === stops.length - 1 && styles.segmentLast,
-                ]}
-              />
-              {/* Left-aligned so each label sits under the start of its own
-                  segment, the way the milestones read on the map. */}
-              <AppText style={styles.segmentLabel} numberOfLines={1}>
-                {stop.label}
-              </AppText>
-            </View>
-          ))}
+        <View style={styles.progressTrack}>
+          <Animated.View
+            style={[
+              styles.progressFill,
+              {
+                width: fill.interpolate({
+                  inputRange: [0, 1],
+                  outputRange: ['0%', '100%'],
+                }),
+                backgroundColor: fill.interpolate({
+                  inputRange: [0, 0.5, 1],
+                  outputRange: [FILL_EARLY, FILL_MID, FILL_LATE],
+                }),
+              },
+            ]}
+          />
+        </View>
+
+        <View style={styles.progressStopRow}>
+          <AppText style={styles.progressStopLabel} numberOfLines={1}>
+            {fromLabel}
+          </AppText>
+          <AppText
+            style={[
+              styles.progressSummary,
+              summaryIsError && styles.progressSummaryError,
+            ]}
+            numberOfLines={2}>
+            {summary}
+          </AppText>
+          <AppText
+            style={[styles.progressStopLabel, styles.progressStopLabelEnd]}
+            numberOfLines={1}>
+            {toLabel}
+          </AppText>
         </View>
       </View>
 
