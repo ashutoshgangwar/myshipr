@@ -15,7 +15,7 @@ const FILL_LATE = '#2E9E44';
 
 /**
  * Bottom trip-progress card: one continuous bar from the last stop to the next,
- * the leg's distance/ETA under it, and the End Trip button.
+ * the leg's distance/ETA under it, and the Reached / End Trip button.
  * `withCheckbox` renders the bidding-variant checkbox before the label.
  */
 export default function TripProgressBar({
@@ -28,6 +28,9 @@ export default function TripProgressBar({
   summary = '',
   summaryIsError = false,
   withCheckbox = false,
+  // "Reached" while stops remain (it opens the stop's verify flow), "End Trip"
+  // on the last leg (it opens POD). The screen owns which one applies.
+  endLabel = 'End Trip',
   onEndTrip,
   // Reports this card's rendered height, so anything floating above it (the
   // verify-stop button) can sit flush without a hard-coded offset.
@@ -109,7 +112,7 @@ export default function TripProgressBar({
 
       <TouchableOpacity style={styles.endTripBtn} onPress={onEndTrip} activeOpacity={0.85}>
         {withCheckbox && <View style={styles.endTripCheckbox} />}
-        <AppText style={styles.endTripText}>End Trip</AppText>
+        <AppText style={styles.endTripText}>{endLabel}</AppText>
       </TouchableOpacity>
     </View>
   );

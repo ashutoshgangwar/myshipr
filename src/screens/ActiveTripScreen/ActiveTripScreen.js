@@ -50,8 +50,6 @@ import BiddingPanel from './components/BiddingPanel';
 import HoursOfServicePanel from './components/HoursOfServicePanel';
 import CallPanel from './components/CallPanel';
 import TripProgressBar from './components/TripProgressBar';
-import StepConfirmCard from './components/StepConfirmCard';
-import VerifyStopButton from './components/VerifyStopButton';
 import StopVerifyModal from './components/StopVerifyModal';
 import PodModal from './components/PodModal';
 
@@ -135,19 +133,32 @@ export default function ActiveTripScreen({navigation, route}) {
   const [panelFullscreen, setPanelFullscreen] = useState(false);
   const [podOpen, setPodOpen] = useState(false);
 
-  // ── Stop checklist: card → verify button → OTP → verified ──────────────
+  // ── Stop checklist: driving → OTP → verified ────────────────────────────
   const [milestoneIndex, setMilestoneIndex] = useState(0);
-  // 'card' | 'action' | 'otp' | 'verified' — one stage at a time, so the
-  // milestone card and the verify button are never on screen together.
-  const [milestoneStage, setMilestoneStage] = useState('card');
-  const [barHeight, setBarHeight] = useState(0);
+  // 'idle' | 'otp' | 'verified' — one stage at a time. 'idle' is the drive to
+  // the stop, with no paperwork on screen; tapping Reached is the only thing
+  // that opens the OTP sheet.
+  const [milestoneStage, setMilestoneStage] = useState('idle');
   const milestone = MILESTONES[milestoneIndex] ?? null;
 
   /** Stop cleared: bank the progress and move on to the next milestone. */
   const completeMilestone = useCallback(() => {
     setMilestoneIndex(i => i + 1);
-    setMilestoneStage('card');
+    setMilestoneStage('idle');
   }, []);
+
+  /**
+   * The bottom-bar button. While stops remain it reads "Reached" and opens that
+   * stop's OTP sheet straight away; once they are all cleared it reads "End
+   * Trip" and hands over to the proof-of-delivery flow.
+   */
+  const handleReachedPress = useCallback(() => {
+    if (milestone) {
+      setMilestoneStage('otp');
+      return;
+    }
+    setPodOpen(true);
+  }, [milestone]);
 
   // ── Trip progress ───────────────────────────────────────────────────────
   // Driven by the route itself — total distance against what is still left —
@@ -585,8 +596,12 @@ export default function ActiveTripScreen({navigation, route}) {
   const goBack = useCallback(() => navigation?.goBack?.(), [navigation]);
 
   // Whole-trip figures while previewing; what is left of it while guiding.
+  // navInfo only exists once the navigator has emitted its first ROUTE_PROGRESS,
+  // which can lag seconds behind startNavigation (and never arrives at all while
+  // the truck is stationary). Falling back to the route we just calculated keeps
+  // real distance/ETA on screen through that gap instead of "Calculating route…".
   const tripSummary = useMemo(() => {
-    if (isNavigating) return navInfo;
+    if (isNavigating && navInfo) return navInfo;
     if (!activeRoute) return null;
     return buildTripInfo(
       activeRoute.distanceMeters,
@@ -595,13 +610,18 @@ export default function ActiveTripScreen({navigation, route}) {
   }, [activeRoute, isNavigating, navInfo]);
 
   /**
-   * What the green next-turn card shows. While guidance runs the navigator
-   * feeds it; before that the calculated route's own maneuver list does, so the
-   * card is populated as soon as there is a route rather than staying blank
-   * until the driver starts navigating.
+   * What the green next-turn card shows. Guidance-only: nothing while the trip
+   * is merely being previewed, so the card appears when the driver taps
+   * navigate and goes away again when guidance stops.
+   *
+   * While guidance runs the navigator feeds it; until its first MANEUVER event
+   * arrives the calculated route's own maneuver list stands in, so the card is
+   * populated from the moment it appears rather than starting blank.
    */
   const direction = useMemo(() => {
-    if (isNavigating && nextManeuver) {
+    if (!isNavigating) return null;
+
+    if (nextManeuver) {
       return {maneuver: nextManeuver, meters: metersToNext};
     }
 
@@ -730,30 +750,14 @@ export default function ActiveTripScreen({navigation, route}) {
         )}
       </TouchableOpacity>
       
-      <StepConfirmCard
-        key={milestone?.step}
-        visible={Boolean(milestone) && milestoneStage === 'card'}
-        step={milestone?.step}
-        totalSteps={MILESTONES.length}
-        title={milestone?.title}
-        onConfirm={() => setMilestoneStage('action')}
-      />
-
-      {/* ── Verify this stop ── */}
-      <VerifyStopButton
-        visible={Boolean(milestone) && milestoneStage === 'action'}
-        label={milestone?.action}
-        barHeight={barHeight}
-        onPress={() => setMilestoneStage('otp')}
-      />
-
+      {/* ── Verify this stop: Reached opens this directly ── */}
       <StopVerifyModal
         stage={milestone ? milestoneStage : null}
         desc={milestone?.otpDesc}
         doneTitle={milestone?.doneTitle}
         doneText={milestone?.doneText}
         onVerify={() => setMilestoneStage('verified')}
-        onBack={() => setMilestoneStage('action')}
+        onBack={() => setMilestoneStage('idle')}
         onDone={completeMilestone}
       />
 
@@ -765,8 +769,8 @@ export default function ActiveTripScreen({navigation, route}) {
         summary={routeError || legSummary}
         summaryIsError={Boolean(routeError)}
         withCheckbox={activePanel === 'bidding'}
-        onEndTrip={() => setPodOpen(true)}
-        onMeasure={setBarHeight}
+        endLabel={milestone ? 'Reached' : 'End Trip'}
+        onEndTrip={handleReachedPress}
       />
 
       {/* ── Proof-of-Delivery flow ── */}
