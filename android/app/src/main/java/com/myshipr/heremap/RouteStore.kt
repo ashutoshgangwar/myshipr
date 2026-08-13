@@ -43,6 +43,17 @@ object RouteStore {
     fun get(routeId: String?): Route? =
         if (routeId.isNullOrEmpty()) lastRouteId?.let { routes[it] } else routes[routeId]
 
+    /**
+     * The id [get] would resolve — i.e. [routeId] itself, or the most recent
+     * one when it is null. Lets a caller that accepted "<latest>" report back
+     * the concrete id it ended up using.
+     */
+    @Synchronized
+    fun resolveId(routeId: String?): String? =
+        if (routeId.isNullOrEmpty()) lastRouteId
+        else if (routes.containsKey(routeId)) routeId
+        else null
+
     @Synchronized
     fun remove(routeId: String) {
         routes.remove(routeId)

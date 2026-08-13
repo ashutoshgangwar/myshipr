@@ -173,6 +173,62 @@ export function setSpeechEnabled(enabled) {
   return HereNavigationModule.setSpeechEnabled(!!enabled);
 }
 
+/**
+ * Hands a *running* session's rendering to another mounted `<HereMapView>`,
+ * without restarting guidance.
+ *
+ * Leaving the trip screen does not end the trip — the same session carries on
+ * inside the floating map on Home, and comes back to the full screen when the
+ * driver returns to it. Only the surface changes: the route, the maneuver
+ * arrows and the vehicle continue from where they were, which restarting
+ * navigation would not do (it re-announces the first turn and loses progress).
+ *
+ * Call it from the new map's `onMapReady`, passing that map's tag.
+ *
+ * @param {number} [mapViewTag] from `mapRef.current.getTag()`; without it the
+ *   most recently mounted map takes the rendering
+ * @param {Object} [camera] re-assert the driving view — see
+ *   {@link setCameraBehavior}. Worth passing `{mode: 'fixed'}`: if the driver
+ *   had panned the previous map the camera was released to them, and the new
+ *   map would inherit that and never follow the vehicle.
+ * @returns {Promise<boolean>} false when no map is mounted (guidance keeps
+ *   running headless), and rejects when nothing is navigating.
+ */
+export function attachToMapView(mapViewTag = null, camera = null) {
+  // Missing on an app built before this method existed — resolve false (the
+  // "no map took it" answer) rather than throw, so a stale binary degrades to
+  // guidance without a picture instead of crashing the screen.
+  if (!HereNavigationModule?.attachToMapView) {
+    return Promise.resolve(false);
+  }
+  return HereNavigationModule.attachToMapView({
+    ...(Number.isFinite(mapViewTag) ? {mapViewTag} : {}),
+    ...(camera ? {camera} : {}),
+  });
+}
+
+/**
+ * What the navigator is doing right now.
+ *
+ * Guidance runs natively and survives the screen that started it, so this is
+ * how a screen finds out on mount whether a trip is still in progress.
+ *
+ * @returns {Promise<{running:boolean, navigating:boolean, rendering:boolean, routeId:?string}>}
+ *   `running` is a live navigator (guided or tracking), `navigating` narrows
+ *   that to one following a route, `rendering` says whether a map is showing it.
+ */
+export function getSessionState() {
+  if (!HereNavigationModule?.getSessionState) {
+    return Promise.resolve({
+      running: false,
+      navigating: false,
+      rendering: false,
+      routeId: null,
+    });
+  }
+  return HereNavigationModule.getSessionState();
+}
+
 /** Ends guidance and stops the location feed. */
 export function stopNavigation() {
   if (!HereNavigationModule) {
@@ -227,6 +283,8 @@ export default {
   setRoute,
   setCameraBehavior,
   setSpeechEnabled,
+  attachToMapView,
+  getSessionState,
   stopNavigation,
   startTracking,
   stopTracking,

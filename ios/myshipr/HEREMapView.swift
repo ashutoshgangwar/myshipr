@@ -164,23 +164,47 @@ class HereMapView: UIView {
 
     // MARK: - Instance registry
     //
-    // Modules address the map by React tag, but the app only ever shows one at
-    // a time, so "most recently mounted, still alive" is the right default —
-    // and it is what HereNavigationModule renders into. Mirrors Android's
+    // Modules address the map by React tag. "Most recently mounted, still
+    // alive" is the tag-less default — and it is what HereNavigationModule
+    // renders into — but more than one map can be on screen at once (the
+    // floating trip map on Home sits above whatever else is mounted), so a
+    // caller that knows which one it means passes the tag. Mirrors Android's
     // HereMapViewManager.resolveViewOrActive.
 
     private static var activeRef: WeakMapViewRef?
+    private static var instances: [WeakMapViewRef] = []
 
     private static func register(_ view: HereMapView) {
+        instances.removeAll { $0.value == nil }
+        instances.append(WeakMapViewRef(view))
         activeRef = WeakMapViewRef(view)
     }
 
     private static func unregister(_ view: HereMapView) {
-        if activeRef?.value === view { activeRef = nil }
+        instances.removeAll { $0.value == nil || $0.value === view }
+        if activeRef?.value === view {
+            // Fall back to whichever map is still mounted, so a tag-less call
+            // made after this one goes away still lands somewhere real.
+            activeRef = instances.last
+        }
     }
 
     /// The map a tag-less call should act on, or nil when none is mounted.
     static func activeInstance() -> HereMapView? { activeRef?.value }
+
+    /// The mounted map with this React tag, or nil when it is gone. React
+    /// assigns `reactTag` after init, which is why the lookup is a scan rather
+    /// than a keyed dictionary.
+    static func instance(forTag tag: NSNumber?) -> HereMapView? {
+        guard let tag = tag, tag.intValue > 0 else { return nil }
+        return instances.compactMap { $0.value }
+            .first { $0.reactTag?.intValue == tag.intValue }
+    }
+
+    /// The map [tag] names, falling back to the most recently mounted one.
+    static func resolveInstance(tag: NSNumber?) -> HereMapView? {
+        instance(forTag: tag) ?? activeInstance()
+    }
 
     // MARK: - Event props (wired up in HereMapViewManager.m)
 

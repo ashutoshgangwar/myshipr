@@ -1,16 +1,11 @@
-import React, {useEffect, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useRef, useState} from 'react';
 import {View, ActivityIndicator} from 'react-native';
 import Svg, {Circle, Path} from 'react-native-svg';
-import {HERE_ACCESS_KEY_ID, HERE_ACCESS_KEY_SECRET} from '@env';
 
 import styles from '../ActiveBidding.styles';
 import {colors} from '../../../theme/colors';
-import {
-  HereMapView,
-  HereMapModule,
-} from '../../HereMapScreen/components/HereMap/index';
-
-const hasHereCredentials = Boolean(HERE_ACCESS_KEY_ID && HERE_ACCESS_KEY_SECRET);
+import {HereMapView, HereRouting} from '../../../here';
+import {fitCameraToRoute} from '../../../utils/here/mapHelpers';
 
 const TILE = 256;
 const MIN_ZOOM = 2;
@@ -20,6 +15,8 @@ const PADDING = 1.35;
 
 const RASTER_PX = 96; // captured oversized so the downscaled pin stays crisp
 const MARKER_SIZE = 34; // on-screen pin size inside the small thumbnail
+
+const ROUTE_WIDTH = 6;
 
 // Web-mercator Y as a 0..1 fraction of the world, so a latitude span can be
 // compared against pixels the same way a longitude span can.
@@ -60,15 +57,22 @@ const Pin = ({color, svgRef}) => (
 );
 
 /**
- * Small HERE map that replaces the old static map image in the route block. It
- * draws the pickup → drop polyline with a pin at each end, and fits the camera
- * so both stops are always visible at the thumbnail's fixed size. The map is
- * pannable/zoomable; while a finger is down on it the parent tells its
- * ScrollView to stop scrolling via onInteractStart/End so the drag reaches the
- * native map instead of scrolling the page.
+ * Small HERE map for a load's route block — the shipment and the auction screen
+ * both show it beside their stop list.
+ *
+ * It runs on the same HERE SDK as the trip screen: the map initialises itself
+ * (`<HereMapView>`) and the line is a real truck route from HERE's routing
+ * engine, so the thumbnail shows the roads the load will actually be driven on
+ * rather than a ruler line between two pins. If routing fails — offline, or a
+ * leg with no truck-legal road — it falls back to the straight leg so the block
+ * still reads as a route.
+ *
+ * The map is pannable/zoomable; while a finger is down on it the parent tells
+ * its ScrollView to stop scrolling via onInteractStart/End so the drag reaches
+ * the native map instead of scrolling the page.
  *
  * `style` overrides the thumbnail's own box (size/margins) for callers whose
- * route block is a different shape — Shipmentdetails lists four stops beside it.
+ * route block is a different shape — ShipmentDetails lists four stops beside it.
  */
 export default function RouteMapThumb({
   pickup,
@@ -80,7 +84,7 @@ export default function RouteMapThumb({
   const mapRef = useRef(null);
   const pickupPinRef = useRef(null);
   const dropPinRef = useRef(null);
-  const [sdkReady, setSdkReady] = useState(false);
+  const [mapReady, setMapReady] = useState(false);
   const [size, setSize] = useState(null);
   const [pins, setPins] = useState(null);
 
@@ -94,23 +98,6 @@ export default function RouteMapThumb({
   const centerLng = hasCoords ? (pickup.lng + drop.lng) / 2 : 0;
   const zoom =
     hasCoords && size ? fitZoom(pickup, drop, size.width, size.height) : 10;
-
-  // Initialise the HERE SDK before mounting the native map view.
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      if (!hasHereCredentials) return;
-      try {
-        await HereMapModule.initSDK(HERE_ACCESS_KEY_ID, HERE_ACCESS_KEY_SECRET);
-        if (!cancelled) setSdkReady(true);
-      } catch (e) {
-        console.error('[ActiveBidding] HERE SDK init failed:', e?.message);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   // Rasterise both pins to base64 PNGs. Android's native addMarker ignores the
   // `color` option (it falls back to a system icon), so shipping the bytes is
@@ -145,38 +132,80 @@ export default function RouteMapThumb({
     };
   }, []);
 
-  // Draw the leg + both pins and frame the camera once the native view has had
-  // time to mount. Each step is guarded on its own so one failing native call
-  // (e.g. clearing before anything was drawn) can't swallow the rest.
+  /**
+   * The leg's real geometry, or null when HERE cannot route it. Truck routing
+   * matches how the load will actually be driven, which is the point of showing
+   * a map here rather than a picture of two dots.
+   */
+  const routeLeg = useCallback(async () => {
+    try {
+      return await HereRouting.calculateTruckRoute(
+        pickup.lat,
+        pickup.lng,
+        drop.lat,
+        drop.lng,
+      );
+    } catch (_) {
+      return null;
+    }
+  }, [pickup, drop]);
+
+  // Draw the leg + both pins once the map surface exists. Each step is guarded
+  // on its own so one failing native call can't swallow the rest, and the whole
+  // thing is silent — the thumbnail is decorative.
   useEffect(() => {
-    if (!sdkReady || !hasCoords || !size) return undefined;
-    const timer = setTimeout(async () => {
+    if (!mapReady || !hasCoords || !size) return undefined;
+
+    let cancelled = false;
+    let drawnRouteId = null;
+
+    const step = async fn => {
+      try {
+        await fn();
+      } catch (_) {
+        // Decorative — never surface a native draw failure.
+      }
+    };
+
+    (async () => {
       const map = mapRef.current;
       if (!map) return;
-      const step = async fn => {
-        try {
-          await fn();
-        } catch (e) {
-          // Thumbnail is decorative — never surface a native draw failure.
-        }
-      };
 
-      await step(() => map.clearPolyline());
+      await step(() => map.clearRoute());
       await step(() => map.clearMarkers());
-      await step(() =>
-        map.drawPolyline({
-          coordinates: [
-            {lat: pickup.lat, lng: pickup.lng},
-            {lat: drop.lat, lng: drop.lng},
-          ],
-          color: colors.accentBlue,
-          width: 4,
-        }),
-      );
+      if (cancelled) return;
+
+      const route = await routeLeg();
+      if (cancelled) return;
+
+      if (route?.routeId) {
+        drawnRouteId = route.routeId;
+        await step(() =>
+          map.drawRoute({
+            routeId: route.routeId,
+            color: colors.accentBlue,
+            width: ROUTE_WIDTH,
+          }),
+        );
+      } else {
+        // No route — the straight leg still says "here to there".
+        await step(() =>
+          map.drawRoute({
+            coordinates: [
+              {lat: pickup.lat, lng: pickup.lng},
+              {lat: drop.lat, lng: drop.lng},
+            ],
+            color: colors.accentBlue,
+            width: ROUTE_WIDTH,
+          }),
+        );
+      }
+      if (cancelled) return;
+
       await step(() =>
         map.addMarker({
-          lat: pickup.lat,
-          lng: pickup.lng,
+          latitude: pickup.lat,
+          longitude: pickup.lng,
           color: colors.accentBlue,
           ...(pins?.pickup
             ? {image: pins.pickup, markerSize: MARKER_SIZE}
@@ -185,17 +214,32 @@ export default function RouteMapThumb({
       );
       await step(() =>
         map.addMarker({
-          lat: drop.lat,
-          lng: drop.lng,
+          latitude: drop.lat,
+          longitude: drop.lng,
           color: colors.success,
           ...(pins?.drop ? {image: pins.drop, markerSize: MARKER_SIZE} : {}),
         }),
       );
-      await step(() => map.moveCamera({lat: centerLat, lng: centerLng, zoom}));
-    }, 700);
-    return () => clearTimeout(timer);
+      if (cancelled) return;
+
+      // Frame the route itself when there is one — a road route can bow well
+      // outside the box a straight-leg zoom would fit.
+      if (route?.polyline?.length > 1) {
+        await step(() => fitCameraToRoute(mapRef, route.polyline));
+      } else {
+        await step(() => map.moveCamera({lat: centerLat, lng: centerLng, zoom}));
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      // The native route store is shared with navigation and only holds a
+      // handful of entries, so a thumbnail hands its own back rather than
+      // pushing a live trip's route out of it.
+      if (drawnRouteId) HereRouting.releaseRoute(drawnRouteId).catch(() => {});
+    };
   }, [
-    sdkReady,
+    mapReady,
     hasCoords,
     size,
     pins,
@@ -204,6 +248,7 @@ export default function RouteMapThumb({
     centerLat,
     centerLng,
     zoom,
+    routeLeg,
   ]);
 
   const onLayout = e => {
@@ -227,7 +272,9 @@ export default function RouteMapThumb({
     </View>
   );
 
-  if (!sdkReady || !hasCoords) {
+  // Without both stops there is no leg to draw, so the box stays a placeholder
+  // rather than mounting a map centred on nothing.
+  if (!hasCoords) {
     return (
       <View
         style={[styles.mapImage, styles.mapLoading, style]}
@@ -245,12 +292,15 @@ export default function RouteMapThumb({
       onTouchStart={onInteractStart}
       onTouchEnd={onInteractEnd}
       onTouchCancel={onInteractEnd}>
+      {/* HereMapView initialises the SDK itself and renders its own loading /
+          error state, so it is mounted unconditionally. */}
       <HereMapView
         ref={mapRef}
         style={styles.mapFill}
         centerLat={centerLat}
         centerLng={centerLng}
         zoomLevel={zoom}
+        onMapReady={() => setMapReady(true)}
       />
       {rasteriser}
     </View>

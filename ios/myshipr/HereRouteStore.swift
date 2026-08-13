@@ -55,6 +55,16 @@ final class HereRouteStore {
         return route
     }
 
+    /// The id `get` would resolve — `routeId` itself, or the most recent one
+    /// when it is nil. Lets a caller that accepted "<latest>" report back the
+    /// concrete id it ended up using.
+    func resolveId(_ routeId: String?) -> String? {
+        lock.lock(); defer { lock.unlock() }
+
+        let key = (routeId?.isEmpty == false) ? routeId! : (lastRouteId ?? "")
+        return routes[key] != nil ? key : nil
+    }
+
     func remove(_ routeId: String) {
         lock.lock(); defer { lock.unlock() }
         routes.removeValue(forKey: routeId)

@@ -29,6 +29,10 @@ import RouteStops from '../../component/RouteStops/RouteStops';
 import LoadRoute from '../../component/LoadRoute/LoadRoute';
 import DieselBadge from '../../component/DieselBadge/DieselBadge';
 import {logout} from '../../config/api';
+import {
+  syncTripSession,
+  useTripSession,
+} from '../../services/TripSessionService';
 import {ms} from '../../theme/scale';
 import Setting_Icon from '../../assets/svg_icon/Setting_Icon.svg';
 import Logout_Icon from '../../assets/svg_icon/Logout_Icon.svg';
@@ -174,7 +178,11 @@ const HomeScreen = () => {
   const {isFleet} = useDriverRole();
   const stats = isFleet ? FLEET_STATS : SINGLE_STATS;
   const [mapVisible, setMapVisible] = useState(false);
-  const [tripStarted, setTripStarted] = useState(false);
+  // A trip is "on" for as long as the HERE session is — that lives in the SDK,
+  // not in this screen, so it survives ActiveTripScreen unmounting and is what
+  // the floating map and the return banner both key off.
+  const trip = useTripSession();
+  const tripStarted = Boolean(trip);
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuPos, setMenuPos] = useState({top: 0, right: 0});
   // Upcoming loads collapse their middle stops; tapping a row (or its
@@ -185,9 +193,20 @@ const HomeScreen = () => {
   const toggleLoad = id =>
     setExpandedLoads(prev => ({...prev, [id]: !prev[id]}));
 
+  // Opening the trip screen is what starts the session; this only has to get
+  // the driver there, whether the trip is new or already running.
   const openMap_Here = () => {
-    setTripStarted(true);
-    navigation.navigate('ActiveTripScreen', STATIC_TRIP);
+    navigation.navigate('ActiveTripScreen', {
+      ...STATIC_TRIP,
+      ...(trip?.destinationLocation
+        ? {
+            destinationLocation: trip.destinationLocation,
+            destinationText: trip.destinationText,
+            sourceLocation: trip.sourceLocation,
+            truckDetails: trip.truckDetails,
+          }
+        : null),
+    });
   };
 
   const openMenu = () => {
@@ -221,13 +240,20 @@ const HomeScreen = () => {
     navigation.reset({index: 0, routes: [{name: 'LoginScreen'}]});
   };
 
-  // When the user comes back to Home while a trip is ongoing, float the map.
+  // Coming back to Home mid-trip: float the map, which picks the running HERE
+  // navigation up and carries on showing it. The session is re-checked against
+  // the SDK first, so a trip that ended while we were away (arrival, a stop
+  // from the trip screen) does not leave a map floating over Home.
   useFocusEffect(
     React.useCallback(() => {
-      if (tripStarted) {
-        setMapVisible(true);
-      }
-    }, [tripStarted]),
+      let cancelled = false;
+      syncTripSession().then(live => {
+        if (!cancelled && live) setMapVisible(true);
+      });
+      return () => {
+        cancelled = true;
+      };
+    }, []),
   );
 
   return (
@@ -515,7 +541,7 @@ const HomeScreen = () => {
         <TouchableOpacity
           style={styles.tripBanner}
           activeOpacity={0.85}
-          onPress={() => navigation.navigate('ActiveTripScreen', STATIC_TRIP)}>
+          onPress={openMap_Here}>
           <View style={styles.tripBannerTextWrap}>
             <AppText style={styles.tripBannerTitle}>Trip in Progress</AppText>
             <AppText style={styles.tripBannerSubtitle}>TAP to return</AppText>
@@ -575,8 +601,14 @@ const HomeScreen = () => {
         </View>
       </Modal>
 
-      {/* Draggable floating HERE map — movable anywhere on the screen */}
-      <FloatingMap visible={mapVisible} onClose={() => setMapVisible(false)} />
+      {/* Draggable floating HERE map — movable anywhere on the screen. While a
+          trip is on it shows that trip's live HERE navigation, still guiding;
+          tapping its footer returns to the full trip screen. */}
+      <FloatingMap
+        visible={mapVisible}
+        onClose={() => setMapVisible(false)}
+        onExpand={openMap_Here}
+      />
     </SafeAreaView>
   );
 };

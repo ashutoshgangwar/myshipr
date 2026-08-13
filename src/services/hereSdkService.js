@@ -1,5 +1,6 @@
 import {NativeModules} from 'react-native';
-import {HERE_ACCESS_KEY_ID, HERE_ACCESS_KEY_SECRET} from '@env';
+
+import HereSdk from '../here/HereSdk';
 
 const {HereMapModule} = NativeModules;
 
@@ -13,31 +14,17 @@ if (!HereMapModule) {
 /** Bias point used when the caller has no GPS fix yet (Delhi NCR). */
 export const HERE_DEFAULT_COORDS = {latitude: 28.4595, longitude: 77.0266};
 
-let initPromise = null;
+/**
+ * Creates the shared HERE engine the search calls below run on.
+ *
+ * There is one engine per process and whoever makes it decides its options, so
+ * this delegates to `HereSdk.initialize()` rather than making its own: that is
+ * the path that passes HERE_SCOPE, and without the scope a project-issued key
+ * gets a 403 from the map-data catalog — a blank base map everywhere, while
+ * search and routing carry on working and hide the cause.
+ */
 export function ensureInitialized() {
-  if (!HereMapModule?.initSDK) {
-    return Promise.reject(
-      new Error('[HERE] Native HereMapModule is unavailable — rebuild the app'),
-    );
-  }
-  if (!HERE_ACCESS_KEY_ID || !HERE_ACCESS_KEY_SECRET) {
-    return Promise.reject(
-      new Error(
-        '[HERE] HERE_ACCESS_KEY_ID/SECRET missing from the bundle — rebuild ' +
-          'after `npm start --reset-cache`',
-      ),
-    );
-  }
-  if (!initPromise) {
-    initPromise = HereMapModule.initSDK(
-      HERE_ACCESS_KEY_ID,
-      HERE_ACCESS_KEY_SECRET,
-    ).catch(e => {
-      initPromise = null;
-      throw e;
-    });
-  }
-  return initPromise;
+  return HereSdk.ensureInitialized();
 }
 
 async function ready(name) {

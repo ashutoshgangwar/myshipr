@@ -112,6 +112,15 @@ class HereNavigationModule(
     /** Guards against re-emitting onManeuver for every progress tick. */
     private var lastManeuverIndex = -1
 
+    /**
+     * The route guidance is currently following, as a concrete id.
+     *
+     * Guidance outlives the screen that started it — the driver can leave the
+     * trip screen and watch the same session in a floating map — so JS needs a
+     * way to ask what is running rather than remember it across unmounts.
+     */
+    private var currentRouteId: String? = null
+
     /** Remembered so a reroute restarts the simulation at the same pace. */
     private var simulationSpeedFactor = 1.0
 
@@ -176,6 +185,7 @@ class HereNavigationModule(
             applyGuidanceOptions(navigator, options)
             lastManeuverIndex = -1
             navigator.route = route
+            currentRouteId = RouteStore.resolveId(routeId)
 
             attachToMap(navigator, options?.getIntOrNull("mapViewTag"))
             readCameraOptions(options?.getMap("camera"))
@@ -219,6 +229,7 @@ class HereNavigationModule(
             val wasSimulating = locationSimulator != null
             lastManeuverIndex = -1
             navigator.route = route
+            currentRouteId = RouteStore.resolveId(routeId)
 
             if (wasSimulating) {
                 startLocationSource(navigator, route, LocationSource.SIMULATED, simulationSpeedFactor)
@@ -314,6 +325,63 @@ class HereNavigationModule(
         onUiThread(promise) {
             stopLocationSources()
             true
+        }
+    }
+
+    // -------------------------------------------------------------------------
+    // Map binding
+    // -------------------------------------------------------------------------
+
+    /**
+     * Hands a *running* session's rendering to another mounted [HereMapView],
+     * without restarting guidance.
+     *
+     * The driver leaving the trip screen does not end the trip: the same
+     * session carries on inside the floating map on Home, and comes back to the
+     * full screen when they return to it. Only the surface it draws into
+     * changes, so the route, the maneuver arrows and the vehicle all continue
+     * from where they were — restarting navigation instead would re-announce
+     * the first turn and lose the progress.
+     *
+     * Options: `{ mapViewTag?, camera? }` — `camera` is folded in exactly as
+     * [startNavigation] does, so the caller can re-assert `{mode: 'fixed'}`
+     * after the driver had panned the previous map away from the vehicle.
+     *
+     * @return true when a map took the rendering, false when none is mounted
+     *   (guidance keeps running headless).
+     */
+    @ReactMethod
+    fun attachToMapView(options: ReadableMap?, promise: Promise) {
+        onUiThread(promise) {
+            val navigator = visualNavigator
+                ?: throw IllegalStateException("Navigation is not running")
+
+            attachToMap(navigator, options?.getIntOrNull("mapViewTag"))
+            readCameraOptions(options?.getMap("camera"))
+            applyCameraBehavior(navigator)
+            boundView != null
+        }
+    }
+
+    /**
+     * What the navigator is doing right now — the "is a trip still running?"
+     * question a screen has to ask on mount, since guidance survives it.
+     *
+     * `{ running, navigating, rendering, routeId }`: `running` is a live
+     * navigator (guided or tracking), `navigating` narrows that to one
+     * following a route, and `rendering` says whether a map is currently
+     * showing it.
+     */
+    @ReactMethod
+    fun getSessionState(promise: Promise) {
+        onUiThread(promise) {
+            val navigator = visualNavigator
+            Arguments.createMap().apply {
+                putBoolean("running", navigator != null)
+                putBoolean("navigating", navigator?.route != null)
+                putBoolean("rendering", boundView != null)
+                putString("routeId", currentRouteId.takeIf { navigator?.route != null })
+            }
         }
     }
 
@@ -697,6 +765,7 @@ class HereNavigationModule(
         }
         boundView = null
         lastManeuverIndex = -1
+        currentRouteId = null
     }
 
     /**

@@ -13,17 +13,12 @@ import {
   ActivityIndicator,
   Keyboard,
 } from 'react-native';
-import {HERE_ACCESS_KEY_ID, HERE_ACCESS_KEY_SECRET} from '@env';
-
 import styles from './HereMapPicker.styles';
 import {colors} from '../../theme/colors';
 import AppText from '../../theme/AppText';
 import {IS_TABLET} from '../../theme/device';
 
-import {
-  HereMapView,
-  HereMapModule,
-} from '../../screens/HereMapScreen/components/HereMap';
+import {HereMapView} from '../../here';
 import {
   autosuggest,
   reverseGeocode,
@@ -33,10 +28,6 @@ import {getCurrentLocation} from '../../services/LocationService';
 import Location_Icon from '../../assets/svg_icon/location.svg';
 import Search_Icon from '../../assets/svg_icon/Search_Icon.svg';
 import Gps_Icon from '../../assets/svg_icon/gps-svg.svg';
-
-const hasHereCredentials = Boolean(
-  HERE_ACCESS_KEY_ID && HERE_ACCESS_KEY_SECRET,
-);
 
 const SEARCH_MIN_CHARS = 3;
 const SEARCH_DEBOUNCE_MS = 600;
@@ -76,6 +67,8 @@ const HereMapPicker = forwardRef(({
 }, ref) => {
   const mapRef = useRef(null);
   const [sdkReady, setSdkReady] = useState(false);
+  // Only set for failures the map itself cannot explain — it renders its own
+  // "unavailable" state for a failed init, so this stays null in that case.
   const [initError, setInitError] = useState(null);
 
   // Captured once. Kept STABLE so Android's onAfterUpdateTransaction never
@@ -105,25 +98,10 @@ const HereMapPicker = forwardRef(({
     onPickRef.current = onPick;
   }, [onPick]);
 
-  // ── SDK init ──────────────────────────────────────────────────────────────
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      if (!hasHereCredentials) {
-        setInitError('Missing HERE SDK credentials');
-        return;
-      }
-      try {
-        await HereMapModule.initSDK(HERE_ACCESS_KEY_ID, HERE_ACCESS_KEY_SECRET);
-        if (!cancelled) setSdkReady(true);
-      } catch (e) {
-        if (!cancelled) setInitError(e?.message || 'HERE SDK init failed');
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  // The map initialises the SDK itself and reports when its surface is live —
+  // which is also the point the imperative calls below start working, so
+  // everything here hangs off that rather than off a separate init of our own.
+  const onMapReady = useCallback(() => setSdkReady(true), []);
 
   const emitPick = useCallback((lat, lng, description) => {
     onPickRef.current?.({
@@ -190,11 +168,9 @@ const HereMapPicker = forwardRef(({
         const loc = await getCurrentLocation({detectMock: true});
         moveTo(loc.latitude, loc.longitude, '', true);
         mapRef.current
-          ?.showCurrentLocation({
-          lat: loc.latitude,
-          lng: loc.longitude,
-          style: 'pedestrian',
-        })
+          ?.showCurrentLocation(loc.latitude, loc.longitude, {
+            style: 'pedestrian',
+          })
           .catch(() => {});
       } catch (_) {
         moveTo(DEFAULT_COORDS.latitude, DEFAULT_COORDS.longitude, '', true);
@@ -288,9 +264,7 @@ const HereMapPicker = forwardRef(({
       const loc = await getCurrentLocation({detectMock: true});
       moveTo(loc.latitude, loc.longitude, '', true);
       mapRef.current
-        ?.showCurrentLocation({
-          lat: loc.latitude,
-          lng: loc.longitude,
+        ?.showCurrentLocation(loc.latitude, loc.longitude, {
           style: 'pedestrian',
         })
         .catch(() => {});
@@ -357,17 +331,19 @@ const HereMapPicker = forwardRef(({
         </View>
       )}
 
-      {/* Map */}
+      {/* Map. Mounted unconditionally — it initialises the SDK itself and shows
+          its own loading / unavailable state, so gating it on our readiness
+          flag would only hide the reason when something fails. */}
       <View style={[styles.mapCard, mapStyle]}>
-        {sdkReady && (
-          <HereMapView
-            ref={mapRef}
-            style={styles.map}
-            centerLat={initialCenter.lat}
-            centerLng={initialCenter.lng}
-            zoomLevel={14}
-          />
-        )}
+        <HereMapView
+          ref={mapRef}
+          style={styles.map}
+          centerLat={initialCenter.lat}
+          centerLng={initialCenter.lng}
+          zoomLevel={14}
+          onMapReady={onMapReady}
+          onMapError={detail => setInitError(detail?.message || null)}
+        />
 
         {/* Fixed center pin */}
         {sdkReady && !showOverlay && (

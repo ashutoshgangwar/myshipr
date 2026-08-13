@@ -38,6 +38,12 @@ import {
   OFF_ROUTE_THRESHOLD,
 } from '../HereMapScreen/constants/navigationConstants';
 import {getCurrentLocation} from '../../services/LocationService';
+import {
+  endTripSession,
+  getTripSession,
+  startTripSession,
+  updateTripSession,
+} from '../../services/TripSessionService';
 import GpsIcon from '../../assets/svg_icon/gps-svg.svg';
 import NavigationIcon from '../../assets/svg_icon/Navigation_Icon.svg';
 
@@ -129,6 +135,24 @@ export default function ActiveTripScreen({navigation, route}) {
       : DEFAULT_CENTER,
   );
   const [mapReady, setMapReady] = useState(false);
+
+  // The trip that was already guiding when this screen mounted, if any.
+  //
+  // Guidance runs inside the SDK, so it keeps going after this screen unmounts:
+  // the driver can back out to Home, watch the trip in the floating map and
+  // come back. Opening on "nothing yet" would have this screen offer to start a
+  // second session over the top of the live one, so it opens on what is
+  // actually running instead. Read once, at mount.
+  const resumedSession = useRef(
+    (() => {
+      const live = getTripSession();
+      return live?.navigating ? live : null;
+    })(),
+  ).current;
+
+  // Cleared by the re-attach effect once it has taken the rendering back.
+  const pendingAttachRef = useRef(Boolean(resumedSession));
+
   const [activePanel, setActivePanel] = useState(null);
   const [panelFullscreen, setPanelFullscreen] = useState(false);
   const [podOpen, setPodOpen] = useState(false);
@@ -166,7 +190,13 @@ export default function ActiveTripScreen({navigation, route}) {
   // a stop is verified. `total` is banked rather than read off the live route:
   // a reroute returns a route measured from wherever the driver now is, which
   // on its own would reset the bar to empty mid-trip.
-  const [leg, setLeg] = useState({total: null, remaining: null});
+  const [leg, setLeg] = useState({
+    // Re-adopting a running trip: the total was banked when guidance started,
+    // and the first progress event fills the remainder back in — so the bar
+    // picks up where it was instead of resetting to empty.
+    total: resumedSession?.totalDistanceMeters ?? null,
+    remaining: null,
+  });
   const legRef = useRef(leg);
   useEffect(() => {
     legRef.current = leg;
@@ -184,7 +214,9 @@ export default function ActiveTripScreen({navigation, route}) {
   const [activeRoute, setActiveRoute] = useState(null);
   const [routeLoading, setRouteLoading] = useState(false);
   const [routeError, setRouteError] = useState(null);
-  const [isNavigating, setIsNavigating] = useState(false);
+  const [isNavigating, setIsNavigating] = useState(
+    Boolean(resumedSession),
+  );
 
   // Live guidance state — every field below is fed by a navigator event.
   const [navInfo, setNavInfo] = useState(null);
@@ -207,6 +239,20 @@ export default function ActiveTripScreen({navigation, route}) {
     truckDetailsRef.current = trip.truckDetails;
   }, [trip]);
 
+  // Publish the trip so the rest of the app knows one is on — it is what Home
+  // floats its live map from. A session that is already running is left alone:
+  // overwriting it here would drop the route and progress this screen has just
+  // re-adopted.
+  useEffect(() => {
+    if (resumedSession) return;
+    startTripSession({
+      destinationLocation: trip.destination,
+      destinationText: trip.destinationText,
+      sourceLocation: trip.source,
+      truckDetails: trip.truckDetails,
+    });
+  }, [resumedSession, trip]);
+
   const [keyboardVisible, setKeyboardVisible] = useState(false);
   useEffect(() => {
     const showSub = Keyboard.addListener('keyboardDidShow', () =>
@@ -225,6 +271,12 @@ export default function ActiveTripScreen({navigation, route}) {
   const revealScale = useRef(new Animated.Value(0)).current;
 
   const runReveal = useCallback(() => {
+    // Delivered — this is the one exit that really ends the trip, so guidance
+    // stops here and the session closes. Without it the driver would land back
+    // on Home with a floating map still guiding them to a drop they have made.
+    HereNavigation.stopNavigation().catch(() => {});
+    endTripSession();
+
     revealScale.setValue(0);
     setRevealing(true);
     Animated.timing(revealScale, {
@@ -385,6 +437,31 @@ export default function ActiveTripScreen({navigation, route}) {
     drawTripPreview();
   }, [mapReady, isNavigating, drawTripPreview]);
 
+  /**
+   * Takes back the rendering of a session that is still running — the driver
+   * left this screen, watched the trip in Home's floating map, and has now
+   * returned. Only the surface moves: the route, the maneuver arrows and the
+   * vehicle carry on, which starting navigation again would not do.
+   *
+   * `{mode: 'fixed'}` is re-asserted because panning the floating map hands the
+   * camera to the user, and this map would otherwise inherit that and sit still
+   * while the truck drives off it.
+   */
+  useEffect(() => {
+    if (!mapReady || !pendingAttachRef.current) return;
+    pendingAttachRef.current = false;
+
+    HereNavigation.attachToMapView(mapRef.current?.getTag(), {
+      mode: 'fixed',
+      distanceMeters: CAMERA_DISTANCE_METERS,
+    })
+      // Guidance ended while we were away (arrival, or it was stopped from the
+      // floating card), or no map took the rendering — either way there is
+      // nothing live to show, so fall back to previewing the trip.
+      .then(rendering => setIsNavigating(Boolean(rendering)))
+      .catch(() => setIsNavigating(false));
+  }, [mapReady]);
+
   // ── Navigation ───────────────────────────────────────────────────────────
 
   const handleStopNavigation = useCallback(async () => {
@@ -397,6 +474,9 @@ export default function ActiveTripScreen({navigation, route}) {
     setNavInfo(null);
     setNextManeuver(null);
     setMetersToNext(null);
+    // The trip is still open — the driver has stopped guidance, not arrived —
+    // so the session stays, minus the guidance that is no longer running.
+    updateTripSession({navigating: false, routeId: null});
   }, []);
 
   const handleStartNavigation = useCallback(async () => {
@@ -473,6 +553,13 @@ export default function ActiveTripScreen({navigation, route}) {
 
       lastRerouteAtRef.current = Date.now();
       setIsNavigating(true);
+      // Hand the running session to the rest of the app: this is what lets the
+      // floating map pick the same guidance up when the driver leaves.
+      updateTripSession({
+        navigating: true,
+        routeId: navRoute.routeId,
+        totalDistanceMeters: navRoute.distanceMeters,
+      });
     } catch (e) {
       Alert.alert('Navigation', e?.message || 'Unable to start navigation');
     } finally {
@@ -516,6 +603,7 @@ export default function ActiveTripScreen({navigation, route}) {
           remaining: fresh.distanceMeters,
         });
         await HereNavigation.setRoute(fresh.routeId);
+        updateTripSession({routeId: fresh.routeId});
       } catch (e) {
         console.warn('[ActiveTripScreen] reroute failed:', e?.message);
       } finally {
@@ -558,13 +646,11 @@ export default function ActiveTripScreen({navigation, route}) {
     return unsubscribe;
   }, [handleRouteDeviation, handleStopNavigation]);
 
-  // Guidance runs natively, so it survives this screen unmounting — stop it.
-  useEffect(
-    () => () => {
-      HereNavigation.stopNavigation().catch(() => {});
-    },
-    [],
-  );
+  // Nothing is torn down on unmount. Guidance runs natively and survives this
+  // screen, and that is now the point: backing out to Home is not ending the
+  // trip — the session keeps guiding and Home's floating map takes over
+  // rendering it. The trip ends where it actually ends: arrival, the driver
+  // stopping guidance, or proof-of-delivery (see runReveal above).
 
   const handleToolSelect = useCallback(id => {
     if (id === 'collapse') {

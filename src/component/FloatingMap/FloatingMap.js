@@ -10,6 +10,8 @@ import {
 import styles, {CARD_WIDTH, CARD_HEIGHT} from './FloatingMap.styles';
 import AppText from '../../theme/AppText';
 import HereMapPicker from '../HereMapPicker/HereMapPicker';
+import LiveTripMap from '../LiveTripMap/LiveTripMap';
+import {useTripSession} from '../../services/TripSessionService';
 
 const {width: SCREEN_W, height: SCREEN_H} = Dimensions.get('window');
 const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
@@ -19,12 +21,21 @@ const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
  * Drag it anywhere by its top handle bar; close it with the X. The map area
  * itself stays interactive (pan/zoom) because only the handle starts a drag.
  *
+ * What it shows depends on whether a trip is on:
+ *   - trip running → the *same* HERE navigation session ActiveTripScreen was
+ *     showing, still guiding, now rendered in here (see LiveTripMap). Leaving
+ *     the trip screen does not end the trip, so this is a window onto it rather
+ *     than a second map.
+ *   - otherwise → the HERE destination picker, as before.
+ *
  * @param {object}   props
- * @param {boolean}  props.visible   Show/hide the floating card.
- * @param {function} props.onClose   Called when the X is pressed.
- * @param {function} [props.onPick]  Forwarded to HereMapPicker.
+ * @param {boolean}  props.visible    Show/hide the floating card.
+ * @param {function} props.onClose    Called when the X is pressed.
+ * @param {function} [props.onPick]   Forwarded to HereMapPicker.
+ * @param {function} [props.onExpand] Called to return to the full trip screen.
  */
-const FloatingMap = ({visible, onClose, onPick}) => {
+const FloatingMap = ({visible, onClose, onPick, onExpand}) => {
+  const trip = useTripSession();
   // Start roughly centered.
   const startX = (SCREEN_W - CARD_WIDTH) / 2;
   const startY = (SCREEN_H - CARD_HEIGHT) / 3;
@@ -67,11 +78,19 @@ const FloatingMap = ({visible, onClose, onPick}) => {
       ]}>
       {/* Map only — no header bar */}
       <View style={styles.mapWrap}>
-        <HereMapPicker
-          onPick={onPick}
-          mapStyle={styles.mapInner}
-          showSearch={false}
-        />
+        {trip ? (
+          <LiveTripMap
+            trip={trip}
+            style={styles.mapInner}
+            onExpand={onExpand}
+          />
+        ) : (
+          <HereMapPicker
+            onPick={onPick}
+            mapStyle={styles.mapInner}
+            showSearch={false}
+          />
+        )}
       </View>
 
       {/* Thin drag strip overlaid on top of the map (keeps map pan usable) */}

@@ -72,6 +72,12 @@ class HereNavigationModule: RCTEventEmitter {
     private var speaker: HereSpeaker?
     /// Guards against re-emitting onManeuver for every progress tick.
     private var lastManeuverIndex: Int32 = -1
+    /// The route guidance is currently following, as a concrete id.
+    ///
+    /// Guidance outlives the screen that started it — the driver can leave the
+    /// trip screen and watch the same session in a floating map — so JS needs a
+    /// way to ask what is running rather than remember it across unmounts.
+    private var currentRouteId: String?
     /// Remembered so a reroute restarts the simulation at the same pace.
     private var simulationSpeedFactor: Double = 1.0
 
@@ -138,8 +144,9 @@ class HereNavigationModule: RCTEventEmitter {
             self.applyGuidanceOptions(navigator, options)
             self.lastManeuverIndex = -1
             navigator.route = route
+            self.currentRouteId = HereRouteStore.shared.resolveId(routeId as String?)
 
-            self.attachToMap(navigator)
+            self.attachToMap(navigator, options?["mapViewTag"] as? NSNumber)
             self.readCameraOptions(options?["camera"] as? NSDictionary)
             self.applyCameraBehavior(navigator)
 
@@ -184,6 +191,7 @@ class HereNavigationModule: RCTEventEmitter {
             let wasSimulating = self.locationSimulator != nil
             self.lastManeuverIndex = -1
             navigator.route = route
+            self.currentRouteId = HereRouteStore.shared.resolveId(routeId as String?)
 
             if wasSimulating {
                 try self.startLocationSource(
@@ -210,6 +218,75 @@ class HereNavigationModule: RCTEventEmitter {
         }
 #else
         resolve(false)
+#endif
+    }
+
+    // MARK: - Map binding
+
+    /// Hands a *running* session's rendering to another mounted `HereMapView`,
+    /// without restarting guidance.
+    ///
+    /// The driver leaving the trip screen does not end the trip: the same
+    /// session carries on inside the floating map on Home, and comes back to
+    /// the full screen when they return to it. Only the surface it draws into
+    /// changes, so the route, the maneuver arrows and the vehicle all continue
+    /// from where they were — restarting navigation instead would re-announce
+    /// the first turn and lose the progress.
+    ///
+    /// Options: `{ mapViewTag?, camera? }` — `camera` is folded in exactly as
+    /// `startNavigation` does, so the caller can re-assert `{mode: 'fixed'}`
+    /// after the driver had panned the previous map away from the vehicle.
+    ///
+    /// Resolves true when a map took the rendering, false when none is mounted
+    /// (guidance keeps running headless).
+    @objc(attachToMapView:resolver:rejecter:)
+    func attachToMapView(
+        _ options: NSDictionary?,
+        resolver resolve: @escaping RCTPromiseResolveBlock,
+        rejecter reject: @escaping RCTPromiseRejectBlock
+    ) {
+#if canImport(heresdk)
+        onMain(reject) {
+            guard let navigator = self.visualNavigator else {
+                throw HereNavigationError.notRunning
+            }
+            self.attachToMap(navigator, options?["mapViewTag"] as? NSNumber)
+            self.readCameraOptions(options?["camera"] as? NSDictionary)
+            self.applyCameraBehavior(navigator)
+            resolve(self.boundView != nil)
+        }
+#else
+        resolve(false)
+#endif
+    }
+
+    /// What the navigator is doing right now — the "is a trip still running?"
+    /// question a screen has to ask on mount, since guidance survives it.
+    ///
+    /// `{ running, navigating, rendering, routeId }`: `running` is a live
+    /// navigator (guided or tracking), `navigating` narrows that to one
+    /// following a route, and `rendering` says whether a map is currently
+    /// showing it.
+    @objc(getSessionState:rejecter:)
+    func getSessionState(
+        resolver resolve: @escaping RCTPromiseResolveBlock,
+        rejecter reject: @escaping RCTPromiseRejectBlock
+    ) {
+#if canImport(heresdk)
+        onMain(reject) {
+            let navigating = self.visualNavigator?.route != nil
+            var state: [String: Any] = [
+                "running": self.visualNavigator != nil,
+                "navigating": navigating,
+                "rendering": self.boundView != nil,
+            ]
+            if navigating, let routeId = self.currentRouteId {
+                state["routeId"] = routeId
+            }
+            resolve(state)
+        }
+#else
+        resolve(["running": false, "navigating": false, "rendering": false])
 #endif
     }
 
@@ -277,8 +354,9 @@ class HereNavigationModule: RCTEventEmitter {
             self.lastManeuverIndex = -1
             // A nil route is what switches the navigator into tracking mode.
             navigator.route = nil
+            self.currentRouteId = nil
 
-            self.attachToMap(navigator)
+            self.attachToMap(navigator, options?["mapViewTag"] as? NSNumber)
             self.readCameraOptions(options?["camera"] as? NSDictionary)
             self.applyCameraBehavior(navigator)
             try self.startLocationSource(
@@ -358,12 +436,15 @@ class HereNavigationModule: RCTEventEmitter {
         return navigator
     }
 
-    /// Binds the navigator to the mounted map so the SDK draws the route, the
+    /// Binds the navigator to a mounted map so the SDK draws the route, the
     /// maneuver arrows and the location indicator, and follows the vehicle.
     /// Navigation still runs (and still emits events) with no map mounted —
     /// that is the headless case — so a missing view is not an error.
-    private func attachToMap(_ navigator: VisualNavigator) {
-        guard let view = HereMapView.activeInstance() else {
+    ///
+    /// `mapViewTag` picks which map when more than one is on screen; without it
+    /// the most recently mounted one takes the rendering.
+    private func attachToMap(_ navigator: VisualNavigator, _ mapViewTag: NSNumber? = nil) {
+        guard let view = HereMapView.resolveInstance(tag: mapViewTag) else {
             NSLog("[HereNavigationModule] no HereMapView mounted — navigating without rendering")
             return
         }
@@ -632,6 +713,7 @@ class HereNavigationModule: RCTEventEmitter {
         }
         boundView = nil
         lastManeuverIndex = -1
+        currentRouteId = nil
     }
 
     /// Called by `HereMapView` immediately before its surface goes away.
