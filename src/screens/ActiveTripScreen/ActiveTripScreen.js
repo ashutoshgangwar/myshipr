@@ -595,14 +595,15 @@ export default function ActiveTripScreen({navigation, route}) {
   }, [activeRoute, isNavigating, navInfo]);
 
   /**
-   * What the green next-turn card shows. It belongs to guidance, so it stays
-   * off the map until the driver taps the navigate button. Once guidance is
-   * running the navigator feeds it; the route's own maneuver list stands in for
-   * the first few seconds, before the first MANEUVER event lands.
+   * What the green next-turn card shows. While guidance runs the navigator
+   * feeds it; before that the calculated route's own maneuver list does, so the
+   * card is populated as soon as there is a route rather than staying blank
+   * until the driver starts navigating.
    */
   const direction = useMemo(() => {
-    if (!isNavigating) return null;
-    if (nextManeuver) return {maneuver: nextManeuver, meters: metersToNext};
+    if (isNavigating && nextManeuver) {
+      return {maneuver: nextManeuver, meters: metersToNext};
+    }
 
     const list = activeRoute?.maneuvers;
     if (!Array.isArray(list) || list.length === 0) return null;
