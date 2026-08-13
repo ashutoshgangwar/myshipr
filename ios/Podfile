@@ -72,52 +72,26 @@ target 'myshipr' do
     #   @import MapLibre; module 'MapLibre' not found
     $MLRN.post_install(installer)
 
-    # Add HERE SDK Swift files to myshipr target
-    myshipr_target = installer.pods_project.targets.select { |target| target.name == 'myshipr' }.first
-    if myshipr_target
-      here_sdk_files = [
-        'ios/myshipr/HERESDKManager.swift',
-        'ios/myshipr/HERECredentials.swift',
-        'ios/myshipr/HEREAutosuggestService.swift',
-        'ios/myshipr/HERERoutingService.swift',
-        'ios/myshipr/HEREGeocodingService.swift',
-        'ios/myshipr/HEREMapView.swift',
-        'ios/myshipr/HEREBridge.swift',
-        'ios/myshipr/HEREBridge.m',
-        'ios/myshipr/HereMapModule.m',
-        'ios/myshipr/HereMapViewManager.m'
-      ]
-      
-      here_sdk_files.each do |file_path|
-        full_path = File.join(installer.sandbox.root.parent, file_path)
-        if File.exist?(full_path)
-          file_ref = installer.pods_project.new_file(full_path)
-          myshipr_target.source_build_phase.add_file_reference(file_ref)
-        end
-      end
-    end
-
-    # If you have HERE SDK frameworks (heresdk.framework or similar),
-    # copy them into the app bundle and add to the Xcode project.
-    # Place frameworks under ios/Frameworks (create that folder) and
-    # this post_install hook will add them automatically.
-    frameworks_dir = File.join(installer.sandbox.root.parent, 'ios/Frameworks')
-    if Dir.exist?(frameworks_dir)
-      # Include both .framework and .xcframework so bundles like heresdk.xcframework are handled
-      Dir.glob(File.join(frameworks_dir, '*.{framework,xcframework}')).each do |fw|
-        next unless File.exist?(fw)
-        file_ref = installer.pods_project.new_file(fw)
-        # Link into Frameworks and also embed into the app bundle
-        myshipr_target.frameworks_build_phase.add_file_reference(file_ref)
-
-        # Ensure there's an Embed Frameworks copy-files phase and add the framework there
-        embed_phase = myshipr_target.copy_files_build_phases.find { |phase| phase.name == 'Embed Frameworks' }
-        unless embed_phase
-          embed_phase = myshipr_target.new_copy_files_build_phase('Embed Frameworks')
-          # Destination 10 == Frameworks
-          embed_phase.dst_subfolder_spec = '10'
-        end
-        embed_phase.add_file_reference(file_ref)
+    # ...but that helper attaches the MapLibre SPM product to BOTH the
+    # maplibre-react-native pod target and the app target. Each attachment emits
+    # its own SignatureCollection task, producing two files with the same
+    # basename in different directories:
+    #   <BuildProductsPath>/Release-iphoneos/MapLibre.xcframework-ios.signature
+    #   <BuildProductsPath>/Release-iphoneos/maplibre-react-native/MapLibre.xcframework-ios.signature
+    # The archive's Signatures/ folder is flat, so assembling it fails with:
+    #   "MapLibre.xcframework-ios.signature" couldn't be copied to "Signatures"
+    #   because an item with the same name already exists.
+    # Only archives hit this; a plain build never assembles Signatures/.
+    # The two files are byte-identical and the app target's copy is the one the
+    # archive needs, so drop the pod target's redundant copy. SignatureCollection
+    # runs at the top of the build graph, well before this phase.
+    mlrn_target = installer.pods_project.targets.find { |t| t.name == 'maplibre-react-native' }
+    if mlrn_target
+      phase_name = '[CP-User] Remove duplicate MapLibre xcframework signature'
+      unless mlrn_target.shell_script_build_phases.any? { |p| p.name == phase_name }
+        phase = mlrn_target.new_shell_script_build_phase(phase_name)
+        phase.shell_script = 'rm -f "${CONFIGURATION_BUILD_DIR}/MapLibre.xcframework-ios.signature"'
+        phase.show_env_vars_in_log = '0'
       end
     end
 
