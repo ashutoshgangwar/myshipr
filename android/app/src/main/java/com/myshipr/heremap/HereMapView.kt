@@ -101,7 +101,20 @@ class HereMapView(context: Context) : FrameLayout(context) {
     fun isMapAttached(): Boolean = _mapView != null
 
     private var routingEngine:           RoutingEngine?            = null
-    private var currentPolyline:         MapPolyline?              = null
+    /**
+     * The drawn route. A list rather than one line because traffic colouring
+     * splits it into a piece per congestion band — a plain route is simply the
+     * one-element case.
+     */
+    private val routePolylines                                     = mutableListOf<MapPolyline>()
+    /**
+     * Bumped every time the drawn route is replaced or cleared. Traffic arrives
+     * from the network after the route is already on screen, so a late response
+     * carries the generation it was asked for and is dropped if the route has
+     * moved on since — otherwise clearing the map would be undone a second later
+     * by traffic for a route the driver has left behind.
+     */
+    private var routeGeneration                                    = 0
     private val markers                                            = mutableListOf<MapMarker>()
     private var blueDotMarker:           MapMarker?                = null
     private var locationIndicator:       LocationIndicator?        = null
@@ -763,28 +776,76 @@ class HereMapView(context: Context) : FrameLayout(context) {
         colorHex: String = DEFAULT_ROUTE_COLOR,
         widthPx: Double = DEFAULT_ROUTE_WIDTH_PX
     ) {
-        val mapView = _mapView ?: return
         if (isDestroyed || vertices.size < 2) return
+        removeRoutePolylines()
+        addRoutePolyline(vertices, colorHex, widthPx)
+    }
 
-        currentPolyline?.let { mapView.mapScene.removeMapPolyline(it) }
+    /**
+     * Redraws the route as congestion-coloured pieces — blue where it is flowing,
+     * yellow where it is slow, red where it is heavy (see [TrafficRouteColoring]).
+     *
+     * [generation] is the value [routeGeneration] had when the traffic was
+     * requested; a mismatch means the route has since been replaced or cleared,
+     * so the stale colouring is dropped rather than drawn over the new route.
+     */
+    fun drawRouteSegments(
+        segments: List<TrafficRouteColoring.Segment>,
+        widthPx: Double = DEFAULT_ROUTE_WIDTH_PX,
+        generation: Int
+    ) {
+        if (isDestroyed || segments.isEmpty()) return
+        if (generation != routeGeneration) return
+
+        removeRoutePolylines()
+        // Keep the generation: this is the same route, only better coloured.
+        routeGeneration = generation
+        segments.forEach { addRoutePolyline(it.coordinates, it.colorHex, widthPx) }
+    }
+
+    /** The generation a traffic request should quote back to [drawRouteSegments]. */
+    fun routeGeneration(): Int = routeGeneration
+
+    private fun addRoutePolyline(
+        vertices: List<GeoCoordinates>,
+        colorHex: String,
+        widthPx: Double
+    ) {
+        val mapView = _mapView ?: return
+        if (vertices.size < 2) return
+
         val fill = parseColor(colorHex)
-        currentPolyline = MapPolyline(
-            GeoPolyline(vertices),
-            MapPolyline.SolidRepresentation(
-                // PIXELS, not density-independent: the route keeps the same
-                // on-screen thickness on every device.
-                MapMeasureDependentRenderSize(RenderSize.Unit.PIXELS, widthPx),
-                fill,
-                MapMeasureDependentRenderSize(RenderSize.Unit.PIXELS, widthPx * 0.15),
-                darken(fill),
-                LineCap.ROUND
+        val polyline = try {
+            MapPolyline(
+                GeoPolyline(vertices),
+                MapPolyline.SolidRepresentation(
+                    // PIXELS, not density-independent: the route keeps the same
+                    // on-screen thickness on every device.
+                    MapMeasureDependentRenderSize(RenderSize.Unit.PIXELS, widthPx),
+                    fill,
+                    MapMeasureDependentRenderSize(RenderSize.Unit.PIXELS, widthPx * 0.15),
+                    darken(fill),
+                    LineCap.ROUND
+                )
             )
-        )
-        mapView.mapScene.addMapPolyline(currentPolyline!!)
+        } catch (e: Exception) {
+            Log.w(TAG, "route polyline could not be built: ${e.message}")
+            return
+        }
+        mapView.mapScene.addMapPolyline(polyline)
+        routePolylines.add(polyline)
     }
 
     fun clearRoute() {
-        currentPolyline?.let { line -> _mapView?.mapScene?.removeMapPolyline(line); currentPolyline = null }
+        removeRoutePolylines()
+    }
+
+    /** Takes every drawn route piece off the map and invalidates in-flight traffic. */
+    private fun removeRoutePolylines() {
+        val scene = _mapView?.mapScene
+        routePolylines.forEach { line -> scene?.removeMapPolyline(line) }
+        routePolylines.clear()
+        routeGeneration++
     }
 
     /** "#RRGGBB" / "#AARRGGBB" → HERE colour, falling back to the route blue. */

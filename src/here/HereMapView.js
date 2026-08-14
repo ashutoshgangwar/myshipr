@@ -203,8 +203,15 @@ const HereMapView = forwardRef(function HereMapView(
        * Draws route geometry. Pass the `routeId` from `HereRouting.*`, or an
        * explicit `coordinates` array.
        *
+       * With a `routeId` the line is also coloured by live congestion — blue
+       * where traffic is flowing, yellow where it is slow, red where it is
+       * heavy. That takes a network round trip, so the promise resolves on the
+       * plain line and the colours land a moment later; pass `traffic: false`
+       * to keep it plain. An explicit `coordinates` array cannot be coloured —
+       * traffic is asked for by route, not by geometry.
+       *
        * @param {Object} route `{ routeId }` or `{ coordinates: [{lat,lng}] }`,
-       *   plus optional `{ color, width }`
+       *   plus optional `{ color, width, traffic }`
        * @returns {Promise<number>} number of vertices drawn
        */
       drawRoute: route =>

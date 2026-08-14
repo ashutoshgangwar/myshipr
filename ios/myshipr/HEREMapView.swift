@@ -14,6 +14,12 @@ class HereMapView: UIView {
     private var allMapPolylines: [MapPolyline] = []
     // Raw coords kept for trimPolyline
     private var currentPolylineCoords: [[Double]] = []
+    /// Bumped every time the drawn route is replaced or cleared. Traffic arrives
+    /// from the network after the route is already on screen, so a late response
+    /// carries the generation it was asked for and is dropped if the route has
+    /// moved on since — otherwise clearing the map would be undone a second later
+    /// by traffic for a route the driver has left behind.
+    private var routeGenerationCounter = 0
 
     // ── Native-controlled marker size ───────────────────────────────────────
     // On-screen pixel size for every JS-supplied marker image (source /
@@ -718,25 +724,10 @@ class HereMapView: UIView {
             }
 
             let lineColor = color ?? UIColor(red: 0.25, green: 0.47, blue: 1.0, alpha: 1.0)
-            let mapPolyline: MapPolyline
-            do {
-                let lineWidth = try MapMeasureDependentRenderSize(
-                    sizeUnit: RenderSize.Unit.pixels,
-                    size: widthPixels
-                )
-                let representation = try MapPolyline.SolidRepresentation(
-                    lineWidth: lineWidth,
-                    color: lineColor,
-                    capShape: LineCap.round
-                )
-                mapPolyline = try MapPolyline(
-                    geometry: geoPolyline,
-                    representation: representation
-                )
-            } catch {
-                print("[HereMapView] drawRoutePolyline: failed to build polyline — \(error)")
-                return
-            }
+            guard let mapPolyline = self.buildPolyline(
+                geoPolyline, color: lineColor, widthPixels: widthPixels
+            ) else { return }
+
             self.mapView.mapScene.addMapPolyline(mapPolyline)
             self.allMapPolylines.append(mapPolyline)
             self.routePolylineObject = mapPolyline
@@ -745,6 +736,72 @@ class HereMapView: UIView {
             self.navRouteCoords = geoCoords
             self.resetPassedPath()
             self.fitCameraToPolyline(coords: geoCoords)
+        }
+    }
+
+    /// The generation a traffic request should quote back to `drawRouteSegments`.
+    var routeGeneration: Int { routeGenerationCounter }
+
+    /// Redraws the route as congestion-coloured pieces — blue where it is
+    /// flowing, yellow where it is slow, red where it is heavy (see
+    /// `HERERoutingService`'s traffic helpers).
+    ///
+    /// `generation` is the value `routeGeneration` had when the traffic was
+    /// requested; a mismatch means the route has since been replaced or cleared,
+    /// so the stale colouring is dropped rather than drawn over the new route.
+    /// The camera is left alone — the route it was framed to has not moved.
+    func drawRouteSegments(
+        _ segments: [HERETrafficSegment],
+        widthPixels: Double,
+        generation: Int
+    ) {
+        guard !segments.isEmpty else { return }
+        whenSceneReady { [weak self] in
+            guard let self = self, generation == self.routeGenerationCounter else { return }
+
+            // Same route, only better coloured: keep the generation, and keep the
+            // full-route coords the navigation trim overlay works from.
+            let routeCoords = self.navRouteCoords
+            let coords = self.currentPolylineCoords
+            self.clearPolylinesRaw()
+            self.routeGenerationCounter = generation
+            self.currentPolylineCoords = coords
+            self.navRouteCoords = routeCoords
+
+            for segment in segments {
+                guard segment.coordinates.count >= 2,
+                      let geoPolyline = try? GeoPolyline(vertices: segment.coordinates),
+                      let polyline = self.buildPolyline(
+                        geoPolyline, color: segment.color, widthPixels: widthPixels
+                      )
+                else { continue }
+
+                self.mapView.mapScene.addMapPolyline(polyline)
+                self.allMapPolylines.append(polyline)
+                self.routePolylineObject = polyline
+            }
+        }
+    }
+
+    private func buildPolyline(
+        _ geometry: GeoPolyline,
+        color: UIColor,
+        widthPixels: Double
+    ) -> MapPolyline? {
+        do {
+            let lineWidth = try MapMeasureDependentRenderSize(
+                sizeUnit: RenderSize.Unit.pixels,
+                size: widthPixels
+            )
+            let representation = try MapPolyline.SolidRepresentation(
+                lineWidth: lineWidth,
+                color: color,
+                capShape: LineCap.round
+            )
+            return try MapPolyline(geometry: geometry, representation: representation)
+        } catch {
+            print("[HereMapView] failed to build route polyline — \(error)")
+            return nil
         }
     }
 
@@ -769,6 +826,8 @@ class HereMapView: UIView {
         allMapPolylines.removeAll()
         routePolylineObject = nil
         currentPolylineCoords = []
+        // Whatever traffic is in flight was asked about the route just removed.
+        routeGenerationCounter += 1
         // The navigation passed-overlay is tracked separately from
         // allMapPolylines — tear it down here too so it never lingers.
         navRouteCoords = []

@@ -1,5 +1,7 @@
 package com.myshipr.heremap
 
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import com.facebook.react.bridge.Arguments
 import com.facebook.react.bridge.Promise
@@ -31,6 +33,7 @@ import com.here.sdk.navigation.RouteProgressListener
 import com.here.sdk.navigation.SpeedWarningListener
 import com.here.sdk.navigation.VisualNavigator
 import com.here.sdk.routing.Route
+import com.here.sdk.routing.TrafficOnRoute
 import com.here.time.Duration
 
 /**
@@ -87,6 +90,14 @@ class HereNavigationModule(
         private const val MAX_CAMERA_DISTANCE = 5000.0
 
         /**
+         * How often the congestion colouring on the route is refreshed while
+         * guidance runs. Traffic is a live figure but not a fast-moving one, and
+         * each refresh is a network request, so a minute keeps the colours honest
+         * without putting the driver's data plan to work.
+         */
+        private const val TRAFFIC_REFRESH_INTERVAL_MS = 60_000L
+
+        /**
          * The live instance, so the map view can detach the navigator before its
          * surface is destroyed and [HereSdkModule] can tear navigation down
          * before disposing the engine.
@@ -134,6 +145,27 @@ class HereNavigationModule(
     private var cameraPrincipalY = DEFAULT_CAMERA_PRINCIPAL_Y
     private var cameraBearing: Double? = null
     private var cameraMode = "fixed"
+
+    // ── Traffic on the route ────────────────────────────────────────────────
+    // The navigator draws the route itself during guidance, so the preview's
+    // coloured polylines are gone by then. Handing it a TrafficOnRoute is what
+    // makes it paint the same story: the congested stretches in yellow and red,
+    // everything flowing left in the route's own colour.
+
+    private val trafficHandler = Handler(Looper.getMainLooper())
+
+    /** How far along the route the truck already is, so a refresh only prices the rest. */
+    private var lastTraveledSectionIndex = 0
+    private var traveledDistanceOnLastSectionInMeters = 0
+
+    private val trafficRefresh = object : Runnable {
+        override fun run() {
+            val navigator = visualNavigator ?: return
+            val route = navigator.route ?: return
+            requestTrafficOnRoute(navigator, route)
+            trafficHandler.postDelayed(this, TRAFFIC_REFRESH_INTERVAL_MS)
+        }
+    }
 
     init {
         instance = this
@@ -186,6 +218,7 @@ class HereNavigationModule(
             lastManeuverIndex = -1
             navigator.route = route
             currentRouteId = RouteStore.resolveId(routeId)
+            startTrafficOnRoute(navigator, route)
 
             attachToMap(navigator, options?.getIntOrNull("mapViewTag"))
             readCameraOptions(options?.getMap("camera"))
@@ -230,6 +263,9 @@ class HereNavigationModule(
             lastManeuverIndex = -1
             navigator.route = route
             currentRouteId = RouteStore.resolveId(routeId)
+            // A reroute is a different road ahead, so the congestion the driver
+            // was shown no longer applies — ask again for the new way round.
+            startTrafficOnRoute(navigator, route)
 
             if (wasSimulating) {
                 startLocationSource(navigator, route, LocationSource.SIMULATED, simulationSpeedFactor)
@@ -269,6 +305,8 @@ class HereNavigationModule(
             lastManeuverIndex = -1
             // A null route is what switches the navigator into tracking mode.
             navigator.route = null
+            // No route means nothing to colour by congestion.
+            stopTrafficOnRoute()
 
             attachToMap(navigator, options?.getIntOrNull("mapViewTag"))
             readCameraOptions(options?.getMap("camera"))
@@ -502,6 +540,93 @@ class HereNavigationModule(
         }
     }
 
+    // -------------------------------------------------------------------------
+    // Traffic on the route
+    // -------------------------------------------------------------------------
+
+    /**
+     * Turns on congestion colouring for the route the navigator draws, and keeps
+     * it current for the rest of the trip.
+     *
+     * The palette is [TrafficRouteColoring]'s, so guidance and the trip preview
+     * read the same: slow stretches yellow, heavy ones red, blocked road darker
+     * still — and anything flowing left in the navigator's own route colour. Only
+     * the traffic entries of the palette are replaced, so the route-progress
+     * colours the navigator already has (day or night) are left as they were.
+     */
+    private fun startTrafficOnRoute(navigator: VisualNavigator, route: Route) {
+        // A new route: nothing of it has been driven yet.
+        lastTraveledSectionIndex = 0
+        traveledDistanceOnLastSectionInMeters = 0
+
+        try {
+            navigator.colors = navigator.colors.apply {
+                trafficOnRouteColors = TrafficRouteColoring.navigatorColors()
+            }
+            navigator.isTrafficOnRouteVisible = true
+        } catch (e: Exception) {
+            Log.w(TAG, "traffic colours could not be applied: ${e.message}")
+        }
+
+        trafficHandler.removeCallbacks(trafficRefresh)
+        requestTrafficOnRoute(navigator, route)
+        trafficHandler.postDelayed(trafficRefresh, TRAFFIC_REFRESH_INTERVAL_MS)
+    }
+
+    /**
+     * Asks for traffic on [route] and hands the answer to the navigator.
+     *
+     * The response comes back on an SDK thread and the navigator is UI-thread
+     * only, so it is posted across — and dropped if guidance has moved to another
+     * route (a reroute) or stopped while the request was in flight.
+     */
+    private fun requestTrafficOnRoute(navigator: VisualNavigator, route: Route) {
+        TrafficRouteColoring.request(
+            route,
+            lastTraveledSectionIndex,
+            traveledDistanceOnLastSectionInMeters
+        ) { traffic ->
+            val onRoute: TrafficOnRoute = traffic ?: return@request
+            UiThreadUtil.runOnUiThread {
+                if (visualNavigator !== navigator || navigator.route !== route) return@runOnUiThread
+                try {
+                    navigator.trafficOnRoute = onRoute
+                } catch (e: Exception) {
+                    Log.w(TAG, "traffic on route could not be applied: ${e.message}")
+                }
+            }
+        }
+    }
+
+    /**
+     * Banks how far along the route the truck is, from the progress the navigator
+     * already emits, so the next refresh only asks about the road still ahead.
+     *
+     * `sectionProgress` holds one entry per section still to drive — the first is
+     * the section being driven now, the last the whole route — so its length is
+     * what says which section that is.
+     */
+    private fun trackTraveledDistance(
+        navigator: VisualNavigator,
+        progress: com.here.sdk.navigation.RouteProgress
+    ) {
+        val sections = navigator.route?.sections ?: return
+        val remaining = progress.sectionProgress ?: return
+        if (sections.isEmpty() || remaining.isEmpty()) return
+
+        val index = (sections.size - remaining.size).coerceIn(0, sections.size - 1)
+        lastTraveledSectionIndex = index
+        traveledDistanceOnLastSectionInMeters =
+            (sections[index].lengthInMeters - remaining.first().remainingDistanceInMeters)
+                .coerceAtLeast(0)
+    }
+
+    private fun stopTrafficOnRoute() {
+        trafficHandler.removeCallbacks(trafficRefresh)
+        lastTraveledSectionIndex = 0
+        traveledDistanceOnLastSectionInMeters = 0
+    }
+
     private fun applyGuidanceOptions(navigator: VisualNavigator, options: ReadableMap?) {
         val voiceGuidance = options?.getBooleanOrNull("voiceGuidance") ?: true
         // The SDK writes the instruction but never says it, so speaking is a
@@ -571,6 +696,7 @@ class HereNavigationModule(
      */
     private fun attachListeners(navigator: VisualNavigator) {
         navigator.routeProgressListener = RouteProgressListener { progress ->
+            trackTraveledDistance(navigator, progress)
             emit(EVENT_ROUTE_PROGRESS, HereNavigationSerialization.routeProgress(progress))
             emitManeuverIfChanged(navigator, progress)
         }
@@ -756,6 +882,7 @@ class HereNavigationModule(
 
     private fun teardown() {
         stopLocationSources()
+        stopTrafficOnRoute()
         // Cut off any half-spoken instruction — guidance for a trip that just
         // ended is worse than silence.
         speaker?.stop()

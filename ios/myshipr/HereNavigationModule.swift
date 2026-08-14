@@ -90,6 +90,23 @@ class HereNavigationModule: RCTEventEmitter {
     private var cameraBearing: Double?
     private var cameraMode = "fixed"
 
+    // ── Traffic on the route ────────────────────────────────────────────────
+    // The navigator draws the route itself during guidance, so the preview's
+    // coloured polylines are gone by then. Handing it a TrafficOnRoute is what
+    // makes it paint the same story: the congested stretches in yellow and red,
+    // everything flowing left in the route's own colour.
+
+    /// How often the congestion colouring on the route is refreshed while
+    /// guidance runs. Traffic is a live figure but not a fast-moving one, and
+    /// each refresh is a network request, so a minute keeps the colours honest
+    /// without putting the driver's data plan to work.
+    private static let trafficRefreshInterval: TimeInterval = 60
+
+    private var trafficRefreshTimer: Timer?
+    /// How far along the route the truck already is, so a refresh only prices the rest.
+    private var lastTraveledSectionIndex: Int32 = 0
+    private var traveledDistanceOnLastSectionInMeters: Int32 = 0
+
 #if canImport(heresdk)
     private var visualNavigator: VisualNavigator?
     private var locationSimulator: LocationSimulator?
@@ -145,6 +162,7 @@ class HereNavigationModule: RCTEventEmitter {
             self.lastManeuverIndex = -1
             navigator.route = route
             self.currentRouteId = HereRouteStore.shared.resolveId(routeId as String?)
+            self.startTrafficOnRoute(navigator, route)
 
             self.attachToMap(navigator, options?["mapViewTag"] as? NSNumber)
             self.readCameraOptions(options?["camera"] as? NSDictionary)
@@ -192,6 +210,9 @@ class HereNavigationModule: RCTEventEmitter {
             self.lastManeuverIndex = -1
             navigator.route = route
             self.currentRouteId = HereRouteStore.shared.resolveId(routeId as String?)
+            // A reroute is a different road ahead, so the congestion the driver
+            // was shown no longer applies — ask again for the new way round.
+            self.startTrafficOnRoute(navigator, route)
 
             if wasSimulating {
                 try self.startLocationSource(
@@ -355,6 +376,8 @@ class HereNavigationModule: RCTEventEmitter {
             // A nil route is what switches the navigator into tracking mode.
             navigator.route = nil
             self.currentRouteId = nil
+            // No route means nothing to colour by congestion.
+            self.stopTrafficOnRoute()
 
             self.attachToMap(navigator, options?["mapViewTag"] as? NSNumber)
             self.readCameraOptions(options?["camera"] as? NSDictionary)
@@ -589,6 +612,87 @@ class HereNavigationModule: RCTEventEmitter {
         }
     }
 
+    // MARK: - Traffic on the route
+
+    /// Turns on congestion colouring for the route the navigator draws, and keeps
+    /// it current for the rest of the trip.
+    ///
+    /// The palette is `HERERoutingService`'s, so guidance and the trip preview
+    /// read the same: slow stretches yellow, heavy ones red, blocked road darker
+    /// still — and anything flowing left in the navigator's own route colour.
+    /// Only the traffic entries of the palette are replaced, so the route-progress
+    /// colours the navigator already has (day or night) are left as they were.
+    private func startTrafficOnRoute(_ navigator: VisualNavigator, _ route: Route) {
+        // A new route: nothing of it has been driven yet.
+        lastTraveledSectionIndex = 0
+        traveledDistanceOnLastSectionInMeters = 0
+
+        let colors = navigator.colors
+        colors.trafficOnRouteColors = HERERoutingService.navigatorTrafficColors()
+        navigator.colors = colors
+        navigator.isTrafficOnRouteVisible = true
+
+        requestTrafficOnRoute(navigator, route)
+
+        trafficRefreshTimer?.invalidate()
+        trafficRefreshTimer = Timer.scheduledTimer(
+            withTimeInterval: Self.trafficRefreshInterval, repeats: true
+        ) { [weak self] _ in
+            guard let self = self,
+                  let navigator = self.visualNavigator,
+                  let route = navigator.route
+            else { return }
+            self.requestTrafficOnRoute(navigator, route)
+        }
+    }
+
+    /// Asks for traffic on `route` and hands the answer to the navigator.
+    ///
+    /// The response comes back on an SDK thread and the navigator is main-thread
+    /// only, so it is hopped across — and dropped if guidance has moved to
+    /// another route (a reroute) or stopped while the request was in flight.
+    private func requestTrafficOnRoute(_ navigator: VisualNavigator, _ route: Route) {
+        HERERoutingService.trafficOnRoute(
+            route,
+            lastTraveledSectionIndex: lastTraveledSectionIndex,
+            traveledDistanceOnLastSectionInMeters: traveledDistanceOnLastSectionInMeters
+        ) { [weak self, weak navigator] traffic in
+            guard let traffic = traffic else { return }
+            DispatchQueue.main.async {
+                guard let self = self, let navigator = navigator,
+                      self.visualNavigator === navigator, navigator.route === route
+                else { return }
+                navigator.trafficOnRoute = traffic
+            }
+        }
+    }
+
+    /// Banks how far along the route the truck is, from the progress the
+    /// navigator already emits, so the next refresh only asks about the road
+    /// still ahead.
+    ///
+    /// `sectionProgress` holds one entry per section still to drive — the first
+    /// is the section being driven now, the last the whole route — so its length
+    /// is what says which section that is.
+    fileprivate func trackTraveledDistance(_ progress: RouteProgress) {
+        guard let sections = visualNavigator?.route?.sections, !sections.isEmpty,
+              let currentSection = progress.sectionProgress.first
+        else { return }
+
+        let index = min(max(sections.count - progress.sectionProgress.count, 0), sections.count - 1)
+        lastTraveledSectionIndex = Int32(index)
+        traveledDistanceOnLastSectionInMeters = Int32(max(
+            Int(sections[index].lengthInMeters) - Int(currentSection.remainingDistanceInMeters), 0
+        ))
+    }
+
+    private func stopTrafficOnRoute() {
+        trafficRefreshTimer?.invalidate()
+        trafficRefreshTimer = nil
+        lastTraveledSectionIndex = 0
+        traveledDistanceOnLastSectionInMeters = 0
+    }
+
     /// Wires every navigator callback to a JS event.
     private func attachDelegates(_ navigator: VisualNavigator) {
         navigator.routeProgressDelegate = self
@@ -704,6 +808,7 @@ class HereNavigationModule: RCTEventEmitter {
 
     private func teardown() {
         stopLocationSources()
+        stopTrafficOnRoute()
         // Cut off any half-spoken instruction — guidance for a trip that just
         // ended is worse than silence.
         speaker?.stop()
@@ -785,6 +890,7 @@ enum HereNavigationError: LocalizedError {
 #if canImport(heresdk)
 extension HereNavigationModule: RouteProgressDelegate {
     func onRouteProgressUpdated(_ routeProgress: RouteProgress) {
+        trackTraveledDistance(routeProgress)
         emit(Event.routeProgress, HereSerialization.routeProgress(routeProgress))
         emitManeuverIfChanged(routeProgress)
     }

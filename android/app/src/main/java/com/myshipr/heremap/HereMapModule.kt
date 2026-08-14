@@ -12,6 +12,7 @@ import com.here.sdk.core.GeoCoordinates
 import com.here.sdk.core.engine.AuthenticationMode
 import com.here.sdk.core.engine.SDKNativeEngine
 import com.here.sdk.core.engine.SDKOptions
+import com.here.sdk.routing.Route
 
 /**
  * Native Module exposing HERE SDK imperative API to JavaScript.
@@ -262,18 +263,28 @@ class HereMapModule(
      * Draws an already-calculated route. Pass either the `routeId` returned by
      * [HereRoutingModule], or explicit `coordinates: [{lat, lng}]`.
      *
-     * Options: `{ routeId?, coordinates?, color?, width? }`.
+     * Options: `{ routeId?, coordinates?, color?, width?, traffic? }`.
      * Replaces any previously drawn route; [clearRoute] removes it.
+     *
+     * With a `routeId` the line is also coloured by live congestion — blue where
+     * traffic is flowing, yellow where it is slow, red where it is heavy. That
+     * needs a network round trip, so the plain line is drawn first and recoloured
+     * when the answer lands; `traffic: false` opts out and keeps it plain.
      */
     @ReactMethod
     fun drawRouteGeometry(viewTag: Int, options: ReadableMap, promise: Promise) {
         val color = if (options.hasKey("color")) options.getString("color") ?: "#4285F4" else "#4285F4"
         val width = if (options.hasKey("width")) options.getDouble("width") else 26.0
+        val withTraffic = options.getBooleanOrNull("traffic") ?: true
 
         val routeId = if (options.hasKey("routeId")) options.getString("routeId") else null
+        // Kept so traffic can be asked for: it is the route object, not its
+        // vertices, that the routing service takes.
+        var storedRoute: Route? = null
         val vertices: List<GeoCoordinates> = if (routeId != null) {
             val route = RouteStore.get(routeId)
                 ?: return promise.reject("HERE_ROUTE_ERROR", "Unknown routeId: $routeId")
+            storedRoute = route
             route.geometry?.vertices.orEmpty()
         } else {
             val coordsArray = options.getArray("coordinates")
@@ -294,6 +305,29 @@ class HereMapModule(
         runOnView(viewTag, promise) { view ->
             view.drawRouteGeometry(vertices, color, width)
             promise.resolve(vertices.size)
+
+            val route = storedRoute
+            if (withTraffic && route != null) applyTrafficColors(view, route, width)
+        }
+    }
+
+    /**
+     * Recolours a drawn route by live congestion, once the routing service says
+     * what it looks like.
+     *
+     * Fire-and-forget by design: the route is already on screen, so a slow or
+     * failed traffic lookup costs the driver nothing — the line simply stays the
+     * plain blue it was drawn in. The generation captured here is what stops a
+     * late response from painting over a route that has since been replaced.
+     */
+    private fun applyTrafficColors(view: HereMapView, route: Route, width: Double) {
+        val generation = view.routeGeneration()
+        TrafficRouteColoring.request(route) { traffic ->
+            val segments = traffic?.let { TrafficRouteColoring.segments(it) }.orEmpty()
+            if (segments.isEmpty()) return@request
+            reactContext.runOnUiQueueThread {
+                view.drawRouteSegments(segments, width, generation)
+            }
         }
     }
 

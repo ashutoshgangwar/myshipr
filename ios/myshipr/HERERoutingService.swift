@@ -1,4 +1,5 @@
 import Foundation
+import UIKit
 
 #if canImport(heresdk)
 import heresdk
@@ -289,5 +290,161 @@ class HERERoutingService: NSObject {
         return options
     }
 
+    // MARK: - Traffic on the route
+
+    /// Live congestion along a route, as colour.
+    ///
+    /// A route drawn in one flat blue says nothing about what the driver is
+    /// about to hit. `calculateTrafficOnRoute` answers that: it returns the same
+    /// route split into *spans*, each carrying a jam factor — HERE's 0 (free) to
+    /// 10 (blocked) congestion scale — which `trafficColor(forJamFactor:)`
+    /// buckets into the three states the trip screen shows: free flowing stays
+    /// the ordinary route blue, slow turns yellow, heavy turns red.
+    ///
+    /// Two consumers, one scale, so both readings agree: the preview polyline,
+    /// drawn from `trafficSegments`, and the navigator's own route rendering,
+    /// which colours itself once handed a `TrafficOnRoute` and the palette from
+    /// `navigatorTrafficColors()`.
+    ///
+    /// Keep in sync with Android's `TrafficRouteColoring.kt`.
+
+    /// Free-flowing — the same blue the plain route is drawn in.
+    static let trafficColorFree = UIColor(red: 0.145, green: 0.388, blue: 0.922, alpha: 1) // #2563EB
+    /// Moving, but below the road's normal speed.
+    static let trafficColorSlow = UIColor(red: 0.961, green: 0.620, blue: 0.043, alpha: 1) // #F59E0B
+    /// Queuing or stationary.
+    static let trafficColorHeavy = UIColor(red: 0.937, green: 0.267, blue: 0.267, alpha: 1) // #EF4444
+    /// The road is closed or completely blocked.
+    static let trafficColorBlocked = UIColor(red: 0.600, green: 0.106, blue: 0.106, alpha: 1) // #991B1B
+
+    // HERE's jam factor: 0-3 free, 4-7 slow, 8-9 queuing, 10 stationary/blocked.
+    private static let jamSlow = 4.0
+    private static let jamHeavy = 8.0
+    private static let jamBlocked = 10.0
+
+    /// Where a jam factor lands on the three-state scale above.
+    static func trafficColor(forJamFactor jamFactor: Double) -> UIColor {
+        switch jamFactor {
+        case jamBlocked...: return trafficColorBlocked
+        case jamHeavy...: return trafficColorHeavy
+        case jamSlow...: return trafficColorSlow
+        default: return trafficColorFree
+        }
+    }
+
+    /// The same palette for the navigator's own route rendering. The SDK only
+    /// recolours the congested parts — free-flowing road keeps the navigator's
+    /// route colour — so there is no "free" entry to give it here.
+    static func navigatorTrafficColors() -> TrafficOnRouteColors {
+        TrafficOnRouteColors(
+            slow: trafficColorSlow,
+            stationary: trafficColorHeavy,
+            blocking: trafficColorBlocked
+        )
+    }
+
+    /// Asks the routing service what traffic looks like on `route` right now.
+    ///
+    /// Traffic is a live figure, so this is a network call: it is fired off once
+    /// the route is already on screen rather than being waited for, and a failure
+    /// simply leaves the plain blue line — never an error the driver has to read.
+    ///
+    /// `lastTraveledSectionIndex` and `traveledDistanceOnLastSectionInMeters`
+    /// tell the service how far along the route the truck already is, so a
+    /// refresh mid-trip costs only the part still to drive. Both are 0 for a
+    /// preview. `completion` runs on an SDK thread, not the main thread.
+    static func trafficOnRoute(
+        _ route: Route,
+        lastTraveledSectionIndex: Int32 = 0,
+        traveledDistanceOnLastSectionInMeters: Int32 = 0,
+        completion: @escaping (TrafficOnRoute?) -> Void
+    ) {
+        do {
+            _ = try routingEngine().calculateTrafficOnRoute(
+                route: route,
+                lastTraveledSectionIndex: lastTraveledSectionIndex,
+                traveledDistanceOnLastSectionInMeters: traveledDistanceOnLastSectionInMeters
+            ) { error, traffic in
+                if let error = error {
+                    NSLog("[HERERoutingService] traffic on route unavailable: \(error)")
+                    completion(nil)
+                    return
+                }
+                completion(traffic)
+            }
+        } catch {
+            NSLog("[HERERoutingService] traffic on route request failed: \(error)")
+            completion(nil)
+        }
+    }
+
+    /// Cuts `traffic` into the coloured runs to draw, merging neighbouring spans
+    /// that share a colour so a quiet motorway is one polyline rather than
+    /// hundreds. An empty result means "leave the plain line alone".
+    static func trafficSegments(_ traffic: TrafficOnRoute) -> [HERETrafficSegment] {
+        var segments: [HERETrafficSegment] = []
+        for section in traffic.trafficSections where section.geometry.count >= 2 {
+            segments += sectionTrafficSegments(section.geometry, section.trafficSpans)
+        }
+        return segments
+    }
+
+    /// A span marks where it *starts* along the section's geometry
+    /// (`trafficSectionPolylineOffset`); it runs until the next one begins, or to
+    /// the end of the section for the last. Consecutive runs share their boundary
+    /// vertex, so the colours butt up against each other instead of leaving a
+    /// hairline gap.
+    private static func sectionTrafficSegments(
+        _ geometry: [GeoCoordinates],
+        _ spans: [TrafficOnSpan]
+    ) -> [HERETrafficSegment] {
+        let lastIndex = geometry.count - 1
+        let starts = spans
+            .map { (min(max(Int($0.trafficSectionPolylineOffset), 0), lastIndex),
+                    trafficColor(forJamFactor: $0.jamFactor)) }
+            .sorted { $0.0 < $1.0 }
+
+        // No span data for this section: it is all free-flowing as far as we know.
+        guard let first = starts.first else {
+            return [HERETrafficSegment(coordinates: geometry, color: trafficColorFree)]
+        }
+
+        var out: [HERETrafficSegment] = []
+        var runStart = first.0
+        var runColor = first.1
+
+        // Geometry ahead of the first span is unmeasured — draw it plain.
+        if runStart > 0 {
+            out.append(HERETrafficSegment(
+                coordinates: Array(geometry[0...runStart]), color: trafficColorFree
+            ))
+        }
+
+        for (offset, color) in starts.dropFirst() {
+            if color == runColor { continue }
+            if offset > runStart {
+                out.append(HERETrafficSegment(
+                    coordinates: Array(geometry[runStart...offset]), color: runColor
+                ))
+                runStart = offset
+            }
+            runColor = color
+        }
+        if lastIndex > runStart {
+            out.append(HERETrafficSegment(
+                coordinates: Array(geometry[runStart...lastIndex]), color: runColor
+            ))
+        }
+        return out
+    }
+
 #endif
 }
+
+#if canImport(heresdk)
+/// A run of route geometry that shares one congestion colour.
+struct HERETrafficSegment {
+    let coordinates: [GeoCoordinates]
+    let color: UIColor
+}
+#endif

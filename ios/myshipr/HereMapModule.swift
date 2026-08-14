@@ -105,6 +105,11 @@ class HereMapModule: NSObject {
 
     /// Draws an already-calculated route: pass the `routeId` from
     /// `HereRoutingModule`, or explicit `coordinates: [{lat, lng}]`.
+    ///
+    /// With a `routeId` the line is also coloured by live congestion — blue where
+    /// traffic is flowing, yellow where it is slow, red where it is heavy. That
+    /// needs a network round trip, so the plain line is drawn first and recoloured
+    /// when the answer lands; `traffic: false` opts out and keeps it plain.
     @objc(drawRouteGeometry:options:resolver:rejecter:)
     func drawRouteGeometry(
         _ viewTag: NSNumber,
@@ -114,12 +119,16 @@ class HereMapModule: NSObject {
     ) {
 #if canImport(heresdk)
         var coords: [[Double]] = []
+        // Kept so traffic can be asked for: it is the route object, not its
+        // vertices, that the routing service takes.
+        var storedRoute: Route?
 
         if let routeId = options["routeId"] as? String {
             guard let route = HereRouteStore.shared.get(routeId) else {
                 reject("HERE_ROUTE_ERROR", "Unknown routeId: \(routeId)", nil)
                 return
             }
+            storedRoute = route
             coords = route.geometry.vertices.map { [$0.latitude, $0.longitude] }
         } else if let raw = options["coordinates"] as? [NSDictionary] {
             coords = raw.compactMap { point in
@@ -140,17 +149,44 @@ class HereMapModule: NSObject {
 
         let width = Self.double(options["width"]) ?? 26.0
         let color = (options["color"] as? String).flatMap(Self.color(fromHex:))
+        let withTraffic = (options["traffic"] as? NSNumber)?.boolValue ?? true
 
         DispatchQueue.main.async {
-            self.findHereMapView()?.drawRouteGeometry(
-                coords: coords, color: color, widthPixels: width
-            )
+            let view = self.findHereMapView()
+            view?.drawRouteGeometry(coords: coords, color: color, widthPixels: width)
             resolve(coords.count)
+
+            if withTraffic, let view = view, let route = storedRoute {
+                self.applyTrafficColors(view, route: route, widthPixels: width)
+            }
         }
 #else
         reject("SDK_MISSING", "HERE SDK is not embedded in the Xcode project", nil)
 #endif
     }
+
+#if canImport(heresdk)
+    /// Recolours a drawn route by live congestion, once the routing service says
+    /// what it looks like.
+    ///
+    /// Fire-and-forget by design: the route is already on screen, so a slow or
+    /// failed traffic lookup costs the driver nothing — the line simply stays the
+    /// plain blue it was drawn in. The generation captured here is what stops a
+    /// late response from painting over a route that has since been replaced.
+    private func applyTrafficColors(_ view: HereMapView, route: Route, widthPixels: Double) {
+        let generation = view.routeGeneration
+        HERERoutingService.trafficOnRoute(route) { [weak view] traffic in
+            guard let traffic = traffic else { return }
+            let segments = HERERoutingService.trafficSegments(traffic)
+            guard !segments.isEmpty else { return }
+            DispatchQueue.main.async {
+                view?.drawRouteSegments(
+                    segments, widthPixels: widthPixels, generation: generation
+                )
+            }
+        }
+    }
+#endif
 
     /// "#RRGGBB" / "#AARRGGBB" → UIColor; nil lets the view use its default.
     private static func color(fromHex hex: String) -> UIColor? {
