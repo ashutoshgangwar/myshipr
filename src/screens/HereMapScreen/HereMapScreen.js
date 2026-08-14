@@ -35,6 +35,7 @@ import {
   normalizeLocation,
 } from '../../utils/here/mapHelpers';
 
+import MapStyleControl from '../../component/MapStyleControl/MapStyleControl';
 import MarkerRasterizer from './components/MarkerRasterizer';
 import MarkerPin from './components/MarkerPin';
 import {NavigationControls} from './components/NavigationControls';
@@ -767,6 +768,11 @@ export default function HereMapScreen({navigation, route}) {
             />
           )}
         </TouchableOpacity>
+
+        {/* Map look — day / night / satellite, plus the traffic layers. The
+            map follows the clock on its own ('auto'); this is the override,
+            and the choice carries to every other map in the app. */}
+        <MapStyleControl style={styles.mapStyleButton} />
 
         {!isNavigating && (
           <TouchableOpacity

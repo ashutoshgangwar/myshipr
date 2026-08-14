@@ -47,6 +47,7 @@ import {
 import GpsIcon from '../../assets/svg_icon/gps-svg.svg';
 import NavigationIcon from '../../assets/svg_icon/Navigation_Icon.svg';
 
+import MapStyleControl from '../../component/MapStyleControl/MapStyleControl';
 import TripTopBar from './components/TripTopBar';
 import DirectionCard from './components/DirectionCard';
 import SideToolbar from './components/SideToolbar';
@@ -835,7 +836,17 @@ export default function ActiveTripScreen({navigation, route}) {
           <NavigationIcon width={verticalScale(32)} height={verticalScale(32)} />
         )}
       </TouchableOpacity>
-      
+
+      {/* Map look — day / night / satellite, plus the traffic layers. The map
+          follows the clock on its own ('auto'); this is how the driver
+          overrides it, and the choice carries to every other map. */}
+      <MapStyleControl
+        style={[
+          styles.mapStyleButton,
+          {bottom: styles.mapStyleButton.bottom + insets.bottom},
+        ]}
+      />
+
       {/* ── Verify this stop: Reached opens this directly ── */}
       <StopVerifyModal
         stage={milestone ? milestoneStage : null}

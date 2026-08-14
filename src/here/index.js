@@ -30,3 +30,15 @@ export {default as HereSdk} from './HereSdk';
 export {default as HereRouting} from './HereRouting';
 export {default as HereNavigation, NavigationEvents} from './HereNavigation';
 export {default as HereMapView} from './HereMapView';
+export {
+  MAP_STYLE,
+  MAP_STYLE_OPTIONS,
+  getMapPrefs,
+  setMapPrefs,
+  hydrateMapPrefs,
+  resolveMapScheme,
+  isNightNow,
+  useIsNight,
+  useMapPrefs,
+  useMapScheme,
+} from './mapStyle';

@@ -18,6 +18,7 @@ import {
 } from 'react-native';
 
 import HereSdk from './HereSdk';
+import {useMapPrefs, resolveMapScheme} from './mapStyle';
 
 const {HereMapModule} = NativeModules;
 
@@ -50,8 +51,15 @@ try {
  * @param {number} [centerLat] initial camera latitude
  * @param {number} [centerLng] initial camera longitude
  * @param {number} [zoomLevel=14]
- * @param {string} [mapScheme] 'normalDay' | 'normalNight' | 'satellite' |
- *   'hybridDay' | 'logisticsDay' | …
+ * @param {string} [mapStyle] 'auto' | 'day' | 'night' | 'satellite'. Omit to
+ *   follow the shared preference, which defaults to 'auto' — light by day,
+ *   dark by night (see `mapStyle.js`).
+ * @param {string} [mapScheme] a raw HERE scheme name ('normalDay',
+ *   'logisticsNight', 'satellite'…). Overrides `mapStyle` when both are given.
+ * @param {boolean} [showTrafficFlow] live traffic flow lines, coloured by
+ *   congestion. Omit to follow the shared preference.
+ * @param {boolean} [showTrafficIncidents] accident / closure / roadworks icons.
+ *   Omit to follow the shared preference.
  * @param {boolean} [buildings3D=false]
  * @param {Function} [onMapTap] receives `{latitude, longitude, x, y}`
  * @param {Function} [onMapLongPress] same payload as `onMapTap`
@@ -63,7 +71,10 @@ const HereMapView = forwardRef(function HereMapView(
     centerLat = 0,
     centerLng = 0,
     zoomLevel = 14,
+    mapStyle,
     mapScheme,
+    showTrafficFlow,
+    showTrafficIncidents,
     buildings3D = false,
     onMapTap,
     onMapLongPress,
@@ -75,6 +86,15 @@ const HereMapView = forwardRef(function HereMapView(
   ref,
 ) {
   const nativeRef = useRef(null);
+
+  // Look and traffic come from the shared preference unless this map pins them.
+  // Doing the resolution here means every screen gets the automatic day/night
+  // switch — and the driver's satellite choice — without opting in.
+  const prefs = useMapPrefs();
+  const scheme =
+    mapScheme || (mapStyle ? resolveMapScheme(mapStyle, prefs.isNight) : prefs.mapScheme);
+  const trafficFlow = showTrafficFlow ?? prefs.trafficFlow;
+  const trafficIncidents = showTrafficIncidents ?? prefs.trafficIncidents;
 
   // The native MapView constructor throws if the shared HERE engine does not
   // exist yet, so the native component is not mounted until initialize()
@@ -201,7 +221,22 @@ const HereMapView = forwardRef(function HereMapView(
       /** Animates the map back to north-up. */
       resetNorth: () => withTag(tag => HereMapModule.resetNorth(tag)),
 
-      setMapScheme: scheme => withTag(tag => HereMapModule.setMapScheme(tag, scheme)),
+      setMapScheme: name => withTag(tag => HereMapModule.setMapScheme(tag, name)),
+
+      /**
+       * Turns traffic layers on or off imperatively. The declarative
+       * `showTrafficFlow` / `showTrafficIncidents` props cover the normal case;
+       * this is for one-off toggles that should not touch the shared preference.
+       *
+       * @param {Object} options `{ flow, incidents }` — omit either to leave it
+       */
+      setTraffic: ({flow, incidents} = {}) =>
+        withTag(tag =>
+          HereMapModule.setTrafficEnabled(tag, {
+            ...(flow != null ? {flow: !!flow} : {}),
+            ...(incidents != null ? {incidents: !!incidents} : {}),
+          }),
+        ),
 
       /** The React tag, for calls that take an explicit `mapViewTag`. */
       getTag: () => (nativeRef.current ? findNodeHandle(nativeRef.current) : null),
@@ -265,7 +300,9 @@ const HereMapView = forwardRef(function HereMapView(
         centerLng={centerLng}
         zoomLevel={zoomLevel}
         buildings3D={buildings3D}
-        {...(mapScheme ? {mapScheme} : {})}
+        mapScheme={scheme}
+        showTrafficFlow={trafficFlow}
+        showTrafficIncidents={trafficIncidents}
         {...(onMapTap ? {onMapTap: event => onMapTap(event.nativeEvent)} : {})}
         {...(onMapLongPress
           ? {onMapLongPress: event => onMapLongPress(event.nativeEvent)}

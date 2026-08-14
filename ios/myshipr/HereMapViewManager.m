@@ -22,4 +22,9 @@ RCT_EXPORT_VIEW_PROPERTY(zoomLevel, NSNumber)
 RCT_EXPORT_VIEW_PROPERTY(mapScheme, NSString)
 RCT_EXPORT_VIEW_PROPERTY(buildings3D, BOOL)
 
+// ── Traffic props ──────────────────────────────────────────────────────────
+// Flow = the congestion-coloured lines; incidents = accident/closure icons.
+RCT_EXPORT_VIEW_PROPERTY(showTrafficFlow, BOOL)
+RCT_EXPORT_VIEW_PROPERTY(showTrafficIncidents, BOOL)
+
 @end

@@ -212,6 +212,12 @@ RCT_EXTERN_METHOD(
 )
 
 RCT_EXTERN_METHOD(
+  setTrafficEnabled:(nonnull NSNumber *)viewTag options:(NSDictionary *)options
+  resolver:(RCTPromiseResolveBlock)resolve
+  rejecter:(RCTPromiseRejectBlock)reject
+)
+
+RCT_EXTERN_METHOD(
   set3DBuildingsEnabled:(nonnull NSNumber *)viewTag enabled:(BOOL)enabled
   resolver:(RCTPromiseResolveBlock)resolve
   rejecter:(RCTPromiseRejectBlock)reject

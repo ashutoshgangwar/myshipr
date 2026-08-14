@@ -300,6 +300,10 @@ export default function RouteMapThumb({
         centerLat={centerLat}
         centerLng={centerLng}
         zoomLevel={zoom}
+        // A thumbnail is read at a glance: traffic lines at this size only
+        // muddy the route. Day/night still follows the shared preference.
+        showTrafficFlow={false}
+        showTrafficIncidents={false}
         onMapReady={() => setMapReady(true)}
       />
       {rasteriser}

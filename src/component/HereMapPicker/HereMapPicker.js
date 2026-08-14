@@ -341,6 +341,11 @@ const HereMapPicker = forwardRef(({
           centerLat={initialCenter.lat}
           centerLng={initialCenter.lng}
           zoomLevel={14}
+          // Picking an address is not a driving task — the congestion lines
+          // would only fight the centre pin. Day/night still follows the
+          // shared preference.
+          showTrafficFlow={false}
+          showTrafficIncidents={false}
           onMapReady={onMapReady}
           onMapError={detail => setInitError(detail?.message || null)}
         />

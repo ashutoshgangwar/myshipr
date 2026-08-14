@@ -256,6 +256,24 @@ class HereMapView: UIView {
         }
     }
 
+    /// Live traffic flow lines, coloured by congestion.
+    @objc var showTrafficFlow: Bool = false {
+        didSet {
+#if canImport(heresdk)
+            setTrafficFlowEnabled(showTrafficFlow)
+#endif
+        }
+    }
+
+    /// Accident / closure / roadworks icons.
+    @objc var showTrafficIncidents: Bool = false {
+        didSet {
+#if canImport(heresdk)
+            setTrafficIncidentsEnabled(showTrafficIncidents)
+#endif
+        }
+    }
+
 #if canImport(heresdk)
 
     /// The HERE surface, for `VisualNavigator.startRendering(mapView:)`.
@@ -403,6 +421,33 @@ class HereMapView: UIView {
                 enable: [:],
                 disable: [MapFeatures.extrudedBuildings, MapFeatures.shadows]
             )
+        }
+    }
+
+    /// Live traffic flow — the coloured congestion lines HERE draws over the
+    /// road network (green free-flow through to dark red standstill).
+    /// `trafficFlowWithFreeFlow` keeps the green so an empty road reads as
+    /// "checked and clear" rather than "no data".
+    func setTrafficFlowEnabled(_ enabled: Bool) {
+        if enabled {
+            setMapFeatures(
+                enable: [MapFeatures.trafficFlow: MapFeatureModes.trafficFlowWithFreeFlow],
+                disable: []
+            )
+        } else {
+            setMapFeatures(enable: [:], disable: [MapFeatures.trafficFlow])
+        }
+    }
+
+    /// Accident / closure / roadworks icons on the map.
+    func setTrafficIncidentsEnabled(_ enabled: Bool) {
+        if enabled {
+            setMapFeatures(
+                enable: [MapFeatures.trafficIncidents: MapFeatureModes.trafficIncidentsAll],
+                disable: []
+            )
+        } else {
+            setMapFeatures(enable: [:], disable: [MapFeatures.trafficIncidents])
         }
     }
 

@@ -436,9 +436,13 @@ class HereMapView(context: Context) : FrameLayout(context) {
      * `EXTRUDED_BUILDINGS` is what turns on 3D building rendering.
      */
     fun setMapFeatures(enable: Map<String, String>, disable: List<String>) {
-        val mapView = _mapView ?: return
+        // Record first: props can arrive before the surface exists (JS mounted
+        // the map before the SDK came up), and the recorded set is what
+        // loadScene replays once it does.
         disable.forEach { enabledFeatures.remove(it) }
         enabledFeatures.putAll(enable)
+
+        val mapView = _mapView ?: return
 
         // Before the scene is ready there is nothing to toggle — the recorded
         // set is applied by loadScene instead.
@@ -463,6 +467,35 @@ class HereMapView(context: Context) : FrameLayout(context) {
                 emptyMap(),
                 listOf(MapFeatures.EXTRUDED_BUILDINGS, MapFeatures.SHADOWS)
             )
+        }
+    }
+
+    /**
+     * Live traffic flow — the coloured congestion lines HERE draws over the
+     * road network (green free-flow through to dark red standstill).
+     * `TRAFFIC_FLOW_WITH_FREE_FLOW` keeps the green so an empty road reads as
+     * "checked and clear" rather than "no data".
+     */
+    fun setTrafficFlowEnabled(enabled: Boolean) {
+        if (enabled) {
+            setMapFeatures(
+                mapOf(MapFeatures.TRAFFIC_FLOW to MapFeatureModes.TRAFFIC_FLOW_WITH_FREE_FLOW),
+                emptyList()
+            )
+        } else {
+            setMapFeatures(emptyMap(), listOf(MapFeatures.TRAFFIC_FLOW))
+        }
+    }
+
+    /** Accident / closure / roadworks icons on the map. */
+    fun setTrafficIncidentsEnabled(enabled: Boolean) {
+        if (enabled) {
+            setMapFeatures(
+                mapOf(MapFeatures.TRAFFIC_INCIDENTS to MapFeatureModes.TRAFFIC_INCIDENTS_ALL),
+                emptyList()
+            )
+        } else {
+            setMapFeatures(emptyMap(), listOf(MapFeatures.TRAFFIC_INCIDENTS))
         }
     }
 

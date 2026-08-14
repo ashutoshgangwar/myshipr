@@ -747,6 +747,31 @@ class HereMapModule: NSObject {
         }
     }
 
+    /// Convenience toggle for the traffic layers, so JS does not have to know
+    /// the HERE feature/mode constant strings.
+    ///
+    /// `{ flow: Bool, incidents: Bool }` — omit either key to leave that layer
+    /// as it is.
+    @objc(setTrafficEnabled:options:resolver:rejecter:)
+    func setTrafficEnabled(
+        _ viewTag: NSNumber,
+        options: NSDictionary,
+        resolver resolve: @escaping RCTPromiseResolveBlock,
+        rejecter reject: @escaping RCTPromiseRejectBlock
+    ) {
+        let flow = (options["flow"] as? NSNumber)?.boolValue
+        let incidents = (options["incidents"] as? NSNumber)?.boolValue
+
+        DispatchQueue.main.async {
+#if canImport(heresdk)
+            let view = self.findHereMapView()
+            if let flow = flow { view?.setTrafficFlowEnabled(flow) }
+            if let incidents = incidents { view?.setTrafficIncidentsEnabled(incidents) }
+#endif
+            resolve(nil)
+        }
+    }
+
     @objc(set3DBuildingsEnabled:enabled:resolver:rejecter:)
     func set3DBuildingsEnabled(
         _ viewTag: NSNumber,

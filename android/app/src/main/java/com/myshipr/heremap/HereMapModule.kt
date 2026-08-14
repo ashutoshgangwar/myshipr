@@ -525,6 +525,26 @@ class HereMapModule(
         }
     }
 
+    /**
+     * Convenience toggle for the traffic layers, so JS does not have to know
+     * the HERE feature/mode constant strings.
+     *
+     * Options: `{ flow: Boolean, incidents: Boolean }` — omit either key to
+     * leave that layer as it is.
+     */
+    @ReactMethod
+    fun setTrafficEnabled(viewTag: Int, options: ReadableMap, promise: Promise) {
+        val flow = if (options.hasKey("flow")) options.getBoolean("flow") else null
+        val incidents =
+            if (options.hasKey("incidents")) options.getBoolean("incidents") else null
+
+        runOnView(viewTag, promise) { view ->
+            flow?.let { view.setTrafficFlowEnabled(it) }
+            incidents?.let { view.setTrafficIncidentsEnabled(it) }
+            promise.resolve(null)
+        }
+    }
+
     /** Convenience toggle for HERE's extruded-building (3D) rendering. */
     @ReactMethod
     fun set3DBuildingsEnabled(viewTag: Int, enabled: Boolean, promise: Promise) {

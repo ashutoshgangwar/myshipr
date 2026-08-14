@@ -83,6 +83,13 @@ export default StyleSheet.create({
   // Both flank the progress card at the same height; only the edge differs.
   gpsButton: {...FLOAT_BTN, left: s(12)},
   navFloatBtn: {...FLOAT_BTN, right: s(12)},
+  // Map look (day / night / satellite / traffic), stacked directly above the
+  // navigate button on the same right edge. MapStyleControl brings its own
+  // button shell, so this only places it.
+  mapStyleButton: {
+    right: s(12),
+    bottom: FLOAT_BTN.bottom + FLOAT_BTN.height + vs(10),
+  },
   // ── Next-turn direction card ──────────────────────────────────────────
   // Tucked under the back button on the left, where the driver's eye already
   // goes. Only on screen while guidance is running, so nothing sits here while

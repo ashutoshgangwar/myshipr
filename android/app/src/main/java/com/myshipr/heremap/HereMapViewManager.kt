@@ -137,6 +137,18 @@ class HereMapViewManager(
         view.set3DBuildingsEnabled(enabled)
     }
 
+    /** Live traffic flow lines, coloured by congestion. */
+    @ReactProp(name = "showTrafficFlow", defaultBoolean = false)
+    fun setShowTrafficFlow(view: HereMapView, enabled: Boolean) {
+        view.setTrafficFlowEnabled(enabled)
+    }
+
+    /** Accident / closure / roadworks icons. */
+    @ReactProp(name = "showTrafficIncidents", defaultBoolean = false)
+    fun setShowTrafficIncidents(view: HereMapView, enabled: Boolean) {
+        view.setTrafficIncidentsEnabled(enabled)
+    }
+
     // ------------------------------------------------------------------
     // Events — onMapTap / onMapLongPress / onPoiTap
     // ------------------------------------------------------------------

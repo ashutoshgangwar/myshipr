@@ -86,6 +86,15 @@ export default StyleSheet.create({
     right: 'auto',
   },
 
+  // Map look (day / night / satellite / traffic). Bottom-right, opposite the
+  // GPS and marker buttons; MapStyleControl brings its own button shell so this
+  // only places it.
+  mapStyleButton: {
+    right: scale(16),
+    bottom: verticalScale(16),
+    zIndex: 999,
+  },
+
   reCenterButton: {
     position: 'absolute',
     left: scale(16),
