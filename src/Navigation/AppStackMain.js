@@ -4,7 +4,6 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import Login from '../screens/Login/Login';
 import AppBottomTabs from './AppBottomTabs';
 import Profile from '../screens/Profile/Profile';
-import NavigationScreen from '../screens/NavigationScreen/NavigationScreen';
 import DeliveryConfirmation from '../screens/DeliveryConfirmationScreen/DeliveryConfirmation';
 import AvailableLoadsScreen from '../screens/AvailableLoadsScreen/AvailableLoadsScreen';
 import PlaceBidScreen from '../screens/PlaceBidScreen/PlaceBidScreen';
@@ -19,8 +18,6 @@ import ActiveTripScreen from '../screens/ActiveTripScreen/ActiveTripScreen';
 import PreviewSplaceScreen from '../screens/splaceScreen/PreviewSplaceScreen/PreviewSplaceScreen';
 import LoginSplashScreen from '../screens/splaceScreen/LoginSplaceScreen/LoginSplaceScreen';
 import FavoriteDestination from '../screens/FavoriteDestination/FavoriteDestination';
-import RadarMapScreen from '../screens/RadarMapScreen/RadarMapScreen';
-import RadarSetupScreen from '../screens/RadarMapScreen/RadarSetupScreen';
 import TruckAnimationScreen from '../screens/TruckAnimationScreen/TruckAnimationScreen';
 import TripCompletedScreen from '../screens/TripCompletedScreen/TripCompletedScreen';
 import CoinTestScreen from '../screens/CoinTestScreen/CoinTestScreen';
@@ -55,8 +52,6 @@ export default function AppStackMain() {
       <Stack.Screen name="MainApp" component={AppBottomTabs} />
 
       <Stack.Screen name="FavoriteDestination" component={FavoriteDestination} />
-      <Stack.Screen name="RadarSetupScreen" component={RadarSetupScreen} />
-      <Stack.Screen name="RadarMapScreen" component={RadarMapScreen} />
       <Stack.Screen name="Shipmentdetails" component={ShipmentDetails} />
       <Stack.Screen name="Earningsdetails" component={EarningsDetails} />
       <Stack.Screen name="NotificationScreen" component={NotificationScreen} />
@@ -64,7 +59,6 @@ export default function AppStackMain() {
 
       {/* Extra flows (no bottom tab) */}
       <Stack.Screen name="Profile" component={Profile} />
-      <Stack.Screen name="PTVNavigatorMap" component={NavigationScreen} />
       <Stack.Screen name="HereSearchScreen" component={HereSearchScreen} />
       <Stack.Screen name="HereMapScreen" component={HereMapScreen} />
       <Stack.Screen name="HereNavigationDemo" component={HereNavigationDemo} />
@@ -73,7 +67,6 @@ export default function AppStackMain() {
       <Stack.Screen name="TripCompletedScreen" component={TripCompletedScreen} />
       <Stack.Screen name="CoinTestScreen" component={CoinTestScreen} />
       <Stack.Screen name="ActiveBidding" component={ActiveBidding} />
-      <Stack.Screen name="NavigationScreen" component={NavigationScreen} />
       <Stack.Screen name="DeliveryConfirmation" component={DeliveryConfirmation} />
       <Stack.Screen name="AvailableLoadsScreen" component={AvailableLoadsScreen} />
       <Stack.Screen name="PlaceBidScreen" component={PlaceBidScreen} />

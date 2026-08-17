@@ -30,6 +30,12 @@
 	<string>23nHMHxJ3-6siXLbYaGwz3z14KZ_1P1lXl1lUUp0LYhAJgSU8__b19Xc_734Tq3OoQ5XTRoHjRjWOxFpcUmVOg</string>
 	<key>HERE_API_KEY</key>
 	<string>3nXPL2aYbn53qdzDc0rQ8Qbuhhtr8QjHR68m6XmFiwQ</string>
+	<!-- The app only talks to its backend and to HERE/Firebase over standard
+	     HTTPS/TLS and uses the system Keychain and Face ID; none of that counts
+	     as non-exempt encryption. Declaring it here keeps TestFlight builds out
+	     of "Missing Compliance" instead of asking on every upload. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
 	<key>LSApplicationCategoryType</key>
 	<string></string>
 	<key>LSRequiresIPhoneOS</key>
@@ -92,10 +98,10 @@
 	<string>We need access to your camera to scan documents like CDL, medical certificates, and other IDs.</string>
 	<key>NSFaceIDUsageDescription</key>
 	<string>This app uses Face ID for secure biometric authentication.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>myshipr uses your location for turn-by-turn truck navigation and to keep your dispatcher updated with live trip progress and ETA. Allowing "Always" lets the app keep following your route when the screen is off or you switch apps during a trip.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Your location is required to fetch GPS coordinates</string>
-	<key>NSMicrophoneUsageDescription</key>
-	<string>This app uses microphone to fill forms using voice</string>
 	<key>NSMotionUsageDescription</key>
 	<string>Motion access is required for device information</string>
 	<key>NSPhotoLibraryAddUsageDescription</key>

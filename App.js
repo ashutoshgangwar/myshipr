@@ -1,10 +1,14 @@
-import React, { useEffect } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {NavigationContainer} from '@react-navigation/native';
 import AppStackMain from './src/Navigation/AppStackMain';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { hydrateLocationCache } from './src/services/LocationService';
-import { initFirebaseMessaging } from './src/services/FirebaseMessagingService';
-import { navigationRef, resetTo, getCurrentRouteName } from './src/Navigation/navigationRef';
+import {
+  initFirebaseMessaging,
+  normalizeRemoteMessage,
+} from './src/services/FirebaseMessagingService';
+import FcmNotificationModal from './src/component/FcmNotificationModal/FcmNotificationModal';
+import { navigationRef, navigate, resetTo, getCurrentRouteName } from './src/Navigation/navigationRef';
 import { onSessionExpired, registerDevice, hasSession } from './src/config/api';
 
 // Screens that are already part of the signed-out flow — a late session-expiry
@@ -19,6 +23,43 @@ const AUTH_ROUTES = [
 
 export default function App() {
   console.log('App Loaded');
+
+  // Foreground pushes waiting to be shown. A queue rather than a single value
+  // because a second message can land while the driver is still reading the
+  // first one, and dropping it would lose a load or bid alert outright.
+  const [notificationQueue, setNotificationQueue] = useState([]);
+  // A notification tapped from a QUIT state resolves before NavigationContainer
+  // is ready, so the navigate() call would be silently swallowed. Hold it here
+  // and flush it from onReady instead.
+  const pendingOpenRef = useRef(false);
+
+  const currentNotification = notificationQueue[0];
+
+  const dismissNotification = useCallback(
+    () => setNotificationQueue(queue => queue.slice(1)),
+    [],
+  );
+
+  const openNotifications = useCallback(() => {
+    if (navigationRef.isReady()) {
+      navigate('NotificationScreen');
+    } else {
+      pendingOpenRef.current = true;
+    }
+  }, []);
+
+  const viewNotification = useCallback(() => {
+    dismissNotification();
+    openNotifications();
+  }, [dismissNotification, openNotifications]);
+
+  const handleNavigationReady = useCallback(() => {
+    if (pendingOpenRef.current) {
+      pendingOpenRef.current = false;
+      navigate('NotificationScreen');
+    }
+  }, []);
+
   // Load the persisted last-known location into memory so the first screen can
   // show it instantly while the first live GPS fix is still in flight.
   useEffect(() => {
@@ -31,12 +72,20 @@ export default function App() {
   useEffect(() => {
     let cleanup;
     initFirebaseMessaging({
-      // TODO: route/handle notifications for your app here (e.g. show an
-      // in-app banner on foreground messages, navigate on notification tap).
+      // The OS draws no banner while the app is in the foreground, so surface
+      // the push ourselves. Functional update: this callback is registered once
+      // and would otherwise close over the queue as it was on mount.
       onForegroundMessage: message =>
-        console.log('[App] Foreground notification:', message?.notification),
-      onNotificationOpen: message =>
-        console.log('[App] Notification opened app:', message?.data),
+        setNotificationQueue(queue => [
+          ...queue,
+          normalizeRemoteMessage(message),
+        ]),
+      // Tapped from background/quit — the OS already showed it, so go straight
+      // to the list instead of repeating it in a modal.
+      onNotificationOpen: message => {
+        console.log('[App] Notification opened app:', message?.data);
+        openNotifications();
+      },
       // FCM rotates the token (app restore, reinstall, data cleared). Login
       // already registered the old one, so the server keeps pushing to a dead
       // address unless we re-register here. Signed-out users have no bearer
@@ -65,7 +114,9 @@ export default function App() {
         cleanup();
       }
     };
-  }, []);
+    // openNotifications is stable (useCallback with no deps), so the listeners
+    // are still registered exactly once.
+  }, [openNotifications]);
 
   // The refresh token is gone or was rejected: the stored session is already
   // cleared, so send the user back to the login flow from wherever they were.
@@ -81,9 +132,17 @@ export default function App() {
 
   return (
     <SafeAreaProvider>
-      <NavigationContainer ref={navigationRef}>
+      <NavigationContainer ref={navigationRef} onReady={handleNavigationReady}>
         <AppStackMain />
       </NavigationContainer>
+
+      {/* Outside the navigator so a push shows over whichever screen is up. */}
+      <FcmNotificationModal
+        visible={Boolean(currentNotification)}
+        notification={currentNotification}
+        onClose={dismissNotification}
+        onView={viewNotification}
+      />
     </SafeAreaProvider>
   );
 }

@@ -167,6 +167,29 @@ export function registerTokenRefreshHandler(onRefresh) {
 }
 
 /**
+ * Flatten an FCM RemoteMessage into the shape the in-app UI needs.
+ *
+ * The payload differs by how the push was sent: a "notification" message
+ * carries `notification.title/body`, while a data-only message (the kind the
+ * background handler gets) carries everything as strings under `data`. The UI
+ * should not have to know which one arrived.
+ *
+ * @param {object} remoteMessage
+ * @returns {{title: string, body: string, type: string, data: object}}
+ */
+export function normalizeRemoteMessage(remoteMessage) {
+  const data = remoteMessage?.data ?? {};
+  return {
+    title: remoteMessage?.notification?.title ?? data.title ?? '',
+    body: remoteMessage?.notification?.body ?? data.body ?? '',
+    // Drives the badge/icon in the modal and the notifications list. Defaults
+    // to 'system' so an unrecognised or missing type still renders.
+    type: data.type ?? 'system',
+    data,
+  };
+}
+
+/**
  * Convenience "do everything" initialiser to call once when the app mounts.
  * Wires permission → token → foreground → open → refresh, and returns a
  * single cleanup function that removes every listener it registered.
@@ -200,6 +223,7 @@ export async function initFirebaseMessaging(handlers = {}) {
 export default {
   requestNotificationPermission,
   getFcmToken,
+  normalizeRemoteMessage,
   registerForegroundHandler,
   registerNotificationOpenHandlers,
   registerTokenRefreshHandler,

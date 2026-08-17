@@ -102,7 +102,8 @@ export default function PodModal({
     <Modal
       visible={visible}
       transparent
-      animationType="slide"
+      // animationType="slide"
+    animationType="fade"
       onRequestClose={close}>
       <View style={styles.podOverlay}>
         <TouchableWithoutFeedback onPress={Keyboard.dismiss} accessible={false}>

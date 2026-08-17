@@ -875,8 +875,6 @@ export default function ActiveTripScreen({navigation, route}) {
         visible={podOpen}
         onClose={() => setPodOpen(false)}
         onComplete={() => {
-          // The modal closes itself (slides out); once it's gone, grow the
-          // white circle over the map and then jump to the truck animation.
           setTimeout(runReveal, 320);
         }}
       />

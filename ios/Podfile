@@ -31,7 +31,7 @@ target 'myshipr' do
   # other (e.g. FirebaseMessaging does `@import FirebaseCore`). Without module
   # maps the build fails with "Module 'FirebaseCore' not found".
   # Scoped to just the Firebase/Google subtree so the rest of the project
-  # (React Native, HERE, MLKit, MapLibre) keeps its existing header style.
+  # (React Native, HERE, MLKit) keeps its existing header style.
   pod 'FirebaseCore', :modular_headers => true
   pod 'FirebaseCoreInternal', :modular_headers => true
   pod 'FirebaseCoreExtension', :modular_headers => true
@@ -48,13 +48,31 @@ target 'myshipr' do
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
 
+  # hermes-engine is consumed as a pre-built binary framework and its tarball
+  # ships no debug symbols, so every upload draws "The archive did not include
+  # a dSYM for the hermesvm.framework" and native Hermes crashes come back
+  # unsymbolicated. React Native publishes the matching dSYM as a separate
+  # Maven artifact; the script fetches it (cached per version) and drops it
+  # where Xcode collects dSYMs for the archive. It no-ops on non-archive builds.
+  #
+  # Declared through the script_phase DSL rather than added in post_install:
+  # CocoaPods owns every "[CP-User]" phase and deletes the ones it did not
+  # declare, so a hand-added phase is stripped again on the next pod install.
+  # always_out_of_date: the phase declares no outputs on purpose (its real
+  # output lands in the archive, not the build dir), so Xcode would otherwise
+  # warn on every build about missing output dependencies. The script exits
+  # immediately on non-archive builds, so running it every time is cheap.
+  script_phase :name => 'Copy Hermes dSYM into archive',
+               :script => '"${SRCROOT}/scripts/copy_hermes_dsym.sh"',
+               :execution_position => :after_compile,
+               :always_out_of_date => '1'
+
   # ✅ ENABLE ONLY THE PERMISSIONS YOU NEED
   setup_permissions([
     'Camera',
     'LocationWhenInUse',
     'LocationAlways',
     'PhotoLibrary',
-    'Microphone',
   ])
 
   post_install do |installer|
@@ -64,38 +82,10 @@ target 'myshipr' do
       :mac_catalyst_enabled => false
     )
 
-    # REQUIRED for @maplibre/maplibre-react-native v10: it does NOT vendor the
-    # native MapLibre SDK as a Pod. This helper (defined by the package's
-    # podspec, evaluated during dependency resolution) adds the MapLibre Swift
-    # Package to both the maplibre-react-native target and the app target.
-    # Without it the iOS build fails with:
-    #   @import MapLibre; module 'MapLibre' not found
-    $MLRN.post_install(installer)
-
-    # ...but that helper attaches the MapLibre SPM product to BOTH the
-    # maplibre-react-native pod target and the app target. Each attachment emits
-    # its own SignatureCollection task, producing two files with the same
-    # basename in different directories:
-    #   <BuildProductsPath>/Release-iphoneos/MapLibre.xcframework-ios.signature
-    #   <BuildProductsPath>/Release-iphoneos/maplibre-react-native/MapLibre.xcframework-ios.signature
-    # The archive's Signatures/ folder is flat, so assembling it fails with:
-    #   "MapLibre.xcframework-ios.signature" couldn't be copied to "Signatures"
-    #   because an item with the same name already exists.
-    # Only archives hit this; a plain build never assembles Signatures/.
-    # The two files are byte-identical and the app target's copy is the one the
-    # archive needs, so drop the pod target's redundant copy. SignatureCollection
-    # runs at the top of the build graph, well before this phase.
-    mlrn_target = installer.pods_project.targets.find { |t| t.name == 'maplibre-react-native' }
-    if mlrn_target
-      phase_name = '[CP-User] Remove duplicate MapLibre xcframework signature'
-      unless mlrn_target.shell_script_build_phases.any? { |p| p.name == phase_name }
-        phase = mlrn_target.new_shell_script_build_phase(phase_name)
-        phase.shell_script = 'rm -f "${CONFIGURATION_BUILD_DIR}/MapLibre.xcframework-ios.signature"'
-        phase.show_env_vars_in_log = '0'
-      end
-    end
-
-    # Fix: non-modular-include-in-framework-module (react-native-maps & maplibre)
+    # Blanket relaxation of non-modular-include-in-framework-module. Originally
+    # added for react-native-maps and maplibre; both are gone now, but the
+    # remaining native pods (HERE, MLKit, VisionCamera) are still built with it,
+    # so it stays as a project-wide guard rather than a per-pod fix.
     installer.pods_project.targets.each do |target|
       target.build_configurations.each do |config|
         config.build_settings['CLANG_ALLOW_NON_MODULAR_INCLUDES_IN_FRAMEWORK_MODULES'] = 'YES'
@@ -129,6 +119,7 @@ target 'myshipr' do
           config.build_settings['CLANG_ENABLE_EXPLICIT_MODULES'] = 'NO'
           config.build_settings['SWIFT_ENABLE_EXPLICIT_MODULES'] = 'NO'
         end
+
       end
       user_project.save
     end

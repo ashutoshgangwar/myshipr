@@ -9,6 +9,13 @@ export const resetTo = (name, params) => {
   }
 };
 
+/** Pushes `name` onto the stack from outside a navigator (services, modals). */
+export const navigate = (name, params) => {
+  if (navigationRef.isReady()) {
+    navigationRef.navigate(name, params);
+  }
+};
+
 /** Name of the route currently on screen, or undefined before mount. */
 export const getCurrentRouteName = () =>
   navigationRef.isReady() ? navigationRef.getCurrentRoute()?.name : undefined;
