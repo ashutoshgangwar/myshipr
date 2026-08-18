@@ -30,7 +30,7 @@ android {
         minSdkVersion Math.max(24, rootProject.ext.minSdkVersion as int)
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1
-        versionName "1.0"
+        versionName "1.0.0"
 
         // HERE credentials are NOT declared here. They are read from .env by JS
         // and passed to SDKNativeEngine.makeSharedInstance() through

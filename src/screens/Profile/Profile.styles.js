@@ -294,4 +294,17 @@ export default StyleSheet.create({
     fontSize: ms(11),
     fontWeight: '500',
   },
+
+  /* ---------- Build version ---------- */
+  versionWrap: {
+    alignItems: 'center',
+    paddingTop: vs(18),
+    paddingBottom: vs(6),
+  },
+
+  versionText: {
+    color: colors.textMuted,
+    fontSize: ms(11),
+    fontWeight: '500',
+  },
 });

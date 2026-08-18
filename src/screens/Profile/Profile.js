@@ -7,6 +7,7 @@ import {
   Image,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
+import DeviceInfo from 'react-native-device-info';
 
 import styles from './Profile.styles';
 import {
@@ -28,6 +29,12 @@ import Chevron from '../../assets/svg_icon/Chevron_Down.svg';
 import CameraIcon from '../../assets/svg_icon/camera_icon.svg';
 import LockIcon from '../../assets/svg_icon/lock.svg';
 import {openCamera} from '../../services/MediaService';
+
+// The public version name, baked into the binary and read once: versionName on
+// Android, CFBundleShortVersionString on iOS. The build number (versionCode /
+// CFBundleVersion) is never shown — it is an upload counter, not something a
+// driver needs, and it differs per store submission on each platform.
+const APP_VERSION = `Version ${DeviceInfo.getVersion()}`;
 
 const BACK_ICON = IS_TABLET ? 24 : 18;
 const CHEVRON = IS_TABLET ? ms(20) : ms(18);
@@ -238,6 +245,11 @@ export default function Profile({navigation}) {
                 </View>
               </View>
             </Section>
+
+            {/* Build version — last line of the screen on both platforms. */}
+            <View style={styles.versionWrap}>
+              <AppText style={styles.versionText}>{APP_VERSION}</AppText>
+            </View>
           </View>
         </ScrollView>
       </View>
