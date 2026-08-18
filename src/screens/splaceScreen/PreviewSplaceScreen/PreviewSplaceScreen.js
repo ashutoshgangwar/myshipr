@@ -13,7 +13,6 @@ import publicIP from 'react-native-public-ip';
 import styles from './PreviewSplaceScreen.styles';
 import {colors} from '../../../theme/colors';
 import StatusBar from '../../../component/StatusBar/StatusBar';
-import Button from '../../../component/Button/Button';
 import AppText from '../../../theme/AppText';
 import useDeviceType from '../../../hooks/useDeviceType';
 import {restoreSession} from '../../../config/api';
@@ -101,14 +100,6 @@ const PreviewSplaceScreen = ({navigation}) => {
   const onDotPress = index => {
     setActiveSlide(index);
     heroSliderRef.current?.scrollTo({x: index * width, animated: true});
-  };
-
-  const handleLoginPress = () => {
-    navigation.navigate('LoginScreen');
-  };
-
-  const handleSignupPress = () => {
-    navigation.navigate('SignupScreen');
   };
 
   return (

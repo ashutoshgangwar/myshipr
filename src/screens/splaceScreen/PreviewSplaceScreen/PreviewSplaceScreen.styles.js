@@ -1,6 +1,13 @@
 import {StyleSheet, Platform} from 'react-native';
 import {moderateScale, scale, verticalScale} from 'react-native-size-matters';
 import {colors} from '../../../theme/colors';
+import {IS_TABLET} from '../../../theme/device';
+
+// Fixed on tablets: moderateScale() blows the radius up to ~60pt on a large
+// screen, which shows as a thick dark curve in the top-left/right corners.
+// The wrapper and the image must clip at the same radius or the background
+// bleeds through between the two.
+const heroCornerRadius = IS_TABLET ? 18 : moderateScale(34);
 
 export default StyleSheet.create({
   screen: {
@@ -39,14 +46,14 @@ export default StyleSheet.create({
 
   heroImage: {
     height: verticalScale(450),
-    borderTopLeftRadius: moderateScale(34),
-    borderTopRightRadius: moderateScale(34),
+    borderTopLeftRadius: heroCornerRadius,
+    borderTopRightRadius: heroCornerRadius,
     overflow: 'hidden',
   },
 
   heroImageStyle: {
-    borderTopLeftRadius: moderateScale(34),
-    borderTopRightRadius: moderateScale(34),
+    borderTopLeftRadius: heroCornerRadius,
+    borderTopRightRadius: heroCornerRadius,
   },
 
   heroBottomFade: {

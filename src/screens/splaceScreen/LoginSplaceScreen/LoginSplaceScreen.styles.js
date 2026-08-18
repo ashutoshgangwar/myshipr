@@ -11,6 +11,11 @@ const makeStyles = (isTablet = IS_TABLET) => {
   const fieldWidth = isTablet ? '100%' : isIOS ? '92%' : '100%';
   // Narrower width for the action buttons
   const buttonWidth = isTablet ? '80%' : '86%';
+  // Fixed on tablets: moderateScale() blows the radius up to ~60pt on a large
+  // screen, which shows as a thick dark curve in the top-left/right corners.
+  // The wrapper and the image must clip at the same radius or the background
+  // bleeds through between the two.
+  const heroCornerRadius = isTablet ? 18 : moderateScale(34);
 
   return StyleSheet.create({
     screen: {
@@ -43,14 +48,14 @@ const makeStyles = (isTablet = IS_TABLET) => {
 
     heroImage: {
       height: verticalScale(350),
-      borderTopLeftRadius: moderateScale(34),
-      borderTopRightRadius: moderateScale(34),
+      borderTopLeftRadius: heroCornerRadius,
+      borderTopRightRadius: heroCornerRadius,
       overflow: 'hidden',
     },
 
     heroImageStyle: {
-      borderTopLeftRadius: moderateScale(34),
-      borderTopRightRadius: moderateScale(34),
+      borderTopLeftRadius: heroCornerRadius,
+      borderTopRightRadius: heroCornerRadius,
     },
 
     heroBottomFade: {

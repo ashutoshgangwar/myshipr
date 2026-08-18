@@ -42,18 +42,9 @@ PODS:
   - GoogleMLKit/TextRecognition (8.0.0):
     - GoogleMLKit/MLKitCore
     - MLKitTextRecognition (~> 6.0.0)
-  - GoogleMLKit/TextRecognitionChinese (8.0.0):
-    - GoogleMLKit/MLKitCore
-    - MLKitTextRecognitionChinese (~> 5.0.0)
   - GoogleMLKit/TextRecognitionDevanagari (8.0.0):
     - GoogleMLKit/MLKitCore
     - MLKitTextRecognitionDevanagari (~> 5.0.0)
-  - GoogleMLKit/TextRecognitionJapanese (8.0.0):
-    - GoogleMLKit/MLKitCore
-    - MLKitTextRecognitionJapanese (~> 5.0.0)
-  - GoogleMLKit/TextRecognitionKorean (8.0.0):
-    - GoogleMLKit/MLKitCore
-    - MLKitTextRecognitionKorean (~> 5.0.0)
   - GoogleToolboxForMac/Defines (4.2.1)
   - GoogleToolboxForMac/Logger (4.2.1):
     - GoogleToolboxForMac/Defines (= 4.2.1)
@@ -115,22 +106,10 @@ PODS:
     - MLKitCommon (~> 13.0)
     - MLKitTextRecognitionCommon (= 5.0.0)
     - MLKitVision (~> 9.0)
-  - MLKitTextRecognitionChinese (5.0.0):
-    - MLKitCommon (~> 13.0)
-    - MLKitTextRecognitionCommon (= 5.0.0)
-    - MLKitVision (~> 9.0)
   - MLKitTextRecognitionCommon (5.0.0):
     - MLKitCommon (~> 13.0)
     - MLKitVision (~> 9.0)
   - MLKitTextRecognitionDevanagari (5.0.0):
-    - MLKitCommon (~> 13.0)
-    - MLKitTextRecognitionCommon (= 5.0.0)
-    - MLKitVision (~> 9.0)
-  - MLKitTextRecognitionJapanese (5.0.0):
-    - MLKitCommon (~> 13.0)
-    - MLKitTextRecognitionCommon (= 5.0.0)
-    - MLKitVision (~> 9.0)
-  - MLKitTextRecognitionKorean (5.0.0):
     - MLKitCommon (~> 13.0)
     - MLKitTextRecognitionCommon (= 5.0.0)
     - MLKitVision (~> 9.0)
@@ -2908,10 +2887,7 @@ PODS:
     - Yoga
   - RNMLKitTextRecognition (2.0.0):
     - GoogleMLKit/TextRecognition (= 8.0.0)
-    - GoogleMLKit/TextRecognitionChinese (= 8.0.0)
     - GoogleMLKit/TextRecognitionDevanagari (= 8.0.0)
-    - GoogleMLKit/TextRecognitionJapanese (= 8.0.0)
-    - GoogleMLKit/TextRecognitionKorean (= 8.0.0)
     - React
   - RNPermissions (5.6.0):
     - boost
@@ -3190,11 +3166,8 @@ SPEC REPOS:
     - MLImage
     - MLKitCommon
     - MLKitTextRecognition
-    - MLKitTextRecognitionChinese
     - MLKitTextRecognitionCommon
     - MLKitTextRecognitionDevanagari
-    - MLKitTextRecognitionJapanese
-    - MLKitTextRecognitionKorean
     - MLKitVision
     - nanopb
     - PromisesObjC
@@ -3416,11 +3389,8 @@ SPEC CHECKSUMS:
   MLImage: 2ab9c968e75f57911c16f4c9d9e8a8e9604a86a1
   MLKitCommon: 26b779f072a182c1603d4c88a101c350cac837b1
   MLKitTextRecognition: 072488cfd29f1726733378661881f88db74ba3dc
-  MLKitTextRecognitionChinese: 0e5335ca53ad9a36773fed1ef8b4abb177630fcd
   MLKitTextRecognitionCommon: 228502b9dc61ea9cfb6199ebafef3baa842e2043
   MLKitTextRecognitionDevanagari: 10086e73149989eb43f05b4a2f9b98c41ad403c4
-  MLKitTextRecognitionJapanese: 776fddee29ac10dc304fccea1588accc32f4640c
-  MLKitTextRecognitionKorean: dc1273aa2ef41f363b585d3dde1cf2de68c7c6d8
   MLKitVision: fa8dea9012ac59497c79ddbe9ebf32051047ac4c
   nanopb: fad817b59e0457d11a5dfbde799381cd727c1275
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
@@ -3505,7 +3475,7 @@ SPEC CHECKSUMS:
   RNFBApp: 12884d3bf9b3a0223efe4a0adce516edf72c4102
   RNFBMessaging: e954bfb053a5c6bb10b26bae4bbc58a4edd41131
   RNGestureHandler: 396c56dae97876e8579445870281f223b42b34a8
-  RNMLKitTextRecognition: 2d7c3481b9dabc72f7e31c67025c28b2c8d653b0
+  RNMLKitTextRecognition: ac18f25a9af5bd6d977ed7b029804340ee69d2e6
   RNPermissions: 6f3b8489b76038bf6581878240e8a5d6961e9bec
   RNScreens: 9269ab4971b2bd24917be84295d2c2ae7d06e9be
   RNSVG: 6470d6f2636d71bd4bbc44a4f27fb7444e437b2f

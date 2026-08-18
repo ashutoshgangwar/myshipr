@@ -10,6 +10,13 @@ react {
 def enableProguardInReleaseBuilds = true
 def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
 
+// An .aab and a set of split .apks want opposite packaging decisions, and both
+// have to be settled at configuration time, so key them off the requested task.
+// Running assemble and bundle in one invocation resolves to the bundle setting.
+def isBundleBuild = gradle.startParameter.taskNames.any {
+    it.toLowerCase().contains("bundle")
+}
+
 android {
     ndkVersion rootProject.ext.ndkVersion
     buildToolsVersion rootProject.ext.buildToolsVersion
@@ -31,6 +38,11 @@ android {
         manifestPlaceholders = [
             GOOGLE_MAPS_API_KEY: "AIzaSyDH6IejmpyYR5CpKxBEBmeLe_tbG6voOjg"
         ]
+
+        // Play Services and AndroidX between them ship translations for ~80
+        // locales. Keep only the markets MyShipr serves. This covers Android
+        // resources only — the HERE SDK's own locale data is trimmed below.
+        resourceConfigurations += ["en", "es", "hi", "pa", "ru"]
     }
 
     signingConfigs {
@@ -61,7 +73,9 @@ android {
 
     splits {
         abi {
-            enable true
+            // The bundle splits by ABI on Play's side; AGP rejects the build if
+            // we also split here (https://issuetracker.google.com/402800800).
+            enable !isBundleBuild
             reset()
 
             include 'armeabi-v7a', 'arm64-v8a'
@@ -70,11 +84,108 @@ android {
         }
     }
 
-    packagingOptions {
-        pickFirst 'lib/armeabi-v7a/libc++_shared.so'
-        pickFirst 'lib/arm64-v8a/libc++_shared.so'
-        pickFirst 'lib/x86/libc++_shared.so'
-        pickFirst 'lib/x86_64/libc++_shared.so'
+    packaging {
+        jniLibs {
+            pickFirsts += [
+                "lib/armeabi-v7a/libc++_shared.so",
+                "lib/arm64-v8a/libc++_shared.so",
+                "lib/x86/libc++_shared.so",
+                "lib/x86_64/libc++_shared.so",
+            ]
+
+            // AGP 8 stores .so uncompressed by default. That is the right
+            // default for the AAB — Play recompresses per device, and
+            // uncompressed libs let the installer map them straight out of the
+            // APK instead of keeping a second extracted copy. But nothing
+            // recompresses the standalone APKs we hand out directly, and there
+            // libheresdk.so alone is 87 MB stored against 31 MB deflated.
+            //
+            // So: compress for APK builds, leave the bundle on the Play-optimal
+            // default.
+            useLegacyPackaging = !isBundleBuild
+        }
+    }
+}
+
+// -----------------------------------------------------------------------------
+// HERE SDK asset trimming
+//
+// The Navigate .aar ships guidance voices for 48 languages, traffic-event
+// strings for 33 locales (each in a metric and an imperial flavour), and map
+// fallback fonts for every script HERE supports — together ~31 MB of the
+// release APK. MyShipr serves English, Spanish, Hindi, Punjabi and Russian, so
+// the rest never loads.
+//
+// These files come from inside the .aar, so the only place they can be removed
+// is the merged assets directory: after AGP has unpacked and merged every
+// library's assets, before it packages them.
+// -----------------------------------------------------------------------------
+
+// HERE has no pa-IN voice package, so Punjabi drivers fall back to en-US/hi-IN.
+def hereVoiceLocales = ["en-US", "en-GB", "es-ES", "es-MX", "hi-IN", "ru-RU"].toSet()
+
+// Likewise, HERE publishes no hi-IN or pa-IN traffic-event strings.
+def hereTmcLocales = ["en-US", "en-GB", "es-ES", "es-MX", "ru-RU"].toSet()
+
+// FiraGO covers Latin, Cyrillic and Greek (English, Spanish, Russian); Gurmukhi
+// covers Punjabi. The rest of the chain is CJK, SE-Asian and South-Indian.
+//
+// The fallback lists in geoviz/common/shared/list/fonts.json are deliberately
+// NOT pruned to match: HERE already ships them referencing desktop-only faces
+// (msgothic.ttc, ヒラギノ角ゴシック W3.ttc) that never exist on Android, so its
+// loader is built to skip fallback entries it cannot open.
+def hereKeepFonts = ["FiraGO_Map.ttf", "NotoSansGurmukhi-Regular-unhinted.ttf"].toSet()
+
+tasks.configureEach { task ->
+    if (!(task.name ==~ /^merge[A-Za-z]*Assets$/)) {
+        return
+    }
+
+    task.doLast {
+        File assets = task.outputDir.get().asFile
+        long freed = 0
+
+        Closure drop = { File f ->
+            if (!f.exists()) {
+                return
+            }
+            if (f.isDirectory()) {
+                freed += f.directorySize()
+                f.deleteDir()
+            } else {
+                freed += f.length()
+                f.delete()
+            }
+        }
+
+        new File(assets, "voice_assets").listFiles()?.each { File pkg ->
+            if (pkg.name.startsWith("voice_package_")
+                    && !hereVoiceLocales.contains(pkg.name - "voice_package_")) {
+                drop(pkg)
+            }
+        }
+
+        // tmcevents.<locale> and tmcevents.<locale>.imperial
+        new File(assets, "localization").listFiles()?.each { File f ->
+            if (!f.name.startsWith("tmcevents.")) {
+                return
+            }
+            def locale = f.name - "tmcevents." - ".imperial"
+            if (!hereTmcLocales.contains(locale)) {
+                drop(f)
+            }
+        }
+
+        new File(assets, "geoviz/fonts").listFiles()?.each { File f ->
+            if (!hereKeepFonts.contains(f.name)) {
+                drop(f)
+            }
+        }
+
+        if (freed > 0) {
+            logger.lifecycle("HERE asset trim: freed " +
+                "${(freed / (1024 * 1024)).setScale(1, BigDecimal.ROUND_HALF_UP)} MB")
+        }
     }
 }
 

@@ -1,287 +1,275 @@
-# iOS Push Notifications (FCM) — Setup Record
+# Android Build Size — Reduction Record
 
-Why the iOS FCM token was returning `null` while Android worked fine, what was
-missing, and what was changed to fix it.
+Why the Android release build was 143 MB, where the bytes actually were, and
+what was changed to cut it to 52 MB.
 
-**Date:** 2026-08-14
-**Result:** iOS device builds now sign with `aps-environment` and mint a real FCM token.
-
----
-
-## The symptom
-
-Android received FCM tokens normally. iOS did not, and the Xcode console showed:
-
-```
-11.15.0 - [FirebaseMessaging][I-FCM012002] Error in
-application:didFailToRegisterForRemoteNotificationsWithError:
-no valid "aps-environment" entitlement string found for application
-
-'[FCM] getFcmToken error:',
-[Error: [messaging/unknown] no valid "aps-environment" entitlement string found for application]
-```
-
-Android was never affected: FCM on Android talks directly to Google's servers.
-APNs, entitlements, and provisioning profiles do not exist on that platform, so
-none of the problems below could surface there.
+**Date:** 2026-08-17
+**Result:** arm64 release APK 143 MB → **52.3 MB** (−63%). `bundleRelease`, which
+was failing before this work, now produces a 98.5 MB AAB.
 
 ---
 
-## What iOS push actually requires
+## The numbers
 
-All six must be true. Any one missing and `getFcmToken()` returns `null`.
+| Artifact | Before | After | Change |
+|---|---|---|---|
+| `app-arm64-v8a-release.apk` | 143 MB | **52.3 MB** | −63% |
+| `app-armeabi-v7a-release.apk` | 111 MB | **47.8 MB** | −57% |
+| `app-universal-release.apk` | 436 MB | **166.3 MB** | −62% |
+| `app-release.aab` (Play upload) | *build failed* | **98.5 MB** | fixed |
 
-| # | Requirement | Where it lives |
+The per-ABI APK is the number to watch — it is roughly what a Play user
+downloads. The universal APK is large by construction because it carries both
+ABIs' copies of `libheresdk.so`.
+
+---
+
+## Where the bytes were
+
+Measured by extracting `app-arm64-v8a-release.apk` (186 MB uncompressed, 5296
+files) before any changes:
+
+| Item | Size | Notes |
 |---|---|---|
-| 1 | `aps-environment` entitlement | `ios/myshipr/myshipr.entitlements` |
-| 2 | Push Notifications enabled on the App ID | developer.apple.com → Identifiers |
-| 3 | Provisioning profile containing `aps-environment` | Issued by Apple, embedded at build time |
-| 4 | App signed by the team that owns the App ID | `DEVELOPMENT_TEAM` in `project.pbxproj` |
-| 5 | APNs auth key (`.p8`) uploaded to Firebase | Firebase → Cloud Messaging *(delivery only)* |
-| 6 | Firebase Team ID matching the signing team | Firebase → Cloud Messaging *(delivery only)* |
-
-**1–4 control whether you get a token. 5–6 control whether messages get delivered.**
-These are independent. A correct Firebase config will not produce a token, and a
-token does not imply messages will arrive.
+| `lib/arm64-v8a/libheresdk.so` | 87.3 MB | stored at **0% compression** |
+| `assets/geoviz` | 28 MB | HERE map rendering data; 9.8 MB of it fonts |
+| `lib/arm64-v8a/libmlkit_google_ocr_pipeline.so` | 11.1 MB | stored at 0% compression |
+| `assets/voice_assets` | 13 MB | **48** guidance voice packages |
+| `res` | 15 MB | 11.4 MB of it four app images |
+| `assets/localization` | 10 MB | 33 locales × metric/imperial |
+| `classes.dex` | 8.5 MB | R8 already enabled |
+| `assets/mlkit-google-ocr-models` | 5.3 MB | Latin + Chinese + Japanese + Korean + Devanagari |
+| `assets/index.android.bundle` | 2.2 MB | Hermes bytecode, already fine |
 
 ---
 
 ## What was already correct
 
-Not the cause, verified and left alone:
+Verified and left alone — none of these were the problem:
 
-- `@react-native-firebase/app` and `/messaging` at `^22.4.0`
-- `FirebaseApp.configure()` in [AppDelegate.swift:23](ios/myshipr/AppDelegate.swift#L23)
-- `GoogleService-Info.plist` present, `BUNDLE_ID` = `com.myshipr` (matches the target)
-- `UIBackgroundModes` → `remote-notification` in [Info.plist:138-141](ios/myshipr/Info.plist#L138-L141)
-- `CODE_SIGN_ENTITLEMENTS` wired into **both** Debug and Release configs
-- Notification permission granted — logs showed `[FCM] iOS authorization status: 1` (authorized)
-
-The JS layer was never the problem.
+- `minifyEnabled true` and `shrinkResources true` on release
+- Hermes enabled (`hermesEnabled=true`), so the JS bundle is bytecode not source
+- `reactNativeArchitectures=armeabi-v7a,arm64-v8a` — x86 was never being built
+- ABI splits already configured, so per-ABI APKs were already being produced
+- The ProGuard keep rules for HERE, React Native and Maps
 
 ---
 
-## What was missing
+## Change 1 — Native libraries were stored uncompressed
 
-### 1. The `aps-environment` entitlement was commented out
+**Saved ~60 MB.** The single largest win.
 
-`myshipr.entitlements` had been deliberately disabled while the team was on a free
-Apple account:
+AGP 8 defaults to `useLegacyPackaging = false`, which stores `.so` files
+uncompressed so the installer can map them straight out of the APK instead of
+keeping a second extracted copy on disk.
 
-```xml
-<!-- Push Notifications: requires a PAID Apple Developer account.
-     Uncomment the two lines below once enrolled to re-enable iOS FCM push.
-<key>aps-environment</key>
-<string>development</string>
--->
-```
+That default is right for the **AAB** — Play recompresses per device — but wrong
+for the **APKs we hand out directly**, where nothing recompresses them:
 
-Direct cause of the console error. Uncommenting it was reverted twice by
-`git checkout` / branch switches before it was finally committed.
+| Library | Stored | Deflated |
+|---|---|---|
+| `libheresdk.so` | 87,280,112 B | 31,328,967 B (64% off) |
+| `libmlkit_google_ocr_pipeline.so` | 11,064,544 B | 4,405,669 B (60% off) |
 
-### 2. Push Notifications was not enabled on the App ID
+[android/app/build.gradle](android/app/build.gradle) now decides per build type.
+Because packaging must be settled at configuration time, this keys off the
+requested Gradle task:
 
-Apple only puts `aps-environment` into a provisioning profile if the App ID has the
-capability turned on. Without it, the profile Xcode downloaded had no push
-entitlement — so even a correct entitlements file could not be signed in.
-
-### 3. The signing team was wrong
-
-The project was signed under a **personal** Apple account rather than the company one.
-Both certificates existed on the machine:
-
-```
-OU=Q7SJJXV3R5,  O=Ashutosh Gangwar   ← personal account
-OU=9852NBYTDU,  O=MYSHIPR INC        ← company account (correct)
-```
-
-`project.pbxproj` carried the stale `Q7SJJXV3R5`. Since the App ID and the APNs key
-both live under MYSHIPR INC, signing under the personal team meant push could never
-be provisioned.
-
-### 4. The APNs key had never been uploaded to Firebase
-
-No `.p8` in Firebase → no message delivery, even with a valid token.
-
-### 5. Firebase was given the wrong Team ID
-
-The stale `Q7SJJXV3R5` was copied into the Firebase upload dialog. See
-[Outstanding](#outstanding) — this is still to be corrected.
-
----
-
-## What was changed
-
-### `ios/myshipr/myshipr.entitlements` — the only code change
-
-```xml
-<!-- Push Notifications. Xcode rewrites this to "production" for
-     App Store / TestFlight archives automatically. -->
-<key>aps-environment</key>
-<string>development</string>
-```
-
-Committed, so it stops being reverted.
-
-### Apple Developer Portal
-
-- Enabled **Push Notifications** on App ID `com.myshipr` (team MYSHIPR INC)
-- Created APNs auth key `myshipr APNs`:
-
-  ```
-  Key ID:           ZXN948GG5X
-  Team:             MYSHIPR INC — 9852NBYTDU
-  APNs Config:      Team Scoped (All topics)
-  APNs Environment: Sandbox & Production
-  ```
-
-  One key covers development and production, and every bundle ID in the team.
-  It never expires, unlike APNs certificates.
-
-### Xcode
-
-- Switched the signing account to **MYSHIPR INC**; `DEVELOPMENT_TEAM` in
-  [project.pbxproj:397](ios/myshipr.xcodeproj/project.pbxproj#L397) and
-  [:433](ios/myshipr.xcodeproj/project.pbxproj#L433) now read `9852NBYTDU`
-- Added the **Push Notifications** capability
-- Cleared DerivedData and rebuilt so a fresh, push-enabled profile was embedded
-
-### Firebase Console
-
-- `.p8` uploaded to both development and production APNs auth key rows
-  (Project settings → Cloud Messaging → Apple app configuration → `com.myshipr`)
-
----
-
-## How to verify
-
-### The entitlement is in the signed binary
-
-```bash
-codesign -d --entitlements - --xml \
-  ~/Library/Developer/Xcode/DerivedData/myshipr-*/Build/Products/Debug-iphoneos/myshipr.app \
-  | plutil -convert xml1 -o - -
-```
-
-Expect:
-
-```xml
-<key>aps-environment</key>
-<string>development</string>
-```
-
-### The embedded profile carries push
-
-```bash
-security cms -D -i \
-  ~/Library/Developer/Xcode/DerivedData/myshipr-*/Build/Products/Debug-iphoneos/myshipr.app/embedded.mobileprovision \
-  > /tmp/pp.plist
-plutil -extract Entitlements.aps-environment raw -o - /tmp/pp.plist
-plutil -extract TeamIdentifier json -o - /tmp/pp.plist
-```
-
-Expect `development` and `["9852NBYTDU"]`.
-
-### Which teams the machine can sign for
-
-```bash
-security find-identity -v -p codesigning
-```
-
-The Team ID is the `OU=` field of the certificate, **not** the 10-character code in
-parentheses after the name — that one is the certificate ID. Easy to confuse.
-
----
-
-## Rebuilding after any signing change
-
-Xcode caches provisioning profiles. Changing the team or a capability without
-clearing DerivedData silently reuses the old profile.
-
-```bash
-rm -rf ~/Library/Developer/Xcode/DerivedData/myshipr-*
-cd /Users/ashutoshgangwar/Desktop/myshipr
-npx react-native run-ios --device
-```
-
-Use a physical device. The Simulator does not receive real APNs pushes.
-
----
-
-## Token flow, end to end
-
-1. App launches → `FirebaseApp.configure()` in `AppDelegate.swift`
-2. iOS registers with APNs — **requires `aps-environment`**, this is where it failed
-3. APNs returns a device token
-4. Firebase SDK exchanges it for an FCM token
-5. [FirebaseMessagingService.js:81](src/services/FirebaseMessagingService.js#L81) `getFcmToken()` returns it
-6. [api.js:498](src/config/api.js#L498) attaches it to the login payload as `fcmRegistrationToken`
-
-Step 6 matters. The token only reaches the backend **at login**:
-
-```js
-const fcmRegistrationToken = await getFcmToken();
-if (fcmRegistrationToken) {
-  payload.fcmRegistrationToken = fcmRegistrationToken;
+```gradle
+def isBundleBuild = gradle.startParameter.taskNames.any {
+    it.toLowerCase().contains("bundle")
 }
 ```
 
-While `getFcmToken()` returned `null`, the key was silently omitted and
-[api.js:439](src/config/api.js#L439) logged `device register skipped — no FCM token`.
-**No iOS tokens were ever stored server-side.** Anyone on an older build must log out
-and back in before backend-triggered pushes will reach them.
+`assembleRelease` compresses; `bundleRelease` stays on the Play-optimal default.
+Running both in one invocation resolves to the bundle setting.
+
+> **Trade-off:** compressed libs make the APK smaller but the *installed* app
+> slightly larger (libs get extracted) and first launch marginally slower. This
+> is the correct trade for a directly-distributed APK and is why the AAB path
+> deliberately keeps the opposite setting.
 
 ---
 
-## Outstanding
+## Change 2 — HERE SDK ships every market's data
 
-### Firebase Team ID is still wrong
+**Saved ~28 MB.** `heresdk-navigate-android-4.27.0.0.301863.aar` bundles guidance
+voices, traffic-event strings and map fonts for every market HERE supports.
+MyShipr serves English, Spanish, Hindi, Punjabi and Russian.
 
-Firebase currently stores `Q7SJJXV3R5` (the personal team) against key `ZXN948GG5X`.
-The key belongs to MYSHIPR INC, so APNs will reject every send with:
+| Asset | Before | After |
+|---|---|---|
+| `assets/voice_assets` | 48 packages, 13 MB | 6 packages, 1.6 MB |
+| `assets/localization` | 66 files, 10 MB | 10 files, 1.5 MB |
+| `assets/geoviz/fonts` | 12 fonts, 9.8 MB | 2 fonts, 796 KB |
 
-```
-403  { "reason": "InvalidProviderToken" }
-```
+These files come from *inside* the `.aar`, so they cannot be excluded by
+dependency configuration. The only place to remove them is the merged assets
+directory — after AGP unpacks and merges every library's assets, before it
+packages them. A `doLast` hook on `merge*Assets` in
+[android/app/build.gradle](android/app/build.gradle) does this and logs what it
+freed.
 
-Notifications fail **silently** — sends look successful in the Firebase console and
-nothing arrives on device.
+**Kept:**
 
-Fix (needs Firebase **Editor** role):
+- Voice: `en-US`, `en-GB`, `es-ES`, `es-MX`, `hi-IN`, `ru-RU`
+- Traffic strings: `en-US`, `en-GB`, `es-ES`, `es-MX`, `ru-RU`
+- Fonts: `FiraGO_Map.ttf` (Latin + Cyrillic + Greek), `NotoSansGurmukhi-Regular-unhinted.ttf` (Punjabi)
 
-1. Project settings → Cloud Messaging → Apple app configuration → `com.myshipr`
-2. Delete both APNs auth key rows
-3. Re-upload the **same** `.p8` to both rows with:
+**Two things worth knowing:**
 
-   | Field | Value |
-   |---|---|
-   | File | `AuthKey_ZXN948GG5X.p8` |
-   | Key ID | `ZXN948GG5X` |
-   | Team ID | `9852NBYTDU` |
+1. **HERE publishes no `pa-IN` voice or traffic data at all.** Punjabi drivers
+   already fell back to English/Hindi before this change. Nothing regressed.
+2. **`fonts.json` was deliberately *not* pruned to match.** HERE ships those
+   fallback chains already referencing desktop-only faces (`msgothic.ttc`,
+   macOS `ヒラギノ角ゴシック W3.ttc`) that never exist on Android — proof its
+   loader is built to skip fallback entries it cannot open. Editing the JSON
+   would add risk for no gain.
 
-### Firebase Editor access
-
-Project `innate-lacing-484116-t8` (`prj-dev-01`) currently grants Viewer only —
-blocks uploading keys, sending test messages, and reading delivery reports.
-The project owner can change the role at
-**Project settings → Users and permissions**.
-
-### Re-login on device
-
-Required once per device after upgrading to a push-enabled build, so the token
-reaches the backend.
+The dropped fonts were CJK, SE-Asian and South-Indian (`NotoSansJP-Regular.otf`
+alone was 4.5 MB, and is referenced only by the `Oslo_Japan` map scene).
 
 ---
 
-## Notes
+## Change 3 — Oversized app images
 
-- **Never commit the `.p8`.** Anyone holding it can send push notifications as this
-  app. Store it in a password manager; share it only over an encrypted channel.
-- **TestFlight / App Store:** Xcode rewrites `aps-environment` to `production` when
-  archiving. No manual change needed, and the same key covers both environments.
-- **APNs Certificates:** ignore that section in Firebase. Certificates are the legacy
-  mechanism and expire yearly; the auth key replaces them.
-- The `Usage of "messaging().registerDeviceForRemoteMessages()" is not required`
-  warning from [FirebaseMessagingService.js:88](src/services/FirebaseMessagingService.js#L88)
-  is harmless — auto-registration is on by default, so the call is a no-op. Remove it
-  to silence the warning.
+**Saved 11.4 MB.** Four images in `src/assets/Image`, all rendered as
+full-screen backgrounds or icons:
+
+| File | Before | After |
+|---|---|---|
+| `bg_image_login.jpg` | 4096×2725, 6.93 MB | 2048×1362, 370 KB |
+| `pod_screen.png` | 2502×3990, 4.57 MB | 1200×1914, 52 KB |
+| `fuel_pump.png` | 1122×1402, 993 KB | 500×625, 230 KB |
+| `pod_cer.webp` | 918 KB | **deleted** |
+
+`pod_screen.png` is a flat illustration, so a 256-colour palette is visually
+lossless on it (measured RMSE 3.5/255) and cut the file ~30×.
+
+`pod_cer.webp` had no `require()` or `import` anywhere in `src/`, `ios/` or
+`android/` — it was dead weight.
+
+APK `res/` went from **15 MB → 4.1 MB**.
+
+> **Note for future changes:** React Native's bundle task does not reliably
+> detect in-place edits to image assets. If you re-optimise an image and the APK
+> size does not move, delete `android/app/build/generated/res/react` and rebuild.
+
+---
+
+## Change 4 — ML Kit OCR bundled four unused scripts
+
+**Saved 2.8 MB.** `@react-native-ml-kit/text-recognition` declares Latin,
+Chinese, Devanagari, Japanese and Korean models. [OCRService.js](src/services/OCRService.js)
+only ever calls `TextRecognition.recognize(uri)` with no script argument, which
+always resolves to Latin.
+
+The module's `TextRecognitionModule.java` hard-imports the CJK option classes, so
+dropping the Gradle dependencies alone would break its compilation. This needed a
+patch via `patch-package` (already wired into `postinstall`):
+
+    patches/@react-native-ml-kit+text-recognition+2.0.0.patch
+
+It removes the Chinese/Japanese/Korean imports, their `switch` cases and their
+Gradle dependencies, keeping Latin and Devanagari.
+`assets/mlkit-google-ocr-models` went **5.3 MB → 2.5 MB**.
+
+The patch reapplies automatically on `npm install`.
+
+---
+
+## Change 5 — Android resource locales
+
+**Saved ~1 MB.** Play Services and AndroidX between them ship translations for
+roughly 80 locales. `defaultConfig` now sets:
+
+```gradle
+resourceConfigurations += ["en", "es", "hi", "pa", "ru"]
+```
+
+This affects Android resources only; the HERE SDK's own locale data is handled
+by Change 2.
+
+---
+
+## Change 6 — `bundleRelease` was broken (pre-existing)
+
+Not a size issue, but it blocked shipping to Play and was **already failing
+before this work**:
+
+```
+Multiple shrunk-resources files found in directory '.../minifyReleaseWithR8'
+Please disable building multiple APKs when building an Android app bundle.
+```
+
+AGP rejects the build when ABI splits and an app bundle are requested together
+([issuetracker 402800800](https://issuetracker.google.com/402800800)) — an AAB
+already splits by ABI on Play's side. `splits.abi.enable` is now `!isBundleBuild`,
+reusing the same flag from Change 1.
+
+`npm run BR` works again.
+
+---
+
+## Verification
+
+Every figure above was read out of a real build, not estimated:
+
+```sh
+npm run AR    # ./gradlew assembleRelease  -> per-ABI + universal APKs
+npm run BR    # ./gradlew bundleRelease    -> app-release.aab
+```
+
+Contents confirmed by extracting the resulting APK:
+
+```sh
+unzip -v android/app/build/outputs/apk/release/app-arm64-v8a-release.apk \
+  | grep libheresdk        # expect "Defl:N ... 64%", not "Stored"
+
+cd /tmp && unzip -q -o .../app-arm64-v8a-release.apk
+ls assets/voice_assets   | wc -l   # expect 6  (was 48)
+ls assets/localization   | wc -l   # expect 10 (was 66)
+ls assets/geoviz/fonts   | wc -l   # expect 2  (was 12)
+```
+
+---
+
+## Still to do
+
+### Smoke-test the map and navigation
+
+The size wins are verified from the APK contents, but the trimmed assets are
+exactly the parts that need exercising on a device:
+
+- Turn-by-turn **voice guidance** in each shipped language
+- **Map label rendering** (the font chain changed)
+- **Traffic event** text on a route with incidents
+- **OCR** on a document scan
+
+### Two unused dependencies
+
+Both grep to zero references in `src/` and can likely be removed:
+
+- `react-native-compressor` — native, autolinked, ships `libandroidlame.so`
+- `react-native-google-places-autocomplete` — JS only
+
+`react-native-webview` also greps to zero but **must stay** — it is a required
+peer dependency of `react-native-signature-canvas`.
+
+### If you distribute APKs directly
+
+The universal APK is 166 MB because it carries both ABIs. Shipping the per-ABI
+files instead (52.3 MB / 47.8 MB) roughly thirds what users download.
+
+---
+
+## Files changed
+
+| File | Change |
+|---|---|
+| [android/app/build.gradle](android/app/build.gradle) | Packaging, HERE asset trim, locale filter, bundle fix |
+| `patches/@react-native-ml-kit+text-recognition+2.0.0.patch` | New — drops CJK OCR scripts |
+| [src/assets/Image/bg_image_login.jpg](src/assets/Image/bg_image_login.jpg) | Resized 4096→2048 wide |
+| [src/assets/Image/pod_screen.png](src/assets/Image/pod_screen.png) | Resized + palette-quantised |
+| [src/assets/Image/fuel_pump.png](src/assets/Image/fuel_pump.png) | Resized 1122→500 wide |
+| `src/assets/Image/pod_cer.webp` | Deleted — unreferenced |
