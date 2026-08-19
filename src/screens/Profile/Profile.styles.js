@@ -3,8 +3,6 @@ import {colors} from '../../theme/colors';
 import {IS_TABLET} from '../../theme/device';
 import {ms, vs} from './constants';
 
-// Half a gutter of padding on every field, cancelled by the same negative
-// margin on the row — keeps the outer columns flush with the card edge.
 export const FIELD_GUTTER = ms(14);
 
 export default StyleSheet.create({
