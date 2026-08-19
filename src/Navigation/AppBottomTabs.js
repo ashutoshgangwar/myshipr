@@ -17,9 +17,13 @@ import useDriverRole from '../hooks/useDriverRole';
 import {colors} from '../theme/colors';
 import {IS_TABLET, select} from '../theme/device';
 import SalaryScreen from '../screens/SalaryScreen/SalaryScreen';
-import SettingScreen from '../screens/SettingScreen/SettingScreen';
+import Profile from '../screens/Profile/Profile';
 
 const Tab = createBottomTabNavigator();
+
+// Profile doubles as the fleet driver's Settings tab; as a tab it has no screen
+// beneath it, so the header back arrow is dropped.
+const ProfileTab = props => <Profile {...props} showBack={false} />;
 
 const ICON_SIZE = select({phone: moderateScale(24), tablet: moderateScale(28)});
 
@@ -59,9 +63,11 @@ const TABS = {
     label: 'Salary',
     icon: EarningsIcon,
   },
+  // Fleet drivers have no Account Settings entry in the Home dropdown — the
+  // Settings tab is where they get to the profile screen instead.
   settings: {
     name: 'SettingsTab',
-    component: SettingScreen,
+    component: ProfileTab,
     label: 'Settings',
     icon: SettingsIcon,
   },

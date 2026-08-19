@@ -576,15 +576,19 @@ const HomeScreen = () => {
 
             <View style={styles.menuDivider} />
 
-            <TouchableOpacity
-              style={styles.menuItem}
-              activeOpacity={0.7}
-              onPress={goAccountSettings}>
-              <View style={styles.menuItemIcon}>
-                <Setting_Icon width={18} height={18} />
-              </View>
-              <AppText style={styles.menuItemText}>Account Settings</AppText>
-            </TouchableOpacity>
+            {/* Fleet drivers reach Profile from their bottom Settings tab, so
+                the dropdown only offers it to single drivers. */}
+            {!isFleet && (
+              <TouchableOpacity
+                style={styles.menuItem}
+                activeOpacity={0.7}
+                onPress={goAccountSettings}>
+                <View style={styles.menuItemIcon}>
+                  <Setting_Icon width={18} height={18} />
+                </View>
+                <AppText style={styles.menuItemText}>Account Settings</AppText>
+              </TouchableOpacity>
+            )}
 
             <TouchableOpacity
               style={styles.menuItem}

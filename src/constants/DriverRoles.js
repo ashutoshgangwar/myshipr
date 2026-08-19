@@ -7,4 +7,3 @@ export const DRIVER_ROLES = {
 export const CURRENT_DRIVER_ROLE = DRIVER_ROLES.SINGLE;
 
 export const isFleetDriver = role => role === DRIVER_ROLES.FLEET;
-  

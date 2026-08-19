@@ -71,7 +71,7 @@ const Section = ({title, children}) => (
   </View>
 );
 
-export default function Profile({navigation}) {
+export default function Profile({navigation, showBack = true}) {
   const [contact, setContact] = useState({
     phone: DRIVER.phone,
     email: DRIVER.email,
@@ -114,12 +114,16 @@ export default function Profile({navigation}) {
             titleStyle={styles.headerTitle}
             subtitleStyle={styles.headerSubtitle}
             icon={
-              <TouchableOpacity
-                style={styles.backBtn}
-                activeOpacity={0.8}
-                onPress={goBack}>
-                <BackArrow width={BACK_ICON} height={BACK_ICON} />
-              </TouchableOpacity>
+              // Hidden when Profile is a bottom tab (fleet drivers) — there is
+              // nothing under it to go back to there.
+              showBack ? (
+                <TouchableOpacity
+                  style={styles.backBtn}
+                  activeOpacity={0.8}
+                  onPress={goBack}>
+                  <BackArrow width={BACK_ICON} height={BACK_ICON} />
+                </TouchableOpacity>
+              ) : null
             }
           />
 
