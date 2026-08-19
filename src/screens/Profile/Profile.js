@@ -14,9 +14,12 @@ import {
   CONTACT_FIELDS,
   DETAIL_SECTIONS,
   DRIVER,
+  FLEET_HIDDEN_SECTIONS,
+  FLEET_ONBOARDING_NOTICE,
   GRID_COLUMNS,
   INSURANCE,
   ONBOARDING_NOTICE,
+  ROLE_LABELS,
   ms,
 } from './constants';
 import StatusBar from '../../component/StatusBar/StatusBar';
@@ -29,6 +32,7 @@ import Chevron from '../../assets/svg_icon/Chevron_Down.svg';
 import CameraIcon from '../../assets/svg_icon/camera_icon.svg';
 import LockIcon from '../../assets/svg_icon/lock.svg';
 import {openCamera} from '../../services/MediaService';
+import useDriverRole from '../../hooks/useDriverRole';
 
 const APP_VERSION = `Version ${DeviceInfo.getVersion()}`;
 
@@ -78,6 +82,15 @@ export default function Profile({navigation, showBack = true}) {
   });
   const [faceLock, setFaceLock] = useState(DRIVER.faceLockEnabled);
   const [avatarUri, setAvatarUri] = useState(DRIVER.avatarUri ?? null);
+
+  // A company (fleet) driver's payout and insurance are handled by the fleet
+  // owner, so those sections are dropped and the notice points at them.
+  const {isFleet} = useDriverRole();
+  const notice = isFleet ? FLEET_ONBOARDING_NOTICE : ONBOARDING_NOTICE;
+  const roleLabel = isFleet ? ROLE_LABELS.fleet : ROLE_LABELS.single;
+  const sections = isFleet
+    ? DETAIL_SECTIONS.filter(s => !FLEET_HIDDEN_SECTIONS.includes(s.key))
+    : DETAIL_SECTIONS;
 
   const setField = (key, text) =>
     setContact(prev => ({...prev, [key]: text}));
@@ -148,7 +161,7 @@ export default function Profile({navigation, showBack = true}) {
                 <AppText style={styles.driverName} numberOfLines={1}>
                   {DRIVER.name}
                 </AppText>
-                <AppText style={styles.driverRole}>{DRIVER.role}</AppText>
+                <AppText style={styles.driverRole}>{roleLabel}</AppText>
               </View>
             </View>
 
@@ -197,11 +210,11 @@ export default function Profile({navigation, showBack = true}) {
                 height={ms(13)}
                 color={colors.white}
               />
-              <AppText style={styles.noticeText}>{ONBOARDING_NOTICE}</AppText>
+              <AppText style={styles.noticeText}>{notice}</AppText>
             </View>
 
             {/* ONBOARDING DETAILS — read-only, owned by the Carrier Portal */}
-            {DETAIL_SECTIONS.map(section => (
+            {sections.map(section => (
               <Section key={section.key} title={section.title}>
                 <View style={styles.fieldRow}>
                   {section.fields.map(field => (
@@ -217,32 +230,34 @@ export default function Profile({navigation, showBack = true}) {
               </Section>
             ))}
 
-            <Section title="Insurance Details">
-              <View style={styles.insuranceRow}>
-                <View style={styles.insuranceText}>
-                  <AppText style={styles.insuranceTitle}>
-                    {INSURANCE.title}
-                  </AppText>
-                  <AppText style={styles.insuranceSub}>
-                    {INSURANCE.subtitle}
-                  </AppText>
-                </View>
+            {!isFleet && (
+              <Section title="Insurance Details">
+                <View style={styles.insuranceRow}>
+                  <View style={styles.insuranceText}>
+                    <AppText style={styles.insuranceTitle}>
+                      {INSURANCE.title}
+                    </AppText>
+                    <AppText style={styles.insuranceSub}>
+                      {INSURANCE.subtitle}
+                    </AppText>
+                  </View>
 
-                <View
-                  style={[
-                    styles.insurancePill,
-                    !DRIVER.companyInsured && styles.insurancePillOff,
-                  ]}>
-                  <AppText
+                  <View
                     style={[
-                      styles.insurancePillText,
-                      !DRIVER.companyInsured && styles.insurancePillTextOff,
+                      styles.insurancePill,
+                      !DRIVER.companyInsured && styles.insurancePillOff,
                     ]}>
-                    {DRIVER.companyInsured ? 'Yes' : 'No'}
-                  </AppText>
+                    <AppText
+                      style={[
+                        styles.insurancePillText,
+                        !DRIVER.companyInsured && styles.insurancePillTextOff,
+                      ]}>
+                      {DRIVER.companyInsured ? 'Yes' : 'No'}
+                    </AppText>
+                  </View>
                 </View>
-              </View>
-            </Section>
+              </Section>
+            )}
 
             {/* Build version — last line of the screen on both platforms. */}
             <View style={styles.versionWrap}>

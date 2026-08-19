@@ -291,7 +291,7 @@ export default StyleSheet.create({
   noticeText: {
     flex: 1,
     color: colors.white,
-    fontSize: ms(11),
+    fontSize: IS_TABLET ? ms(8) : ms(10),
     fontWeight: '500',
   },
 

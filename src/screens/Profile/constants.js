@@ -87,9 +87,14 @@ export const INSURANCE = {
 
 // Stand-in for the profile the API returns. Missing keys fall back to the
 // "Not provided" placeholder, so a partial profile still renders.
+// Shown under the driver's name on the identity card.
+export const ROLE_LABELS = {
+  fleet: 'Company driver',
+  single: 'Single driver',
+};
+
 export const DRIVER = {
   name: 'Ashutosh Gangwar',
-  role: 'Single driver',
   phone: '',
   email: '',
   avatarUri: null,
@@ -100,3 +105,12 @@ export const DRIVER = {
 
 export const ONBOARDING_NOTICE =
   'All details below are set during onboarding. To update them, log in to the Carrier Portal.';
+
+// A company driver has no Carrier Portal login of their own — their record is
+// maintained by the fleet owner, so they are pointed at them instead.
+export const FLEET_ONBOARDING_NOTICE =
+  'Everything below is entered by your fleet owner. Reach out to them if anything needs to change.';
+
+// Bank and insurance are the fleet owner's business, not the company driver's:
+// both are hidden from that profile.
+export const FLEET_HIDDEN_SECTIONS = ['bank'];
