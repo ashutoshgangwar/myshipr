@@ -25,7 +25,9 @@ const Tab = createBottomTabNavigator();
 // beneath it, so the header back arrow is dropped.
 const ProfileTab = props => <Profile {...props} showBack={false} />;
 
-const ICON_SIZE = select({phone: moderateScale(24), tablet: moderateScale(28)});
+// moderateScale already inflates on wide tablet screens, so the tablet icon
+// gets a smaller base size to keep the tab bar from looking oversized.
+const ICON_SIZE = select({phone: moderateScale(24), tablet: moderateScale(18)});
 
 const renderTabIcon = Icon => ({focused}) => (
   <View style={[styles.iconWrap, focused && styles.iconWrapActive]}>
