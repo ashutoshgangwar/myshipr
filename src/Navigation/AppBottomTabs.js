@@ -8,7 +8,6 @@ import HomeScreen from '../screens/HomeScreen/HomeScreen';
 import EarningsScreen from '../screens/EarningsScreen/EarningsScreen';
 import ShipmentScreen from '../screens/ShipmentScreen/ShipmentScreen';
 import BiddingScreen from '../screens/BiddingScreen/BiddingScreen';
-import Profile from '../screens/Profile/Profile';
 import BiddingIcon from '../assets/svg_icon/Bidding.svg';
 import HomeIcon from '../assets/svg_icon/Home.svg';
 import EarningsIcon from '../assets/svg_icon/Earnings.svg';
