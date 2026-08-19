@@ -4,7 +4,13 @@ import Svg, {Circle, Path} from 'react-native-svg';
 
 import styles from '../ActiveBidding.styles';
 import {colors} from '../../../theme/colors';
-import {HereMapView, HereRouting} from '../../../here';
+import {
+  destinationMarkerOptions,
+  DestinationMarkerRasterizer,
+  DESTINATION_MARKER_THUMB_SIZE,
+  HereMapView,
+  HereRouting,
+} from '../../../here';
 import {fitCameraToRoute} from '../../../utils/here/mapHelpers';
 
 const TILE = 256;
@@ -83,7 +89,6 @@ export default function RouteMapThumb({
 }) {
   const mapRef = useRef(null);
   const pickupPinRef = useRef(null);
-  const dropPinRef = useRef(null);
   const [mapReady, setMapReady] = useState(false);
   const [size, setSize] = useState(null);
   const [pins, setPins] = useState(null);
@@ -99,24 +104,22 @@ export default function RouteMapThumb({
   const zoom =
     hasCoords && size ? fitZoom(pickup, drop, size.width, size.height) : 10;
 
-  // Rasterise both pins to base64 PNGs. Android's native addMarker ignores the
-  // `color` option (it falls back to a system icon), so shipping the bytes is
-  // the only way the same pin renders on iOS and Android.
+  // Rasterise the pickup pin to a base64 PNG. Android's native addMarker
+  // ignores the `color` option (it falls back to a system icon), so shipping
+  // the bytes is the only way the same pin renders on iOS and Android. The
+  // drop pin comes from the shared icon — see `destinationMarkerOptions`.
   useEffect(() => {
     let cancelled = false;
     const timer = setTimeout(() => {
       const strip = b64 =>
         String(b64).replace(/^data:image\/\w+;base64,/, '');
       const result = {};
-      let remaining = 2;
+      let remaining = 1;
       const done = () => {
         remaining -= 1;
         if (remaining <= 0 && !cancelled) setPins(result);
       };
-      [
-        ['pickup', pickupPinRef],
-        ['drop', dropPinRef],
-      ].forEach(([key, ref]) => {
+      [['pickup', pickupPinRef]].forEach(([key, ref]) => {
         const svg = ref.current;
         if (!svg || typeof svg.toDataURL !== 'function') return done();
         svg.toDataURL(b64 => {
@@ -213,12 +216,13 @@ export default function RouteMapThumb({
         }),
       );
       await step(() =>
-        map.addMarker({
-          latitude: drop.lat,
-          longitude: drop.lng,
-          color: colors.success,
-          ...(pins?.drop ? {image: pins.drop, markerSize: MARKER_SIZE} : {}),
-        }),
+        map.addMarker(
+          destinationMarkerOptions({
+            latitude: drop.lat,
+            longitude: drop.lng,
+            size: DESTINATION_MARKER_THUMB_SIZE,
+          }),
+        ),
       );
       if (cancelled) return;
 
@@ -268,7 +272,7 @@ export default function RouteMapThumb({
       pointerEvents="none"
       style={{position: 'absolute', left: -1000, top: -1000, opacity: 0}}>
       <Pin color={colors.accentBlue} svgRef={pickupPinRef} />
-      <Pin color={colors.success} svgRef={dropPinRef} />
+      <DestinationMarkerRasterizer />
     </View>
   );
 

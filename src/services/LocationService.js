@@ -81,8 +81,10 @@ const updateCache = (location, { force = false } = {}) => {
 // fix — or never get one — indoors, in a basement or underground. The network
 // provider (Wi-Fi + cell, enableHighAccuracy:false) usually answers in 1-3 s
 // anywhere there's any signal. So instead of waiting on GPS we RACE both
-// providers with short timeouts and take whichever returns first, and we accept
-// a recent OS-cached fix so a fresh-enough location comes back instantly.
+// providers with short timeouts, and we accept a recent OS-cached fix so a
+// fresh-enough location comes back instantly. The race is settled on accuracy
+// rather than speed — see the accuracy floor below, without which the coarse
+// provider wins every time simply by being first.
 // ─────────────────────────────────────────────────────────────────────────────
 const FAST_TIMEOUT_MS = 7000;    // first attempt: both providers in parallel
 const SLOW_TIMEOUT_MS = 15000;   // escalated single network attempt
@@ -119,6 +121,27 @@ const PRESET_OPTIONS = {
   },
 };
 
+// ─────────────────────────────────────────────────────────────────────────────
+// Accuracy floor
+//
+// The race above must not be won on speed alone. Android's network provider
+// answers in about a second with a cell-tower fix, which it reports at exactly
+// 100 m accuracy and which can be KILOMETRES from the device — GPS answers a
+// couple of seconds later at 5-10 m. Returning whichever arrived first meant
+// systematically returning the cell fix and never the GPS one.
+//
+// So a fix has to be accurate enough to win outright. A coarse one is kept as
+// a fallback while the remaining providers are given a short grace period, and
+// is only returned if nothing better turns up in that window — the wait stays
+// bounded, but a good fix is preferred whenever one is available.
+// ─────────────────────────────────────────────────────────────────────────────
+const ACCEPTABLE_ACCURACY_M = 50;   // good enough to stop waiting
+const ACCURACY_GRACE_MS = 4000;     // extra time GPS gets when the fast fix is coarse
+
+/** Reported accuracy in metres; unknown counts as "as bad as it gets". */
+const accuracyOf = position =>
+  Number.isFinite(position?.accuracy) ? position.accuracy : Infinity;
+
 const buildGeoOptions = ({ highAccuracy, timeout, maximumAge }) => ({
   enableHighAccuracy: highAccuracy,
   timeout,
@@ -128,25 +151,64 @@ const buildGeoOptions = ({ highAccuracy, timeout, maximumAge }) => ({
 });
 
 /**
- * Resolves with the first promise to FULFILL; rejects only when every promise
- * has rejected (with the last rejection). Lets us race the network and GPS
- * providers and return the faster one. (Promise.any isn't guaranteed on every
- * RN JS engine, so we implement it.)
+ * Resolves with the BEST fix rather than the first one: an accurate fix
+ * resolves immediately, a coarse one only after the other providers have had
+ * `graceMs` to do better (or have all settled). Rejects only when every
+ * promise rejected, with the last rejection.
+ *
+ * (Promise.any isn't guaranteed on every RN JS engine, and would pick the
+ * first answer anyway — which is the behaviour this replaces.)
  */
-const firstSuccess = promises =>
+const bestFix = (
+  promises,
+  { acceptableAccuracyM = ACCEPTABLE_ACCURACY_M, graceMs = ACCURACY_GRACE_MS } = {},
+) =>
   new Promise((resolve, reject) => {
     if (!promises.length) {
       reject(new Error(LOCATION_ERRORS.LOCATION_UNAVAILABLE));
       return;
     }
+
     let remaining = promises.length;
+    let best = null;
     let lastError;
+    let settled = false;
+    let graceTimer = null;
+
+    const finish = () => {
+      if (settled) return;
+      settled = true;
+      if (graceTimer) clearTimeout(graceTimer);
+      if (best) resolve(best);
+      else reject(lastError || new Error(LOCATION_ERRORS.LOCATION_UNAVAILABLE));
+    };
+
+    const onSettled = () => {
+      remaining -= 1;
+      if (remaining === 0) finish();
+    };
+
     promises.forEach(p =>
-      Promise.resolve(p).then(resolve, err => {
-        lastError = err;
-        remaining -= 1;
-        if (remaining === 0) reject(lastError);
-      }),
+      Promise.resolve(p).then(
+        position => {
+          if (!best || accuracyOf(position) < accuracyOf(best)) best = position;
+          // Accurate enough — no reason to wait on anything else.
+          if (accuracyOf(best) <= acceptableAccuracyM) {
+            finish();
+            return;
+          }
+          onSettled();
+          // Coarse, and something is still running: hold this as the fallback
+          // and give the rest a moment to beat it.
+          if (!settled && !graceTimer) {
+            graceTimer = setTimeout(finish, graceMs);
+          }
+        },
+        err => {
+          lastError = err;
+          onSettled();
+        },
+      ),
     );
   });
 
@@ -309,7 +371,9 @@ const runPreflightChecks = async ({
  *   1. If a fresh-enough cached fix exists, return it instantly (and refresh in
  *      the background for next time). Disable with `preferCacheMs: 0`.
  *   2. Race the network (Wi-Fi/cell) provider against GPS with a short timeout
- *      and take whichever answers first — network wins indoors, GPS outdoors.
+ *      and take the most accurate answer — a fix under `acceptableAccuracyM`
+ *      wins outright, a coarse one only after GPS has had a few seconds to
+ *      beat it. Network wins indoors, GPS outdoors.
  *   3. Escalate to one slower network attempt (bigger timeout, older OS fix).
  *   4. Fall back to the last-known cached location instead of throwing.
  *
@@ -323,17 +387,21 @@ export const getCurrentLocation = async ({
   fallbackToCache     = true,
   highAccuracy        = true,    // also race GPS; false = pure-network fast fix
   preferCacheMs       = 10000,   // serve a cached fix this fresh instantly (0 = always fetch)
+  acceptableAccuracyM = ACCEPTABLE_ACCURACY_M,
   timeout             = FAST_TIMEOUT_MS,
   maximumAge          = FAST_MAX_AGE_MS,
   alertStrings        = {},
 } = {}) => {
-  // 1. Instant cache hit — no GPS round-trip at all.
+  // 1. Instant cache hit — no GPS round-trip at all. Accuracy is checked as
+  //    well as age: a coarse fix served from here would keep being handed back
+  //    for as long as it stays fresh, so a bad one would outlive itself.
   if (preferCacheMs > 0) {
     const cached = getCachedLocation() ?? (await hydrateLocationCache());
     if (
       isUsableLocation(cached) &&
       Number.isFinite(cached.timestamp) &&
-      Date.now() - cached.timestamp <= preferCacheMs
+      Date.now() - cached.timestamp <= preferCacheMs &&
+      accuracyOf(cached) <= acceptableAccuracyM
     ) {
       refreshLocationInBackground({ detectMock, skipGPSCheck, skipPermissionCheck });
       return cached;
@@ -342,19 +410,25 @@ export const getCurrentLocation = async ({
 
   await runPreflightChecks({ skipGPSCheck, skipPermissionCheck, alertStrings });
 
-  // 2. Race network + GPS — first usable fix wins.
+  // 2. Race network + GPS — the most accurate usable fix wins (see bestFix).
   const legs = [
     getPosition(buildGeoOptions({ highAccuracy: false, timeout, maximumAge }), detectMock),
   ];
   if (highAccuracy) {
     legs.push(
-      getPosition(buildGeoOptions({ highAccuracy: true, timeout, maximumAge }), detectMock),
+      getPosition(
+        // maximumAge 0: an OS-cached fix here is usually the same cell-tower
+        // one the network leg is already fetching, and accepting it would let
+        // this leg "answer" without GPS ever being consulted.
+        buildGeoOptions({ highAccuracy: true, timeout, maximumAge: 0 }),
+        detectMock,
+      ),
     );
   }
 
   let lastError;
   try {
-    const position = await firstSuccess(legs);
+    const position = await bestFix(legs, { acceptableAccuracyM });
     updateCache(position, { force: true });
     return position;
   } catch (err) {
@@ -395,13 +469,13 @@ export const getCurrentLocation = async ({
  * warm for next time. Never throws and never blocks the caller.
  */
 const refreshLocationInBackground = ({ detectMock = true } = {}) => {
-  firstSuccess([
+  bestFix([
     getPosition(
       buildGeoOptions({ highAccuracy: false, timeout: FAST_TIMEOUT_MS, maximumAge: FAST_MAX_AGE_MS }),
       detectMock,
     ),
     getPosition(
-      buildGeoOptions({ highAccuracy: true, timeout: FAST_TIMEOUT_MS, maximumAge: FAST_MAX_AGE_MS }),
+      buildGeoOptions({ highAccuracy: true, timeout: FAST_TIMEOUT_MS, maximumAge: 0 }),
       detectMock,
     ),
   ])
@@ -590,6 +664,7 @@ export { PRESET_OPTIONS };
  * @property {boolean} [fallbackToCache=true]   Return last-known fix if live fails.
  * @property {boolean} [highAccuracy=true]      Also race GPS; false = network-only fast fix.
  * @property {number}  [preferCacheMs=10000]    Serve a cached fix this fresh instantly (0 = always fetch).
+ * @property {number}  [acceptableAccuracyM=50] Accuracy (m) that wins the race outright and that a cached fix must meet.
  * @property {number}  [timeout=7000]           Per-provider timeout (ms) for the fast race.
  * @property {number}  [maximumAge=15000]       Accept an OS fix this old (ms).
  * @property {object}  [alertStrings]

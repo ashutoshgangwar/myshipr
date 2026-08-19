@@ -23,6 +23,8 @@ import styles from './ActiveTripScreen.styles';
 import {colors} from '../../theme/colors';
 
 import {
+  destinationMarkerOptions,
+  DestinationMarkerRasterizer,
   HereMapView,
   HereNavigation,
   HereRouting,
@@ -69,6 +71,29 @@ const PANEL_IDS = ['chat', 'documents', 'bidding', 'navigate', 'call'];
 // A reroute costs a routing request, so deviations are only acted on this often.
 const REROUTE_MIN_INTERVAL_MS = 10_000;
 const CAMERA_DISTANCE_METERS = 350;
+
+// Tapping navigate used to pay twice for work the preview had just done: a
+// second GPS fix and a second routing request, several seconds of spinner
+// before guidance appeared. The preview's route is reused instead while the
+// driver is still this close to where it was calculated from, and while it is
+// this fresh — beyond either, the road ahead has changed enough to re-route.
+const PREVIEW_REUSE_RADIUS_M = 150;
+const PREVIEW_REUSE_MAX_AGE_MS = 180_000;
+// Guidance re-acquires the device feed the moment it starts, so a fix this
+// recent is a good enough starting point. Racing GPS again here only adds
+// seconds to the tap.
+const NAV_FIX_MAX_AGE_MS = 45_000;
+
+/** Rough great-circle metres — only ever compared against a small radius. */
+const metersBetween = (a, b) => {
+  if (!a || !b) return Infinity;
+  const toRad = deg => (deg * Math.PI) / 180;
+  const dLat = toRad(b.latitude - a.latitude);
+  const dLng = toRad(b.longitude - a.longitude);
+  const lat = toRad((a.latitude + b.latitude) / 2);
+  const x = dLng * Math.cos(lat);
+  return Math.sqrt(dLat * dLat + x * x) * 6371000;
+};
 
 /**
  * The stop-by-stop checklist the driver works through: confirm the step, then
@@ -231,6 +256,10 @@ export default function ActiveTripScreen({navigation, route}) {
   const truckDetailsRef = useRef(null);
   const lastRerouteAtRef = useRef(0);
   const rerouteInFlightRef = useRef(false);
+  // The JS fix guidance was started from, so the navigator's own position can
+  // be logged against it (see the LOCATION listener).
+  const navStartFixRef = useRef(null);
+  const lastLocationLogAtRef = useRef(0);
 
   useEffect(() => {
     isNavigatingRef.current = isNavigating;
@@ -311,6 +340,12 @@ export default function ActiveTripScreen({navigation, route}) {
     try {
       const pos = await getCurrentLocation({highAccuracy: false});
       if (!pos?.latitude || !pos?.longitude) return;
+      console.log(
+        '[ActiveTripScreen] current marker (gps button) lat/lng:',
+        pos.latitude,
+        pos.longitude,
+        {accuracy: pos.accuracy, heading: pos.heading},
+      );
       setCenter({lat: pos.latitude, lng: pos.longitude});
       await mapRef.current?.showCurrentLocation(pos.latitude, pos.longitude, {
         bearing: Number.isFinite(pos.heading) ? pos.heading : 0,
@@ -349,14 +384,59 @@ export default function ActiveTripScreen({navigation, route}) {
    * what gets GPS switched on and ACCESS_FINE_LOCATION granted before the
    * navigator asks for the device feed.
    */
-  const resolvePickup = useCallback(async () => {
-    if (trip.source) return trip.source;
-    try {
-      return normalizeLocation(await getCurrentLocation({detectMock: true}));
-    } catch (_) {
+  const resolvePickup = useCallback(
+    async ({preferCacheMs} = {}) => {
+      if (trip.source) return trip.source;
+      try {
+        const fix = await getCurrentLocation({
+          detectMock: true,
+          // Callers that can live with a slightly older fix say so, and get
+          // the cached one back instantly instead of waiting on a provider.
+          ...(Number.isFinite(preferCacheMs) ? {preferCacheMs} : null),
+        });
+        // normalizeLocation keeps only the coordinates, so anything that says
+        // how trustworthy this fix is has to be read off it here. `ageMs` is
+        // the one that matters: the service can serve a cached fix, including
+        // a persisted one from a previous session.
+        console.log(
+          '[ActiveTripScreen] gps fix lat/lng:',
+          fix?.latitude,
+          fix?.longitude,
+          {
+            accuracy: fix?.accuracy,
+            ageMs: Number.isFinite(fix?.timestamp)
+              ? Date.now() - fix.timestamp
+              : null,
+            preferCacheMs: preferCacheMs ?? 'default',
+          },
+        );
+        return normalizeLocation(fix);
+      } catch (_) {
+        return null;
+      }
+    },
+    [trip.source],
+  );
+
+  /**
+   * The route the preview drew, kept so tapping navigate can start on it
+   * rather than calculating the same road twice. Holds where it was
+   * calculated from and to, which is what decides whether it is still the
+   * right route (see takePreviewRoute).
+   */
+  const previewRef = useRef(null);
+
+  /** The previewed route, if it still describes the drive about to start. */
+  const takePreviewRoute = useCallback((origin, destination) => {
+    const cached = previewRef.current;
+    if (!cached?.route || !origin || !destination) return null;
+    if (Date.now() - cached.at > PREVIEW_REUSE_MAX_AGE_MS) return null;
+    if (metersBetween(cached.destination, destination) > 1) return null;
+    if (metersBetween(cached.origin, origin) > PREVIEW_REUSE_RADIUS_M) {
       return null;
     }
-  }, [trip.source]);
+    return cached.route;
+  }, []);
 
   /**
    * Calculates the trip's truck route and draws it: the driver at the pickup,
@@ -387,6 +467,12 @@ export default function ActiveTripScreen({navigation, route}) {
         trip.truckDetails,
       );
       setActiveRoute(hereRoute);
+      previewRef.current = {
+        route: hereRoute,
+        origin,
+        destination,
+        at: Date.now(),
+      };
       // Nothing driven yet, so the whole route is what is left.
       setLeg({
         total: hereRoute.distanceMeters,
@@ -399,6 +485,12 @@ export default function ActiveTripScreen({navigation, route}) {
       ]);
       // The pickup is the driver, so it gets the position indicator rather than
       // a pin — a pin there would read as a stop they still have to reach.
+      console.log(
+        '[ActiveTripScreen] current marker (preview origin) lat/lng:',
+        origin.latitude,
+        origin.longitude,
+        trip.source ? '(trip source)' : '(live gps)',
+      );
       if (trip.source) {
         await mapRef.current?.addMarker({
           latitude: origin.latitude,
@@ -412,11 +504,12 @@ export default function ActiveTripScreen({navigation, route}) {
           {style: 'navigation'},
         );
       }
-      await mapRef.current?.addMarker({
-        latitude: destination.latitude,
-        longitude: destination.longitude,
-        color: '#FF3366',
-      });
+      await mapRef.current?.addMarker(
+        destinationMarkerOptions({
+          latitude: destination.latitude,
+          longitude: destination.longitude,
+        }),
+      );
       // Native draws the stored route's own geometry — nothing to decode in JS.
       await mapRef.current?.drawRoute({
         routeId: hereRoute.routeId,
@@ -497,7 +590,14 @@ export default function ActiveTripScreen({navigation, route}) {
       // Guidance runs on the device's own GPS, so it has to start from where
       // the driver actually is — routing from the previewed origin would begin
       // with an instant deviation the moment they move.
-      const from = await resolvePickup();
+      const from = await resolvePickup({preferCacheMs: NAV_FIX_MAX_AGE_MS});
+      navStartFixRef.current = from;
+      lastLocationLogAtRef.current = 0;
+      console.log(
+        '[ActiveTripScreen] current marker (nav start) lat/lng:',
+        from?.latitude,
+        from?.longitude,
+      );
       if (!from) {
         Alert.alert(
           'Navigation',
@@ -506,13 +606,31 @@ export default function ActiveTripScreen({navigation, route}) {
         return;
       }
 
-      const navRoute = await HereRouting.calculateTruckRoute(
-        from.latitude,
-        from.longitude,
-        destination.latitude,
-        destination.longitude,
-        trip.truckDetails,
-      );
+      // Taking the preview's layers off does not depend on the route, so it
+      // runs alongside the routing call instead of after it. Awaited before
+      // guidance starts — the navigator draws the route, the maneuver arrows
+      // and the vehicle, and a preview still on the map would double them.
+      // Swallowing the failure keeps a routing error as the one thing that can
+      // reach the alert below, and stops a clear that fails while routing is
+      // still in flight from surfacing as an unhandled rejection.
+      const cleared = Promise.all([
+        mapRef.current?.clearMarkers(),
+        mapRef.current?.clearRoute(),
+        mapRef.current?.hideCurrentLocation(),
+      ]).catch(() => {});
+
+      // The preview drew this same drive seconds ago. Reusing its route is
+      // what makes the tap feel immediate: no second routing round trip
+      // before guidance can start.
+      const navRoute =
+        takePreviewRoute(from, destination) ??
+        (await HereRouting.calculateTruckRoute(
+          from.latitude,
+          from.longitude,
+          destination.latitude,
+          destination.longitude,
+          trip.truckDetails,
+        ));
       setActiveRoute(navRoute);
       setRouteError(null);
       // Guidance routes from the driver's real position, so this is the
@@ -522,14 +640,7 @@ export default function ActiveTripScreen({navigation, route}) {
         remaining: navRoute.distanceMeters,
       });
 
-      // Hand the map to the navigator: it renders the route, the maneuver
-      // arrows and the vehicle itself, so our preview layers must come off or
-      // they would be drawn twice.
-      await Promise.all([
-        mapRef.current?.clearMarkers(),
-        mapRef.current?.clearRoute(),
-        mapRef.current?.hideCurrentLocation(),
-      ]);
+      await cleared;
 
       await HereNavigation.startNavigation(navRoute.routeId, {
         simulate: false,
@@ -552,6 +663,20 @@ export default function ActiveTripScreen({navigation, route}) {
         },
       });
 
+      // The navigator draws the route, the maneuver arrows and the vehicle —
+      // but never the stop being driven to. So the destination pin goes back
+      // on after the clear above, or it would vanish when guidance starts.
+      // Not awaited: guidance is already running, and the button should not
+      // keep spinning for a marker.
+      mapRef.current
+        ?.addMarker(
+          destinationMarkerOptions({
+            latitude: destination.latitude,
+            longitude: destination.longitude,
+          }),
+        )
+        ?.catch(() => {});
+
       lastRerouteAtRef.current = Date.now();
       setIsNavigating(true);
       // Hand the running session to the rest of the app: this is what lets the
@@ -566,7 +691,7 @@ export default function ActiveTripScreen({navigation, route}) {
     } finally {
       setRouteLoading(false);
     }
-  }, [handleStopNavigation, isNavigating, resolvePickup, trip]);
+  }, [handleStopNavigation, isNavigating, resolvePickup, takePreviewRoute, trip]);
 
   /**
    * Recalculates from the driver's actual position and hands the fresh route to
@@ -632,6 +757,32 @@ export default function ActiveTripScreen({navigation, route}) {
         if (Number.isFinite(progress.remainingDistanceMeters)) {
           setLeg(prev => ({...prev, remaining: progress.remainingDistanceMeters}));
         }
+      },
+
+      // Where the navigator itself thinks the vehicle is. This is what draws
+      // the marker during guidance — our own indicator is hidden by then — so
+      // it is the only position that explains what is on screen. Throttled:
+      // the event fires about once a second.
+      [NavigationEvents.LOCATION]: loc => {
+        const now = Date.now();
+        if (now - lastLocationLogAtRef.current < 3000) return;
+        lastLocationLogAtRef.current = now;
+        const startFix = navStartFixRef.current;
+        console.log(
+          '[ActiveTripScreen] current marker (navigator) lat/lng:',
+          loc?.latitude,
+          loc?.longitude,
+          {
+            isMapMatched: loc?.isMapMatched,
+            accuracy: loc?.horizontalAccuracyMeters,
+            speed: loc?.speed,
+            // How far HERE's positioning has landed from the JS fix guidance
+            // was started with — the two use different providers.
+            driftFromStartFixM: startFix
+              ? Math.round(metersBetween(startFix, loc))
+              : null,
+          },
+        );
       },
 
       [NavigationEvents.MANEUVER]: next => setNextManeuver(next),

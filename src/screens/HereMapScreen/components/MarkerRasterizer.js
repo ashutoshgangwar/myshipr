@@ -3,9 +3,9 @@ import {View} from 'react-native';
 import MarkerPin, {MARKER_ROLE_ICON} from './MarkerPin';
 
 // Per-role tint (only affects icons that use currentColor, e.g. the car).
+// The drop stop is not here: it has its own icon, see `here/destinationMarker`.
 export const MARKER_ROLE_COLORS = {
   source: '#22C55E',
-  destination: '#FF3366',
   vehicle: '#2563EB',
 };
 
@@ -14,25 +14,22 @@ const RASTER_PX = 96; // captured at @2x-ish for crisp markers on the map
 /**
  * Renders the marker icons off-screen (one hidden <Svg> per role) and
  * rasterises each to a base64 PNG via react-native-svg's `toDataURL`. The
- * resulting `{source, destination, vehicle}` map is handed back through
+ * resulting `{source, vehicle}` map is handed back through
  * `onReady` so the screen can pass the bytes to the native HERE map.
  *
- * Source / destination icons are fixed (see MarkerPin.MARKER_ROLE_ICON);
- * the vehicle icon follows the Truck/Car picker via `vehicleShape`.
+ * The source icon is fixed (see MarkerPin.MARKER_ROLE_ICON); the vehicle icon
+ * follows the Truck/Car picker via `vehicleShape`.
  */
 export default function MarkerRasterizer({vehicleShape = 'truck', onReady}) {
   const sourceRef = useRef(null);
-  const destinationRef = useRef(null);
   const vehicleRef = useRef(null);
   const refs = {
     source: sourceRef,
-    destination: destinationRef,
     vehicle: vehicleRef,
   };
 
   const iconKeys = {
     source: MARKER_ROLE_ICON.source,
-    destination: MARKER_ROLE_ICON.destination,
     vehicle: vehicleShape || MARKER_ROLE_ICON.vehicle,
   };
 

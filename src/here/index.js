@@ -31,6 +31,13 @@ export {default as HereRouting} from './HereRouting';
 export {default as HereNavigation, NavigationEvents} from './HereNavigation';
 export {default as HereMapView} from './HereMapView';
 export {
+  destinationMarkerOptions,
+  getDestinationMarkerImage,
+  DestinationMarkerRasterizer,
+  DESTINATION_MARKER_SIZE,
+  DESTINATION_MARKER_THUMB_SIZE,
+} from './destinationMarker';
+export {
   MAP_STYLE,
   MAP_STYLE_OPTIONS,
   getMapPrefs,

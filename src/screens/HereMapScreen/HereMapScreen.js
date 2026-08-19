@@ -22,6 +22,8 @@ import CompassIcon from '../../assets/svg_icon/compass.svg';
 import {getCurrentLocation, useLocation} from '../../services/LocationService';
 
 import {
+  destinationMarkerOptions,
+  DestinationMarkerRasterizer,
   HereMapView,
   HereNavigation,
   HereRouting,
@@ -261,13 +263,13 @@ export default function HereMapScreen({navigation, route}) {
       });
     }
 
-    await mapRef.current?.addMarker({
-      latitude: destination.latitude,
-      longitude: destination.longitude,
-      color: '#FF3366',
-      image: markerImagesRef.current?.destination,
-      markerSize: MARKER_DISPLAY_SIZE,
-    });
+    await mapRef.current?.addMarker(
+      destinationMarkerOptions({
+        latitude: destination.latitude,
+        longitude: destination.longitude,
+        size: MARKER_DISPLAY_SIZE,
+      }),
+    );
 
     // Native draws the stored route's own geometry — nothing to decode in JS.
     await mapRef.current?.drawRoute({
@@ -562,6 +564,16 @@ export default function HereMapScreen({navigation, route}) {
         voiceGuidance: true,
       });
 
+      // The navigator draws the route, the maneuver arrows and the vehicle —
+      // but never the stop being driven to. So the destination pin goes back
+      // on after the clear above, or it would vanish when guidance starts.
+      await mapRef.current?.addMarker(
+        destinationMarkerOptions({
+          latitude: destination.latitude,
+          longitude: destination.longitude,
+        }),
+      );
+
       lastRerouteAtRef.current = Date.now();
       setIsNavigating(true);
     } catch (e) {
@@ -795,6 +807,7 @@ export default function HereMapScreen({navigation, route}) {
             markerImagesRef.current = imgs;
           }}
         />
+        <DestinationMarkerRasterizer />
       </View>
 
       {/* ── Bottom sheet ── */}

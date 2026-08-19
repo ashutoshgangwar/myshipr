@@ -30,17 +30,11 @@ import CameraIcon from '../../assets/svg_icon/camera_icon.svg';
 import LockIcon from '../../assets/svg_icon/lock.svg';
 import {openCamera} from '../../services/MediaService';
 
-// The public version name, baked into the binary and read once: versionName on
-// Android, CFBundleShortVersionString on iOS. The build number (versionCode /
-// CFBundleVersion) is never shown — it is an upload counter, not something a
-// driver needs, and it differs per store submission on each platform.
 const APP_VERSION = `Version ${DeviceInfo.getVersion()}`;
 
 const BACK_ICON = IS_TABLET ? 24 : 18;
 const CHEVRON = IS_TABLET ? ms(20) : ms(18);
 
-// A label over a boxed input. Read-only fields keep the filled box but stop
-// taking taps, so the form reads the same whether or not it can be edited.
 const Field = ({
   label,
   placeholder,

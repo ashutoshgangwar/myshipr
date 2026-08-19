@@ -7,7 +7,13 @@ import AppText from '../../theme/AppText';
 import {colors} from '../../theme/colors';
 import {ms} from '../../theme/scale';
 
-import {HereMapView, HereNavigation, NavigationEvents} from '../../here';
+import {
+  destinationMarkerOptions,
+  DestinationMarkerRasterizer,
+  HereMapView,
+  HereNavigation,
+  NavigationEvents,
+} from '../../here';
 import {buildTripInfo, fitCameraToRoute} from '../../utils/here/mapHelpers';
 import {
   formatManeuverDistance,
@@ -62,13 +68,34 @@ export default function LiveTripMap({trip, style, onExpand}) {
   const bindToSession = useCallback(
     async api => {
       const map = api ?? mapRef.current;
+
+      // This runs again on every focus, so the previous pin comes off first —
+      // otherwise each return to the card stacks another one on the same spot.
+      // `clearMarkers` only removes markers JS added; the vehicle and the
+      // location dot belong to the navigator and are left alone.
+      const plantDestinationPin = async () => {
+        if (!map || !destination) return;
+        await map.clearMarkers();
+        await map.addMarker(
+          destinationMarkerOptions({
+            latitude: destination.latitude,
+            longitude: destination.longitude,
+          }),
+        );
+      };
+
       try {
         const rendering = await HereNavigation.attachToMapView(map?.getTag(), {
           mode: 'fixed',
           distanceMeters: CAMERA_DISTANCE_METERS,
         });
         setAttached(Boolean(rendering));
-        if (rendering) return;
+        if (rendering) {
+          // Guidance renders the route and the vehicle, not the stop, so the
+          // pin is this card's to draw even while the session owns the map.
+          await plantDestinationPin().catch(() => {});
+          return;
+        }
       } catch (_) {
         setAttached(false);
         // Nothing is navigating — fall through to the preview below.
@@ -82,11 +109,7 @@ export default function LiveTripMap({trip, style, onExpand}) {
           width: NAVIGATION_ROUTE_WIDTH,
         });
         if (destination) {
-          await map.addMarker({
-            latitude: destination.latitude,
-            longitude: destination.longitude,
-            color: '#FF3366',
-          });
+          await plantDestinationPin();
           await map.moveCamera({
             lat: destination.latitude,
             lng: destination.longitude,
@@ -170,6 +193,7 @@ export default function LiveTripMap({trip, style, onExpand}) {
 
   return (
     <View style={styles.container}>
+      <DestinationMarkerRasterizer />
       <HereMapView
         ref={mapRef}
         style={[styles.map, style]}

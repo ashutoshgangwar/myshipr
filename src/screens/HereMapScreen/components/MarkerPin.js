@@ -10,9 +10,10 @@ const ASSET_ICONS = {
   car: CarIcon,
 };
 
+// The drop stop is absent by design — its icon is shared with the other maps
+// rather than picked here (see `here/destinationMarker`).
 export const MARKER_ROLE_ICON = {
   source: 'home',
-  destination: 'truck',
   vehicle: 'truck',
 };
 
