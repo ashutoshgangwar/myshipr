@@ -25,6 +25,7 @@ import ActiveBidding from '../screens/ActiveBidding/ActiveBidding';
 import EarningsDetails from '../screens/EarningsDetails/EarningsDetails';
 import ShipmentDetails from '../screens/ShipmentDetails/ShipmentDetails';
 import NotificationScreen from '../screens/NotificationScreen/NotificationScreen';
+import FaceLock from '../screens/FaceLock/FaceLock';
 
 
 
@@ -59,6 +60,7 @@ export default function AppStackMain() {
 
       {/* Extra flows (no bottom tab) */}
       <Stack.Screen name="Profile" component={Profile} />
+      <Stack.Screen name="FaceLock" component={FaceLock} />
       <Stack.Screen name="HereSearchScreen" component={HereSearchScreen} />
       <Stack.Screen name="HereMapScreen" component={HereMapScreen} />
       <Stack.Screen name="HereNavigationDemo" component={HereNavigationDemo} />

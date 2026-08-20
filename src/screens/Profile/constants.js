@@ -98,7 +98,6 @@ export const DRIVER = {
   phone: '',
   email: '',
   avatarUri: null,
-  faceLockEnabled: true,
   companyInsured: true,
   details: {},
 };

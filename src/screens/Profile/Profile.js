@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useCallback, useState} from 'react';
 import {
   View,
   ScrollView,
@@ -7,6 +7,7 @@ import {
   Image,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
+import {useFocusEffect} from '@react-navigation/native';
 import DeviceInfo from 'react-native-device-info';
 
 import styles from './Profile.styles';
@@ -32,6 +33,7 @@ import Chevron from '../../assets/svg_icon/Chevron_Down.svg';
 import CameraIcon from '../../assets/svg_icon/camera_icon.svg';
 import LockIcon from '../../assets/svg_icon/lock.svg';
 import {openCamera} from '../../services/MediaService';
+import {EMPTY_FACE_LOCK, getFaceLock} from '../../services/FaceLockService';
 import useDriverRole from '../../hooks/useDriverRole';
 
 const APP_VERSION = `Version ${DeviceInfo.getVersion()}`;
@@ -80,7 +82,7 @@ export default function Profile({navigation, showBack = true}) {
     phone: DRIVER.phone,
     email: DRIVER.email,
   });
-  const [faceLock, setFaceLock] = useState(DRIVER.faceLockEnabled);
+  const [faceLock, setFaceLock] = useState(EMPTY_FACE_LOCK);
   const [avatarUri, setAvatarUri] = useState(DRIVER.avatarUri ?? null);
 
   // A company (fleet) driver's payout and insurance are handled by the fleet
@@ -91,6 +93,20 @@ export default function Profile({navigation, showBack = true}) {
   const sections = isFleet
     ? DETAIL_SECTIONS.filter(s => !FLEET_HIDDEN_SECTIONS.includes(s.key))
     : DETAIL_SECTIONS;
+
+  // The row mirrors whatever the Face Lock screen last stored, so coming back
+  // from a re-scan shows the new state without a reload.
+  useFocusEffect(
+    useCallback(() => {
+      let cancelled = false;
+      getFaceLock().then(state => {
+        if (!cancelled) setFaceLock(state);
+      });
+      return () => {
+        cancelled = true;
+      };
+    }, []),
+  );
 
   const setField = (key, text) =>
     setContact(prev => ({...prev, [key]: text}));
@@ -182,16 +198,16 @@ export default function Profile({navigation, showBack = true}) {
                 ))}
               </View>
 
-              {/* Flips the stored preference. Re-enrolling the face itself
-                  happens in the biometric prompt this row will hand off to. */}
+              {/* Enrolment lives on its own screen — it needs the password
+                  re-check before the device's face prompt. */}
               <TouchableOpacity
                 style={styles.faceLockRow}
                 activeOpacity={0.85}
-                onPress={() => setFaceLock(prev => !prev)}>
+                onPress={() => navigation?.navigate('FaceLock')}>
                 <View style={styles.faceLockText}>
                   <AppText style={styles.faceLockTitle}>Face Lock</AppText>
                   <AppText style={styles.faceLockSub}>
-                    {faceLock ? 'Enabled' : 'Disabled'} · Tap to Change
+                    {faceLock.enabled ? 'Enabled · Tap to Change' : 'Not set up · Tap to Set Up'}
                   </AppText>
                 </View>
                 <View style={styles.chevron}>
