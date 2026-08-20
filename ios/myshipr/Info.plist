@@ -22,6 +22,25 @@
 	<string>$(MARKETING_VERSION)</string>
 	<key>CFBundleSignature</key>
 	<string>????</string>
+	<!-- Custom scheme (myshipr://activate?token=…). Universal Links are the
+	     real delivery mechanism for the driver invite, but they need a live
+	     apple-app-site-association file on the domain AND a signed build, so
+	     this scheme is what works in development and is the "Open in app"
+	     fallback the landing page offers. Keep it in step with APP_LINK_SCHEME
+	     in .env — the app only acts on links whose scheme matches. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.myshipr</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>myshipr</string>
+			</array>
+		</dict>
+	</array>
 	<key>CFBundleVersion</key>
 	<string>$(CURRENT_PROJECT_VERSION)</string>
 	<key>HERE_ACCESS_KEY_ID</key>

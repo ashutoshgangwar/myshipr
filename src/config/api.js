@@ -19,6 +19,12 @@ export const API_ENDPOINTS = {
     refresh: '/auth/refresh',
     logout: '/auth/logout',
     registerDevice: '/auth/devices/register',
+    // Driver-invite link flow. Both are unauthenticated: the emailed token IS
+    // the credential, so no bearer token is attached.
+    verifyPasswordToken: '/auth/password/token/verify',
+    setPassword: '/auth/password/set',
+    // Used by the in-app "Forgot Password" (OTP) screen, not by any link.
+    forgotPassword: '/auth/password/forgot',
   },
 };
 
@@ -137,7 +143,16 @@ const refreshClient = axios.create({
 });
 
 // Endpoints that must go out unauthenticated and must not trigger a refresh.
-const AUTH_FREE_PATHS = [API_ENDPOINTS.auth.login, API_ENDPOINTS.auth.refresh];
+const AUTH_FREE_PATHS = [
+  API_ENDPOINTS.auth.login,
+  API_ENDPOINTS.auth.refresh,
+  // A driver setting their first password has no session at all. Sending a
+  // stale bearer token here — or letting a 401 kick off a refresh — would turn
+  // "this link expired" into a spurious sign-out of whoever used the phone last.
+  API_ENDPOINTS.auth.verifyPasswordToken,
+  API_ENDPOINTS.auth.setPassword,
+  API_ENDPOINTS.auth.forgotPassword,
+];
 const isAuthFree = url => AUTH_FREE_PATHS.some(path => (url || '').includes(path));
 
 // Attach the bearer token to every request when one is stored.
@@ -576,6 +591,231 @@ export const login = async ({identifier, password}) => {
     throw new Error(
       'Network error. Please check your connection and try again.',
     );
+  }
+};
+
+// --- Password link flow (driver activation) ------------------------------
+
+// One digit and one special character, at least 8 long. Kept here rather than
+// in the screen so the invite flow and the OTP flow cannot drift apart.
+const PASSWORD_MIN_LENGTH = 8;
+const PASSWORD_HAS_DIGIT = /[0-9]/;
+const PASSWORD_HAS_SYMBOL = /[^A-Za-z0-9]/;
+
+/**
+ * Checks a new password the way the user reads the two fields.
+ * The screen only renders the result — it holds no rules of its own.
+ *
+ * @param {string} password
+ * @param {string} confirmPassword
+ * @returns {{ok: true} | {ok: false, title: string, message: string}}
+ */
+export const validateNewPassword = (password, confirmPassword) => {
+  if (!password) {
+    return {ok: false, title: 'Required', message: 'Please enter a new password'};
+  }
+  if (password.length < PASSWORD_MIN_LENGTH) {
+    return {
+      ok: false,
+      title: 'Weak Password',
+      message: `Password must be at least ${PASSWORD_MIN_LENGTH} characters`,
+    };
+  }
+  if (!PASSWORD_HAS_DIGIT.test(password) || !PASSWORD_HAS_SYMBOL.test(password)) {
+    return {
+      ok: false,
+      title: 'Weak Password',
+      message: 'Password must include a number and a special character',
+    };
+  }
+  if (!confirmPassword) {
+    return {ok: false, title: 'Required', message: 'Please confirm your password'};
+  }
+  if (password !== confirmPassword) {
+    return {ok: false, title: 'Mismatch', message: 'Passwords do not match'};
+  }
+  return {ok: true};
+};
+
+/**
+ * Wording for a rejected invite/reset link. The three failures the driver can
+ * actually do something about — expired, already used, never valid — must read
+ * differently, because the fix differs: ask for a new link, just sign in, or
+ * contact the carrier.
+ */
+const messageForLinkStatus = (status, body) => {
+  const serverMessage = body?.message;
+  switch (status) {
+    case 410:
+      return (
+        serverMessage ||
+        'This link has expired. Please ask your carrier to send a new invite.'
+      );
+    case 409:
+      return (
+        serverMessage ||
+        'This link has already been used. Sign in with your password, or use Forgot Password.'
+      );
+    case 400:
+    case 401:
+    case 404:
+      return (
+        serverMessage ||
+        'This link is not valid. Please ask your carrier to send a new invite.'
+      );
+    case 422:
+      // The backend enforces the password policy too; show exactly what it said.
+      return serverMessage || 'That password was rejected. Please choose another.';
+    case 429:
+      return (
+        serverMessage ||
+        'Too many attempts. Please wait a few minutes before trying again.'
+      );
+    default:
+      return serverMessage || 'Something went wrong. Please try again.';
+  }
+};
+
+/** Turns an axios failure on a link endpoint into an Error worth showing. */
+const linkError = err => {
+  if (err.response) {
+    const {status, data} = err.response;
+    const error = new Error(messageForLinkStatus(status, data));
+    error.status = status;
+    // The screen swaps the password form for a dead end on these three: no
+    // amount of retrying makes this token work again.
+    error.linkDead = [400, 401, 404, 409, 410].includes(status);
+    return error;
+  }
+  if (err.code === 'ECONNABORTED') {
+    return new Error(
+      'Request timed out. Please check your connection and try again.',
+    );
+  }
+  if (!err.request) return err;
+  return new Error('Network error. Please check your connection and try again.');
+};
+
+/**
+ * Trades the emailed token for the account it belongs to, before showing the
+ * password form. Doing this up front means an expired link is caught while the
+ * driver still has an empty form, not after they typed a password twice — and
+ * it lets the screen greet them by name so they can see the link is theirs.
+ *
+ * POST /api/v1/auth/password/token/verify  → { token }
+ * ← { status, message, data: { valid, purpose: 'ACTIVATION',
+ *                              email, phoneNumber, fullName, expiresAt } }
+ *
+ * @param {string} token
+ * @returns {Promise<{purpose: string, email?: string, phoneNumber?: string,
+ *                    fullName?: string, expiresAt?: string}>}
+ * @throws {Error} `.linkDead` is true when a new link is the only way forward
+ */
+export const verifyPasswordToken = async token => {
+  if (!token) {
+    const error = new Error('This link is not valid.');
+    error.linkDead = true;
+    throw error;
+  }
+
+  try {
+    const {data: body} = await apiClient.post(
+      API_ENDPOINTS.auth.verifyPasswordToken,
+      {token},
+    );
+    const data = body?.data || {};
+
+    // A 200 that says `valid: false` is still a dead link — some gateways
+    // answer this way rather than with a 4xx.
+    if (data.valid === false) {
+      const error = new Error(
+        body?.message ||
+          'This link is not valid or has expired. Please ask your carrier to send a new invite.',
+      );
+      error.linkDead = true;
+      throw error;
+    }
+
+    log('password token verified', {purpose: data.purpose, email: data.email});
+    return data;
+  } catch (err) {
+    if (err.linkDead) throw err;
+    throw linkError(err);
+  }
+};
+
+/**
+ * Sets the password the token authorises and, when the backend answers with a
+ * session, signs the driver straight in — coming back to a login screen to
+ * retype credentials they just chose is the one thing this flow exists to
+ * avoid. A backend that deliberately does not auto-login simply omits the
+ * tokens, and the caller sends the driver to the login screen instead.
+ *
+ * POST /api/v1/auth/password/set  → { token, newPassword }
+ * ← { status, message, data: { userId, accessToken, refreshToken, expiresIn,
+ *                              organizationId, organizationType } }
+ *
+ * @param {{token: string, newPassword: string}} params
+ * @returns {Promise<{session: object|null, message: string}>}
+ */
+export const setPasswordWithToken = async ({token, newPassword}) => {
+  try {
+    const {data: body} = await apiClient.post(API_ENDPOINTS.auth.setPassword, {
+      token,
+      newPassword,
+    });
+
+    const session = body?.data?.accessToken ? body.data : null;
+
+    if (session) {
+      // Drop anything left over from a previous account on this device before
+      // writing the new session — the same rule login follows.
+      await clearSession();
+      await saveSession(session);
+      log('session stored from password setup');
+
+      // Push registration is a side effect, not part of setting the password:
+      // it must not delay the driver or turn success into an error.
+      registerDevice({accessToken: session.accessToken}).catch(err =>
+        log('device register failed', err?.response?.status || err?.message),
+      );
+    }
+
+    return {session, message: body?.message || 'Password set successfully.'};
+  } catch (err) {
+    throw linkError(err);
+  }
+};
+
+/**
+ * Asks the backend to email a fresh reset link.
+ *
+ * POST /api/v1/auth/password/forgot  → { email } or { phoneNumber }
+ *
+ * Resolves even when the address is unknown: the backend answers 202 either
+ * way so the screen cannot be used to find out which drivers exist.
+ *
+ * @param {string} identifier email address or phone number
+ * @returns {Promise<{message: string}>}
+ */
+export const requestPasswordReset = async identifier => {
+  const entered = (identifier || '').trim();
+  const payload = entered.includes('@')
+    ? {email: entered}
+    : {phoneNumber: entered.replace(/[\s()-]/g, '')};
+
+  try {
+    const {data: body} = await apiClient.post(
+      API_ENDPOINTS.auth.forgotPassword,
+      payload,
+    );
+    return {
+      message:
+        body?.message ||
+        'If that account exists, we have sent a reset link to it.',
+    };
+  } catch (err) {
+    throw linkError(err);
   }
 };
 

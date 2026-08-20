@@ -60,6 +60,44 @@
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />
         </intent-filter>
+
+        <!-- Driver invite / password-reset links.
+
+             Two filters on purpose:
+
+             1. The verified App Link (https). autoVerify makes Android fetch
+                https://${APP_LINK_HOST}/.well-known/assetlinks.json at install
+                time; when the SHA-256 of our signing cert is listed there, the
+                link opens the app with no disambiguation dialog. Until that
+                file is served and the app is installed from a matching build,
+                verification fails and the link just opens the browser — which
+                is exactly the fallback we want.
+
+             2. The custom scheme (myshipr://). Needs no verification at all, so
+                it works today in development and is the "Open in app" escape
+                hatch the landing page offers.
+
+             pathPrefix keeps the filter to /d — the rest of the host keeps
+             opening in the browser as normal.
+
+             MainActivity is singleTask, so a link arriving while the app is
+             already running comes in through onNewIntent; see MainActivity.kt. -->
+        <intent-filter android:autoVerify="true">
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.DEFAULT" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data
+                android:scheme="https"
+                android:host="${APP_LINK_HOST}"
+                android:pathPrefix="/d" />
+        </intent-filter>
+
+        <intent-filter>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.DEFAULT" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="${APP_LINK_SCHEME}" />
+        </intent-filter>
       </activity>
     </application>
 </manifest>

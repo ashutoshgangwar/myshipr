@@ -11,11 +11,11 @@ import {
   Keyboard,
   TouchableWithoutFeedback,
 } from 'react-native';
-import React, {useState, useRef} from 'react';
+import React, {useState, useRef, useEffect} from 'react';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import LinearGradient from 'react-native-linear-gradient';
 import styles from './ResetPassword.styles';
-import {useNavigation} from '@react-navigation/native';
+import {useNavigation, useRoute} from '@react-navigation/native';
 import Button from '../../component/Button/Button';
 import {colors} from '../../theme/colors';
 import Eye_off from '../../assets/svg_icon/eye-off.svg';
@@ -24,10 +24,27 @@ import TruckIcon from '../../assets/svg_icon/Frame.svg';
 import StatusBar from '../../component/StatusBar/StatusBar';
 import AppText from '../../theme/AppText';
 import {ms, vs} from '../../theme/scale';
+import {
+  validateNewPassword,
+  verifyPasswordToken,
+  setPasswordWithToken,
+} from '../../config/api';
 
 // step 1 = phone / email form
 // step 2 = otp verify (per channel)
 // step 3 = new password
+//
+// The screen has two ways in:
+//
+//  * "Forgot Password" on the login screen — walks all three steps.
+//  * The driver-invite link — arrives with `route.params.token` and jumps
+//    straight to step 3. The emailed token is the credential, so there is
+//    nothing to verify by OTP: the token is exchanged for the account up
+//    front, and again for the password on submit.
+//
+// The link flow only ever sets a *first* password for a newly invited driver.
+// There is no emailed reset link; a driver who forgets their password takes
+// the "Forgot Password" route above.
 
 const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_REGEX = /^\+?\d{10,15}$/;
@@ -35,8 +52,21 @@ const EMPTY_OTP = ['', '', '', '', '', ''];
 
 const ResetPassword = () => {
   const navigation = useNavigation();
+  const route = useRoute();
 
-  const [step, setStep] = useState(1);
+  // Set only when the screen was opened from an emailed link. The driver has
+  // no session and never typed a code — the token stands in for both.
+  const {token: linkToken} = route.params || {};
+  const isLinkFlow = Boolean(linkToken);
+
+  const [step, setStep] = useState(isLinkFlow ? 3 : 1);
+
+  // Link lifecycle: 'checking' while the token is being exchanged for the
+  // account, 'ready' once the password form can be shown, 'dead' when no
+  // amount of retrying will make this token work.
+  const [linkState, setLinkState] = useState(isLinkFlow ? 'checking' : 'ready');
+  const [linkAccount, setLinkAccount] = useState(null);
+  const [linkError, setLinkError] = useState('');
 
   // ── Step 1 identifiers ──
   const [phone, setPhone] = useState('');
@@ -55,6 +85,31 @@ const ResetPassword = () => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const [loading, setLoading] = useState(false);
+
+  // Resolve the token before showing the form: an expired link is then caught
+  // while the fields are still empty, instead of after a password is typed
+  // twice — and the driver can see the invite really is addressed to them.
+  useEffect(() => {
+    if (!isLinkFlow) return undefined;
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const account = await verifyPasswordToken(linkToken);
+        if (cancelled) return;
+        setLinkAccount(account);
+        setLinkState('ready');
+      } catch (err) {
+        if (cancelled) return;
+        setLinkError(err?.message || 'This link is not valid.');
+        setLinkState('dead');
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isLinkFlow, linkToken]);
 
   const phoneOtpRefs = useRef([]);
   const emailOtpRefs = useRef([]);
@@ -176,41 +231,86 @@ const ResetPassword = () => {
     }, 600);
   };
 
-  const handleResetPassword = () => {
-    const passwordRegex = /^(?=.*[0-9])(?=.*[!@#$%^&*])/;
-    if (!newPassword) {
-      Alert.alert('Required', 'Please enter a new password');
-      return;
-    }
-    if (newPassword.length < 8) {
-      Alert.alert('Weak Password', 'Password must be at least 8 characters');
-      return;
-    }
-    if (!passwordRegex.test(newPassword)) {
-      Alert.alert(
-        'Weak Password',
-        'Password must include a number and a special character',
-      );
-      return;
-    }
-    if (!confirmPassword) {
-      Alert.alert('Required', 'Please confirm your password');
-      return;
-    }
-    if (newPassword !== confirmPassword) {
-      Alert.alert('Mismatch', 'Passwords do not match');
+  const goToLogin = () =>
+    navigation.reset({index: 0, routes: [{name: 'LoginScreen'}]});
+
+  const handleResetPassword = async () => {
+    // One rule set, shared with the backend contract — see validateNewPassword.
+    const check = validateNewPassword(newPassword, confirmPassword);
+    if (!check.ok) {
+      Alert.alert(check.title, check.message);
       return;
     }
 
     Keyboard.dismiss();
+
+    // The OTP path is still mocked end to end; only the link path is wired to
+    // the backend today.
+    if (!isLinkFlow) {
+      setLoading(true);
+      setTimeout(() => {
+        setLoading(false);
+        Alert.alert('Success', 'Password reset successfully!', [
+          {text: 'Login', onPress: () => navigation.navigate('LoginScreen')},
+        ]);
+      }, 1000);
+      return;
+    }
+
     setLoading(true);
-    setTimeout(() => {
+    try {
+      const {session, message} = await setPasswordWithToken({
+        token: linkToken,
+        newPassword,
+      });
+
+      // The backend answered with a session, so the driver is already signed
+      // in — sending them to a login form to retype the password they chose
+      // two seconds ago is the one thing this flow exists to avoid.
+      if (session) {
+        navigation.reset({index: 0, routes: [{name: 'MainApp'}]});
+        return;
+      }
+
+      Alert.alert(
+        'Account Activated',
+        message,
+        [{text: 'Sign In', onPress: goToLogin}],
+      );
+    } catch (err) {
+      // A token that died between verify and submit (expired, or used on
+      // another device) must retire the form, not just show a toast.
+      if (err?.linkDead) {
+        setLinkError(err.message);
+        setLinkState('dead');
+      } else {
+        Alert.alert('Could Not Save', err?.message || 'Please try again.');
+      }
+    } finally {
       setLoading(false);
-      Alert.alert('Success', 'Password reset successfully!', [
-        {text: 'Login', onPress: () => navigation.navigate('LoginScreen')},
-      ]);
-    }, 1000);
+    }
   };
+
+  // The emailed-link flow has no steps to announce, so it gets its own copy.
+  const heroTitle = isLinkFlow
+    ? 'Set Your Password'
+    : step === 1
+    ? 'Forgot Password'
+    : step === 2
+    ? 'Enter Verification Code'
+    : 'Enter New Password';
+
+  const heroSubtitle = isLinkFlow
+    ? 'Welcome to MyShipr. Choose a password to finish activating your driver account.'
+    : step === 1
+    ? 'Enter the email or phone linked with your account.'
+    : step === 2
+    ? 'Enter the verification code'
+    : 'Create a new password';
+
+  // The password fields wait for the token to check out — offering them while
+  // the link may already be dead only wastes the driver's typing.
+  const showPasswordForm = step === 3 && (!isLinkFlow || linkState === 'ready');
 
   // ── One OTP block (used for both phone and email in step 2) ──
   const renderOtpBlock = channel => {
@@ -327,20 +427,8 @@ const ResetPassword = () => {
                   end={{x: 0, y: 1}}
                   style={styles.heroOverlay}>
                   <View style={styles.heroContent}>
-                    <AppText style={styles.title}>
-                      {step === 1
-                        ? 'Forgot Password'
-                        : step === 2
-                        ? 'Enter Verification Code'
-                        : 'Enter New Password'}
-                    </AppText>
-                    <AppText style={styles.subtitle}>
-                      {step === 1
-                        ? 'Enter the email or phone linked with your account.'
-                        : step === 2
-                        ? 'Enter the verification code'
-                        : 'Create a new password'}
-                    </AppText>
+                    <AppText style={styles.title}>{heroTitle}</AppText>
+                    <AppText style={styles.subtitle}>{heroSubtitle}</AppText>
                     <TouchableOpacity
                       style={styles.roleBadge}
                       activeOpacity={0.85}
@@ -403,8 +491,50 @@ const ResetPassword = () => {
                   </>
                 )}
 
+                {/* ── Emailed link: resolving the token ── */}
+                {isLinkFlow && linkState === 'checking' && (
+                  <View style={styles.linkStatusBlock}>
+                    <ActivityIndicator size="large" color={colors.primary} />
+                    <AppText style={styles.linkStatusText}>
+                      Checking your link…
+                    </AppText>
+                  </View>
+                )}
+
+                {/* ── Emailed link: expired, already used, or never valid ── */}
+                {isLinkFlow && linkState === 'dead' && (
+                  <View style={styles.linkStatusBlock}>
+                    <AppText style={styles.linkErrorTitle}>
+                      This link no longer works
+                    </AppText>
+                    <AppText style={styles.linkErrorText}>{linkError}</AppText>
+                  </View>
+                )}
+
+                {/* Naming the account makes it obvious the invite is theirs,
+                    and catches a link forwarded to the wrong driver. */}
+                {showPasswordForm &&
+                isLinkFlow &&
+                (linkAccount?.fullName ||
+                  linkAccount?.email ||
+                  linkAccount?.phoneNumber) ? (
+                  <View style={styles.linkAccountBanner}>
+                    <AppText style={styles.linkAccountLabel}>
+                      Setting the password for
+                    </AppText>
+                    <AppText style={styles.linkAccountValue}>
+                      {[
+                        linkAccount.fullName,
+                        linkAccount.email || linkAccount.phoneNumber,
+                      ]
+                        .filter(Boolean)
+                        .join(' · ')}
+                    </AppText>
+                  </View>
+                ) : null}
+
                 {/* ── STEP 3: New Password ── */}
-                {step === 3 && (
+                {showPasswordForm && (
                   <>
                     <AppText style={styles.label}>New Password</AppText>
                     <View style={styles.passwordContainer}>
@@ -480,7 +610,16 @@ const ResetPassword = () => {
 
           {/* ── Primary action pinned to a fixed footer (same spot every step) ── */}
           <View style={styles.footer}>
-            {loading ? (
+            {isLinkFlow && linkState === 'dead' ? (
+              <Button
+                title="Back to Sign In"
+                onPress={goToLogin}
+                backgroundColor={colors.primary}
+                textColor={colors.white}
+                style={[styles.primaryButton, styles.footerButton]}
+                textStyle={styles.primaryButtonText}
+              />
+            ) : isLinkFlow && linkState === 'checking' ? null : loading ? (
               <View
                 style={[
                   styles.primaryButton,

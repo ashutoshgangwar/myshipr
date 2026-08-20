@@ -35,8 +35,15 @@ android {
         // HERE credentials are NOT declared here. They are read from .env by JS
         // and passed to SDKNativeEngine.makeSharedInstance() through
         // HereSdk.initialize(), so .env stays the single source of truth.
+        // APP_LINK_* feed the intent-filters in AndroidManifest.xml. They must
+        // stay in step with APP_LINK_SCHEME / APP_LINK_DOMAIN in .env — the
+        // manifest decides which links Android hands to the app, and
+        // DeepLinkService decides which of those it will act on. A host in one
+        // and not the other silently does nothing.
         manifestPlaceholders = [
-            GOOGLE_MAPS_API_KEY: "AIzaSyDH6IejmpyYR5CpKxBEBmeLe_tbG6voOjg"
+            GOOGLE_MAPS_API_KEY: "AIzaSyDH6IejmpyYR5CpKxBEBmeLe_tbG6voOjg",
+            APP_LINK_SCHEME    : "myshipr",
+            APP_LINK_HOST      : "istio-dev.myshipr.com"
         ]
 
         // Play Services and AndroidX between them ship translations for ~80
@@ -63,6 +70,10 @@ android {
             signingConfig signingConfigs.debug
             minifyEnabled enableProguardInReleaseBuilds
             shrinkResources true
+
+            // Production invite links point at the public link host, not the
+            // dev API gateway.
+            manifestPlaceholders = [APP_LINK_HOST: "link.myshipr.com"]
 
             proguardFiles getDefaultProguardFile(
                 "proguard-android-optimize.txt"

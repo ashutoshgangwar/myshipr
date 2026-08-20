@@ -636,6 +636,61 @@ const styles = StyleSheet.create({
     fontSize: moderateScale(13),
     fontWeight: '700',
   },
+
+  // ── Emailed-link flow (driver invite / reset link) ──
+
+  // Holds the whole card height while the token is checked, so the card does
+  // not visibly resize when the password fields replace the spinner.
+  linkStatusBlock: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: verticalScale(28),
+    paddingHorizontal: scale(8),
+  },
+
+  linkStatusText: {
+    marginTop: verticalScale(12),
+    fontSize: moderateScale(14),
+    color: colors.textMuted,
+    textAlign: 'center',
+  },
+
+  linkErrorTitle: {
+    fontSize: moderateScale(16),
+    fontWeight: '700',
+    color: colors.danger,
+    textAlign: 'center',
+    marginBottom: verticalScale(8),
+  },
+
+  linkErrorText: {
+    fontSize: moderateScale(14),
+    lineHeight: moderateScale(20),
+    color: colors.textMuted,
+    textAlign: 'center',
+  },
+
+  linkAccountBanner: {
+    backgroundColor: colors.successLight,
+    borderRadius: moderateScale(10),
+    borderWidth: 1,
+    borderColor: colors.border_Color,
+    paddingVertical: verticalScale(10),
+    paddingHorizontal: scale(12),
+    marginBottom: verticalScale(16),
+  },
+
+  linkAccountLabel: {
+    fontSize: moderateScale(12),
+    color: colors.textMuted,
+    marginBottom: verticalScale(2),
+  },
+
+  linkAccountValue: {
+    fontSize: moderateScale(14),
+    fontWeight: '700',
+    color: colors.text_dark,
+  },
 });
 
 export default styles;

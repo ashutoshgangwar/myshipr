@@ -42,6 +42,40 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     return true
   }
+
+  // MARK: - Deep links
+
+  /// Custom-scheme links: `myshipr://activate?token=…`.
+  ///
+  /// Used in development (no domain verification needed) and as the landing
+  /// page's "Open in app" fallback. Without this method iOS launches the app
+  /// but the URL never reaches JS, so the driver lands on the splash screen
+  /// with no idea why nothing happened.
+  func application(
+    _ app: UIApplication,
+    open url: URL,
+    options: [UIApplication.OpenURLOptionsKey: Any] = [:]
+  ) -> Bool {
+    return RCTLinkingManager.application(app, open: url, options: options)
+  }
+
+  /// Universal Links: `https://<host>/d/activate?token=…`.
+  ///
+  /// This is the link that actually goes in the invite email. iOS only routes
+  /// it here once the domain's apple-app-site-association file lists this app;
+  /// until then the same URL simply opens Safari, which is the intended
+  /// app-not-installed fallback.
+  func application(
+    _ application: UIApplication,
+    continue userActivity: NSUserActivity,
+    restorationHandler: @escaping ([UIUserActivityRestoring]?) -> Void
+  ) -> Bool {
+    return RCTLinkingManager.application(
+      application,
+      continue: userActivity,
+      restorationHandler: restorationHandler
+    )
+  }
 }
 
 class ReactNativeDelegate: RCTDefaultReactNativeFactoryDelegate {

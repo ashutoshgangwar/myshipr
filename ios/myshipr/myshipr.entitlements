@@ -6,5 +6,20 @@
 	     App Store / TestFlight archives automatically. -->
 	<key>aps-environment</key>
 	<string>development</string>
+	<!-- Universal Links. iOS fetches
+	     https://<host>/.well-known/apple-app-site-association at install time
+	     and only routes links to the app when that file lists this bundle's
+	     <TeamID>.com.myshipr. Both hosts are listed so a build can be pointed at
+	     dev or production without touching entitlements.
+
+	     `applinks:` requires the App ID to have Associated Domains enabled in
+	     the Apple Developer portal and the provisioning profile regenerated —
+	     without that the build fails to sign. While that is not yet set up,
+	     comment this key out and test with the myshipr:// scheme instead. -->
+	<key>com.apple.developer.associated-domains</key>
+	<array>
+		<string>applinks:istio-dev.myshipr.com</string>
+		<string>applinks:link.myshipr.com</string>
+	</array>
 </dict>
 </plist>

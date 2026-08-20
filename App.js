@@ -10,6 +10,7 @@ import {
 import FcmNotificationModal from './src/component/FcmNotificationModal/FcmNotificationModal';
 import { navigationRef, navigate, resetTo, getCurrentRouteName } from './src/Navigation/navigationRef';
 import { onSessionExpired, registerDevice, hasSession } from './src/config/api';
+import { initDeepLinks } from './src/services/DeepLinkService';
 
 // Screens that are already part of the signed-out flow — a late session-expiry
 // callback must not yank the user off the login form they are typing into.
@@ -117,6 +118,20 @@ export default function App() {
     // openNotifications is stable (useCallback with no deps), so the listeners
     // are still registered exactly once.
   }, [openNotifications]);
+
+  // Driver-invite / password-reset links tapped while the app is already
+  // running. The launch link is handled by the splash screen instead — it owns
+  // the first navigation, and routing here as well would race it.
+  useEffect(
+    () =>
+      initDeepLinks(link => {
+        console.log('[App] Deep link:', link.action);
+        // reset, not navigate: the driver arrived from their mail app, so
+        // whatever stack was underneath is not somewhere Back should return to.
+        resetTo(link.screen, link.params);
+      }),
+    [],
+  );
 
   // The refresh token is gone or was rejected: the stored session is already
   // cleared, so send the user back to the login flow from wherever they were.

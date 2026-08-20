@@ -1,5 +1,6 @@
 package com.myshipr
 
+import android.content.Intent
 import com.facebook.react.ReactActivity
 import com.facebook.react.ReactActivityDelegate
 import com.facebook.react.defaults.DefaultNewArchitectureEntryPoint.fabricEnabled
@@ -19,4 +20,19 @@ class MainActivity : ReactActivity() {
    */
   override fun createReactActivityDelegate(): ReactActivityDelegate =
       DefaultReactActivityDelegate(this, mainComponentName, fabricEnabled)
+
+  /**
+   * Driver-invite links tapped while MyShipr is already running.
+   *
+   * The activity is `singleTask`, so Android reuses this instance and delivers
+   * the link here instead of relaunching. `setIntent` replaces the intent the
+   * activity was started with, which is what `Linking.getInitialURL()` reads —
+   * without it a second link would still report the first one. `super` forwards
+   * the intent to React Native, which is what fires the JS `url` event that
+   * DeepLinkService listens for.
+   */
+  override fun onNewIntent(intent: Intent) {
+    setIntent(intent)
+    super.onNewIntent(intent)
+  }
 }

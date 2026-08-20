@@ -16,6 +16,10 @@ import StatusBar from '../../../component/StatusBar/StatusBar';
 import AppText from '../../../theme/AppText';
 import useDeviceType from '../../../hooks/useDeviceType';
 import {restoreSession} from '../../../config/api';
+import {
+  peekInitialDeepLink,
+  markInitialDeepLinkHandled,
+} from '../../../services/DeepLinkService';
 
 // How long the splash stays up no matter how fast the session check finishes.
 const SPLASH_MIN_MS = 3500;
@@ -49,6 +53,9 @@ const PreviewSplaceScreen = ({navigation}) => {
   // Decide where to go while the splash is on screen: straight to the home
   // screen when a stored session is still good (refreshing it first if the
   // access token expired), otherwise on to the login flow.
+  //
+  // A driver who got here by tapping an invite link overrides all of that — see
+  // the deep-link branch below.
   useEffect(() => {
     let cancelled = false;
 
@@ -58,6 +65,27 @@ const PreviewSplaceScreen = ({navigation}) => {
     }, SPLASH_MIN_MS);
 
     (async () => {
+      // The app was launched from an invite / reset link. That link is the
+      // whole reason the driver opened the app, so it wins over the stored
+      // session and skips the brand hold — nobody should watch a 3.5s carousel
+      // after tapping a link in their inbox.
+      let launchLink = null;
+      try {
+        launchLink = await peekInitialDeepLink();
+      } catch (_) {
+        launchLink = null;
+      }
+
+      if (launchLink) {
+        // Bail out WITHOUT marking it handled: on iOS the launch URL cannot be
+        // read a second time, so a link burned here would be lost for good.
+        if (cancelled) return;
+        markInitialDeepLinkHandled();
+        clearTimeout(loaderTimer);
+        navigation.replace(launchLink.screen, launchLink.params);
+        return;
+      }
+
       let authenticated = false;
       try {
         ({authenticated} = await restoreSession());
