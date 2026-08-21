@@ -21,6 +21,18 @@ DerivedData
 *.ipa
 *.xcuserstate
 **/.xcode.env.local
+# React Native
+node_modules/
+Pods/
+build/
+.gradle/
+
+# HERE SDK
+android/app/libs/*.aar
+ios/Frameworks/heresdk.xcframework/
+
+# iOS generated files
+ios/**/*.dSYM/
 
 # Android/IntelliJ
 #
