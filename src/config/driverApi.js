@@ -22,6 +22,12 @@ export const DRIVER_ENDPOINTS = {
    */
   shipment: tripId =>
     serviceUrl('drivers', `/drivers/shipments/${encodeURIComponent(tripId)}`),
+
+  /**
+   * The signed-in driver's fuel-reward balance. The driver is read from the
+   * bearer token, so the call takes no id and no query params.
+   */
+  fuelReward: () => serviceUrl('drivers', '/drivers/fuel/reward'),
 };
 
 /**
@@ -82,4 +88,48 @@ export const getCurrentTrip = async ({tripId, lat, lon} = {}) => {
   log('current trip response\n' + JSON.stringify(trip, null, 2));
 
   return trip;
+};
+
+/**
+ * The driver's fuel-reward points — the "Your Points Balance" figure on the
+ * Home Fuel Rewards card.
+ *
+ * GET /drivers/api/v1/drivers/fuel/reward
+ * ← { driverId, totalRewardPoints }
+ *
+ * @returns {Promise<{driverId: string, totalRewardPoints: number}>}
+ */
+export const getFuelReward = async () => {
+  const url = DRIVER_ENDPOINTS.fuelReward();
+  log('fuel reward request', {url});
+
+  let status;
+  let body;
+   console.log(("url", url), body)
+  try {
+    ({status, data: body} = await apiClient.get(url));
+  } catch (err) {
+    // Logged here as well as by the shared interceptor, so a failed balance is
+    // visible next to its own request line rather than hunted for.
+    log('fuel reward failed', {
+      url,
+      status: err?.response?.status ?? null,
+      body: err?.response?.data ?? err?.message,
+    });
+    throw err;
+  }
+
+  // Same as the trip endpoint: unwrap `data` when the gateway sends an
+  // envelope, otherwise take the body as-is.
+  const reward = body?.data ?? body;
+
+  // The raw body first — whether the gateway wrapped it in `data` is exactly
+  // what this line answers — then the figure the card actually renders.
+  log(`fuel reward response (${status})\n` + JSON.stringify(body, null, 2));
+  log('fuel reward points', {
+    driverId: reward?.driverId ?? null,
+    totalRewardPoints: reward?.totalRewardPoints ?? null,
+  });
+
+  return reward;
 };

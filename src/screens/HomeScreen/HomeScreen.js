@@ -52,6 +52,7 @@ import {
   tripStatusPill,
   useCurrentTrip,
 } from './currentTrip';
+import {useFuelReward} from './fuelReward';
 
 const {width: SCREEN_W} = Dimensions.get('window');
 
@@ -188,6 +189,8 @@ const HomeScreen = () => {
   // come from the driver's assignment once that endpoint lands.
   const {trip: currentTrip, refresh: refreshCurrentTrip} =
     useCurrentTrip(CURRENT_TRIP_ID);
+  // Fuel Rewards balance. Its own call — the trip payload does not carry it.
+  const {points: rewardPoints, refresh: refreshFuelReward} = useFuelReward();
 
   const statusPill = tripStatusPill(currentTrip);
   const startsIn = startsInLabel(currentTrip);
@@ -269,11 +272,14 @@ const HomeScreen = () => {
         firstFocusRef.current = false;
       } else {
         refreshCurrentTrip();
+        // A fuel price reported from the trip screen earns points, so the
+        // balance has moved by the time the driver lands back here.
+        refreshFuelReward();
       }
       return () => {
         cancelled = true;
       };
-    }, [refreshCurrentTrip]),
+    }, [refreshCurrentTrip, refreshFuelReward]),
   );
 
   return (
@@ -514,7 +520,7 @@ const HomeScreen = () => {
                     Your Points Balance
                   </AppText>
                   <AppText style={styles.rewardsPoints}>
-                    1,234
+                    {rewardPoints ?? 0}
                     <AppText style={styles.rewardsPointsUnit}> pts</AppText>
                   </AppText>
                 </View>
