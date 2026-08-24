@@ -249,8 +249,12 @@ export const onSessionExpired = handler => {
  * - valid access token            → authenticated, no network call
  * - expired token + refresh token → refreshes first, then authenticated
  * - refresh rejected by server    → session cleared, back to login
- * - refresh failed offline        → back to login, tokens KEPT so the next
- *                                   launch with a connection still works
+ * - refresh failed offline        → STILL authenticated: the tokens are kept
+ *                                   and the refresh is retried by the request
+ *                                   interceptor once there is a connection
+ *
+ * Only the server gets to end a session. A driver who opens the app in a dead
+ * zone — which is most of a long haul — stays signed in.
  *
  * @returns {Promise<{authenticated: boolean, refreshed: boolean,
  *                    reason: 'valid'|'refreshed'|'no-session'|'expired'|'offline'}>}
@@ -284,9 +288,11 @@ export const restoreSession = async () => {
       await clearSession();
       return {authenticated: false, refreshed: false, reason: 'expired'};
     }
-    // No answer at all (offline / timeout): keep the tokens for the next try.
-    log('session restore failed offline');
-    return {authenticated: false, refreshed: false, reason: 'offline'};
+    // No answer at all (offline / timeout). The refresh token was never
+    // judged, so it is probably still good: keep the session and let the
+    // request interceptor retry the refresh when the first call goes out.
+    log('session restore failed offline — staying signed in');
+    return {authenticated: true, refreshed: false, reason: 'offline'};
   }
 };
 
@@ -316,8 +322,16 @@ apiClient.interceptors.response.use(
         config.headers = {...config.headers, Authorization: `Bearer ${token}`};
         return apiClient(config);
       } catch (refreshError) {
-        await clearSession();
-        sessionExpiredHandlers.forEach(handler => handler());
+        // A refresh the server REJECTED means the session is genuinely dead —
+        // clear it and send the user back to login. A refresh that never
+        // reached the server (offline, timeout) says nothing about the token,
+        // so the request simply fails and the tokens stay put for the retry.
+        if (refreshError?.response || refreshError?.sessionInvalid) {
+          await clearSession();
+          sessionExpiredHandlers.forEach(handler => handler());
+        } else {
+          log('refresh failed without a server answer — session kept');
+        }
         return Promise.reject(refreshError);
       }
     }
