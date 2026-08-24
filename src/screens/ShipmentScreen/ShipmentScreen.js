@@ -6,6 +6,8 @@ import styles from './ShipmentScreen.styles';
 import StatusBar from '../../component/StatusBar/StatusBar';
 import DashboardHeader from '../../component/DashboardHeader/DashboardHeader';
 import LoadRoute from '../../component/LoadRoute/LoadRoute';
+import Skeleton from '../../component/Skeleton/Skeleton';
+import {shipmentRowBones} from '../../component/Skeleton/Skeleton.layouts';
 import AppText from '../../theme/AppText';
 import {colors} from '../../theme/colors';
 import {ms} from '../../theme/scale';
@@ -34,6 +36,10 @@ const TABS = [
 ];
 
 const COLUMNS = ['AWB Number', 'Route', 'Payout', 'Pickup Time'];
+
+// Placeholder rows for the UPCOMING tab while its call is in flight. Fixed
+// content, so built once rather than on every render.
+const ROW_BONES = shipmentRowBones(6);
 
 // Stops carry an explicit pickup/drop type so multi-pickup loads collapse their
 // middle stops behind a "+N More Pickups" chip until the row is tapped.
@@ -78,7 +84,11 @@ export default function ShipmentScreen({navigation}) {
 
   // The same call the Home card makes; the table reads it into its own row
   // shape, with `…` standing in wherever the payload left a figure out.
-  const {shipments: upcoming} = useUpcomingShipments();
+  const {
+    shipments: upcoming,
+    loading: upcomingLoading,
+    error: upcomingError,
+  } = useUpcomingShipments();
   const upcomingRows = useMemo(() => toShipmentRows(upcoming), [upcoming]);
 
   const shipments = useMemo(
@@ -87,6 +97,12 @@ export default function ShipmentScreen({navigation}) {
   );
 
   const toggleRow = id => setExpandedRows(prev => ({...prev, [id]: !prev[id]}));
+
+  // Only the UPCOMING tab waits on the network — PAST is still sample data,
+  // so it must never shimmer. Once rows are on screen a refresh updates them
+  // in place rather than replacing the table the driver is reading.
+  const upcomingPending =
+    tab === 'upcoming' && upcomingLoading && !upcomingRows.length;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -178,6 +194,18 @@ export default function ShipmentScreen({navigation}) {
             contentContainerStyle={styles.listContent}
             nestedScrollEnabled
             showsVerticalScrollIndicator={false}
+            ListEmptyComponent={
+              upcomingPending ? (
+                <Skeleton isLoading layout={ROW_BONES} />
+              ) : (
+                <View style={styles.listEmpty}>
+                  <AppText style={styles.listEmptyText}>
+                    {(tab === 'upcoming' && upcomingError) ||
+                      'No shipments to show'}
+                  </AppText>
+                </View>
+              )
+            }
             renderItem={({item, index}) => (
               <TouchableOpacity
                 activeOpacity={0.7}

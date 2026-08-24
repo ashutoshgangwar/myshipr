@@ -1,6 +1,5 @@
 import React, {useMemo, useRef, useState} from 'react';
 import {
-  ActivityIndicator,
   View,
   ScrollView,
   TouchableOpacity,
@@ -29,6 +28,12 @@ import Dropdown_icon from '../../assets/svg_icon/Dropdown_icon.svg';
 import RouteStops from '../../component/RouteStops/RouteStops';
 import LoadRoute from '../../component/LoadRoute/LoadRoute';
 import DieselBadge from '../../component/DieselBadge/DieselBadge';
+import Skeleton from '../../component/Skeleton/Skeleton';
+import {
+  REWARD_POINTS_BONES,
+  TRIP_CARD_BONES,
+  upcomingLoadBones,
+} from '../../component/Skeleton/Skeleton.layouts';
 import {logout} from '../../config/api';
 import {
   syncTripSession,
@@ -128,6 +133,9 @@ const STATIC_TRIP = {
 // to a driver, where the ellipsis plainly says the time is not known yet.
 const STARTS_IN_FALLBACK = 'Starts in …';
 
+// The Upcoming Shipment card's placeholder rows. Fixed, so built once.
+const LOAD_BONES = upcomingLoadBones(4);
+
 const HOS_DETAILS = [
   {label: 'Remaining Driving Hours', value: '34h 10m'},
   {label: 'Cycle Remaining', value: '2h 10m'},
@@ -146,10 +154,17 @@ const HomeScreen = () => {
   const tripStarted = Boolean(trip);
   // The assigned trip itself, from the API. The id is fixed for now; it will
   // come from the driver's assignment once that endpoint lands.
-  const {trip: currentTrip, refresh: refreshCurrentTrip} =
-    useCurrentTrip(CURRENT_TRIP_ID);
+  const {
+    trip: currentTrip,
+    loading: tripLoading,
+    refresh: refreshCurrentTrip,
+  } = useCurrentTrip(CURRENT_TRIP_ID);
   // Fuel Rewards balance. Its own call — the trip payload does not carry it.
-  const {points: rewardPoints, refresh: refreshFuelReward} = useFuelReward();
+  const {
+    points: rewardPoints,
+    loading: rewardLoading,
+    refresh: refreshFuelReward,
+  } = useFuelReward();
   // Upcoming loads. The endpoint's `date` filter is left unset: no argument
   // means "whatever is next", which is what this card is for.
   const {
@@ -159,6 +174,14 @@ const HomeScreen = () => {
     refresh: refreshUpcoming,
   } = useUpcomingShipments();
   const upcomingLoads = useMemo(() => toUpcomingLoads(upcoming), [upcoming]);
+
+  // Skeletons stand in for the first load of each call only. Every refresh
+  // after that (coming back to Home, a reported fuel price) flips `loading`
+  // again, and blanking a card the driver is already reading to shimmer at
+  // them is worse than letting the figure update in place.
+  const tripPending = tripLoading && !currentTrip;
+  const rewardPending = rewardLoading && rewardPoints === null;
+  const upcomingPending = upcomingLoading && !upcomingLoads.length;
 
   const statusPill = tripStatusPill(currentTrip);
   const startsIn = startsInLabel(currentTrip);
@@ -341,57 +364,62 @@ const HomeScreen = () => {
                 ) : null}
               </View>
 
-              <View style={[styles.pill, styles.pillStartsIn]}>
-                <AppText style={styles.pillStartsInText}>
-                  {startsIn || STARTS_IN_FALLBACK}
-                </AppText>
-              </View>
+              <Skeleton
+                isLoading={tripPending}
+                layout={TRIP_CARD_BONES}
+                hasFadeIn>
+                <View style={[styles.pill, styles.pillStartsIn]}>
+                  <AppText style={styles.pillStartsInText}>
+                    {startsIn || STARTS_IN_FALLBACK}
+                  </AppText>
+                </View>
 
-              <View style={styles.payoutRow}>
-                <AppText style={styles.payoutValue}>
-                  {formatMoney(currentTrip?.loadPayout)}
-                </AppText>
-                <AppText style={styles.payoutLabel}>Load payout</AppText>
-              </View>
+                <View style={styles.payoutRow}>
+                  <AppText style={styles.payoutValue}>
+                    {formatMoney(currentTrip?.loadPayout)}
+                  </AppText>
+                  <AppText style={styles.payoutLabel}>Load payout</AppText>
+                </View>
 
-              <View style={styles.routeBox}>
-                <RouteStops
-                  stops={routeStops || []}
-                  showSummary
-                  liveCurrentLocation
-                />
-              </View>
+                <View style={styles.routeBox}>
+                  <RouteStops
+                    stops={routeStops || []}
+                    showSummary
+                    liveCurrentLocation
+                  />
+                </View>
 
-              <View style={styles.tripStatsDivider} />
-              <View style={styles.tripStatsRow}>
-                {tripStats.map((item, index) => (
-                  <React.Fragment key={item.label}>
-                    {index > 0 && <View style={styles.tripStatSeparator} />}
-                    <View style={styles.tripStatItem}>
-                      <AppText style={styles.tripStatValue}>
-                        {item.value}
-                      </AppText>
-                      <AppText style={styles.tripStatLabel}>
-                        {item.label}
-                      </AppText>
-                    </View>
-                  </React.Fragment>
-                ))}
-              </View>
+                <View style={styles.tripStatsDivider} />
+                <View style={styles.tripStatsRow}>
+                  {tripStats.map((item, index) => (
+                    <React.Fragment key={item.label}>
+                      {index > 0 && <View style={styles.tripStatSeparator} />}
+                      <View style={styles.tripStatItem}>
+                        <AppText style={styles.tripStatValue}>
+                          {item.value}
+                        </AppText>
+                        <AppText style={styles.tripStatLabel}>
+                          {item.label}
+                        </AppText>
+                      </View>
+                    </React.Fragment>
+                  ))}
+                </View>
 
-              <View style={styles.progressHeaderRow}>
-                <AppText style={styles.progressCaption}>
-                  Hours of Service
-                </AppText>
-                <AppText style={styles.progressCaptionAccent}>
-                  {hos.label}
-                </AppText>
-              </View>
-              <View style={styles.progressTrack}>
-                <View
-                  style={[styles.progressFill, {width: hos.width}]}
-                />
-              </View>
+                <View style={styles.progressHeaderRow}>
+                  <AppText style={styles.progressCaption}>
+                    Hours of Service
+                  </AppText>
+                  <AppText style={styles.progressCaptionAccent}>
+                    {hos.label}
+                  </AppText>
+                </View>
+                <View style={styles.progressTrack}>
+                  <View
+                    style={[styles.progressFill, {width: hos.width}]}
+                  />
+                </View>
+              </Skeleton>
 
               <Button
                 title={tripStarted ? 'TRIP ONGOING' : 'START TRIP'}
@@ -489,10 +517,16 @@ const HomeScreen = () => {
                   <AppText style={styles.rewardsBalanceLabel}>
                     Your Points Balance
                   </AppText>
-                  <AppText style={styles.rewardsPoints}>
-                    {rewardPoints ?? 0}
-                    <AppText style={styles.rewardsPointsUnit}> pts</AppText>
-                  </AppText>
+                  <Skeleton
+                    isLoading={rewardPending}
+                    layout={REWARD_POINTS_BONES}
+                    onDark
+                    hasFadeIn>
+                    <AppText style={styles.rewardsPoints}>
+                      {rewardPoints ?? 0}
+                      <AppText style={styles.rewardsPointsUnit}> pts</AppText>
+                    </AppText>
+                  </Skeleton>
                 </View>
               </View>
             </View>
@@ -537,20 +571,17 @@ const HomeScreen = () => {
                     </TouchableOpacity>
                   ))}
 
-                  {/* Nothing to draw: say which of the three reasons it is,
-                      rather than leaving the driver an empty box. */}
-                  {!upcomingLoads.length && (
+                  {/* Still loading: rows the driver can see filling in,
+                      shaped like the ones that are coming. */}
+                  {upcomingPending && <Skeleton isLoading layout={LOAD_BONES} />}
+
+                  {/* Answered with nothing (or failed): say which, rather than
+                      leaving the driver an empty box. */}
+                  {!upcomingPending && !upcomingLoads.length && (
                     <View style={styles.loadsEmpty}>
-                      {upcomingLoading ? (
-                        <ActivityIndicator
-                          size="small"
-                          color={colors.accentBlueLight}
-                        />
-                      ) : (
-                        <AppText style={styles.loadsEmptyText}>
-                          {upcomingError || 'No upcoming shipments'}
-                        </AppText>
-                      )}
+                      <AppText style={styles.loadsEmptyText}>
+                        {upcomingError || 'No upcoming shipments'}
+                      </AppText>
                     </View>
                   )}
                 </ScrollView>

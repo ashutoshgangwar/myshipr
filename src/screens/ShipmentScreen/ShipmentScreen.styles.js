@@ -152,6 +152,21 @@ export default StyleSheet.create({
     paddingBottom: vs(16),
   },
 
+  // Shown when the table has no rows to draw: the call came back empty, or
+  // failed. The loading case draws skeleton rows here instead.
+  listEmpty: {
+    paddingVertical: vs(40),
+    paddingHorizontal: ms(20),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  listEmptyText: {
+    color: colors.textMuted,
+    fontSize: ms(11),
+    textAlign: 'center',
+  },
+
   /* ----- Column header band ----- */
   tableHead: {
     flexDirection: 'row',

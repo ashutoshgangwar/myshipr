@@ -13,7 +13,7 @@ const { assetExts, sourceExts } = defaultConfig.resolver;
 
 const updatedConfig = {
   transformer: {
-    babelTransformerPath: require.resolve('react-native-svg-transformer'),
+    babelTransformerPath: require.resolve('./metro.transformer'),
     getTransformOptions: async () => ({
       transform: {
         experimentalImportSupport: false,
