@@ -344,6 +344,18 @@ export default StyleSheet.create({
     fontWeight: '700',
   },
 
+  // A trip running late must not wear the green "on time" pill.
+  pillDelayed: {
+    borderColor: colors.danger,
+    backgroundColor: '#FDECEC',
+  },
+
+  pillDelayedText: {
+    color: colors.danger,
+    fontSize: ms(11),
+    fontWeight: '700',
+  },
+
   pillOnDuty: {
     borderColor: colors.warning,
     backgroundColor: colors.warningLight,

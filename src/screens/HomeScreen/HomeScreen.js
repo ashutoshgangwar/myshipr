@@ -41,6 +41,17 @@ import Earning_sign from '../../assets/svg_icon/earning_sign.svg';
 import Total_trip_Icon from '../../assets/svg_icon/Total_trip_Icon.svg';
 import Notifcation_Icon from '../../assets/svg_icon/Notifcation_Icon.svg'
 import useDriverRole from '../../hooks/useDriverRole';
+import useCurrentTrip from '../../hooks/useCurrentTrip';
+import {
+  CURRENT_TRIP_ID,
+  formatMoney,
+  startsInLabel,
+  toDestination,
+  toHosProgress,
+  toRouteStops,
+  toTripStats,
+  tripStatusPill,
+} from './currentTrip';
 
 const {width: SCREEN_W} = Dimensions.get('window');
 
@@ -94,10 +105,9 @@ const TRIPS_STAT = {
 const FLEET_STATS = [MILES_STAT, TRIPS_STAT];
 const SINGLE_STATS = [MILES_STAT, EARNINGS_STAT];
 
-// Trip handed to ActiveTripScreen by START TRIP. Only the drop is given —
-// the pickup is always the driver's live GPS position, so this is the exact
-// shape the assigned load's drop-off will take once the API supplies it.
-// Static for now: edit the coordinate to change where the trip goes.
+// Fallback destination for START TRIP, used until the current-trip call
+// answers (or when its last stop carries no coordinate). Only the drop is
+// given — the pickup is always the driver's live GPS position.
 const STATIC_TRIP = {
   destinationLocation: {
     latitude: 28.6050923,
@@ -107,19 +117,10 @@ const STATIC_TRIP = {
   destinationText: 'Mayur Vihar Phase 1, Delhi, India',
 };
 
-const TRIP_STATS = [
-  {value: '245 mi', label: 'Distance'},
-  {value: '4h 10m', label: 'Est. time'},
-  {value: 'I-45 S', label: 'Route'},
-  {value: '12:10 PM', label: 'ETA'},
-];
-
-const CURRENT_TRIP_STOPS = [
-  {kind: 'current'},
-  {kind: 'pickup', sub: '8.00–8.30 AM'},
-  {kind: 'pickup', sub: '9.00–9.30 AM'},
-  {kind: 'drop', sub: '2.30 PM'},
-];
+// `tripStatus.startsIn` is null on this backend for now. The pill still shows,
+// but with no countdown invented — a made-up "1h 28 mins" reads as real data
+// to a driver, where the ellipsis plainly says the time is not known yet.
+const STARTS_IN_FALLBACK = 'Starts in …';
 
 const HOS_DETAILS = [
   {label: 'Remaining Driving Hours', value: '34h 10m'},
@@ -183,12 +184,23 @@ const HomeScreen = () => {
   // the floating map and the return banner both key off.
   const trip = useTripSession();
   const tripStarted = Boolean(trip);
+  // The assigned trip itself, from the API. The id is fixed for now; it will
+  // come from the driver's assignment once that endpoint lands.
+  const {trip: currentTrip, refresh: refreshCurrentTrip} =
+    useCurrentTrip(CURRENT_TRIP_ID);
+
+  const statusPill = tripStatusPill(currentTrip);
+  const startsIn = startsInLabel(currentTrip);
+  const routeStops = toRouteStops(currentTrip);
+  const tripStats = toTripStats(currentTrip);
+  const hos = toHosProgress(currentTrip);
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuPos, setMenuPos] = useState({top: 0, right: 0});
   // Upcoming loads collapse their middle stops; tapping a row (or its
   // "+N More …" chip) reveals every pickup and drop for that load.
   const [expandedLoads, setExpandedLoads] = useState({});
   const avatarRef = useRef(null);
+  const firstFocusRef = useRef(true);
 
   const toggleLoad = id =>
     setExpandedLoads(prev => ({...prev, [id]: !prev[id]}));
@@ -198,6 +210,7 @@ const HomeScreen = () => {
   const openMap_Here = () => {
     navigation.navigate('ActiveTripScreen', {
       ...STATIC_TRIP,
+      ...toDestination(currentTrip),
       ...(trip?.destinationLocation
         ? {
             destinationLocation: trip.destinationLocation,
@@ -250,10 +263,17 @@ const HomeScreen = () => {
       syncTripSession().then(live => {
         if (!cancelled && live) setMapVisible(true);
       });
+      // The hook already fetched on mount; every focus after that is a return
+      // from somewhere else, where the ETA and hours left have moved on.
+      if (firstFocusRef.current) {
+        firstFocusRef.current = false;
+      } else {
+        refreshCurrentTrip();
+      }
       return () => {
         cancelled = true;
       };
-    }, []),
+    }, [refreshCurrentTrip]),
   );
 
   return (
@@ -327,25 +347,40 @@ const HomeScreen = () => {
             <View style={styles.card}>
               <View style={styles.cardHeaderRow}>
                 <AppText style={styles.cardTitle}>Current Trip</AppText>
-                <View style={[styles.pill, styles.pillOnTime]}>
-                  <AppText style={styles.pillOnTimeText}>On time</AppText>
-                </View>
+                {statusPill ? (
+                  <View
+                    style={[
+                      styles.pill,
+                      statusPill.late ? styles.pillDelayed : styles.pillOnTime,
+                    ]}>
+                    <AppText
+                      style={
+                        statusPill.late
+                          ? styles.pillDelayedText
+                          : styles.pillOnTimeText
+                      }>
+                      {statusPill.label}
+                    </AppText>
+                  </View>
+                ) : null}
               </View>
 
               <View style={[styles.pill, styles.pillStartsIn]}>
                 <AppText style={styles.pillStartsInText}>
-                  Starts in 1h 28 mins
+                  {startsIn || STARTS_IN_FALLBACK}
                 </AppText>
               </View>
 
               <View style={styles.payoutRow}>
-                <AppText style={styles.payoutValue}>$1,250</AppText>
+                <AppText style={styles.payoutValue}>
+                  {formatMoney(currentTrip?.loadPayout)}
+                </AppText>
                 <AppText style={styles.payoutLabel}>Load payout</AppText>
               </View>
 
               <View style={styles.routeBox}>
                 <RouteStops
-                  stops={CURRENT_TRIP_STOPS}
+                  stops={routeStops || []}
                   showSummary
                   liveCurrentLocation
                 />
@@ -353,7 +388,7 @@ const HomeScreen = () => {
 
               <View style={styles.tripStatsDivider} />
               <View style={styles.tripStatsRow}>
-                {TRIP_STATS.map((item, index) => (
+                {tripStats.map((item, index) => (
                   <React.Fragment key={item.label}>
                     {index > 0 && <View style={styles.tripStatSeparator} />}
                     <View style={styles.tripStatItem}>
@@ -373,11 +408,13 @@ const HomeScreen = () => {
                   Hours of Service
                 </AppText>
                 <AppText style={styles.progressCaptionAccent}>
-                  2h 23m left
+                  {hos.label}
                 </AppText>
               </View>
               <View style={styles.progressTrack}>
-                <View style={[styles.progressFill, {width: '60%'}]} />
+                <View
+                  style={[styles.progressFill, {width: hos.width}]}
+                />
               </View>
 
               <Button

@@ -1,0 +1,217 @@
+/**
+ * Turns the `GET /drivers/shipments/{tripId}` payload into the exact shapes the
+ * Home "Current Trip" card renders. Every helper tolerates a missing field:
+ * the card is the driver's first screen, so a half-filled payload must still
+ * paint rather than blank out.
+ */
+
+// Static until the trip in progress is picked from the loads/assignment API.
+export const CURRENT_TRIP_ID = 'f02f0373-a902-49ba-82a7-fe68f5a0229d';
+
+// The federal 11-hour driving limit, which is what the in-card bar fills
+// against — the API sends only the minutes that are left.
+const HOS_CYCLE_MINUTES = 11 * 60;
+
+const isNumber = value => Number.isFinite(Number(value)) && value !== null && value !== '';
+
+/** "1,250" — grouped without Intl, which Hermes does not always carry. */
+const group = value =>
+  String(value).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+
+/** 0.1 → "$0.10", 1250 → "$1,250" */
+export const formatMoney = value => {
+  if (!isNumber(value)) return '—';
+  const amount = Number(value);
+  const whole = Math.trunc(Math.abs(amount));
+  const rounded = Math.round(Math.abs(amount) * 100) / 100;
+  const text =
+    rounded === whole
+      ? group(whole)
+      : `${group(whole)}.${String(Math.round((rounded - whole) * 100)).padStart(2, '0')}`;
+  return `${amount < 0 ? '-' : ''}$${text}`;
+};
+
+/** 241.63 → "241.63 mi", 3.8 → "3.8 mi", 1234.5 → "1,234.5 mi". */
+export const formatMiles = value => {
+  if (!isNumber(value)) return '—';
+  const miles = Number(value);
+  // Printed exactly as the backend sent it — 241.63 stays 241.63, not 242.
+  // Only the thousands separator is added.
+  const [whole, decimals] = String(Math.abs(miles)).split('.');
+  return `${miles < 0 ? '-' : ''}${group(whole)}${
+    decimals ? `.${decimals}` : ''
+  } mi`;
+};
+
+/** 250 → "4h 10m", 45 → "45m" */
+export const formatMinutes = value => {
+  if (!isNumber(value)) return '—';
+  const total = Math.max(0, Math.round(Number(value)));
+  const hours = Math.floor(total / 60);
+  const minutes = total % 60;
+  if (!hours) return `${minutes}m`;
+  return minutes ? `${hours}h ${minutes}m` : `${hours}h`;
+};
+
+/** "12:10 PM" for a wall-clock time, from a Date. */
+const clock = date => {
+  const hours = date.getHours();
+  const minutes = String(date.getMinutes()).padStart(2, '0');
+  const suffix = hours < 12 ? 'AM' : 'PM';
+  return `${hours % 12 || 12}:${minutes} ${suffix}`;
+};
+
+const stopTime = value => {
+  if (!value) return '';
+  const text = String(value).trim();
+
+  const bare = /^(\d{1,2}):(\d{2})(?::\d{2})?$/.exec(text);
+  if (bare) {
+    const hours = Number(bare[1]);
+    return `${hours % 12 || 12}:${bare[2]} ${hours < 12 ? 'AM' : 'PM'}`;
+  }
+
+  const parsed = Date.parse(text);
+  return Number.isFinite(parsed) ? clock(new Date(parsed)) : text;
+};
+
+/** "8:00 AM – 8:30 AM", or whichever half of the window was sent. */
+const timeWindow = stop => {
+  const from = stopTime(stop.from);
+  const to = stopTime(stop.to);
+  if (from && to) return `${from} – ${to}`;
+  return from || to || '';
+};
+
+/**
+ * "11 Aug 2026" → "11 Aug". The stat cell is a quarter of a half-width card,
+ * and the year earns none of that room — a trip is days away, not years.
+ * An ISO date is handled too, in case the backend switches format.
+ */
+export const formatTripDate = value => {
+  if (!value) return '—';
+  const text = String(value).trim();
+
+  if (/^\d{4}-\d{2}-\d{2}/.test(text)) {
+    const parsed = new Date(text);
+    if (!Number.isNaN(parsed.getTime())) {
+      return `${parsed.getDate()} ${MONTHS[parsed.getMonth()]}`;
+    }
+  }
+
+  // Drop a trailing year, however the rest of the string is punctuated.
+  return text.replace(/[\s,]+\d{4}$/, '') || '—';
+};
+
+const MONTHS = [
+  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
+];
+
+const STATUS_LABELS = {
+  ON_TIME: 'On time',
+  EARLY: 'Early',
+  DELAYED: 'Delayed',
+  AT_RISK: 'At risk',
+  LATE: 'Late',
+};
+
+/** The status pill's text plus whether it should read as good or bad. */
+export const tripStatusPill = trip => {
+  const status = trip?.tripStatus?.timeStatus;
+  if (!status) return null;
+  const key = String(status).toUpperCase();
+  return {
+    label: STATUS_LABELS[key] || key.replace(/_/g, ' ').toLowerCase(),
+    late: key === 'DELAYED' || key === 'LATE' || key === 'AT_RISK',
+  };
+};
+
+/**
+ * "Starts in 1h 28 mins" — read from `tripStatus.startsIn`, which carries the
+ * duration, not the sentence. It is null on a trip already under way, and the
+ * pill is simply not rendered then.
+ */
+export const startsInLabel = trip => {
+  const text = String(trip?.tripStatus?.startsIn ?? '').trim();
+  if (!text) return null;
+  return /^starts/i.test(text) ? text : `Starts in ${text}`;
+};
+
+const isDrop = type => /DROP|DELIVER/i.test(String(type || ''));
+
+/** API stops, in sequence, behind the driver's live position. */
+export const toRouteStops = trip => {
+  const stops = Array.isArray(trip?.stops) ? trip.stops : [];
+  if (!stops.length) return null;
+
+  const ordered = [...stops].sort(
+    (a, b) =>
+      (a.sequence ?? a.tripSequence ?? 0) - (b.sequence ?? b.tripSequence ?? 0),
+  );
+
+  return [
+    {kind: 'current'},
+    ...ordered.map(stop => ({
+      kind: isDrop(stop.type) ? 'drop' : 'pickup',
+      // The marker icon and the ROUTE summary already say pickup vs drop, so
+      // the name line is worth more as the actual street address.
+      label: stop.address || undefined,
+      sub: timeWindow(stop),
+    })),
+  ];
+};
+
+/**
+ * The four figures under the route box.
+ *
+ * `remainingDistance`, `remainingETA` and `deadMiles` are only computed when
+ * the request carried the truck's coordinate — without a fix the backend
+ * sends them as null. Each falls back to the trip-wide figure so the row
+ * never shows a column of dashes.
+ */
+export const toTripStats = trip => {
+  const deadMiles = trip?.deadMiles;
+
+  return [
+    {label: 'Distance', value: formatMiles(trip?.totalMiles)},
+    {label: 'Est. time', value: formatMinutes(trip?.estimatedTripMinutes)},
+    {label: 'Date', value: formatTripDate(trip?.date)},
+    // Null unless the request carried a routable coordinate — the backend
+    // measures this from the truck to the pickup.
+    {label: 'Dead miles', value: formatMiles(deadMiles)},
+  ];
+};
+
+/** Hours-of-service row inside the card: text plus bar width. */
+export const toHosProgress = trip => {
+  const remaining = trip?.remainingHosMinutes;
+  // Null means the backend has no ELD hours for this driver — an empty bar
+  // says that honestly, where a leftover mock figure would not.
+  if (!isNumber(remaining)) return {label: 'Not available', width: '0%'};
+  const minutes = Math.max(0, Number(remaining));
+  const percent = Math.min(100, Math.round((minutes / HOS_CYCLE_MINUTES) * 100));
+  return {label: `${formatMinutes(minutes)} left`, width: `${percent}%`};
+};
+export const toDestination = trip => {
+  const stops = Array.isArray(trip?.stops) ? trip.stops : [];
+  const drops = stops.filter(stop => isDrop(stop.type));
+  const last = (drops.length ? drops : stops)
+    .slice()
+    .sort(
+      (a, b) =>
+        (a.sequence ?? a.tripSequence ?? 0) - (b.sequence ?? b.tripSequence ?? 0),
+    )
+    .pop();
+
+  if (!last || !isNumber(last.lat) || !isNumber(last.lon)) return null;
+
+  return {
+    destinationLocation: {
+      latitude: Number(last.lat),
+      longitude: Number(last.lon),
+      description: last.address || 'Drop location',
+    },
+    destinationText: last.address || 'Drop location',
+  };
+};

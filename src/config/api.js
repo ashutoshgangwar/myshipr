@@ -13,6 +13,17 @@ const API_PREFIX = 'api/v1';
 
 export const REQUEST_TIMEOUT_MS = Number(API_TIMEOUT) || 30000;
 
+/**
+ * The gateway fronts each backend service under its own prefix and only then
+ * the shared `/api/v1` path — the driver service answers at
+ * `…/drivers/api/v1/drivers/…`. Auth is the exception: it sits at the root,
+ * which is what `apiClient`'s baseURL is set to. An absolute URL built here
+ * overrides that baseURL while keeping every interceptor (bearer token, 401
+ * refresh, logging) in play.
+ */
+export const serviceUrl = (service, path) =>
+  `${BASE_URL}/${service}/${API_PREFIX}${path}`;
+
 export const API_ENDPOINTS = {
   auth: {
     login: '/auth/login',
@@ -45,9 +56,12 @@ const safe = value => {
   );
 };
 
-const log = (...args) => {
-  if (DEBUG_ENABLED) console.log('[API]', ...args);
+/** Logs under the shared DEBUG switch. `tag` names the calling module. */
+export const createApiLogger = tag => (...args) => {
+  if (DEBUG_ENABLED) console.log(tag, ...args);
 };
+
+const log = createApiLogger('[API]');
 
 log('base url', `${BASE_URL}/${API_PREFIX}`);
 
@@ -551,6 +565,11 @@ export const login = async ({identifier, password}) => {
       hasRefreshToken: Boolean(data.refreshToken),
       expiresIn: data.expiresIn,
     });
+    // DEV ONLY — the raw bearer token, printed so it can be copied into curl
+    // while endpoints are being wired up. safe() is deliberately bypassed
+    // here; drop this line (or keep DEBUG=false outside development) before
+    // anything ships, since it puts a live credential in the Metro log.
+    log('access token (dev only)\n' + data.accessToken);
 
     // Push registration is a side effect of logging in, not part of it: it runs
     // after the session is stored (the endpoint needs the bearer token) and is
