@@ -28,6 +28,14 @@ export const MORE_ROW_H = vs(19);
 // must not have their geometry moved.
 export const STOP_GAP = vs(5);
 
+// Marker box, and with it the one indent every text label in the route hangs
+// off: the city names, the "+N More …" chip and the "N Pickups • M Drops"
+// summary all start here, so they read as a single left-aligned column beside
+// the markers rather than three slightly different indents.
+const MARKER_W = ms(18);
+const MARKER_GAP = ms(5);
+export const LABEL_INDENT = MARKER_W + MARKER_GAP;
+
 // Icon dimensions (kept here so every screen renders the same size).
 export const CITY_RING = ms(13);
 export const DROP_PIN_W = ms(14);
@@ -62,11 +70,11 @@ export default StyleSheet.create({
   },
 
   marker: {
-    width: ms(18),
+    width: MARKER_W,
     height: MARKER_H,
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: ms(6),
+    marginRight: MARKER_GAP,
   },
 
   city: {
@@ -82,7 +90,7 @@ export default StyleSheet.create({
   moreRow: {
     height: MORE_ROW_H,
     justifyContent: 'center',
-    paddingLeft: ms(24),
+    paddingLeft: LABEL_INDENT,
   },
 
   // flexShrink lets the chip give up width rather than push "+2 More Pickups"
@@ -112,7 +120,7 @@ export default StyleSheet.create({
   // nominal summary height.
   summary: {
     minHeight: STOP_SUMMARY_H,
-    marginLeft: ms(14),
+    marginLeft: LABEL_INDENT,
     color: colors.textMuted,
     fontSize: ms(10),
     lineHeight: ms(14),

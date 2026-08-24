@@ -9,9 +9,20 @@ import {useCallback, useEffect, useRef, useState} from 'react';
 
 import {getCurrentTrip} from '../../config/driverApi';
 import {
+  formatMiles,
+  formatMinutes,
+  isNumber,
+  MONTHS_SHORT as MONTHS,
+  stopTime,
+} from '../../utils/format';
+import {
   getCachedLocation,
   getCurrentLocation,
 } from '../../services/LocationService';
+
+// Re-exported so the screens that already read these off this module keep
+// working — the implementations just moved somewhere both tabs can reach.
+export {formatMiles, formatMinutes, formatMoney} from '../../utils/format';
 
 // Static until the trip in progress is picked from the loads/assignment API.
 export const CURRENT_TRIP_ID = 'f02f0373-a902-49ba-82a7-fe68f5a0229d';
@@ -19,70 +30,6 @@ export const CURRENT_TRIP_ID = 'f02f0373-a902-49ba-82a7-fe68f5a0229d';
 // The federal 11-hour driving limit, which is what the in-card bar fills
 // against — the API sends only the minutes that are left.
 const HOS_CYCLE_MINUTES = 11 * 60;
-
-const isNumber = value => Number.isFinite(Number(value)) && value !== null && value !== '';
-
-/** "1,250" — grouped without Intl, which Hermes does not always carry. */
-const group = value =>
-  String(value).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
-
-/** 0.1 → "$0.10", 1250 → "$1,250" */
-export const formatMoney = value => {
-  if (!isNumber(value)) return '—';
-  const amount = Number(value);
-  const whole = Math.trunc(Math.abs(amount));
-  const rounded = Math.round(Math.abs(amount) * 100) / 100;
-  const text =
-    rounded === whole
-      ? group(whole)
-      : `${group(whole)}.${String(Math.round((rounded - whole) * 100)).padStart(2, '0')}`;
-  return `${amount < 0 ? '-' : ''}$${text}`;
-};
-
-/** 241.63 → "241.63 mi", 3.8 → "3.8 mi", 1234.5 → "1,234.5 mi". */
-export const formatMiles = value => {
-  if (!isNumber(value)) return '—';
-  const miles = Number(value);
-  // Printed exactly as the backend sent it — 241.63 stays 241.63, not 242.
-  // Only the thousands separator is added.
-  const [whole, decimals] = String(Math.abs(miles)).split('.');
-  return `${miles < 0 ? '-' : ''}${group(whole)}${
-    decimals ? `.${decimals}` : ''
-  } mi`;
-};
-
-/** 250 → "4h 10m", 45 → "45m" */
-export const formatMinutes = value => {
-  if (!isNumber(value)) return '—';
-  const total = Math.max(0, Math.round(Number(value)));
-  const hours = Math.floor(total / 60);
-  const minutes = total % 60;
-  if (!hours) return `${minutes}m`;
-  return minutes ? `${hours}h ${minutes}m` : `${hours}h`;
-};
-
-/** "12:10 PM" for a wall-clock time, from a Date. */
-const clock = date => {
-  const hours = date.getHours();
-  const minutes = String(date.getMinutes()).padStart(2, '0');
-  const suffix = hours < 12 ? 'AM' : 'PM';
-  return `${hours % 12 || 12}:${minutes} ${suffix}`;
-};
-
-/** "08:30" / "2026-07-26T08:30:00" → "8:30 AM". Non-times pass through. */
-export const stopTime = value => {
-  if (!value) return '';
-  const text = String(value).trim();
-
-  const bare = /^(\d{1,2}):(\d{2})(?::\d{2})?$/.exec(text);
-  if (bare) {
-    const hours = Number(bare[1]);
-    return `${hours % 12 || 12}:${bare[2]} ${hours < 12 ? 'AM' : 'PM'}`;
-  }
-
-  const parsed = Date.parse(text);
-  return Number.isFinite(parsed) ? clock(new Date(parsed)) : text;
-};
 
 /** "8:00 AM – 8:30 AM", or whichever half of the window was sent. */
 const timeWindow = stop => {
@@ -111,11 +58,6 @@ export const formatTripDate = value => {
   // Drop a trailing year, however the rest of the string is punctuated.
   return text.replace(/[\s,]+\d{4}$/, '') || '—';
 };
-
-const MONTHS = [
-  'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-  'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
-];
 
 const STATUS_LABELS = {
   ON_TIME: 'On time',

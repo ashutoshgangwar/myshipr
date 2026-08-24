@@ -26,6 +26,22 @@ const DASH_STROKE_W = 1.5;
 const DASH_SCALE = (STOP_LINE_H - 2 * DASH_INSET) / 12;
 const DASH_ARRAY = [2 * DASH_SCALE, 3 * DASH_SCALE];
 
+// Air at each end of a connector, as a function of the gap it spans.
+//
+// A one-row gap keeps the original inset — take more out of that and the dash
+// all but vanishes. Anything roomier (a spaced pickup → drop pair, or a
+// collapsed route reaching past its "+N More …" chip) earns a quarter of the
+// extra height back as breathing room, split top and bottom, so a long line
+// stops running right up under the city ring and into the pin below it. The
+// cap keeps the longest connector from turning into two stubby dashes.
+const DASH_INSET_GROWTH = 0.25;
+const DASH_INSET_MAX = DASH_INSET * 2;
+const insetFor = span =>
+  Math.min(
+    DASH_INSET_MAX,
+    DASH_INSET + Math.max(0, span - STOP_LINE_H) * DASH_INSET_GROWTH,
+  );
+
 export {
   STOP_LINE_H,
   STOP_SUMMARY_H,
@@ -175,16 +191,15 @@ export default function LoadRoute({
     <View style={style}>
       <View style={styles.wrap}>
         {markerRows.slice(0, -1).map((rowIndex, i) => {
-          const height = Math.max(
-            0,
-            anchorOf(markerRows[i + 1]) - anchorOf(rowIndex) - 2 * DASH_INSET,
-          );
+          const span = anchorOf(markerRows[i + 1]) - anchorOf(rowIndex);
+          const inset = insetFor(span);
+          const height = Math.max(0, span - 2 * inset);
           return (
             <Svg
               key={`dash-${i}`}
               width={2}
               height={height}
-              style={[styles.dashed, {top: anchorOf(rowIndex) + DASH_INSET}]}>
+              style={[styles.dashed, {top: anchorOf(rowIndex) + inset}]}>
               <Line
                 x1={1}
                 y1={0}

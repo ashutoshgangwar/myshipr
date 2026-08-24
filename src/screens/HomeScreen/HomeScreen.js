@@ -1,4 +1,4 @@
-import React, {useRef, useState} from 'react';
+import React, {useMemo, useRef, useState} from 'react';
 import {
   ActivityIndicator,
   View,
@@ -54,7 +54,10 @@ import {
   useCurrentTrip,
 } from './currentTrip';
 import {useFuelReward} from './fuelReward';
-import {useUpcomingShipments} from './upcomingShipments';
+import {
+  toUpcomingLoads,
+  useUpcomingShipments,
+} from '../../services/upcomingShipments';
 
 const {width: SCREEN_W} = Dimensions.get('window');
 
@@ -150,11 +153,12 @@ const HomeScreen = () => {
   // Upcoming loads. The endpoint's `date` filter is left unset: no argument
   // means "whatever is next", which is what this card is for.
   const {
-    loads: upcomingLoads,
+    shipments: upcoming,
     loading: upcomingLoading,
     error: upcomingError,
     refresh: refreshUpcoming,
   } = useUpcomingShipments();
+  const upcomingLoads = useMemo(() => toUpcomingLoads(upcoming), [upcoming]);
 
   const statusPill = tripStatusPill(currentTrip);
   const startsIn = startsInLabel(currentTrip);

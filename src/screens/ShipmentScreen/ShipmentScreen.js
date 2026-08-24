@@ -12,6 +12,10 @@ import {ms} from '../../theme/scale';
 import ScheduleIcon from '../../assets/svg_icon/Schedule.svg';
 import GrayTruck from '../../assets/svg_icon/gray_truck.svg';
 import {IS_TABLET} from '../../theme/device';
+import {
+  toShipmentRows,
+  useUpcomingShipments,
+} from '../../services/upcomingShipments';
 
 // Week strip — `dot` marks days that have a scheduled pickup.
 const WEEK = [
@@ -54,31 +58,17 @@ const trip = (id, overrides) => ({
   ...overrides,
 });
 
-// `today` flips the pickup pill green — the load leaves within the day.
-const SHIPMENTS = {
-  upcoming: [
-    trip('u1', {pickupAt: '6:00PM TODAY', today: true}),
-    trip('u2'),
-    trip('u3'),
-    trip('u4'),
-    trip('u5'),
-    trip('u6'),
-    trip('u7'),
-    trip('u8', {
-      type: 'LTL',
-      stops: [pickup('San Jose CA'), drop('Newark NJ')],
-    }),
-  ],
-  past: [
-    trip('p1', {pickupAt: '6:00PM JUL 04'}),
-    trip('p2', {pickupAt: '6:00PM JUL 02'}),
-    trip('p3', {
-      type: 'LTL',
-      stops: [pickup('San Jose CA'), drop('Newark NJ')],
-      pickupAt: '6:00PM JUN 28',
-    }),
-  ],
-};
+// UPCOMING comes from `GET /drivers/shipments/upcoming`. PAST keeps this
+// sample — the driver service has no past-loads endpoint yet.
+const PAST_SHIPMENTS = [
+  trip('p1', {pickupAt: '6:00PM JUL 04'}),
+  trip('p2', {pickupAt: '6:00PM JUL 02'}),
+  trip('p3', {
+    type: 'LTL',
+    stops: [pickup('San Jose CA'), drop('Newark NJ')],
+    pickupAt: '6:00PM JUN 28',
+  }),
+];
 
 export default function ShipmentScreen({navigation}) {
   const [selectedKey, setSelectedKey] = useState('d8');
@@ -86,7 +76,15 @@ export default function ShipmentScreen({navigation}) {
   // Tapping a row (or its "+N More …" chip) reveals every pickup and drop.
   const [expandedRows, setExpandedRows] = useState({});
 
-  const shipments = useMemo(() => SHIPMENTS[tab] ?? [], [tab]);
+  // The same call the Home card makes; the table reads it into its own row
+  // shape, with `…` standing in wherever the payload left a figure out.
+  const {shipments: upcoming} = useUpcomingShipments();
+  const upcomingRows = useMemo(() => toShipmentRows(upcoming), [upcoming]);
+
+  const shipments = useMemo(
+    () => (tab === 'upcoming' ? upcomingRows : PAST_SHIPMENTS),
+    [tab, upcomingRows],
+  );
 
   const toggleRow = id => setExpandedRows(prev => ({...prev, [id]: !prev[id]}));
 
@@ -213,6 +211,7 @@ export default function ShipmentScreen({navigation}) {
                     stops={item.stops}
                     typed
                     showSummary
+                    stopGap
                     collapsed={!expandedRows[item.id]}
                     onPressMore={() => toggleRow(item.id)}
                   />
