@@ -41,7 +41,6 @@ import Earning_sign from '../../assets/svg_icon/earning_sign.svg';
 import Total_trip_Icon from '../../assets/svg_icon/Total_trip_Icon.svg';
 import Notifcation_Icon from '../../assets/svg_icon/Notifcation_Icon.svg'
 import useDriverRole from '../../hooks/useDriverRole';
-import useCurrentTrip from '../../hooks/useCurrentTrip';
 import {
   CURRENT_TRIP_ID,
   formatMoney,
@@ -51,6 +50,7 @@ import {
   toRouteStops,
   toTripStats,
   tripStatusPill,
+  useCurrentTrip,
 } from './currentTrip';
 
 const {width: SCREEN_W} = Dimensions.get('window');
