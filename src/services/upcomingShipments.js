@@ -193,6 +193,20 @@ export const toUpcomingLoads = shipments => {
 };
 
 /**
+ * The day a shipment is scheduled for, as "YYYY-MM-DD", or '' when the
+ * payload carries no legible date. The Shipment screen's date strip marks its
+ * days from this, so it has to read the date out of a shipment exactly the
+ * way the table's rows do.
+ *
+ * @param {object} shipment one entry of the upcoming list
+ * @returns {string}
+ */
+export const shipmentDate = shipment => {
+  const first = orderedStops(shipment)[0];
+  return isoDate(shipment?.date ?? first?.date ?? first?.from);
+};
+
+/**
  * The API list → the UPCOMING rows of the Shipment table.
  *
  * The table's cells are fixed — AWB over a load-type badge, the route, payout
@@ -214,7 +228,7 @@ export const toShipmentRows = (shipments, now = new Date()) => {
   return list.map((shipment, index) => {
     const stops = orderedStops(shipment);
     const first = stops[0];
-    const date = isoDate(shipment?.date ?? first?.date ?? first?.from);
+    const date = shipmentDate(shipment);
 
     return {
       id: rowId(shipment, index),
@@ -251,11 +265,16 @@ export const toShipmentRows = (shipments, now = new Date()) => {
  * @param {string} [date] optional `YYYY-MM-DD` filter. Left out by default —
  *   the endpoint does not require it, and defaulting it to today would narrow
  *   the list the backend means to send.
- * @returns {{shipments: object[], loading: boolean, error: string|null,
+ * @returns {{shipments: object[], loadedDate: string|null|undefined,
+ *            loading: boolean, error: string|null,
  *            refresh: () => Promise<object[]>}}
  */
 export function useUpcomingShipments(date) {
   const [shipments, setShipments] = useState([]);
+  // The `date` the list in state was fetched with, so a caller can tell rows
+  // that belong to the day it is showing from rows left over from the day
+  // before it. Null until the first response lands.
+  const [loadedDate, setLoadedDate] = useState(undefined);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const mountedRef = useRef(true);
@@ -278,6 +297,7 @@ export function useUpcomingShipments(date) {
 
       if (!mountedRef.current || requestId !== requestRef.current) return list;
       setShipments(list);
+      setLoadedDate(date ?? null);
       return list;
     } catch (err) {
       if (mountedRef.current && requestId === requestRef.current) {
@@ -299,5 +319,5 @@ export function useUpcomingShipments(date) {
     refresh();
   }, [refresh]);
 
-  return {shipments, loading, error, refresh};
+  return {shipments, loadedDate, loading, error, refresh};
 }

@@ -1,6 +1,7 @@
-import React, {useMemo, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useState} from 'react';
 import {View, FlatList, TouchableOpacity} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
+import {useFocusEffect} from '@react-navigation/native';
 
 import styles from './ShipmentScreen.styles';
 import StatusBar from '../../component/StatusBar/StatusBar';
@@ -15,20 +16,57 @@ import ScheduleIcon from '../../assets/svg_icon/Schedule.svg';
 import GrayTruck from '../../assets/svg_icon/gray_truck.svg';
 import {IS_TABLET} from '../../theme/device';
 import {
+  formatLoadDate,
+  shipmentDate,
   toShipmentRows,
   useUpcomingShipments,
 } from '../../services/upcomingShipments';
+import {MONTHS_SHORT} from '../../utils/format';
 
-// Week strip — `dot` marks days that have a scheduled pickup.
-const WEEK = [
-  {key: 'd8', day: 'Mon', date: 8, dot: true},
-  {key: 'd9', day: 'Tue', date: 9, dot: false},
-  {key: 'd10', day: 'Wed', date: 10, dot: false},
-  {key: 'd11', day: 'Thur', date: 11, dot: false},
-  {key: 'd12', day: 'Fri', date: 12, dot: true},
-  {key: 'd13', day: 'Sat', date: 13, dot: false},
-  {key: 'd14', day: 'Sun', date: 14, dot: false},
-];
+// Sunday-first, matching Date#getDay. "Thur" rather than "Thu" is what the
+// strip already read.
+const DAY_LABELS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thur', 'Fri', 'Sat'];
+
+// Days the strip offers. Seven pills is what the row fits across a phone.
+const WEEK_LENGTH = 7;
+
+const pad = n => String(n).padStart(2, '0');
+
+/** A Date → the "YYYY-MM-DD" the API filters on, in the device's own zone. */
+const toIso = date =>
+  `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`;
+
+/**
+ * The date strip: today first, then the six days after it.
+ *
+ * Built by day-of-month arithmetic on a local Date, so a week that runs over
+ * the end of a month (or a year) rolls over with it. Nothing before today is
+ * offered — the tab lists what is still to come.
+ *
+ * @param {Date} from today
+ */
+const buildWeek = from =>
+  Array.from({length: WEEK_LENGTH}, (_, index) => {
+    const day = new Date(
+      from.getFullYear(),
+      from.getMonth(),
+      from.getDate() + index,
+    );
+    return {iso: toIso(day), day: DAY_LABELS[day.getDay()], date: day.getDate()};
+  });
+
+/** "Aug 2026", or "Aug – Sep 2026" for a week that straddles two months. */
+const weekLabel = week => {
+  if (!week.length) return '';
+  const month = iso => MONTHS_SHORT[Number(iso.slice(5, 7)) - 1];
+  const first = week[0].iso;
+  const last = week[week.length - 1].iso;
+  const months =
+    month(first) === month(last)
+      ? month(first)
+      : `${month(first)} – ${month(last)}`;
+  return `${months} ${last.slice(0, 4)}`;
+};
 
 const TABS = [
   {key: 'upcoming', label: 'UPCOMING'},
@@ -77,19 +115,47 @@ const PAST_SHIPMENTS = [
 ];
 
 export default function ShipmentScreen({navigation}) {
-  const [selectedKey, setSelectedKey] = useState('d8');
+  // The strip is anchored to whatever "today" is. Stamped once here, then
+  // re-checked on focus: this is a bottom tab that can sit mounted for days,
+  // and a strip still starting on yesterday would file loads under the wrong
+  // day. Storing the ISO string, not the Date, keeps the comparison cheap.
+  const [today, setToday] = useState(() => toIso(new Date()));
+  // The day the table is filtered to, or null for "everything upcoming".
+  // Null is the default on purpose: with no `date` the backend decides the
+  // window, which is the whole point of the tab on first open.
+  const [selectedDate, setSelectedDate] = useState(null);
   const [tab, setTab] = useState('upcoming');
   // Tapping a row (or its "+N More …" chip) reveals every pickup and drop.
   const [expandedRows, setExpandedRows] = useState({});
 
-  // The same call the Home card makes; the table reads it into its own row
-  // shape, with `…` standing in wherever the payload left a figure out.
+  // Rebuilt from the ISO parts rather than `new Date(today)`: a bare
+  // "2026-08-24" parses as UTC midnight, which is the day before for a driver
+  // west of Greenwich — the same trap `formatLoadDate` documents.
+  const week = useMemo(() => {
+    const [year, month, day] = today.split('-').map(Number);
+    return buildWeek(new Date(year, month - 1, day));
+  }, [today]);
+
+  // The same call the Home card makes, but filtered: picking a day sends it
+  // as `?date=`, and the hook refetches. With nothing picked the parameter is
+  // left off entirely and the backend answers with the full upcoming window.
   const {
     shipments: upcoming,
+    loadedDate,
     loading: upcomingLoading,
     error: upcomingError,
-  } = useUpcomingShipments();
+  } = useUpcomingShipments(selectedDate || undefined);
   const upcomingRows = useMemo(() => toShipmentRows(upcoming), [upcoming]);
+
+  // Days to mark with a dot. They can only come from an unfiltered response —
+  // once a day is picked the payload holds that day alone, which would rub
+  // out every other dot on the strip. So the marks are taken from the last
+  // full list and kept across filtering.
+  const [pickupDates, setPickupDates] = useState(() => new Set());
+  useEffect(() => {
+    if (loadedDate) return;
+    setPickupDates(new Set(upcoming.map(shipmentDate).filter(Boolean)));
+  }, [loadedDate, upcoming]);
 
   const shipments = useMemo(
     () => (tab === 'upcoming' ? upcomingRows : PAST_SHIPMENTS),
@@ -98,11 +164,41 @@ export default function ShipmentScreen({navigation}) {
 
   const toggleRow = id => setExpandedRows(prev => ({...prev, [id]: !prev[id]}));
 
+  // Midnight passed while the tab was in the background: rebuild the strip
+  // from the new today, and drop a filter that now points at a past day.
+  useFocusEffect(
+    useCallback(() => {
+      const now = toIso(new Date());
+      setToday(current => (current === now ? current : now));
+      setSelectedDate(current => (current && current < now ? null : current));
+    }, []),
+  );
+
+  // Tapping the selected day again clears the filter — that is the only way
+  // back to the full upcoming list once a day has been picked.
+  const pickDate = iso =>
+    setSelectedDate(current => (current === iso ? null : iso));
+
+  // Rows on screen belong to a different day than the one now selected, so
+  // they are about to be replaced wholesale rather than refreshed in place.
+  const staleFilter =
+    loadedDate !== undefined && loadedDate !== (selectedDate || null);
+
   // Only the UPCOMING tab waits on the network — PAST is still sample data,
-  // so it must never shimmer. Once rows are on screen a refresh updates them
-  // in place rather than replacing the table the driver is reading.
+  // so it must never shimmer. A plain refresh leaves the rows up and updates
+  // them in place; a first load, or a change of day, shows bones instead of
+  // yesterday's loads under today's heading.
   const upcomingPending =
-    tab === 'upcoming' && upcomingLoading && !upcomingRows.length;
+    tab === 'upcoming' &&
+    upcomingLoading &&
+    (!upcomingRows.length || staleFilter);
+
+  // A day that came back empty says so by name — "nothing to show" over a
+  // strip with a day lit up reads as a broken screen rather than a free day.
+  const emptyText =
+    tab === 'upcoming' && selectedDate
+      ? `No shipments on ${formatLoadDate(selectedDate)}`
+      : 'No shipments to show';
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -119,7 +215,7 @@ export default function ShipmentScreen({navigation}) {
                         height={IS_TABLET ? 28 : 16}
                          color={colors.primary} />}
           title="SHIPMENT"
-          subtitle="Jun 2026 • 3 Bids"
+          subtitle={weekLabel(week)}
           right={
             <TouchableOpacity
               style={styles.headerCalendarBtn}
@@ -132,23 +228,29 @@ export default function ShipmentScreen({navigation}) {
             </TouchableOpacity>
           }
           headerStyle={styles.headerPad}>
-          {/* WEEK STRIP */}
+          {/* WEEK STRIP — today first, then the six days after it. Tapping a
+              day filters the table to it; tapping it again clears back to the
+              whole upcoming window. */}
           <View style={styles.weekRow}>
-            {WEEK.map(d => {
-              const active = d.key === selectedKey;
+            {week.map(day => {
+              const active = day.iso === selectedDate;
               return (
                 <TouchableOpacity
-                  key={d.key}
+                  key={day.iso}
                   activeOpacity={0.8}
                   style={[styles.dayPill, active && styles.dayPillActive]}
-                  onPress={() => setSelectedKey(d.key)}>
+                  onPress={() => pickDate(day.iso)}>
                   <AppText
                     style={[styles.dayLabel, active && styles.dayLabelActive]}>
-                    {d.day}
+                    {day.day}
                   </AppText>
-                  <AppText style={styles.dayNumber}>{d.date}</AppText>
+                  <AppText style={styles.dayNumber}>{day.date}</AppText>
                   <View
-                    style={d.dot ? styles.dayDot : styles.dayDotPlaceholder}
+                    style={
+                      pickupDates.has(day.iso)
+                        ? styles.dayDot
+                        : styles.dayDotPlaceholder
+                    }
                   />
                 </TouchableOpacity>
               );
@@ -200,8 +302,7 @@ export default function ShipmentScreen({navigation}) {
               ) : (
                 <View style={styles.listEmpty}>
                   <AppText style={styles.listEmptyText}>
-                    {(tab === 'upcoming' && upcomingError) ||
-                      'No shipments to show'}
+                    {(tab === 'upcoming' && upcomingError) || emptyText}
                   </AppText>
                 </View>
               )
