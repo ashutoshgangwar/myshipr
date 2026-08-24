@@ -4,11 +4,15 @@ import HereSdk from './HereSdk';
 const {HereRoutingModule} = NativeModules;
 
 /**
- * Route calculation via the HERE SDK RoutingEngine.
+ * Route calculation via the HERE SDK routing engines.
  *
  * Every call resolves a {@link HereRoute}. The native route object stays on the
- * Android side; `routeId` is the handle you pass to
+ * native side; `routeId` is the handle you pass to
  * `HereNavigation.startNavigation()` or `mapRef.drawRoute()`.
+ *
+ * On iOS a request that fails for want of a connection is retried against the
+ * map data already cached on the device, so a driver in a dead spot still gets
+ * a route; the resolved `offline` flag says which one answered.
  *
  * @typedef {Object} HereRoute
  * @property {string}  routeId              handle for navigation / drawing
@@ -21,6 +25,10 @@ const {HereRoutingModule} = NativeModules;
  * @property {?number} consumptionKwh       EV routes only
  * @property {?string} routeHandle          for refreshing/re-importing the route
  * @property {?Object} boundingBox          { northEast, southWest }
+ * @property {boolean} offline              iOS: true when the route came from
+ *   map data cached on the device because the network was unreachable. Such a
+ *   route has no live traffic in its ETA, no alternatives and no `routeHandle`.
+ *   Android is online-only and never sets it.
  * @property {Array<{lat:number,lng:number,latitude:number,longitude:number}>} polyline
  * @property {Array<Object>} maneuvers      turn-by-turn list
  */

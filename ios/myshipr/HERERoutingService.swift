@@ -21,7 +21,9 @@ class HERERoutingService: NSObject {
 
     private static var engine: RoutingEngine?
 
-    private static func routingEngine() throws -> RoutingEngine {
+    /// The one online engine. `HEREOfflineRouting` and `HereRoutingModule`
+    /// share it rather than each standing up their own.
+    static func routingEngine() throws -> RoutingEngine {
         if let engine = engine { return engine }
         let created = try RoutingEngine()
         engine = created
@@ -41,23 +43,26 @@ class HERERoutingService: NSObject {
             return
         }
 
-        do {
-            try routingEngine().calculateRoute(
-                with: waypoints,
-                options: buildRoutingOptions(options)
-            ) { error, routes in
-                if let error = error {
-                    reject("ROUTE_ERROR", "Route calculation failed: \(error)")
-                    return
-                }
-                guard let routes = routes, !routes.isEmpty else {
-                    reject("ROUTE_ERROR", "No route found")
-                    return
-                }
-                resolve(["routes": routes.map { HERESerialization.route($0) }])
+        // Online first, then the on-device map data — a driver in a dead spot
+        // still gets a route. See `HEREOfflineRouting`.
+        HEREOfflineRouting.calculate(
+            waypoints: waypoints,
+            options: buildRoutingOptions(options)
+        ) { error, routes, isOffline in
+            if let error = error {
+                reject("ROUTE_ERROR", HEREOfflineRouting.message(for: error, wasOffline: isOffline))
+                return
             }
-        } catch {
-            reject("ROUTE_ERROR", "Route calculation failed: \(error)")
+            guard let routes = routes, !routes.isEmpty else {
+                reject("ROUTE_ERROR", HEREOfflineRouting.message(for: .noRouteFound, wasOffline: isOffline))
+                return
+            }
+            resolve([
+                "routes": routes.map { HERESerialization.route($0) },
+                // Lets the UI say the route came from cached map data: no live
+                // traffic, no tolls priced against today's tariffs.
+                "offline": isOffline,
+            ])
         }
     }
 
@@ -446,5 +451,176 @@ class HERERoutingService: NSObject {
 struct HERETrafficSegment {
     let coordinates: [GeoCoordinates]
     let color: UIColor
+}
+#endif
+
+#if canImport(heresdk)
+/// Routing that still answers with the radio off.
+///
+/// `RoutingEngine` is a REST client in disguise: with no connection it fails
+/// with `.offline` (or a timeout / unreachable variant) and the driver reads
+/// "Route calculation failed" at exactly the moment a route matters most — a
+/// dead spot on the interstate, a warehouse basement, a border crossing.
+/// `OfflineRoutingEngine` answers the same question from map data already on
+/// the device: the regions the map view cached while the truck was online.
+///
+/// Every routing call goes through `calculate`, which tries online first so a
+/// connected driver still gets live traffic, tolls and alternatives, and only
+/// falls back when the failure was about connectivity. A rejected waypoint or
+/// a genuinely impossible route is returned as-is — retrying those offline
+/// would swap a precise message for a vague one.
+///
+/// Android has no equivalent yet; `HereRoutingService.kt` is still online-only.
+enum HEREOfflineRouting {
+
+    private static var offlineEngine: OfflineRoutingEngine?
+    private static let engineLock = NSLock()
+
+    /// Whether a failure is worth retrying against on-device map data.
+    ///
+    /// `authenticationFailed` is in the list because token refresh is itself a
+    /// network call: with no connection the SDK often reports the failed
+    /// refresh rather than the missing connection.
+    static func isConnectivityFailure(_ error: RoutingError) -> Bool {
+        switch error {
+        case .offline, .serverUnreachable, .timedOut, .httpError,
+             .proxyServerUnreachable, .proxyAuthenticationFailed,
+             .authenticationFailed:
+            return true
+        default:
+            return false
+        }
+    }
+
+    /// Built once, lazily — the constructor needs the shared engine, which only
+    /// exists after `HereSdk.initialize()`. `nil` means offline routing is not
+    /// available at all, and the caller reports the original online failure.
+    static func engineIfAvailable() -> OfflineRoutingEngine? {
+        engineLock.lock()
+        defer { engineLock.unlock() }
+
+        if let offlineEngine = offlineEngine { return offlineEngine }
+        guard let sdk = SDKNativeEngine.sharedInstance else { return nil }
+
+        do {
+            let created = try OfflineRoutingEngine(sdk)
+            offlineEngine = created
+            return created
+        } catch {
+            NSLog("[HEREOfflineRouting] offline routing unavailable: \(error)")
+            return nil
+        }
+    }
+
+    /// The same request with its online-only parts stripped.
+    ///
+    /// A route handle is minted server-side and traffic optimisation needs a
+    /// live feed, so leaving either switched on makes the offline engine reject
+    /// a request it could otherwise answer. Alternatives go too: they cost
+    /// extra passes over the cache for a choice nobody asked for.
+    static func offlineOptions(_ options: RoutingOptions) -> RoutingOptions {
+        var offline = options
+        offline.routeOptions.enableRouteHandle = false
+        offline.routeOptions.trafficOptimizationMode = .disabled
+        offline.routeOptions.alternatives = 0
+        return offline
+    }
+
+    /// Calculates a route, falling back to on-device map data when the network
+    /// is what failed.
+    ///
+    /// `isOffline` in the completion says which engine answered, so callers can
+    /// tell the driver the route carries no live traffic. `completion` runs on
+    /// an SDK thread, not the main thread.
+    static func calculate(
+        waypoints: [Waypoint],
+        options: RoutingOptions,
+        completion: @escaping (_ error: RoutingError?,
+                               _ routes: [Route]?,
+                               _ isOffline: Bool) -> Void
+    ) {
+        // Already told to stay off the network: don't spend a timeout proving it.
+        if SDKNativeEngine.sharedInstance?.isOfflineMode == true {
+            calculateOffline(waypoints: waypoints, options: options,
+                             onlineError: nil, completion: completion)
+            return
+        }
+
+        let online: RoutingEngine
+        do {
+            online = try HERERoutingService.routingEngine()
+        } catch {
+            NSLog("[HEREOfflineRouting] online engine unavailable: \(error)")
+            calculateOffline(waypoints: waypoints, options: options,
+                             onlineError: nil, completion: completion)
+            return
+        }
+
+        online.calculateRoute(with: waypoints, options: options) { error, routes in
+            guard let error = error else {
+                completion(nil, routes, false)
+                return
+            }
+            guard isConnectivityFailure(error) else {
+                completion(error, nil, false)
+                return
+            }
+            NSLog("[HEREOfflineRouting] online routing failed (\(error)) — trying on-device map data")
+            calculateOffline(waypoints: waypoints, options: options,
+                             onlineError: error, completion: completion)
+        }
+    }
+
+    /// `onlineError` is what the network attempt reported, reused when there is
+    /// no offline engine to fall back to so the driver sees the real cause
+    /// rather than a made-up one.
+    private static func calculateOffline(
+        waypoints: [Waypoint],
+        options: RoutingOptions,
+        onlineError: RoutingError?,
+        completion: @escaping (RoutingError?, [Route]?, Bool) -> Void
+    ) {
+        guard let engine = engineIfAvailable() else {
+            completion(onlineError ?? .offline, nil, false)
+            return
+        }
+
+        engine.calculateRoute(with: waypoints, options: offlineOptions(options)) { error, routes in
+            if let error = error {
+                completion(error, nil, true)
+                return
+            }
+            guard let routes = routes, !routes.isEmpty else {
+                completion(.noRouteFound, nil, true)
+                return
+            }
+            completion(nil, routes, true)
+        }
+    }
+
+    /// A message that tells the driver what to do about it.
+    ///
+    /// Offline, "no route found" almost never means no road exists — it means
+    /// this stretch of map was never cached — so it gets its own wording
+    /// instead of the router's, which would read as if the destination were
+    /// unreachable.
+    static func message(for error: RoutingError, wasOffline: Bool) -> String {
+        guard wasOffline else {
+            return error == .noRouteFound
+                ? "No route found"
+                : "Route calculation failed: \(error)"
+        }
+
+        switch error {
+        case .noRouteFound, .couldNotMatchOrigin, .couldNotMatchDestination:
+            return "No offline route available — the map data for this area is not "
+                + "on this device. Reconnect, or open the area once while online "
+                + "so it is cached for the trip."
+        case .routeLengthLimitExceeded:
+            return "This route is too long to calculate offline. Reconnect to plan it."
+        default:
+            return "Offline route calculation failed: \(error)"
+        }
+    }
 }
 #endif

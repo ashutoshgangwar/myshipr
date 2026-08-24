@@ -5,7 +5,11 @@ import React
 import heresdk
 #endif
 
-/// Point-to-point routing on the HERE SDK `RoutingEngine`.
+/// Point-to-point routing on the HERE SDK routing engines.
+///
+/// Requests go out online first and fall back to the on-device map cache when
+/// the network is what failed — see `HEREOfflineRouting`. The resolved payload
+/// carries `offline` so the trip screen can say the route has no live traffic.
 ///
 /// iOS counterpart of `android/.../heremap/HereRoutingModule.kt`: same method
 /// names, same resolved shape, so `src/here/HereRouting.js` is platform-neutral.
@@ -19,10 +23,6 @@ class HereRoutingModule: NSObject {
         [0: 0.239, 27: 0.239, 60: 0.196, 90: 0.238]
     private static let defaultTrafficSpeedTable: [Int32: Double] =
         [0: 0.349, 27: 0.319, 60: 0.244, 90: 0.256]
-
-#if canImport(heresdk)
-    private lazy var engine: RoutingEngine? = { try? RoutingEngine() }()
-#endif
 
     // MARK: - Public API
 
@@ -123,34 +123,33 @@ class HereRoutingModule: NSObject {
             reject("HERE_ROUTE_ERROR", "HERE SDK is not initialised — call HereSdk.initialize() first", nil)
             return
         }
-        guard let engine = engine else {
-            reject("HERE_ROUTE_ERROR", "RoutingEngine could not be created", nil)
-            return
-        }
 
         let waypoints = [
             Waypoint(coordinates: GeoCoordinates(latitude: originLat, longitude: originLng)),
             Waypoint(coordinates: GeoCoordinates(latitude: destLat, longitude: destLng)),
         ]
 
-        _ = engine.calculateRoute(with: waypoints, options: routingOptions) { error, routes in
+        HEREOfflineRouting.calculate(waypoints: waypoints, options: routingOptions) { error, routes, isOffline in
             if let error = error {
-                reject("HERE_ROUTE_ERROR", "Route calculation failed: \(error)", nil)
+                reject("HERE_ROUTE_ERROR",
+                       HEREOfflineRouting.message(for: error, wasOffline: isOffline), nil)
                 return
             }
             guard let routes = routes, let best = routes.first else {
-                reject("HERE_ROUTE_ERROR", "No route found", nil)
+                reject("HERE_ROUTE_ERROR",
+                       HEREOfflineRouting.message(for: .noRouteFound, wasOffline: isOffline), nil)
                 return
             }
-            resolve(Self.serialize(route: best, allRoutes: routes))
+            resolve(Self.serialize(route: best, allRoutes: routes, isOffline: isOffline))
         }
     }
 
     // MARK: - Response
 
     /// `{ routeId, distanceMeters, durationSeconds, polyline[], maneuvers[],
-    ///    routeHandle, tolls, boundingBox }` — identical to the Android shape.
-    private static func serialize(route: Route, allRoutes: [Route]) -> [String: Any] {
+    ///    routeHandle, tolls, boundingBox, offline }` — the Android shape plus
+    ///    `offline`, which Android never sets because it has no fallback yet.
+    private static func serialize(route: Route, allRoutes: [Route], isOffline: Bool) -> [String: Any] {
         let duration = route.duration
         let trafficDelay = route.trafficDelay
 
@@ -162,6 +161,9 @@ class HereRoutingModule: NSObject {
             "baseDurationSeconds": duration - trafficDelay,
             "transportMode": String(describing: route.requestedTransportMode),
             "alternativeCount": max(0, allRoutes.count - 1),
+            // Calculated from cached map data: no live traffic in the ETA, and
+            // the route handle and alternatives were not available.
+            "offline": isOffline,
             "routeHandle": route.routeHandle?.handle ?? NSNull(),
             "polyline": polyline(route),
             "maneuvers": maneuvers(route),
