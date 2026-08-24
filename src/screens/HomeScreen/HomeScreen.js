@@ -1,5 +1,6 @@
 import React, {useRef, useState} from 'react';
 import {
+  ActivityIndicator,
   View,
   ScrollView,
   TouchableOpacity,
@@ -53,6 +54,7 @@ import {
   useCurrentTrip,
 } from './currentTrip';
 import {useFuelReward} from './fuelReward';
+import {useUpcomingShipments} from './upcomingShipments';
 
 const {width: SCREEN_W} = Dimensions.get('window');
 
@@ -129,52 +131,6 @@ const HOS_DETAILS = [
   {label: 'Reset Available', value: 'Tomorrow 8:00 AM'},
 ];
 
-// Stops carry an explicit pickup/drop type so multi-pickup / multi-drop loads
-// can collapse the middle stops behind a "+N More …" chip and pin every drop.
-const pickup = city => ({city, type: 'pickup'});
-const drop = city => ({city, type: 'drop'});
-
-const UPCOMING_LOADS = [
-  {
-    id: 'u1',
-    time: '08:30 AM',
-    date: '26 July 2026',
-    stops: [
-      pickup('Jersey City, NJ'),
-      pickup('Newark, NJ'),
-      pickup('Trenton, NJ'),
-      drop('Baltimore, ND'),
-    ],
-  },
-  {
-    id: 'u2',
-    time: '08:30 AM',
-    date: '26 July 2026',
-    stops: [
-      pickup('Jersey City, NJ'),
-      pickup('Trenton, NJ'),
-      drop('Baltimore, ND'),
-    ],
-  },
-  {
-    id: 'u3',
-    time: '08:30 AM',
-    date: '26 July 2026',
-    stops: [pickup('Jersey City, NJ'), drop('Baltimore, ND')],
-  },
-  {
-    id: 'u4',
-    time: '09:15 AM',
-    date: '27 July 2026',
-    stops: [
-      pickup('San Jose CA'),
-      pickup('Fresno CA'),
-      drop('Reno NV'),
-      drop('Newark NJ'),
-    ],
-  },
-];
-
 const HomeScreen = () => {
   const navigation = useNavigation();
   const {isFleet} = useDriverRole();
@@ -191,6 +147,14 @@ const HomeScreen = () => {
     useCurrentTrip(CURRENT_TRIP_ID);
   // Fuel Rewards balance. Its own call — the trip payload does not carry it.
   const {points: rewardPoints, refresh: refreshFuelReward} = useFuelReward();
+  // Upcoming loads. The endpoint's `date` filter is left unset: no argument
+  // means "whatever is next", which is what this card is for.
+  const {
+    loads: upcomingLoads,
+    loading: upcomingLoading,
+    error: upcomingError,
+    refresh: refreshUpcoming,
+  } = useUpcomingShipments();
 
   const statusPill = tripStatusPill(currentTrip);
   const startsIn = startsInLabel(currentTrip);
@@ -275,11 +239,13 @@ const HomeScreen = () => {
         // A fuel price reported from the trip screen earns points, so the
         // balance has moved by the time the driver lands back here.
         refreshFuelReward();
+        // A load that started while we were away is no longer upcoming.
+        refreshUpcoming();
       }
       return () => {
         cancelled = true;
       };
-    }, [refreshCurrentTrip, refreshFuelReward]),
+    }, [refreshCurrentTrip, refreshFuelReward, refreshUpcoming]),
   );
 
   return (
@@ -540,7 +506,7 @@ const HomeScreen = () => {
                   nestedScrollEnabled
                   bounces
                   showsVerticalScrollIndicator={false}>
-                  {UPCOMING_LOADS.map((load, index) => (
+                  {upcomingLoads.map((load, index) => (
                     <TouchableOpacity
                       key={load.id}
                       activeOpacity={load.stops.length > 2 ? 0.7 : 1}
@@ -555,26 +521,40 @@ const HomeScreen = () => {
                           stops={load.stops}
                           typed
                           showSummary
+                          stopGap
                           collapsed={!expandedLoads[load.id]}
                           onPressMore={() => toggleLoad(load.id)}
                         />
                       </View>
 
-                      <AppText
-                        style={styles.loadWhen}
-                        numberOfLines={1}
-                        adjustsFontSizeToFit
-                        minimumFontScale={0.8}>
-                        {load.time} | {load.date}
+                      <AppText style={styles.loadWhen} numberOfLines={1}>
+                        {load.when}
                       </AppText>
                     </TouchableOpacity>
                   ))}
+
+                  {/* Nothing to draw: say which of the three reasons it is,
+                      rather than leaving the driver an empty box. */}
+                  {!upcomingLoads.length && (
+                    <View style={styles.loadsEmpty}>
+                      {upcomingLoading ? (
+                        <ActivityIndicator
+                          size="small"
+                          color={colors.accentBlueLight}
+                        />
+                      ) : (
+                        <AppText style={styles.loadsEmptyText}>
+                          {upcomingError || 'No upcoming shipments'}
+                        </AppText>
+                      )}
+                    </View>
+                  )}
                 </ScrollView>
               </View>
 
-              <TouchableOpacity style={styles.loadChevron} activeOpacity={0.7}>
-               
-              </TouchableOpacity>
+              {/* The card has no padding of its own (the blue header bleeds to
+                  its edges), so this supplies the bottom breathing room. */}
+              <View style={styles.loadChevron} />
             </View>
           </View>
         </View>

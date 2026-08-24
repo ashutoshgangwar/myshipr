@@ -69,7 +69,8 @@ const clock = date => {
   return `${hours % 12 || 12}:${minutes} ${suffix}`;
 };
 
-const stopTime = value => {
+/** "08:30" / "2026-07-26T08:30:00" → "8:30 AM". Non-times pass through. */
+export const stopTime = value => {
   if (!value) return '';
   const text = String(value).trim();
 

@@ -700,17 +700,42 @@ export default StyleSheet.create({
     paddingRight: ms(8),
   },
 
-  // "08:30 AM | 26 July 2026" — pickup window, right-aligned on a single line.
-  // Width is capped so this long string can't squeeze the route column into
-  // truncating its city names and "N Pickups • M Drops" summary; the text
-  // shrinks to fit that cap instead of wrapping or ellipsizing.
+  // "08:30 AM | 26 Jul 2026" — pickup window and date, right-aligned on one
+  // line. The size is fixed rather than auto-fitted: `adjustsFontSizeToFit`
+  // scales each row on its own, so rows ended up at visibly different sizes.
+  // The mapper pads the hour and the day to hold every line to 22 characters,
+  // and the two figures below are what that line needs.
+  //
+  // Both form factors are sized so the widest line ("11:59 PM | 08 Sep 2026")
+  // clears its cap: ~12% spare on a 390pt phone, ~23% on an 834pt tablet. The
+  // phone needs the smaller type because the label and the route column split
+  // one ~157pt row between them; a tablet row is more than twice as wide, so
+  // there the type stays large and the cap can stay tighter.
   loadWhen: {
-    maxWidth: '44%',
+    maxWidth: IS_TABLET ? '46%' : '54%',
     color: colors.textStrong,
-    fontSize: ms(8.5),
-    lineHeight: ms(12),
+    fontSize: IS_TABLET ? ms(7.5) : ms(6.8),
+    lineHeight: IS_TABLET ? ms(11) : ms(10),
     fontWeight: '500',
     textAlign: 'right',
+  },
+
+  // Shown in place of the rows while the call is in flight, and when it comes
+  // back with nothing (or fails).
+  // Sits inside the absolute-fill ScrollView, where `flex: 1` would collapse —
+  // a min height is what centres it against the card instead.
+  loadsEmpty: {
+    minHeight: vs(120),
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: ms(16),
+    paddingVertical: vs(24),
+  },
+
+  loadsEmptyText: {
+    color: colors.textMuted,
+    fontSize: ms(10),
+    textAlign: 'center',
   },
 
   // The card itself has no padding (the blue header bleeds to its edges), so

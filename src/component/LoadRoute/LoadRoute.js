@@ -7,6 +7,7 @@ import styles, {
   MORE_ROW_H,
   MARKER_H,
   DASH_INSET,
+  STOP_GAP,
   CITY_RING,
   DROP_PIN_W,
   DROP_PIN_H,
@@ -25,7 +26,12 @@ const DASH_STROKE_W = 1.5;
 const DASH_SCALE = (STOP_LINE_H - 2 * DASH_INSET) / 12;
 const DASH_ARRAY = [2 * DASH_SCALE, 3 * DASH_SCALE];
 
-export {STOP_LINE_H, STOP_SUMMARY_H, MORE_ROW_H} from './LoadRoute.styles';
+export {
+  STOP_LINE_H,
+  STOP_SUMMARY_H,
+  MORE_ROW_H,
+  STOP_GAP,
+} from './LoadRoute.styles';
 
 // Accepts stops as plain strings ('San Jose CA') or objects ({city} / {label}).
 const cityOf = stop =>
@@ -76,6 +82,13 @@ const moreLabelOf = hiddenTypes => {
  *                      "1 Pickup N Drop" copy
  * @param collapsed     hide the middle stops behind a "+N More …" chip
  * @param onPressMore   tap handler for that chip
+ * @param stopGap       open up the gap wherever one marker sits directly above
+ *                      the next — a lone pickup → drop pair, and a route
+ *                      expanded out of its chip — so the connector reads as a
+ *                      route rather than a single dash. Off by default:
+ *                      callers that size their rows from STOP_LINE_H × stop
+ *                      count (the Bidding grid) depend on a stop row being
+ *                      exactly that tall.
  * @param textStyle     override for the city label (e.g. truncation width)
  * @param summaryStyle  override for the summary line
  * @param style         wrapper style
@@ -86,6 +99,7 @@ export default function LoadRoute({
   typed = false,
   collapsed = false,
   onPressMore,
+  stopGap = false,
   textStyle,
   summaryStyle,
   style,
@@ -101,16 +115,40 @@ export default function LoadRoute({
   // (which is taller than a stop row) on the same line as the rest.
   const hidden = collapsed && stops.length > 2 ? types.slice(1, last) : [];
 
+  // The extra gap goes wherever two markers meet with nothing between them:
+  // a bare pickup → drop pair, and a route the driver has expanded to see all
+  // of its stops. A collapsed route is left alone — the "+N More …" chip is
+  // already holding its two ends apart.
+  const spaced = stopGap && !hidden.length;
+
   // Once expanded, the revealed middle stops sit exactly where the "+N More …"
   // chip was, so tapping any of them there collapses the route again.
   const canCollapse = !collapsed && stops.length > 2 && !!onPressMore;
+  // `centre` is where this row's marker actually sits, measured from the row
+  // top: a plain row centres it in its own height, while a spaced row is
+  // top-aligned so its extra height falls below the icon.
+  const stopRow = index => {
+    const wide = spaced && index !== last;
+    return {
+      kind: 'stop',
+      index,
+      height: wide ? STOP_LINE_H + STOP_GAP : STOP_LINE_H,
+      centre: wide ? MARKER_H / 2 : STOP_LINE_H / 2,
+    };
+  };
+
   const rows = hidden.length
     ? [
-        {kind: 'stop', index: 0, height: STOP_LINE_H},
+        {kind: 'stop', index: 0, height: STOP_LINE_H, centre: STOP_LINE_H / 2},
         {kind: 'more', height: MORE_ROW_H},
-        {kind: 'stop', index: last, height: STOP_LINE_H},
+        {
+          kind: 'stop',
+          index: last,
+          height: STOP_LINE_H,
+          centre: STOP_LINE_H / 2,
+        },
       ]
-    : stops.map((_, index) => ({kind: 'stop', index, height: STOP_LINE_H}));
+    : stops.map((_, index) => stopRow(index));
 
   let offset = 0;
   const tops = rows.map(row => {
@@ -119,9 +157,11 @@ export default function LoadRoute({
     return top;
   });
 
-  // Markers sit MARKER_H / 2 below their row top; each dash spans that gap,
-  // inset at both ends so it stays clear of the icons.
-  const anchorOf = i => tops[i] + MARKER_H / 2;
+  // Each dash runs centre-to-centre between two markers, inset at both ends so
+  // it stays clear of the icons. Anchoring on the marker's real centre — not a
+  // fixed MARKER_H / 2 that ignores how the row lays out — is what keeps those
+  // two insets equal, instead of the line hanging low under the first stop.
+  const anchorOf = i => tops[i] + rows[i].centre;
 
   // Dashes join marker to marker, spanning straight past the "+N More …" row —
   // that row carries no icon, so breaking the line there would leave a gap in
@@ -179,7 +219,10 @@ export default function LoadRoute({
           ) : (
             <TouchableOpacity
               key={`${cities[row.index]}-${i}`}
-              style={styles.row}
+              style={[
+                styles.row,
+                rows[i].height !== STOP_LINE_H && styles.rowSpaced,
+              ]}
               activeOpacity={
                 canCollapse && row.index > 0 && row.index < last ? 0.7 : 1
               }

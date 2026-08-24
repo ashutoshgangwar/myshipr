@@ -20,6 +20,13 @@ export const DASH_INSET = ms(5);
 // Row that holds the collapsed "+N More Pickups" chip; taller than a stop row
 // because the chip carries its own padding.
 export const MORE_ROW_H = vs(19);
+// Extra room under a stop row when its marker sits directly above the next
+// one — a lone pickup → drop pair, and every gap of a route expanded out of
+// its "+N More …" chip. Without it those markers are barely a dash apart,
+// where a collapsed route gets the whole chip row between its two ends.
+// Opt-in (`stopGap`): callers that size rows from STOP_LINE_H × stop count
+// must not have their geometry moved.
+export const STOP_GAP = vs(5);
 
 // Icon dimensions (kept here so every screen renders the same size).
 export const CITY_RING = ms(13);
@@ -31,16 +38,27 @@ export default StyleSheet.create({
     position: 'relative',
   },
 
+  // No vertical nudge here: the connector is positioned from each marker's
+  // measured centre, so a margin would only re-open at one end the gap it
+  // closes at the other — which is what left the line hanging low, with more
+  // air under the pickup ring than above the drop pin.
   dashed: {
     position: 'absolute',
-    left:IS_TABLET? ms(8.5): ms(7.5),
-   marginTop: ms(4)
+    left: IS_TABLET ? ms(8.5) : ms(7.5),
   },
 
   row: {
     flexDirection: 'row',
     alignItems: 'center',
     height: STOP_LINE_H,
+  },
+
+  // The extra height falls below the marker rather than around it — top-aligned
+  // keeps the marker beside its own city name, so only the gap to the next stop
+  // grows, not the spacing inside the row.
+  rowSpaced: {
+    height: STOP_LINE_H + STOP_GAP,
+    alignItems: 'flex-start',
   },
 
   marker: {

@@ -24,10 +24,64 @@ export const DRIVER_ENDPOINTS = {
     serviceUrl('drivers', `/drivers/shipments/${encodeURIComponent(tripId)}`),
 
   /**
+   * The signed-in driver's upcoming shipments — the Home "Upcoming Shipment"
+   * list. `date` is an optional query param; without it the backend decides
+   * the window itself, so nothing is sent by default.
+   */
+  upcomingShipments: () =>
+    serviceUrl('drivers', '/drivers/shipments/upcoming'),
+
+  /**
    * The signed-in driver's fuel-reward balance. The driver is read from the
    * bearer token, so the call takes no id and no query params.
    */
   fuelReward: () => serviceUrl('drivers', '/drivers/fuel/reward'),
+};
+
+/**
+ * The driver's upcoming shipments — the Home "Upcoming Shipment" card.
+ *
+ * GET /drivers/api/v1/drivers/shipments/upcoming?date=YYYY-MM-DD
+ * ← [{ tripId, awb, date, stops: [{sequence, type, address, from, to, ...}] }]
+ *   (or the same list wrapped in an envelope: {data: {content|items: [...]}})
+ *
+ * The driver comes from the bearer token. `date` is optional and deliberately
+ * NOT defaulted to today — sent empty, the backend returns whatever it
+ * considers upcoming; sent with a date, it filters to that day.
+ *
+ * @param {{date?: string}} params `date` as YYYY-MM-DD
+ * @returns {Promise<object[]>} the shipment list (envelope unwrapped)
+ */
+export const getUpcomingShipments = async ({date} = {}) => {
+  const params = {};
+  if (date) params.date = date;
+
+  const url = DRIVER_ENDPOINTS.upcomingShipments();
+  log('upcoming shipments request', {url, ...params});
+
+  let status;
+  let body;
+  try {
+    ({status, data: body} = await apiClient.get(url, {params}));
+  } catch (err) {
+    log('upcoming shipments failed', {
+      url,
+      status: err?.response?.status ?? null,
+      body: err?.response?.data ?? err?.message,
+    });
+    throw err;
+  }
+
+  log(`upcoming shipments response (${status})\n` + JSON.stringify(body, null, 2));
+
+  // The list may arrive bare, under `data`, or paged under `content`/`items` —
+  // unwrap whichever envelope the gateway used and always hand back an array.
+  const payload = body?.data ?? body;
+  const list = Array.isArray(payload)
+    ? payload
+    : payload?.content ?? payload?.items ?? payload?.shipments ?? [];
+
+  return Array.isArray(list) ? list : [];
 };
 
 /**
