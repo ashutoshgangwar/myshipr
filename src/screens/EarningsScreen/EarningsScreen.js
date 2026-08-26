@@ -7,6 +7,8 @@ import StatusBar from '../../component/StatusBar/StatusBar';
 import DashboardHeader from '../../component/DashboardHeader/DashboardHeader';
 import {DASHBOARD_STATS_OVERLAP} from '../../component/DashboardHeader/DashboardHeader.styles';
 import LoadRoute from '../../component/LoadRoute/LoadRoute';
+import Skeleton from '../../component/Skeleton/Skeleton';
+import {shipmentRowBones} from '../../component/Skeleton/Skeleton.layouts';
 import AppText from '../../theme/AppText';
 import {colors} from '../../theme/colors';
 import {ms} from '../../theme/scale';
@@ -22,28 +24,13 @@ import {
   toEarningsCard,
   useMonthlyEarnings,
 } from '../../services/monthlyEarnings';
-
-const PERIODS = ['Weekly', 'Monthly', 'Yearly'];
-
-// Only the header copy switches with the period; the two floating cards always
-// report the month, the same way the Home dashboard does.
-const PERIOD_DATA = {
-  Weekly: {
-    range: '8 Jun – 14 Jun',
-    gross: '$844',
-    grossLabel: 'Gross earning this Week',
-  },
-  Monthly: {
-    range: 'June 2026',
-    gross: '$1,244',
-    grossLabel: 'Gross earning this Month',
-  },
-  Yearly: {
-    range: '2026 – now',
-    gross: '$12,344',
-    grossLabel: 'Gross earning this Year',
-  },
-};
+import {
+  DEFAULT_PERIOD,
+  PERIODS,
+  toEarningsHeader,
+  toEarningsRows,
+  useDriverEarnings,
+} from '../../services/driverEarnings';
 
 const STAT_ICON_SIZE = IS_TABLET ? 26 : 22;
 
@@ -83,119 +70,29 @@ const STATUS_COLOR = {
 
 const COLUMNS = ['AWB Number', 'Route', 'Distance/ Date', 'Status'];
 
-// Stops carry an explicit pickup/drop type so multi-pickup loads collapse their
-// middle stops behind a "+N More Pickups" chip until the row is tapped.
-const pickup = city => ({city, type: 'pickup'});
-const drop = city => ({city, type: 'drop'});
-
-const ROUTE = [
-  pickup('Jersey City, NJ'),
-  pickup('Newark, NJ'),
-  pickup('Trenton, NJ'),
-  drop('Baltimore, ND'),
-];
-
-const TRANSACTIONS = [
-  {
-    id: 't1',
-    awb: 'AWB-125',
-    type: 'FTL',
-    stops: ROUTE,
-    miles: '184 MILES',
-    when: '12 AUGUST 2026',
-    amount: '$900',
-    status: 'Paid',
-  },
-  {
-    id: 't2',
-    awb: 'AWB-125',
-    type: 'LTL',
-    stops: ROUTE,
-    miles: '184 MILES',
-    when: '4h 20 minutes',
-    amount: '$900',
-    status: 'In - Transit',
-  },
-  {
-    id: 't3',
-    awb: 'AWB-125',
-    type: 'FTL',
-    stops: ROUTE,
-    miles: '184 MILES',
-    when: '4h 20 minutes',
-    amount: '$900',
-    status: 'In - Transit',
-  },
-  {
-    id: 't4',
-    awb: 'AWB-125',
-    type: 'FTL',
-    stops: ROUTE,
-    miles: '184 MILES',
-    when: '4h 20 minutes',
-    amount: '$900',
-    status: 'In - Transit',
-  },
-  {
-    id: 't5',
-    awb: 'AWB-125',
-    type: 'FTL',
-    stops: ROUTE,
-    miles: '184 MILES',
-    when: '4h 20 minutes',
-    amount: '$900',
-    status: 'In - Transit',
-  },
-  {
-    id: 't6',
-    awb: 'AWB-125',
-    type: 'FTL',
-    stops: ROUTE,
-    miles: '184 MILES',
-    when: '4h 20 minutes',
-    amount: '$900',
-    status: 'In - Transit',
-  },
-  {
-    id: 't7',
-    awb: 'AWB-125',
-    type: 'FTL',
-    stops: ROUTE,
-    miles: '184 MILES',
-    when: '4h 20 minutes',
-    amount: '$900',
-    status: 'In - Transit',
-  },
-  {
-    id: 't8',
-    awb: 'AWB-125',
-    type: 'FTL',
-    stops: [pickup('San Jose CA'), drop('Newark NJ')],
-    miles: '184 MILES',
-    when: '4h 20 minutes',
-    amount: '$900',
-    status: 'Paid',
-  },
-  {
-    id: 't9',
-    awb: 'AWB-125',
-    type: 'FTL',
-    stops: [pickup('San Jose CA'), drop('Newark NJ')],
-    miles: '184 MILES',
-    when: '4h 20 minutes',
-    amount: '$900',
-    status: 'Cancelled',
-  },
-];
+// The table waits on the same call the header does, so it waits the way the
+// Shipment table does: bones the width of the cells they stand in for.
+const ROW_BONES = shipmentRowBones(6);
 
 export default function EarningsScreen({navigation}) {
-  const [period, setPeriod] = useState('Weekly');
+  const [period, setPeriod] = useState(DEFAULT_PERIOD);
   const [menuOpen, setMenuOpen] = useState(false);
   // Tapping the "+N More …" chip reveals every pickup and drop; tapping the
   // row itself opens the payout breakdown.
   const [expandedRows, setExpandedRows] = useState({});
 
-  const data = useMemo(() => PERIOD_DATA[period], [period]);
+  // The header figure and the table below it, both from
+  // `GET /drivers/earnings?period=…`. The dropdown is that one query param, so
+  // picking a period asks the backend again rather than filtering on device.
+  const {earnings, loading, error} = useDriverEarnings(period);
+  const data = useMemo(
+    () => toEarningsHeader(earnings, period),
+    [earnings, period],
+  );
+  const transactions = useMemo(() => toEarningsRows(earnings), [earnings]);
+
+  const periodLabel =
+    PERIODS.find(item => item.value === period)?.label ?? PERIODS[0].label;
 
   // The two floating cards, from the same pair of calls the Home dashboard
   // reads. The period dropdown does not reach them — those endpoints report
@@ -245,7 +142,7 @@ export default function EarningsScreen({navigation}) {
               style={styles.periodBtn}
               activeOpacity={0.8}
               onPress={() => setMenuOpen(true)}>
-              <AppText style={styles.periodBtnText}>{period}</AppText>
+              <AppText style={styles.periodBtnText}>{periodLabel}</AppText>
               <DropdownIcon width={16} height={16} />
             </TouchableOpacity>
           }
@@ -268,18 +165,29 @@ export default function EarningsScreen({navigation}) {
           </View>
 
           <FlatList
-            data={TRANSACTIONS}
+            data={transactions}
             keyExtractor={tx => tx.id}
             contentContainerStyle={styles.scrollContent}
             nestedScrollEnabled
             showsVerticalScrollIndicator={false}
+            ListEmptyComponent={
+              loading ? (
+                <Skeleton isLoading layout={ROW_BONES} />
+              ) : (
+                <View style={styles.listEmpty}>
+                  <AppText style={styles.listEmptyText}>
+                    {error || 'No earnings in this period'}
+                  </AppText>
+                </View>
+              )
+            }
             renderItem={({item: tx, index}) => (
               <TouchableOpacity
                 activeOpacity={0.7}
                 onPress={() => openPayment(tx)}
                 style={[
                   styles.row,
-                  index === TRANSACTIONS.length - 1 && styles.rowLast,
+                  index === transactions.length - 1 && styles.rowLast,
                 ]}>
                 {/* AWB number + load type */}
                 <View style={[styles.col0, styles.cellCenter]}>
@@ -351,20 +259,23 @@ export default function EarningsScreen({navigation}) {
           style={styles.menuOverlay}
           onPress={() => setMenuOpen(false)}>
           <View style={styles.menu}>
-            {PERIODS.map(p => (
+            {PERIODS.map(({label, value}) => (
               <TouchableOpacity
-                key={p}
-                style={[styles.menuItem, p === period && styles.menuItemActive]}
+                key={value}
+                style={[
+                  styles.menuItem,
+                  value === period && styles.menuItemActive,
+                ]}
                 onPress={() => {
-                  setPeriod(p);
+                  setPeriod(value);
                   setMenuOpen(false);
                 }}>
                 <AppText
                   style={[
                     styles.menuItemText,
-                    p === period && styles.menuItemTextActive,
+                    value === period && styles.menuItemTextActive,
                   ]}>
-                  {p}
+                  {label}
                 </AppText>
               </TouchableOpacity>
             ))}

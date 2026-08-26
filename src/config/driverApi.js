@@ -72,7 +72,18 @@ export const DRIVER_ENDPOINTS = {
    */
   monthlyTrips: () =>
     serviceUrl('drivers', '/drivers/shipments/get-monthly-trips'),
+
+  /**
+   * The signed-in driver's earnings ledger — the Earnings screen's gross
+   * figure and the loads behind it. `period` is an optional query param
+   * (ALL / WEEKLY / MONTHLY / YEARLY); the driver is read from the bearer
+   * token, so there is no id.
+   */
+  earnings: () => serviceUrl('drivers', '/drivers/earnings'),
 };
+
+/** The periods `GET /drivers/earnings` filters by. */
+export const EARNINGS_PERIODS = ['ALL', 'WEEKLY', 'MONTHLY', 'YEARLY'];
 
 /**
  * The driver's upcoming shipments — the Home "Upcoming Shipment" card.
@@ -413,4 +424,52 @@ export const getMonthlyTrips = async () => {
   log(`monthly trips response (${status})\n` + JSON.stringify(body, null, 2));
 
   return trips;
+};
+
+/**
+ * The driver's earnings for a period — the Earnings screen's header figure
+ * and the transactions table under it.
+ *
+ * GET /drivers/api/v1/drivers/earnings?period=ALL|WEEKLY|MONTHLY|YEARLY
+ * ← { period, grossEarnings,
+ *     shipments: [{ shipmentId, awb, shipmentType, distanceMiles, date,
+ *                   payout, paymentStatus,
+ *                   stops: [{sequence, type, address, lat, lon, from, to}] }] }
+ *
+ * `period` is optional — sent empty the backend answers ALL — but the screen
+ * always names one, since its dropdown is exactly this parameter. An unknown
+ * value is dropped rather than passed on, so a typo asks for everything
+ * instead of 400-ing the screen.
+ *
+ * @param {{period?: string}} params
+ * @returns {Promise<{period: string, grossEarnings: number,
+ *                    shipments: object[]}>} the payload (envelope unwrapped)
+ */
+export const getDriverEarnings = async ({period} = {}) => {
+  const url = DRIVER_ENDPOINTS.earnings();
+  const wanted = String(period ?? '').toUpperCase();
+  const params = EARNINGS_PERIODS.includes(wanted) ? {period: wanted} : {};
+
+  log('earnings request', {url, ...params});
+
+  let status;
+  let body;
+  try {
+    ({status, data: body} = await apiClient.get(url, {params}));
+  } catch (err) {
+    log('earnings failed', {
+      url,
+      status: err?.response?.status ?? null,
+      body: err?.response?.data ?? err?.message,
+    });
+    throw err;
+  }
+
+  // Flat on this endpoint, but the gateway wraps some services in `data` —
+  // take whichever came back.
+  const earnings = body?.data ?? body;
+
+  log(`earnings response (${status})\n` + JSON.stringify(body, null, 2));
+
+  return earnings;
 };

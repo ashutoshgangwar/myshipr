@@ -25,6 +25,21 @@ export default StyleSheet.create({
   scrollContent: {
     paddingBottom: vs(28),
   },
+
+  // Shown when the table has no rows to draw: the period came back empty, or
+  // the call failed. The loading case draws skeleton rows here instead.
+  listEmpty: {
+    paddingVertical: vs(40),
+    paddingHorizontal: ms(20),
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  listEmptyText: {
+    color: colors.textMuted,
+    fontSize: ms(11),
+    textAlign: 'center',
+  },
  // Height/padding come from the shared DashboardHeader constants — the same ones
  // Home uses — so both dashboards render an identical blue header and neither
  // hides its copy behind the floating stat cards.

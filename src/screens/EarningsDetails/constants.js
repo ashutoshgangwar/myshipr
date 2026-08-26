@@ -90,8 +90,13 @@ const cityOf = stop =>
   typeof stop === 'string' ? stop : stop?.city ?? stop?.label ?? '';
 
 // The table renders amounts whole ("$900"); the payout headline carries cents.
-const withCents = amount =>
-  /\.\d{2}$/.test(amount ?? '') ? amount : `${amount ?? ''}.00`;
+// A row whose payout the backend has not sent yet shows a dash — left as it
+// is, since "—.00" reads as a broken figure rather than a pending one.
+const withCents = amount => {
+  const text = String(amount ?? '');
+  if (!/\d/.test(text)) return text || PAYMENT.amount;
+  return /\.\d{2}$/.test(text) ? text : `${text}.00`;
+};
 
 /**
  * Map an earnings-table row onto the payout shape this screen renders. Only
@@ -112,7 +117,11 @@ export const paymentFromTransaction = tx => {
     mode: tx.type ?? PAYMENT.mode,
     date: tx.when ?? PAYMENT.date,
     status: tx.status ?? PAYMENT.status,
-    awb: tx.awb ? tx.awb.replace('-', ' - ') : PAYMENT.awb,
+    // "AWB-125" reads better spaced out; a full "MAWB-FTL_STANDARD-2LZ…"
+    // reference is left exactly as the backend issued it.
+    awb: tx.awb
+      ? tx.awb.replace(/^([A-Za-z]+)-(\w{1,6})$/, '$1 - $2')
+      : PAYMENT.awb,
     origin: cityOf(firstPickup) || PAYMENT.origin,
     dest: cityOf(lastDrop ?? stops[stops.length - 1]) || PAYMENT.dest,
   };

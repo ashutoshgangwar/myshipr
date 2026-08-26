@@ -34,11 +34,11 @@ const bySequence = (a, b) =>
 const pad = n => String(n).padStart(2, '0');
 
 /** Stops in the order the driver drives them. */
-const orderedStops = shipment =>
+export const orderedStops = shipment =>
   (Array.isArray(shipment?.stops) ? [...shipment.stops] : []).sort(bySequence);
 
 /** The stop shape LoadRoute reads: a city label and a pickup/drop type. */
-const toStopList = stops =>
+export const toStopList = stops =>
   stops
     .map(stop => ({
       city: cityLabel(stop),
@@ -92,7 +92,7 @@ const milesLabel = value =>
  * type itself fits — and the qualifier is not what the driver is scanning the
  * column for.
  */
-const loadType = value => {
+export const loadType = value => {
   const text = String(value ?? '').trim();
   return text ? text.split('_')[0].toUpperCase() : null;
 };
