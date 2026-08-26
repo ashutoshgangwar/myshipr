@@ -6,19 +6,20 @@
  * It lives here rather than in a screen folder because two screens draw the
  * same card from the same call: the Home dashboard and the Earnings screen.
  * Each still runs its own fetch, the way they each run their own upcoming
- * shipments call.
+ * shipments call. The sorting, sparkline and month label are shared with the
+ * earnings card and live in `monthlyTotals.js`.
  *
  * ← { totalMiles: 158.17000000000002,
  *     dailyMiles: [{ miles: 158.17000000000002, date: "2026-08-21" }] }
  */
 
-import {useCallback, useEffect, useRef, useState} from 'react';
-
 import {getMonthlyMiles} from '../config/driverApi';
-import {group, isNumber, MONTHS_LONG} from '../utils/format';
+import {group, isNumber} from '../utils/format';
+import {MISSING, toChart, toRange, useMonthlyTotal} from './monthlyTotals';
 
-/** What the card shows in place of a figure it has not got. */
-export const MISSING = '—';
+export {MISSING};
+
+const ERROR = 'Could not load your monthly miles.';
 
 /**
  * The total, printed as miles: 158.17000000000002 → "158.17", 20000 → "20,000".
@@ -40,59 +41,17 @@ export const formatTotalMiles = value => {
   return `${miles < 0 ? '-' : ''}${group(whole)}${decimals ? `.${decimals}` : ''}`;
 };
 
-/** The days in the order they were driven, oldest first. */
-const byDate = list =>
-  [...list].sort((a, b) => String(a?.date ?? '').localeCompare(String(b?.date ?? '')));
+/** `dailyMiles` → the numbers the sparkline plots. */
+export const toMilesChart = dailyMiles => toChart(dailyMiles, 'miles');
 
-/**
- * `dailyMiles` → the numbers the sparkline plots.
- *
- * The backend only sends the days the driver actually drove, so this list can
- * come back with a single entry — and Sparkline needs two points to draw a
- * line. A lone day is therefore plotted from zero, which is what the month
- * did: it started at nothing and rose to that day's miles. An empty list
- * gives back an empty array, and the card draws no line at all.
- *
- * @param {object[]} dailyMiles
- * @returns {number[]}
- */
-export const toMilesChart = dailyMiles => {
-  const list = Array.isArray(dailyMiles) ? dailyMiles : [];
-  const points = byDate(list)
-    .map(day => (isNumber(day?.miles) ? Number(day.miles) : null))
-    .filter(miles => miles !== null);
-
-  if (!points.length) return [];
-  return points.length === 1 ? [0, points[0]] : points;
-};
-
-/**
- * The month the card is reporting — "August".
- *
- * Read off the payload's own dates rather than the clock, so the label always
- * names the month the figure came from. The month is taken from the date
- * string's own characters: `new Date('2026-08-21')` is UTC midnight, which
- * reads as the previous day — and so, on the 1st, as the previous month — for
- * a driver west of Greenwich. With no dates to read, the current month stands.
- *
- * @param {object[]} dailyMiles
- * @param {Date} [now] injectable for tests
- * @returns {string}
- */
-export const toMilesRange = (dailyMiles, now = new Date()) => {
-  const list = Array.isArray(dailyMiles) ? dailyMiles : [];
-  const dated = byDate(list)
-    .map(day => /^(\d{4})-(\d{2})-\d{2}/.exec(String(day?.date ?? '')))
-    .filter(Boolean);
-
-  const last = dated[dated.length - 1];
-  const month = last ? Number(last[2]) - 1 : now.getMonth();
-  return MONTHS_LONG[month] ?? MONTHS_LONG[now.getMonth()];
-};
+/** The month the card is reporting — "August". */
+export const toMilesRange = (dailyMiles, now = new Date()) =>
+  toRange(dailyMiles, now);
 
 /**
  * The whole payload → the three fields of the stat card that come from the
- * API. The icon, colour and label stay with the screen that draws the card.
+ * API. The icon, label, colour and delta pill stay with the screen that draws
+ * the card.
  *
  * While the call is still out — `miles` null — the value shows `MISSING` and
  * the line is left empty, so the card keeps its shape and its heading instead
@@ -115,50 +74,6 @@ export const toMilesCard = (miles, now = new Date()) => ({
  *            refresh: () => Promise<object|null>}}
  */
 export function useMonthlyMiles() {
-  const [miles, setMiles] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState(null);
-  const mountedRef = useRef(true);
-  const requestRef = useRef(0);
-
-  useEffect(() => {
-    mountedRef.current = true;
-    return () => {
-      mountedRef.current = false;
-    };
-  }, []);
-
-  const refresh = useCallback(async () => {
-    const requestId = ++requestRef.current;
-    setLoading(true);
-    setError(null);
-
-    try {
-      const payload = await getMonthlyMiles();
-      // A later refresh having already answered means this one is stale —
-      // writing it would walk the card backwards.
-      if (!mountedRef.current || requestId !== requestRef.current) return payload;
-      setMiles(payload || null);
-      return payload;
-    } catch (err) {
-      if (mountedRef.current && requestId === requestRef.current) {
-        setError(
-          err?.response?.data?.message ||
-            err?.message ||
-            'Could not load your monthly miles.',
-        );
-      }
-      return null;
-    } finally {
-      if (mountedRef.current && requestId === requestRef.current) {
-        setLoading(false);
-      }
-    }
-  }, []);
-
-  useEffect(() => {
-    refresh();
-  }, [refresh]);
-
-  return {miles, loading, error, refresh};
+  const {data, ...rest} = useMonthlyTotal(getMonthlyMiles, ERROR);
+  return {miles: data, ...rest};
 }

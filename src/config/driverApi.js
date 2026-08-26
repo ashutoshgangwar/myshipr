@@ -57,6 +57,14 @@ export const DRIVER_ENDPOINTS = {
    */
   monthlyMiles: () =>
     serviceUrl('drivers', '/drivers/shipments/get-monthly-miles'),
+
+  /**
+   * What the signed-in driver has earned this month — the dashboard's
+   * "Monthly Earnings" stat card, total plus a per-day breakdown. The miles
+   * endpoint's twin, and read from the bearer token the same way.
+   */
+  monthlyEarnings: () =>
+    serviceUrl('drivers', '/drivers/shipments/get-monthly-earnings'),
 };
 
 /**
@@ -316,4 +324,46 @@ export const getMonthlyMiles = async () => {
   log(`monthly miles response (${status})\n` + JSON.stringify(body, null, 2));
 
   return miles;
+};
+
+/**
+ * The driver's earnings for the current month — the "Monthly Earnings" stat
+ * card on both the Home dashboard and the Earnings screen.
+ *
+ * GET /drivers/api/v1/drivers/shipments/get-monthly-earnings
+ * ← { totalEarnings, dailyEarnings: [{ earnings, date: "YYYY-MM-DD" }] }
+ *
+ * The miles endpoint's twin in every respect: no params, the driver read from
+ * the bearer token, and a daily list covering only the days that earned
+ * anything rather than the whole month.
+ *
+ * @returns {Promise<{totalEarnings: number, dailyEarnings: object[]}>} the
+ *   payload (envelope unwrapped)
+ */
+export const getMonthlyEarnings = async () => {
+  const url = DRIVER_ENDPOINTS.monthlyEarnings();
+  log('monthly earnings request', {url});
+
+  let status;
+  let body;
+  try {
+    ({status, data: body} = await apiClient.get(url));
+  } catch (err) {
+    log('monthly earnings failed', {
+      url,
+      status: err?.response?.status ?? null,
+      body: err?.response?.data ?? err?.message,
+    });
+    throw err;
+  }
+
+  // Flat on this endpoint, but the gateway wraps some services in `data` —
+  // take whichever came back.
+  const earnings = body?.data ?? body;
+
+  log(
+    `monthly earnings response (${status})\n` + JSON.stringify(body, null, 2),
+  );
+
+  return earnings;
 };

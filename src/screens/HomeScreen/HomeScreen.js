@@ -67,6 +67,10 @@ import {
   useUpcomingShipments,
 } from '../../services/upcomingShipments';
 import {toMilesCard, useMonthlyMiles} from '../../services/monthlyMiles';
+import {
+  toEarningsCard,
+  useMonthlyEarnings,
+} from '../../services/monthlyEarnings';
 
 const {width: SCREEN_W} = Dimensions.get('window');
 
@@ -91,18 +95,17 @@ const MILES_STAT = {
 };
 
 // Single drivers see what they made; fleet drivers are paid a salary, so the
-// second card shows their trip count instead.
+// second card shows their trip count instead. Its value, month and sparkline
+// come from `/drivers/shipments/get-monthly-earnings` — the miles card's
+// twin, and its delta pill is a placeholder for the same reason.
 const EARNINGS_STAT = {
   key: 'earnings',
   icon: <Earning_sign width={STAT_ICON_SIZE} height={STAT_ICON_SIZE} />,
   label: 'Monthly Earnings',
-  range: 'July',
-  value: '$26,000',
   delta: '8.9%',
   deltaUp: false,
   deltaNote: 'from Last Month',
   chartColor: colors.danger,
-  chart: [50, 40, 52, 44, 54, 42, 50, 60],
 };
 
 const TRIPS_STAT = {
@@ -181,13 +184,18 @@ const HomeScreen = () => {
   } = useUpcomingShipments(today);
   const upcomingLoads = useMemo(() => toUpcomingLoads(upcoming), [upcoming]);
 
-  // Monthly miles — the first dashboard stat card. Its own call; nothing else
-  // on Home carries the month's total.
+  // The two dashboard stat cards, each from its own call — nothing else on
+  // Home carries either month-to-date total. A fleet driver is on a salary,
+  // so the earnings call is skipped for them: their right-hand card is the
+  // trip count, which is still static.
   const {miles: monthlyMiles, refresh: refreshMonthlyMiles} = useMonthlyMiles();
+  const {earnings: monthlyEarnings, refresh: refreshMonthlyEarnings} =
+    useMonthlyEarnings();
   const stats = useMemo(() => {
     const milesStat = {...MILES_STAT, ...toMilesCard(monthlyMiles)};
-    return isFleet ? [milesStat, TRIPS_STAT] : [milesStat, EARNINGS_STAT];
-  }, [isFleet, monthlyMiles]);
+    if (isFleet) return [milesStat, TRIPS_STAT];
+    return [milesStat, {...EARNINGS_STAT, ...toEarningsCard(monthlyEarnings)}];
+  }, [isFleet, monthlyEarnings, monthlyMiles]);
 
   // Skeletons stand in for the first load of each call only. Every refresh
   // after that (coming back to Home, a reported fuel price) flips `loading`
@@ -292,6 +300,7 @@ const HomeScreen = () => {
         refreshHos();
         // A trip run since the driver left Home has added to the month.
         refreshMonthlyMiles();
+        refreshMonthlyEarnings();
       }
       return () => {
         cancelled = true;
@@ -300,6 +309,7 @@ const HomeScreen = () => {
       refreshCurrentTrip,
       refreshFuelReward,
       refreshHos,
+      refreshMonthlyEarnings,
       refreshMonthlyMiles,
       refreshUpcoming,
     ]),

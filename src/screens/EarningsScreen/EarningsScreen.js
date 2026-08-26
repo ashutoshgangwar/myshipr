@@ -18,6 +18,10 @@ import Earning_sign from '../../assets/svg_icon/earning_sign.svg';
 import {IS_TABLET} from '../../theme/device';
 import {paymentFromTransaction} from '../EarningsDetails/constants';
 import {toMilesCard, useMonthlyMiles} from '../../services/monthlyMiles';
+import {
+  toEarningsCard,
+  useMonthlyEarnings,
+} from '../../services/monthlyEarnings';
 
 const PERIODS = ['Weekly', 'Monthly', 'Yearly'];
 
@@ -57,20 +61,18 @@ const MILES_STAT = {
   chartColor: colors.success,
 };
 
-const STATS = [
-  {
-    key: 'earnings',
-    icon: <Earning_sign width={STAT_ICON_SIZE} height={STAT_ICON_SIZE} />,
-    label: 'Monthly Earnings',
-    range: 'July',
-    value: '$26,000',
-    delta: '8.9%',
-    deltaUp: false,
-    deltaNote: 'from Last Month',
-    chartColor: colors.danger,
-    chart: [50, 40, 52, 44, 54, 42, 50, 60],
-  },
-];
+// The right card, fed by `/drivers/shipments/get-monthly-earnings` the same
+// way — value, month and sparkline overwritten from the call, delta pill left
+// as designed until there is a last-month total behind it.
+const EARNINGS_STAT = {
+  key: 'earnings',
+  icon: <Earning_sign width={STAT_ICON_SIZE} height={STAT_ICON_SIZE} />,
+  label: 'Monthly Earnings',
+  delta: '8.9%',
+  deltaUp: false,
+  deltaNote: 'from Last Month',
+  chartColor: colors.danger,
+};
 
 // Filled status pill colours.
 const STATUS_COLOR = {
@@ -195,13 +197,18 @@ export default function EarningsScreen({navigation}) {
 
   const data = useMemo(() => PERIOD_DATA[period], [period]);
 
-  // Monthly miles, the same call the Home dashboard's card reads. The period
-  // dropdown does not reach it — the endpoint reports the month, and the two
-  // floating cards report the month whichever period the table is showing.
+  // The two floating cards, from the same pair of calls the Home dashboard
+  // reads. The period dropdown does not reach them — those endpoints report
+  // the month, and these cards report the month whichever period the table
+  // below is showing.
   const {miles: monthlyMiles} = useMonthlyMiles();
+  const {earnings: monthlyEarnings} = useMonthlyEarnings();
   const stats = useMemo(
-    () => [{...MILES_STAT, ...toMilesCard(monthlyMiles)}, ...STATS],
-    [monthlyMiles],
+    () => [
+      {...MILES_STAT, ...toMilesCard(monthlyMiles)},
+      {...EARNINGS_STAT, ...toEarningsCard(monthlyEarnings)},
+    ],
+    [monthlyEarnings, monthlyMiles],
   );
 
   const toggleRow = id => setExpandedRows(prev => ({...prev, [id]: !prev[id]}));
