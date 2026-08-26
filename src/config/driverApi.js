@@ -36,6 +36,13 @@ export const DRIVER_ENDPOINTS = {
    * bearer token, so the call takes no id and no query params.
    */
   fuelReward: () => serviceUrl('drivers', '/drivers/fuel/reward'),
+
+  /**
+   * The signed-in driver's hours-of-service card — duty status, minutes
+   * driven against the daily driving limit, and when the 34-hour reset comes
+   * available. Read from the bearer token, so it takes no id.
+   */
+  hosCard: () => serviceUrl('drivers', '/drivers/hos/card'),
 };
 
 /**
@@ -186,4 +193,42 @@ export const getFuelReward = async () => {
   });
 
   return reward;
+};
+
+/**
+ * The driver's hours-of-service card — the Home "Hours of Service" panel.
+ *
+ * GET /drivers/api/v1/drivers/hos/card
+ * ← { dutyStatus: "OFF_DUTY" | "ON_DUTY" | "DRIVING" | "SLEEPER_BERTH",
+ *     drivenMinutes, totalDrivingMinutes, remainingDrivingMinutes,
+ *     resetAvailableAt: ISO-8601 }
+ *
+ * The driver comes from the bearer token; there are no params.
+ *
+ * @returns {Promise<object>} the HOS payload (envelope unwrapped)
+ */
+export const getHosCard = async () => {
+  const url = DRIVER_ENDPOINTS.hosCard();
+  log('hos card request', {url});
+
+  let status;
+  let body;
+  try {
+    ({status, data: body} = await apiClient.get(url));
+  } catch (err) {
+    log('hos card failed', {
+      url,
+      status: err?.response?.status ?? null,
+      body: err?.response?.data ?? err?.message,
+    });
+    throw err;
+  }
+
+  // Flat on this endpoint, but the gateway wraps some services in `data` —
+  // take whichever came back.
+  const hos = body?.data ?? body;
+
+  log(`hos card response (${status})\n` + JSON.stringify(body, null, 2));
+
+  return hos;
 };

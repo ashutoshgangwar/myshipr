@@ -367,6 +367,19 @@ export default StyleSheet.create({
     fontWeight: '700',
   },
 
+  // Off duty / sleeper berth: the clock is not running, so the pill reads as
+  // neutral rather than wearing the same amber as a driving hour.
+  pillOffDuty: {
+    borderColor: colors.cardBorder,
+    backgroundColor: colors.cardBorder,
+  },
+
+  pillOffDutyText: {
+    color: colors.textMuted,
+    fontSize: ms(11),
+    fontWeight: '700',
+  },
+
   /* ---------- Current Trip ---------- */
   payoutRow: {
     flexDirection: 'row',
@@ -472,6 +485,12 @@ export default StyleSheet.create({
 
   progressFillWarn: {
     backgroundColor: colors.warning,
+  },
+
+  // Past four fifths of the day's driving hours — the bar stops being a
+  // status and starts being a warning.
+  progressFillDanger: {
+    backgroundColor: colors.danger,
   },
 
   /* ---------- Buttons ---------- */

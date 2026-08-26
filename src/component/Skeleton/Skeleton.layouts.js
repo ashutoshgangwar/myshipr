@@ -93,6 +93,41 @@ export const TRIP_CARD_BONES = [
 export const REWARD_POINTS_BONES = [bone(hms(52), hvs(13))];
 
 /* ------------------------------------------------------------------ *
+ * Home — Hours of Service card
+ * The whole panel is fetched — duty pill, the driven/limit row, the bar and
+ * the two detail rows — so the bones cover everything under the title.
+ * ------------------------------------------------------------------ */
+export const HOS_CARD_BONES = [
+  // "8h 23m Driven" against "11h Total".
+  group(
+    {
+      flexDirection: 'row',
+      justifyContent: 'space-between',
+      alignItems: 'center',
+      marginTop: hvs(14),
+      marginBottom: hvs(6),
+    },
+    [bone(hms(96), hvs(14)), bone(hms(52), hvs(13))],
+  ),
+
+  // The bar.
+  bone('100%', hvs(6), {borderRadius: ms(8)}),
+
+  // Remaining Driving Hours / Reset Available.
+  ...[0, 1].map(() =>
+    group(
+      {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginTop: hvs(12),
+      },
+      [bone(hms(104), hvs(10)), bone(hms(58), hvs(10))],
+    ),
+  ),
+];
+
+/* ------------------------------------------------------------------ *
  * Home — Upcoming Shipment rows
  * ------------------------------------------------------------------ */
 

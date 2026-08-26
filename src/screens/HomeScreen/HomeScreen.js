@@ -30,6 +30,7 @@ import LoadRoute from '../../component/LoadRoute/LoadRoute';
 import DieselBadge from '../../component/DieselBadge/DieselBadge';
 import Skeleton from '../../component/Skeleton/Skeleton';
 import {
+  HOS_CARD_BONES,
   REWARD_POINTS_BONES,
   TRIP_CARD_BONES,
   upcomingLoadBones,
@@ -59,6 +60,7 @@ import {
   useCurrentTrip,
 } from './currentTrip';
 import {useFuelReward} from './fuelReward';
+import {toDutyPill, toHosBar, toHosDetails, useHosCard} from './hosCard';
 import {
   toUpcomingLoads,
   useUpcomingShipments,
@@ -136,12 +138,6 @@ const STARTS_IN_FALLBACK = 'Starts in …';
 // The Upcoming Shipment card's placeholder rows. Fixed, so built once.
 const LOAD_BONES = upcomingLoadBones(4);
 
-const HOS_DETAILS = [
-  {label: 'Remaining Driving Hours', value: '34h 10m'},
-  {label: 'Cycle Remaining', value: '2h 10m'},
-  {label: 'Reset Available', value: 'Tomorrow 8:00 AM'},
-];
-
 const HomeScreen = () => {
   const navigation = useNavigation();
   const {isFleet} = useDriverRole();
@@ -165,6 +161,12 @@ const HomeScreen = () => {
     loading: rewardLoading,
     refresh: refreshFuelReward,
   } = useFuelReward();
+  // Hours of service — its own ELD-backed call, separate from the trip.
+  const {
+    hos: hosCard,
+    loading: hosLoading,
+    refresh: refreshHos,
+  } = useHosCard();
   // Upcoming loads. The endpoint's `date` filter is left unset: no argument
   // means "whatever is next", which is what this card is for.
   const {
@@ -181,6 +183,7 @@ const HomeScreen = () => {
   // them is worse than letting the figure update in place.
   const tripPending = tripLoading && !currentTrip;
   const rewardPending = rewardLoading && rewardPoints === null;
+  const hosPending = hosLoading && !hosCard;
   const upcomingPending = upcomingLoading && !upcomingLoads.length;
 
   const statusPill = tripStatusPill(currentTrip);
@@ -188,6 +191,10 @@ const HomeScreen = () => {
   const routeStops = toRouteStops(currentTrip);
   const tripStats = toTripStats(currentTrip);
   const hos = toHosProgress(currentTrip);
+  // The standalone Hours of Service card, all of it from `/drivers/hos/card`.
+  const dutyPill = toDutyPill(hosCard);
+  const hosBar = toHosBar(hosCard);
+  const hosDetails = toHosDetails(hosCard);
   const [menuOpen, setMenuOpen] = useState(false);
   const [menuPos, setMenuPos] = useState({top: 0, right: 0});
   // Upcoming loads collapse their middle stops; tapping a row (or its
@@ -268,11 +275,14 @@ const HomeScreen = () => {
         refreshFuelReward();
         // A load that started while we were away is no longer upcoming.
         refreshUpcoming();
+        // Driving minutes only ever move on, so the card is stale the moment
+        // the driver leaves this screen.
+        refreshHos();
       }
       return () => {
         cancelled = true;
       };
-    }, [refreshCurrentTrip, refreshFuelReward, refreshUpcoming]),
+    }, [refreshCurrentTrip, refreshFuelReward, refreshHos, refreshUpcoming]),
   );
 
   return (
@@ -437,43 +447,60 @@ const HomeScreen = () => {
             <View style={styles.card}>
               <View style={styles.cardHeaderRow}>
                 <AppText style={styles.cardTitle}>Hours of Service</AppText>
-                <View style={[styles.pill, styles.pillOnDuty]}>
-                  <AppText style={styles.pillOnDutyText}>On Duty</AppText>
-                </View>
+                {/* No pill at all until the duty status is known — an
+                    invented one is a compliance figure the driver would act
+                    on. */}
+                {dutyPill && (
+                  <View
+                    style={[
+                      styles.pill,
+                      dutyPill.active
+                        ? styles.pillOnDuty
+                        : styles.pillOffDuty,
+                    ]}>
+                    <AppText
+                      style={
+                        dutyPill.active
+                          ? styles.pillOnDutyText
+                          : styles.pillOffDutyText
+                      }>
+                      {dutyPill.label}
+                    </AppText>
+                  </View>
+                )}
               </View>
 
-              <View style={styles.hosDrivenRow}>
-                <AppText style={styles.hosDrivenText}>8h 23m Driven</AppText>
-                <AppText style={styles.hosRemText}>11h Total</AppText>
-              </View>
-              <View style={styles.progressTrack}>
-                <View
-                  style={[
-                    styles.progressFill,
-                    styles.progressFillWarn,
-                    {width: '77%'},
-                  ]}
-                />
-              </View>
-
-              {HOS_DETAILS.map((item, index) => (
-                <View
-                  key={item.label}
-                  style={[
-                    styles.detailRow,
-                    index === HOS_DETAILS.length - 1 && styles.detailRowLast,
-                  ]}>
-                  <AppText style={styles.detailLabel}>{item.label}</AppText>
-                  <AppText
-                    style={
-                      item.strong
-                        ? styles.detailValueStrong
-                        : styles.detailValue
-                    }>
-                    {item.value}
+              <Skeleton loading={hosPending} bones={HOS_CARD_BONES}>
+                <View style={styles.hosDrivenRow}>
+                  <AppText style={styles.hosDrivenText}>
+                    {hosBar.driven}
                   </AppText>
+                  <AppText style={styles.hosRemText}>{hosBar.total}</AppText>
                 </View>
-              ))}
+                <View style={styles.progressTrack}>
+                  <View
+                    style={[
+                      styles.progressFill,
+                      hosBar.critical
+                        ? styles.progressFillDanger
+                        : styles.progressFillWarn,
+                      {width: hosBar.width},
+                    ]}
+                  />
+                </View>
+
+                {hosDetails.map((item, index) => (
+                  <View
+                    key={item.label}
+                    style={[
+                      styles.detailRow,
+                      index === hosDetails.length - 1 && styles.detailRowLast,
+                    ]}>
+                    <AppText style={styles.detailLabel}>{item.label}</AppText>
+                    <AppText style={styles.detailValue}>{item.value}</AppText>
+                  </View>
+                ))}
+              </Skeleton>
             </View>
           </View>
 
