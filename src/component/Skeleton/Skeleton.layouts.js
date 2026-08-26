@@ -242,9 +242,14 @@ export const STAT_CARD_BONES = [
 export const GROSS_BONES = [bone(dms(140), dvs(18))];
 
 /**
- * Stands in for the price in the header's DIESEL chip while the 20-second
- * poll is in flight. Sized to "$3.89/gal" so the chip keeps its width instead
- * of snapping wider the moment the price lands, and drawn with `onDark`
- * against the navy header.
+ * Stands in for the price in the header's DIESEL chip while the first call is
+ * in flight.
+ *
+ * The chip pins its value to a fixed slot, so the bone takes that slot whole
+ * — both dimensions — rather than carrying measurements of its own. Sized
+ * here it would be scaled by HEADER_FACTOR while the price it stands in for
+ * is scaled by the chip's own factor, and the chip would resize by the
+ * difference the moment the skeleton cleared, taking the header and the whole
+ * scroll below it along. Drawn with `onDark` against the navy header.
  */
-export const DIESEL_VALUE_BONES = [bone(dms(42), dvs(11), {marginTop: dvs(2)})];
+export const DIESEL_VALUE_BONES = [bone('100%', '100%')];

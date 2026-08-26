@@ -27,7 +27,7 @@ import StarIcon from '../../assets/svg_icon/Star_Vector.svg';
 import Dropdown_icon from '../../assets/svg_icon/Dropdown_icon.svg';
 import RouteStops from '../../component/RouteStops/RouteStops';
 import LoadRoute from '../../component/LoadRoute/LoadRoute';
-import DieselBadge from '../../component/DieselBadge/DieselBadge';
+import DieselPriceBadge from '../../component/DieselBadge/DieselPriceBadge';
 import Skeleton from '../../component/Skeleton/Skeleton';
 import {
   HOS_CARD_BONES,
@@ -60,7 +60,7 @@ import {
   useCurrentTrip,
 } from './currentTrip';
 import {useFuelReward} from './fuelReward';
-import {useFuelPrice} from '../../services/fuelPrice';
+import {refreshFuelPrice} from '../../services/fuelPrice';
 import {toDutyPill, toHosBar, toHosDetails, useHosCard} from './hosCard';
 import {
   todayIso,
@@ -168,16 +168,6 @@ const HomeScreen = () => {
     loading: rewardLoading,
     refresh: refreshFuelReward,
   } = useFuelReward();
-  // The diesel price in the header, from the driver's own coordinate, polled
-  // every 20 seconds. Outside the US the endpoint has no price to give, so the
-  // chip holds the last one it had and `dieselMessage` carries the reason.
-  const {
-    value: dieselPrice,
-    message: dieselMessage,
-    muted: dieselMuted,
-    pending: dieselPending,
-    refresh: refreshDiesel,
-  } = useFuelPrice();
   // Hours of service — its own ELD-backed call, separate from the trip.
   const {
     hos: hosCard,
@@ -317,8 +307,9 @@ const HomeScreen = () => {
         // the driver leaves this screen.
         refreshHos();
         // The pump price moves through the day, and the truck has usually
-        // moved too.
-        refreshDiesel();
+        // moved too. Asked for without subscribing: the chip is listening and
+        // redraws itself when the answer lands.
+        refreshFuelPrice();
         // A trip run since the driver left Home has added to the month.
         refreshMonthlyMiles();
         refreshMonthlyEarnings();
@@ -329,7 +320,6 @@ const HomeScreen = () => {
       };
     }, [
       refreshCurrentTrip,
-      refreshDiesel,
       refreshFuelReward,
       refreshHos,
       refreshMonthlyEarnings,
@@ -380,12 +370,9 @@ const HomeScreen = () => {
                   height={IS_TABLET ? 35 : 25}
                 />
               </TouchableOpacity>
-              <DieselBadge
-                value={dieselPrice}
-                message={dieselMessage}
-                muted={dieselMuted}
-                loading={dieselPending}
-              />
+              {/* Subscribed to the price itself, so the 20-second poll
+                  redraws the chip and not this screen. */}
+              <DieselPriceBadge />
               <TouchableOpacity
                 ref={avatarRef}
                 style={styles.avatarBtn}
