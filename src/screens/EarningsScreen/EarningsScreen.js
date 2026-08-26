@@ -17,6 +17,7 @@ import Circle_two_way from '../../assets/svg_icon/circle_two_way.svg';
 import Earning_sign from '../../assets/svg_icon/earning_sign.svg';
 import {IS_TABLET} from '../../theme/device';
 import {paymentFromTransaction} from '../EarningsDetails/constants';
+import {toMilesCard, useMonthlyMiles} from '../../services/monthlyMiles';
 
 const PERIODS = ['Weekly', 'Monthly', 'Yearly'];
 
@@ -42,19 +43,21 @@ const PERIOD_DATA = {
 
 const STAT_ICON_SIZE = IS_TABLET ? 26 : 22;
 
+// The left card's figures — value, month and sparkline — come from
+// `/drivers/shipments/get-monthly-miles` and overwrite the fields below. The
+// delta pill stays as designed for now: that endpoint reports the current
+// month alone, so there is no last-month total to measure it against yet.
+const MILES_STAT = {
+  key: 'miles',
+  icon: <Circle_two_way width={STAT_ICON_SIZE} height={STAT_ICON_SIZE} />,
+  label: 'Monthly Miles',
+  delta: '8.9%',
+  deltaUp: true,
+  deltaNote: 'from Last Month',
+  chartColor: colors.success,
+};
+
 const STATS = [
-  {
-    key: 'miles',
-    icon: <Circle_two_way width={STAT_ICON_SIZE} height={STAT_ICON_SIZE} />,
-    label: 'Monthly Miles',
-    range: 'July',
-    value: '20,000',
-    delta: '8.9%',
-    deltaUp: true,
-    deltaNote: 'from Last Month',
-    chartColor: colors.success,
-    chart: [30, 42, 38, 55, 50, 62, 72],
-  },
   {
     key: 'earnings',
     icon: <Earning_sign width={STAT_ICON_SIZE} height={STAT_ICON_SIZE} />,
@@ -192,6 +195,15 @@ export default function EarningsScreen({navigation}) {
 
   const data = useMemo(() => PERIOD_DATA[period], [period]);
 
+  // Monthly miles, the same call the Home dashboard's card reads. The period
+  // dropdown does not reach it — the endpoint reports the month, and the two
+  // floating cards report the month whichever period the table is showing.
+  const {miles: monthlyMiles} = useMonthlyMiles();
+  const stats = useMemo(
+    () => [{...MILES_STAT, ...toMilesCard(monthlyMiles)}, ...STATS],
+    [monthlyMiles],
+  );
+
   const toggleRow = id => setExpandedRows(prev => ({...prev, [id]: !prev[id]}));
 
   const openPayment = tx =>
@@ -230,7 +242,7 @@ export default function EarningsScreen({navigation}) {
               <DropdownIcon width={16} height={16} />
             </TouchableOpacity>
           }
-          stats={STATS}>
+          stats={stats}>
           <AppText style={styles.grossValue}>{data.gross}</AppText>
           <AppText style={styles.grossLabel}>{data.grossLabel}</AppText>
         </DashboardHeader>

@@ -49,6 +49,14 @@ export const DRIVER_ENDPOINTS = {
    * available. Read from the bearer token, so it takes no id.
    */
   hosCard: () => serviceUrl('drivers', '/drivers/hos/card'),
+
+  /**
+   * The miles the signed-in driver has run this month — the dashboard's
+   * "Monthly Miles" stat card, total plus a per-day breakdown. Read from the
+   * bearer token, so it takes no id and no query params.
+   */
+  monthlyMiles: () =>
+    serviceUrl('drivers', '/drivers/shipments/get-monthly-miles'),
 };
 
 /**
@@ -267,4 +275,45 @@ export const getHosCard = async () => {
   log(`hos card response (${status})\n` + JSON.stringify(body, null, 2));
 
   return hos;
+};
+
+/**
+ * The driver's miles for the current month — the "Monthly Miles" stat card on
+ * both the Home dashboard and the Earnings screen.
+ *
+ * GET /drivers/api/v1/drivers/shipments/get-monthly-miles
+ * ← { totalMiles, dailyMiles: [{ miles, date: "YYYY-MM-DD" }] }
+ *
+ * The driver comes from the bearer token; there are no params. `dailyMiles`
+ * only carries the days the driver actually drove, so it is shorter than the
+ * month and can come back with a single entry — the sparkline is built to
+ * cope with that rather than the caller padding it here.
+ *
+ * @returns {Promise<{totalMiles: number, dailyMiles: object[]}>} the payload
+ *   (envelope unwrapped)
+ */
+export const getMonthlyMiles = async () => {
+  const url = DRIVER_ENDPOINTS.monthlyMiles();
+  log('monthly miles request', {url});
+
+  let status;
+  let body;
+  try {
+    ({status, data: body} = await apiClient.get(url));
+  } catch (err) {
+    log('monthly miles failed', {
+      url,
+      status: err?.response?.status ?? null,
+      body: err?.response?.data ?? err?.message,
+    });
+    throw err;
+  }
+
+  // Flat on this endpoint, but the gateway wraps some services in `data` —
+  // take whichever came back.
+  const miles = body?.data ?? body;
+
+  log(`monthly miles response (${status})\n` + JSON.stringify(body, null, 2));
+
+  return miles;
 };

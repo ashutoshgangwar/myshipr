@@ -66,6 +66,7 @@ import {
   toUpcomingLoads,
   useUpcomingShipments,
 } from '../../services/upcomingShipments';
+import {toMilesCard, useMonthlyMiles} from '../../services/monthlyMiles';
 
 const {width: SCREEN_W} = Dimensions.get('window');
 
@@ -75,17 +76,18 @@ const PRIMARY_GRADIENT = ['#00033E', '#0008A4'];
 
 const STAT_ICON_SIZE = IS_TABLET ? 26 : 22;
 
+// The value, the month and the sparkline come from
+// `/drivers/shipments/get-monthly-miles` and overwrite the fields below. The
+// delta pill stays as designed for now — that endpoint reports this month
+// only, so there is no last-month total to measure it against yet.
 const MILES_STAT = {
   key: 'miles',
   icon: <Circle_two_way width={STAT_ICON_SIZE} height={STAT_ICON_SIZE} />,
   label: 'Monthly Miles',
-  range: 'July',
-  value: '20,000',
   delta: '8.9%',
   deltaUp: true,
   deltaNote: 'from Last Month',
   chartColor: colors.success,
-  chart: [30, 42, 38, 55, 50, 62, 72],
 };
 
 // Single drivers see what they made; fleet drivers are paid a salary, so the
@@ -116,9 +118,6 @@ const TRIPS_STAT = {
   chart: [50, 40, 52, 44, 54, 42, 50, 60],
 };
 
-const FLEET_STATS = [MILES_STAT, TRIPS_STAT];
-const SINGLE_STATS = [MILES_STAT, EARNINGS_STAT];
-
 // Fallback destination for START TRIP, used until the current-trip call
 // answers (or when its last stop carries no coordinate). Only the drop is
 // given — the pickup is always the driver's live GPS position.
@@ -142,7 +141,6 @@ const LOAD_BONES = upcomingLoadBones(4);
 const HomeScreen = () => {
   const navigation = useNavigation();
   const {isFleet} = useDriverRole();
-  const stats = isFleet ? FLEET_STATS : SINGLE_STATS;
   const [mapVisible, setMapVisible] = useState(false);
   // A trip is "on" for as long as the HERE session is — that lives in the SDK,
   // not in this screen, so it survives ActiveTripScreen unmounting and is what
@@ -182,6 +180,14 @@ const HomeScreen = () => {
     refresh: refreshUpcoming,
   } = useUpcomingShipments(today);
   const upcomingLoads = useMemo(() => toUpcomingLoads(upcoming), [upcoming]);
+
+  // Monthly miles — the first dashboard stat card. Its own call; nothing else
+  // on Home carries the month's total.
+  const {miles: monthlyMiles, refresh: refreshMonthlyMiles} = useMonthlyMiles();
+  const stats = useMemo(() => {
+    const milesStat = {...MILES_STAT, ...toMilesCard(monthlyMiles)};
+    return isFleet ? [milesStat, TRIPS_STAT] : [milesStat, EARNINGS_STAT];
+  }, [isFleet, monthlyMiles]);
 
   // Skeletons stand in for the first load of each call only. Every refresh
   // after that (coming back to Home, a reported fuel price) flips `loading`
@@ -284,11 +290,19 @@ const HomeScreen = () => {
         // Driving minutes only ever move on, so the card is stale the moment
         // the driver leaves this screen.
         refreshHos();
+        // A trip run since the driver left Home has added to the month.
+        refreshMonthlyMiles();
       }
       return () => {
         cancelled = true;
       };
-    }, [refreshCurrentTrip, refreshFuelReward, refreshHos, refreshUpcoming]),
+    }, [
+      refreshCurrentTrip,
+      refreshFuelReward,
+      refreshHos,
+      refreshMonthlyMiles,
+      refreshUpcoming,
+    ]),
   );
 
   return (

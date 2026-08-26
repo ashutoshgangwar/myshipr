@@ -75,6 +75,12 @@ export const stopTime = value => {
   return Number.isFinite(parsed) ? clock(new Date(parsed)) : text;
 };
 
+/** Full month names, for the copy that spells the month out ("July"). */
+export const MONTHS_LONG = [
+  'January', 'February', 'March', 'April', 'May', 'June',
+  'July', 'August', 'September', 'October', 'November', 'December',
+];
+
 export const MONTHS_SHORT = [
   'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
   'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec',
