@@ -32,6 +32,12 @@ export const DRIVER_ENDPOINTS = {
     serviceUrl('drivers', '/drivers/shipments/upcoming'),
 
   /**
+   * The signed-in driver's completed shipments — the PAST tab of the Shipment
+   * table. Same shape and same optional `date` param as its upcoming twin.
+   */
+  pastShipments: () => serviceUrl('drivers', '/drivers/shipments/past'),
+
+  /**
    * The signed-in driver's fuel-reward balance. The driver is read from the
    * bearer token, so the call takes no id and no query params.
    */
@@ -52,26 +58,53 @@ export const DRIVER_ENDPOINTS = {
  * ← [{ tripId, awb, date, stops: [{sequence, type, address, from, to, ...}] }]
  *   (or the same list wrapped in an envelope: {data: {content|items: [...]}})
  *
- * The driver comes from the bearer token. `date` is optional and deliberately
- * NOT defaulted to today — sent empty, the backend returns whatever it
- * considers upcoming; sent with a date, it filters to that day.
+ * The driver comes from the bearer token. `date` is optional and not defaulted
+ * here — sent empty, the backend returns whatever it considers upcoming; sent
+ * with a date, it filters to that day. Callers decide which they want.
  *
  * @param {{date?: string}} params `date` as YYYY-MM-DD
  * @returns {Promise<object[]>} the shipment list (envelope unwrapped)
  */
-export const getUpcomingShipments = async ({date} = {}) => {
+export const getUpcomingShipments = ({date} = {}) =>
+  getShipmentList(DRIVER_ENDPOINTS.upcomingShipments(), 'upcoming', date);
+
+/**
+ * The driver's completed shipments — the PAST tab of the Shipment table.
+ *
+ * GET /drivers/api/v1/drivers/shipments/past?date=YYYY-MM-DD
+ * ← the same list shape the upcoming endpoint returns.
+ *
+ * `date` is optional here too: without it the backend picks the window it
+ * considers past, and with it the list narrows to that one day.
+ *
+ * @param {{date?: string}} params `date` as YYYY-MM-DD
+ * @returns {Promise<object[]>} the shipment list (envelope unwrapped)
+ */
+export const getPastShipments = ({date} = {}) =>
+  getShipmentList(DRIVER_ENDPOINTS.pastShipments(), 'past', date);
+
+/**
+ * The GET the two shipment-list endpoints share: an optional `date` query
+ * param, a logged request and response, and the envelope unwrapped to an
+ * array. `label` only names the endpoint in the log lines.
+ *
+ * @param {string} url
+ * @param {string} label
+ * @param {string} [date] YYYY-MM-DD
+ * @returns {Promise<object[]>}
+ */
+const getShipmentList = async (url, label, date) => {
   const params = {};
   if (date) params.date = date;
 
-  const url = DRIVER_ENDPOINTS.upcomingShipments();
-  log('upcoming shipments request', {url, ...params});
+  log(`${label} shipments request`, {url, ...params});
 
   let status;
   let body;
   try {
     ({status, data: body} = await apiClient.get(url, {params}));
   } catch (err) {
-    log('upcoming shipments failed', {
+    log(`${label} shipments failed`, {
       url,
       status: err?.response?.status ?? null,
       body: err?.response?.data ?? err?.message,
@@ -79,7 +112,10 @@ export const getUpcomingShipments = async ({date} = {}) => {
     throw err;
   }
 
-  log(`upcoming shipments response (${status})\n` + JSON.stringify(body, null, 2));
+  log(
+    `${label} shipments response (${status})\n` +
+      JSON.stringify(body, null, 2),
+  );
 
   // The list may arrive bare, under `data`, or paged under `content`/`items` —
   // unwrap whichever envelope the gateway used and always hand back an array.

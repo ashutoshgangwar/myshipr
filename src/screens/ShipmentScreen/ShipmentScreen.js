@@ -19,6 +19,7 @@ import {
   formatLoadDate,
   shipmentDate,
   toShipmentRows,
+  usePastShipments,
   useUpcomingShipments,
 } from '../../services/upcomingShipments';
 import {MONTHS_SHORT} from '../../utils/format';
@@ -75,44 +76,9 @@ const TABS = [
 
 const COLUMNS = ['AWB Number', 'Route', 'Payout', 'Pickup Time'];
 
-// Placeholder rows for the UPCOMING tab while its call is in flight. Fixed
-// content, so built once rather than on every render.
+// Placeholder rows shown while a tab's call is in flight. Fixed content, so
+// built once rather than on every render.
 const ROW_BONES = shipmentRowBones(6);
-
-// Stops carry an explicit pickup/drop type so multi-pickup loads collapse their
-// middle stops behind a "+N More Pickups" chip until the row is tapped.
-const pickup = city => ({city, type: 'pickup'});
-const drop = city => ({city, type: 'drop'});
-
-const ROUTE = [
-  pickup('Jersey City, NJ'),
-  pickup('Newark, NJ'),
-  pickup('Trenton, NJ'),
-  drop('Baltimore, ND'),
-];
-
-const trip = (id, overrides) => ({
-  id,
-  awb: 'AWB-125',
-  type: 'FTL',
-  stops: ROUTE,
-  payout: '$900',
-  miles: '180 Miles',
-  pickupAt: '6:00PM JUL 12',
-  ...overrides,
-});
-
-// UPCOMING comes from `GET /drivers/shipments/upcoming`. PAST keeps this
-// sample — the driver service has no past-loads endpoint yet.
-const PAST_SHIPMENTS = [
-  trip('p1', {pickupAt: '6:00PM JUL 04'}),
-  trip('p2', {pickupAt: '6:00PM JUL 02'}),
-  trip('p3', {
-    type: 'LTL',
-    stops: [pickup('San Jose CA'), drop('Newark NJ')],
-    pickupAt: '6:00PM JUN 28',
-  }),
-];
 
 export default function ShipmentScreen({navigation}) {
   // The strip is anchored to whatever "today" is. Stamped once here, then
@@ -120,9 +86,9 @@ export default function ShipmentScreen({navigation}) {
   // and a strip still starting on yesterday would file loads under the wrong
   // day. Storing the ISO string, not the Date, keeps the comparison cheap.
   const [today, setToday] = useState(() => toIso(new Date()));
-  // The day the table is filtered to, or null for "everything upcoming".
-  // Null is the default on purpose: with no `date` the backend decides the
-  // window, which is the whole point of the tab on first open.
+  // The day the UPCOMING table is filtered to, or null for "no day picked",
+  // which falls back to today rather than to an unfiltered call — the tab
+  // lists what is still to come, and today is where that starts.
   const [selectedDate, setSelectedDate] = useState(null);
   const [tab, setTab] = useState('upcoming');
   // Tapping a row (or its "+N More …" chip) reveals every pickup and drop.
@@ -136,31 +102,61 @@ export default function ShipmentScreen({navigation}) {
     return buildWeek(new Date(year, month - 1, day));
   }, [today]);
 
-  // The same call the Home card makes, but filtered: picking a day sends it
-  // as `?date=`, and the hook refetches. With nothing picked the parameter is
-  // left off entirely and the backend answers with the full upcoming window.
+  // The day the UPCOMING call asks for. Always sent — a day picked off the
+  // strip, or today when none is — so the backend never has to guess the
+  // window and yesterday's loads can never come back under this tab.
+  const upcomingDate = selectedDate || today;
+
+  // The same call the Home card makes, filtered to `upcomingDate`; changing
+  // the day refetches.
   const {
     shipments: upcoming,
-    loadedDate,
+    loadedDate: upcomingLoadedDate,
     loading: upcomingLoading,
     error: upcomingError,
-  } = useUpcomingShipments(selectedDate || undefined);
+  } = useUpcomingShipments(upcomingDate);
   const upcomingRows = useMemo(() => toShipmentRows(upcoming), [upcoming]);
 
-  // Days to mark with a dot. They can only come from an unfiltered response —
-  // once a day is picked the payload holds that day alone, which would rub
-  // out every other dot on the strip. So the marks are taken from the last
-  // full list and kept across filtering.
+  // PAST is its own endpoint, `GET /drivers/shipments/past`. It is asked
+  // unfiltered: the strip only offers today and the six days after it, so
+  // narrowing completed loads by one of those days would answer empty every
+  // time. The tab lists the whole window the backend considers past.
+  const {
+    shipments: past,
+    loadedDate: pastLoadedDate,
+    loading: pastLoading,
+    error: pastError,
+  } = usePastShipments();
+  const pastRows = useMemo(() => toShipmentRows(past), [past]);
+
+  const isUpcoming = tab === 'upcoming';
+  const shipments = isUpcoming ? upcomingRows : pastRows;
+  const loading = isUpcoming ? upcomingLoading : pastLoading;
+  const error = isUpcoming ? upcomingError : pastError;
+  const loadedDate = isUpcoming ? upcomingLoadedDate : pastLoadedDate;
+
+  // Days to mark with a dot on the strip. Every upcoming response now covers
+  // one day, so each answer is the truth about that day alone: it lights the
+  // dot when loads came back and puts it out when they did not. Days the
+  // driver has not looked at yet keep whatever mark they already had, so the
+  // strip fills in as they browse instead of collapsing to a single dot.
   const [pickupDates, setPickupDates] = useState(() => new Set());
   useEffect(() => {
-    if (loadedDate) return;
-    setPickupDates(new Set(upcoming.map(shipmentDate).filter(Boolean)));
-  }, [loadedDate, upcoming]);
-
-  const shipments = useMemo(
-    () => (tab === 'upcoming' ? upcomingRows : PAST_SHIPMENTS),
-    [tab, upcomingRows],
-  );
+    if (upcomingLoading || upcomingLoadedDate === undefined) return;
+    const days = new Set(upcoming.map(shipmentDate).filter(Boolean));
+    setPickupDates(prev => {
+      const next = new Set(prev);
+      days.forEach(day => next.add(day));
+      if (upcomingLoadedDate && !days.has(upcomingLoadedDate)) {
+        next.delete(upcomingLoadedDate);
+      }
+      // Same membership as before: hand back the old Set so the strip's rows
+      // are not re-rendered for a response that changed nothing.
+      const same =
+        next.size === prev.size && [...next].every(day => prev.has(day));
+      return same ? prev : next;
+    });
+  }, [upcoming, upcomingLoadedDate, upcomingLoading]);
 
   const toggleRow = id => setExpandedRows(prev => ({...prev, [id]: !prev[id]}));
 
@@ -174,31 +170,27 @@ export default function ShipmentScreen({navigation}) {
     }, []),
   );
 
-  // Tapping the selected day again clears the filter — that is the only way
-  // back to the full upcoming list once a day has been picked.
+  // Tapping the selected day again clears the pick, which falls the table
+  // back to today.
   const pickDate = iso =>
     setSelectedDate(current => (current === iso ? null : iso));
 
   // Rows on screen belong to a different day than the one now selected, so
   // they are about to be replaced wholesale rather than refreshed in place.
   const staleFilter =
-    loadedDate !== undefined && loadedDate !== (selectedDate || null);
+    loadedDate !== undefined &&
+    loadedDate !== (isUpcoming ? upcomingDate : null);
 
-  // Only the UPCOMING tab waits on the network — PAST is still sample data,
-  // so it must never shimmer. A plain refresh leaves the rows up and updates
-  // them in place; a first load, or a change of day, shows bones instead of
-  // yesterday's loads under today's heading.
-  const upcomingPending =
-    tab === 'upcoming' &&
-    upcomingLoading &&
-    (!upcomingRows.length || staleFilter);
+  // A plain refresh leaves the rows up and updates them in place; a first
+  // load, or a change of day, shows bones instead of yesterday's loads under
+  // today's heading.
+  const pending = loading && (!shipments.length || staleFilter);
 
   // A day that came back empty says so by name — "nothing to show" over a
   // strip with a day lit up reads as a broken screen rather than a free day.
-  const emptyText =
-    tab === 'upcoming' && selectedDate
-      ? `No shipments on ${formatLoadDate(selectedDate)}`
-      : 'No shipments to show';
+  const emptyText = isUpcoming
+    ? `No shipments on ${formatLoadDate(upcomingDate)}`
+    : 'No past shipments to show';
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -233,7 +225,11 @@ export default function ShipmentScreen({navigation}) {
               whole upcoming window. */}
           <View style={styles.weekRow}>
             {week.map(day => {
-              const active = day.iso === selectedDate;
+              // Lit for the day the table is actually showing, which is today
+              // until the driver picks another. On PAST the strip filters
+              // nothing, so only an explicit pick lights up there.
+              const active =
+                day.iso === (isUpcoming ? upcomingDate : selectedDate);
               return (
                 <TouchableOpacity
                   key={day.iso}
@@ -297,12 +293,12 @@ export default function ShipmentScreen({navigation}) {
             nestedScrollEnabled
             showsVerticalScrollIndicator={false}
             ListEmptyComponent={
-              upcomingPending ? (
+              pending ? (
                 <Skeleton isLoading layout={ROW_BONES} />
               ) : (
                 <View style={styles.listEmpty}>
                   <AppText style={styles.listEmptyText}>
-                    {(tab === 'upcoming' && upcomingError) || emptyText}
+                    {error || emptyText}
                   </AppText>
                 </View>
               )

@@ -1,8 +1,10 @@
 /**
- * Loads `GET /drivers/shipments/upcoming` and turns the payload into the rows
- * its two readers render: the Home "Upcoming Shipment" card and the UPCOMING
- * tab of the Shipment table. One call, one shape each — the hook hands back
- * the raw list and each screen maps it.
+ * Loads the driver's shipment lists — `GET /drivers/shipments/upcoming` and
+ * `GET /drivers/shipments/past` — and turns either payload into the rows its
+ * readers render: the Home "Upcoming Shipment" card and the UPCOMING and PAST
+ * tabs of the Shipment table. Both endpoints answer in the same shape, so one
+ * set of mappers serves all three; the hooks hand back the raw list and each
+ * screen maps it.
  *
  * Same rule as the current-trip mapper: every helper tolerates a missing
  * field. A load whose stops carry no address still lists, and a payload the
@@ -11,7 +13,7 @@
 
 import {useCallback, useEffect, useRef, useState} from 'react';
 
-import {getUpcomingShipments} from '../config/driverApi';
+import {getPastShipments, getUpcomingShipments} from '../config/driverApi';
 import {
   formatMiles,
   formatMoney,
@@ -154,15 +156,46 @@ export const cityLabel = stop => {
 };
 
 /**
+ * Today as "YYYY-MM-DD", built from the local calendar rather than
+ * `toISOString()` — the latter is UTC, so a driver west of Greenwich would get
+ * tomorrow's date all evening and lose today's loads off the card.
+ *
+ * @param {Date} [now] injectable for tests
+ * @returns {string}
+ */
+export const todayIso = (now = new Date()) =>
+  `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(now.getDate())}`;
+
+/**
  * The API list → the card's rows.
  *
+ * Anything scheduled before `now`'s day is dropped: the card is titled
+ * "Upcoming Shipment", and a load whose pickup was yesterday is not something
+ * the driver can still act on. A shipment carrying no legible date is kept —
+ * the rest of this file paints half-filled payloads rather than hiding them,
+ * and there is nothing to prove it is in the past. What survives is ordered
+ * soonest-first, so the top row is the next load to run.
+ *
  * @param {object[]} shipments as returned by `getUpcomingShipments`
+ * @param {Date} [now] today, for the past cutoff; injectable for tests
  * @returns {{id: string, when: string, stops: {city: string, type: string}[]}[]}
  */
-export const toUpcomingLoads = shipments => {
+export const toUpcomingLoads = (shipments, now = new Date()) => {
   const list = Array.isArray(shipments) ? shipments : [];
+  const today = todayIso(now);
 
   return list
+    .filter(shipment => {
+      const date = shipmentDate(shipment);
+      return !date || date >= today;
+    })
+    .sort((a, b) => {
+      // Undated loads sort last: they carry nothing to place them by, and
+      // pushing them past the dated rows keeps the run order readable.
+      const left = shipmentDate(a) || '9999-99-99';
+      const right = shipmentDate(b) || '9999-99-99';
+      return left < right ? -1 : left > right ? 1 : 0;
+    })
     .map((shipment, index) => {
       const stops = orderedStops(shipment);
       const first = stops[0];
@@ -221,9 +254,7 @@ export const shipmentDate = shipment => {
  */
 export const toShipmentRows = (shipments, now = new Date()) => {
   const list = Array.isArray(shipments) ? shipments : [];
-  const today = `${now.getFullYear()}-${pad(now.getMonth() + 1)}-${pad(
-    now.getDate(),
-  )}`;
+  const today = todayIso(now);
 
   return list.map((shipment, index) => {
     const stops = orderedStops(shipment);
@@ -256,20 +287,25 @@ export const toShipmentRows = (shipments, now = new Date()) => {
 };
 
 /**
- * Loads the driver's upcoming shipments and keeps the raw list in state.
+ * The list hook the two shipment endpoints share.
+ *
+ * `fetcher` is `getUpcomingShipments` or `getPastShipments` — same signature,
+ * same payload shape, so the only thing that differs is which URL is hit and
+ * how a failure reads to the driver.
  *
  * The list is handed back unmapped: the Home card and the Shipment table read
  * the same payload into different shapes, so each maps it with `useMemo`
  * rather than the hook picking a winner.
  *
- * @param {string} [date] optional `YYYY-MM-DD` filter. Left out by default —
- *   the endpoint does not require it, and defaulting it to today would narrow
- *   the list the backend means to send.
+ * @param {(params: {date?: string}) => Promise<object[]>} fetcher
+ * @param {string} errorText shown when the call fails
+ * @param {string} [date] optional `YYYY-MM-DD` filter; omitted from the
+ *   request when falsy, which lets the backend choose the window
  * @returns {{shipments: object[], loadedDate: string|null|undefined,
  *            loading: boolean, error: string|null,
  *            refresh: () => Promise<object[]>}}
  */
-export function useUpcomingShipments(date) {
+function useShipmentList(fetcher, errorText, date) {
   const [shipments, setShipments] = useState([]);
   // The `date` the list in state was fetched with, so a caller can tell rows
   // that belong to the day it is showing from rows left over from the day
@@ -293,7 +329,7 @@ export function useUpcomingShipments(date) {
     setError(null);
 
     try {
-      const list = await getUpcomingShipments(date ? {date} : {});
+      const list = await fetcher(date ? {date} : {});
 
       if (!mountedRef.current || requestId !== requestRef.current) return list;
       setShipments(list);
@@ -301,11 +337,11 @@ export function useUpcomingShipments(date) {
       return list;
     } catch (err) {
       if (mountedRef.current && requestId === requestRef.current) {
-        setError(
-          err?.response?.data?.message ||
-            err?.message ||
-            'Could not load your upcoming shipments.',
-        );
+        setError(err?.response?.data?.message || err?.message || errorText);
+        // A failed call must not leave the previous day's rows on screen
+        // pretending to be this day's — the error line replaces them.
+        setShipments([]);
+        setLoadedDate(date ?? null);
       }
       return [];
     } finally {
@@ -313,11 +349,43 @@ export function useUpcomingShipments(date) {
         setLoading(false);
       }
     }
-  }, [date]);
+  }, [fetcher, errorText, date]);
 
   useEffect(() => {
     refresh();
   }, [refresh]);
 
   return {shipments, loadedDate, loading, error, refresh};
+}
+
+/**
+ * Loads the driver's upcoming shipments and keeps the raw list in state.
+ *
+ * @param {string} [date] optional `YYYY-MM-DD` filter
+ * @returns {{shipments: object[], loadedDate: string|null|undefined,
+ *            loading: boolean, error: string|null,
+ *            refresh: () => Promise<object[]>}}
+ */
+export function useUpcomingShipments(date) {
+  return useShipmentList(
+    getUpcomingShipments,
+    'Could not load your upcoming shipments.',
+    date,
+  );
+}
+
+/**
+ * Loads the driver's completed shipments — the PAST tab of the Shipment table.
+ *
+ * @param {string} [date] optional `YYYY-MM-DD` filter
+ * @returns {{shipments: object[], loadedDate: string|null|undefined,
+ *            loading: boolean, error: string|null,
+ *            refresh: () => Promise<object[]>}}
+ */
+export function usePastShipments(date) {
+  return useShipmentList(
+    getPastShipments,
+    'Could not load your past shipments.',
+    date,
+  );
 }

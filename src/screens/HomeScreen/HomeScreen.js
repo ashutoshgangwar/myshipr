@@ -62,6 +62,7 @@ import {
 import {useFuelReward} from './fuelReward';
 import {toDutyPill, toHosBar, toHosDetails, useHosCard} from './hosCard';
 import {
+  todayIso,
   toUpcomingLoads,
   useUpcomingShipments,
 } from '../../services/upcomingShipments';
@@ -167,14 +168,19 @@ const HomeScreen = () => {
     loading: hosLoading,
     refresh: refreshHos,
   } = useHosCard();
-  // Upcoming loads. The endpoint's `date` filter is left unset: no argument
-  // means "whatever is next", which is what this card is for.
+  // Upcoming loads, from today forward. The endpoint's `date` is sent as
+  // today's local date so the backend never hands back yesterday's loads, and
+  // `toUpcomingLoads` drops anything before that day again on this side —
+  // whichever way the backend reads the param, the card only shows work the
+  // driver can still run. Memoised on the date string so the hook refetches
+  // when the day rolls over, not on every render.
+  const today = useMemo(() => todayIso(), []);
   const {
     shipments: upcoming,
     loading: upcomingLoading,
     error: upcomingError,
     refresh: refreshUpcoming,
-  } = useUpcomingShipments();
+  } = useUpcomingShipments(today);
   const upcomingLoads = useMemo(() => toUpcomingLoads(upcoming), [upcoming]);
 
   // Skeletons stand in for the first load of each call only. Every refresh

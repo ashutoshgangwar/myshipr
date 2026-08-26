@@ -55,22 +55,13 @@ export const toHosBar = hos => {
       : 0;
 
   return {
-    // A dash on its own where the figure is missing — "— Driven" reads as a
-    // sentence with a hole in it.
     driven: driven === null ? '—' : `${formatMinutes(driven)} Driven`,
     total: total === null ? '—' : `${formatMinutes(total)} Total`,
     width: `${percent}%`,
-    // Past four fifths of the day's driving the bar turns red: that is the
-    // point at which the driver has to think about where they are stopping.
     critical: percent >= 80,
   };
 };
 
-/**
- * "Today 5:02 PM" / "Tomorrow 8:00 AM" / "26 Aug, 8:00 AM" — the reset is
- * usually hours away, and a bare clock time would leave the driver guessing
- * which day it lands on.
- */
 export const formatResetAt = value => {
   if (!value) return '—';
   const at = new Date(value);
