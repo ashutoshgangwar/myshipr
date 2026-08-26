@@ -28,8 +28,7 @@ export const DRIVER_ENDPOINTS = {
    * list. `date` is an optional query param; without it the backend decides
    * the window itself, so nothing is sent by default.
    */
-  upcomingShipments: () =>
-    serviceUrl('drivers', '/drivers/shipments/upcoming'),
+  upcomingShipments: () => serviceUrl('drivers', '/drivers/shipments/upcoming'),
 
   /**
    * The signed-in driver's completed shipments — the PAST tab of the Shipment
@@ -65,6 +64,14 @@ export const DRIVER_ENDPOINTS = {
    */
   monthlyEarnings: () =>
     serviceUrl('drivers', '/drivers/shipments/get-monthly-earnings'),
+
+  /**
+   * The trips the signed-in driver has run this month — the dashboard's
+   * "Total Trips" stat card, total plus a per-day breakdown. The third of the
+   * monthly trio, and read from the bearer token the same way.
+   */
+  monthlyTrips: () =>
+    serviceUrl('drivers', '/drivers/shipments/get-monthly-trips'),
 };
 
 /**
@@ -129,8 +136,7 @@ const getShipmentList = async (url, label, date) => {
   }
 
   log(
-    `${label} shipments response (${status})\n` +
-      JSON.stringify(body, null, 2),
+    `${label} shipments response (${status})\n` + JSON.stringify(body, null, 2),
   );
 
   // The list may arrive bare, under `data`, or paged under `content`/`items` —
@@ -218,7 +224,7 @@ export const getFuelReward = async () => {
 
   let status;
   let body;
-   console.log(("url", url), body)
+  console.log(('url', url), body);
   try {
     ({status, data: body} = await apiClient.get(url));
   } catch (err) {
@@ -366,4 +372,45 @@ export const getMonthlyEarnings = async () => {
   );
 
   return earnings;
+};
+
+/**
+ * The trips the driver has run this month — the "Total Trips" stat card the
+ * Home dashboard shows a fleet driver in place of their earnings.
+ *
+ * GET /drivers/api/v1/drivers/shipments/get-monthly-trips
+ * ← { totalTrips, dailyTrips: [{ trip, date: "YYYY-MM-DD" }] }
+ *
+ * The miles and earnings endpoints' sibling: no params, the driver read from
+ * the bearer token, and a daily list covering only the days that carried a
+ * trip rather than the whole month. Note the daily figure is `trip`, singular,
+ * where the other two are plural.
+ *
+ * @returns {Promise<{totalTrips: number, dailyTrips: object[]}>} the payload
+ *   (envelope unwrapped)
+ */
+export const getMonthlyTrips = async () => {
+  const url = DRIVER_ENDPOINTS.monthlyTrips();
+  log('monthly trips request', {url});
+
+  let status;
+  let body;
+  try {
+    ({status, data: body} = await apiClient.get(url));
+  } catch (err) {
+    log('monthly trips failed', {
+      url,
+      status: err?.response?.status ?? null,
+      body: err?.response?.data ?? err?.message,
+    });
+    throw err;
+  }
+
+  // Flat on this endpoint, but the gateway wraps some services in `data` —
+  // take whichever came back.
+  const trips = body?.data ?? body;
+
+  log(`monthly trips response (${status})\n` + JSON.stringify(body, null, 2));
+
+  return trips;
 };

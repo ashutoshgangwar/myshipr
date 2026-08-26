@@ -1,17 +1,3 @@
-/**
- * The machinery the two monthly dashboard cards share.
- *
- * `get-monthly-miles` and `get-monthly-earnings` answer in the same shape — a
- * total, plus a list of the days that contributed to it — and feed the same
- * stat card on the same two screens. Only the field names and how the total is
- * printed differ, so the sorting, the sparkline, the month label and the hook
- * live here once; `monthlyMiles.js` and `monthlyEarnings.js` name the fields
- * and the formatting.
- *
- * Nothing here is meant to be imported by a screen — the two modules above are
- * the public face of these calls.
- */
-
 import {useCallback, useEffect, useRef, useState} from 'react';
 
 import {isNumber, MONTHS_LONG} from '../utils/format';
