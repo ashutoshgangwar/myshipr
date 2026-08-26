@@ -10,6 +10,7 @@ import GridCard from './components/GridCard';
 import StatusBar from '../../component/StatusBar/StatusBar';
 import DashboardHeader from '../../component/DashboardHeader/DashboardHeader';
 import DieselBadge from '../../component/DieselBadge/DieselBadge';
+import {useFuelPrice} from '../../services/fuelPrice';
 import {colors} from '../../theme/colors';
 
 import BiddingIcon from '../../assets/svg_icon/Bidding_Icon.svg';
@@ -22,6 +23,15 @@ export default function BiddingScreen() {
   // which header card is driving the list — defaults to Currently Leading
   const [bucket, setBucket] = useState(BUCKETS.leading);
   const [sort, setSort] = useState(null);
+  // The header's diesel price, from the driver's own coordinate. Wherever the
+  // endpoint has no price to give, the chip keeps the last one it had and puts
+  // the backend's reason on tap.
+  const {
+    value: dieselPrice,
+    message: dieselMessage,
+    muted: dieselMuted,
+    pending: dieselPending,
+  } = useFuelPrice();
 
   const data = useMemo(() => {
     let list = BIDS.filter(b => b.categories.includes(bucket));
@@ -71,7 +81,14 @@ export default function BiddingScreen() {
         width="100%"
         title="Bidding"
         subtitle="Live Auction"
-        right={<DieselBadge value="$3.89/gal" />}
+        right={
+          <DieselBadge
+            value={dieselPrice}
+            message={dieselMessage}
+            muted={dieselMuted}
+            loading={dieselPending}
+          />
+        }
         stats={STATS}
         activeStat={bucket}
         onStatPress={setBucket}

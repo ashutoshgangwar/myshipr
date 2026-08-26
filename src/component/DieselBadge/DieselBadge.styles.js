@@ -31,4 +31,16 @@ export default StyleSheet.create({
     fontWeight: '500',
     marginTop: vs(2),
   },
+
+  // Never had a price to show — $0.00/gal is a stand-in, not a figure the
+  // driver can act on, so it drops the green a real price is printed in.
+  valueMuted: {
+    color: colors.onDarkLow,
+  },
+
+  // The skeleton wraps the value, so it must not stretch the chip: left-align
+  // it the way the value itself is aligned.
+  valueSkeleton: {
+    alignSelf: 'flex-start',
+  },
 });

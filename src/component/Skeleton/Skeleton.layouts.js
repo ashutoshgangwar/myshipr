@@ -240,3 +240,11 @@ export const STAT_CARD_BONES = [
  * white rather than a grey hole in the gradient.
  */
 export const GROSS_BONES = [bone(dms(140), dvs(18))];
+
+/**
+ * Stands in for the price in the header's DIESEL chip while the 20-second
+ * poll is in flight. Sized to "$3.89/gal" so the chip keeps its width instead
+ * of snapping wider the moment the price lands, and drawn with `onDark`
+ * against the navy header.
+ */
+export const DIESEL_VALUE_BONES = [bone(dms(42), dvs(11), {marginTop: dvs(2)})];

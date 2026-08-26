@@ -60,6 +60,7 @@ import {
   useCurrentTrip,
 } from './currentTrip';
 import {useFuelReward} from './fuelReward';
+import {useFuelPrice} from '../../services/fuelPrice';
 import {toDutyPill, toHosBar, toHosDetails, useHosCard} from './hosCard';
 import {
   todayIso,
@@ -167,6 +168,16 @@ const HomeScreen = () => {
     loading: rewardLoading,
     refresh: refreshFuelReward,
   } = useFuelReward();
+  // The diesel price in the header, from the driver's own coordinate, polled
+  // every 20 seconds. Outside the US the endpoint has no price to give, so the
+  // chip holds the last one it had and `dieselMessage` carries the reason.
+  const {
+    value: dieselPrice,
+    message: dieselMessage,
+    muted: dieselMuted,
+    pending: dieselPending,
+    refresh: refreshDiesel,
+  } = useFuelPrice();
   // Hours of service — its own ELD-backed call, separate from the trip.
   const {
     hos: hosCard,
@@ -305,6 +316,9 @@ const HomeScreen = () => {
         // Driving minutes only ever move on, so the card is stale the moment
         // the driver leaves this screen.
         refreshHos();
+        // The pump price moves through the day, and the truck has usually
+        // moved too.
+        refreshDiesel();
         // A trip run since the driver left Home has added to the month.
         refreshMonthlyMiles();
         refreshMonthlyEarnings();
@@ -315,6 +329,7 @@ const HomeScreen = () => {
       };
     }, [
       refreshCurrentTrip,
+      refreshDiesel,
       refreshFuelReward,
       refreshHos,
       refreshMonthlyEarnings,
@@ -365,7 +380,12 @@ const HomeScreen = () => {
                   height={IS_TABLET ? 35 : 25}
                 />
               </TouchableOpacity>
-              <DieselBadge value="$3.89/gal" />
+              <DieselBadge
+                value={dieselPrice}
+                message={dieselMessage}
+                muted={dieselMuted}
+                loading={dieselPending}
+              />
               <TouchableOpacity
                 ref={avatarRef}
                 style={styles.avatarBtn}

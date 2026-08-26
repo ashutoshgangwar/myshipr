@@ -43,6 +43,13 @@ export const DRIVER_ENDPOINTS = {
   fuelReward: () => serviceUrl('drivers', '/drivers/fuel/reward'),
 
   /**
+   * The pump price of diesel where the driver is standing — the header's
+   * DIESEL badge. `latitude`/`longitude` are both required query params, and
+   * the backend only holds prices for US states.
+   */
+  fuelPrice: () => serviceUrl('drivers', '/drivers/fuel/price'),
+
+  /**
    * The signed-in driver's hours-of-service card — duty status, minutes
    * driven against the daily driving limit, and when the 34-hour reset comes
    * available. Read from the bearer token, so it takes no id.
@@ -262,6 +269,60 @@ export const getFuelReward = async () => {
   });
 
   return reward;
+};
+
+/**
+ * The pump price of diesel where the driver is — the DIESEL badge in the
+ * dashboard header.
+ *
+ * GET /drivers/api/v1/drivers/fuel/price?latitude=&longitude=
+ * ← { stateCode, stateName, addressLabel, pricePerGallon, fscPerMile,
+ *     fetchedAt, stale, source }
+ *
+ * Both coordinates are required — the backend resolves them to a state and
+ * only holds prices for the US, answering 400 ("Fuel price is available for US
+ * states only (got IND)") anywhere else. That is a fact about where the truck
+ * is parked, not a failure, so it comes back as `{available: false, message}`
+ * rather than thrown: the badge reads the message and shows N/A. Every other
+ * status still throws, the way the rest of this file does.
+ *
+ * @param {{latitude: number, longitude: number}} params
+ * @returns {Promise<object>} the payload plus `available`, or
+ *   `{available: false, message}` when the driver is outside the US
+ */
+export const getFuelPrice = async ({latitude, longitude} = {}) => {
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    throw new Error('getFuelPrice: latitude and longitude are required');
+  }
+
+  const url = DRIVER_ENDPOINTS.fuelPrice();
+  const params = {latitude, longitude};
+  log('fuel price request', {url, ...params});
+
+  let status;
+  let body;
+  try {
+    ({status, data: body} = await apiClient.get(url, {params}));
+  } catch (err) {
+    const failure = err?.response?.status ?? null;
+    const message = err?.response?.data?.message ?? err?.message ?? null;
+    log('fuel price failed', {url, status: failure, body: err?.response?.data ?? message});
+
+    // 400 is how the backend says "not a US state" — the one refusal the badge
+    // can render, so it is handed back rather than thrown.
+    if (failure === 400) {
+      return {available: false, message, pricePerGallon: null, fscPerMile: null};
+    }
+    throw err;
+  }
+
+  // Flat on this endpoint, but the gateway wraps some services in `data` —
+  // take whichever came back.
+  const price = body?.data ?? body;
+
+  log(`fuel price response (${status})\n` + JSON.stringify(body, null, 2));
+
+  return {...price, available: true};
 };
 
 /**
