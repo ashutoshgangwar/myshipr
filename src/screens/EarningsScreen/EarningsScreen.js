@@ -8,7 +8,11 @@ import DashboardHeader from '../../component/DashboardHeader/DashboardHeader';
 import {DASHBOARD_STATS_OVERLAP} from '../../component/DashboardHeader/DashboardHeader.styles';
 import LoadRoute from '../../component/LoadRoute/LoadRoute';
 import Skeleton from '../../component/Skeleton/Skeleton';
-import {shipmentRowBones} from '../../component/Skeleton/Skeleton.layouts';
+import {
+  GROSS_BONES,
+  shipmentRowBones,
+} from '../../component/Skeleton/Skeleton.layouts';
+import RetryButton from '../../component/RetryButton/RetryButton';
 import AppText from '../../theme/AppText';
 import {colors} from '../../theme/colors';
 import {ms} from '../../theme/scale';
@@ -84,7 +88,7 @@ export default function EarningsScreen({navigation}) {
   // The header figure and the table below it, both from
   // `GET /drivers/earnings?period=…`. The dropdown is that one query param, so
   // picking a period asks the backend again rather than filtering on device.
-  const {earnings, loading, error} = useDriverEarnings(period);
+  const {earnings, loading, error, refresh} = useDriverEarnings(period);
   const data = useMemo(
     () => toEarningsHeader(earnings, period),
     [earnings, period],
@@ -98,14 +102,48 @@ export default function EarningsScreen({navigation}) {
   // reads. The period dropdown does not reach them — those endpoints report
   // the month, and these cards report the month whichever period the table
   // below is showing.
-  const {miles: monthlyMiles} = useMonthlyMiles();
-  const {earnings: monthlyEarnings} = useMonthlyEarnings();
+  //
+  // Each card owns its call: it waits behind its own bones and, if that call
+  // fails, offers a retry that asks for that endpoint alone. A failed miles
+  // call therefore never re-runs the earnings one that already answered.
+  const {
+    miles: monthlyMiles,
+    loading: milesLoading,
+    error: milesError,
+    refresh: refreshMiles,
+  } = useMonthlyMiles();
+  const {
+    earnings: monthlyEarnings,
+    loading: monthlyLoading,
+    error: monthlyError,
+    refresh: refreshMonthly,
+  } = useMonthlyEarnings();
+
   const stats = useMemo(
     () => [
-      {...MILES_STAT, ...toMilesCard(monthlyMiles)},
-      {...EARNINGS_STAT, ...toEarningsCard(monthlyEarnings)},
+      {
+        ...MILES_STAT,
+        ...toMilesCard(monthlyMiles),
+        loading: milesLoading,
+        onRetry: milesError ? refreshMiles : undefined,
+      },
+      {
+        ...EARNINGS_STAT,
+        ...toEarningsCard(monthlyEarnings),
+        loading: monthlyLoading,
+        onRetry: monthlyError ? refreshMonthly : undefined,
+      },
     ],
-    [monthlyEarnings, monthlyMiles],
+    [
+      milesError,
+      milesLoading,
+      monthlyEarnings,
+      monthlyError,
+      monthlyLoading,
+      monthlyMiles,
+      refreshMiles,
+      refreshMonthly,
+    ],
   );
 
   const toggleRow = id => setExpandedRows(prev => ({...prev, [id]: !prev[id]}));
@@ -147,7 +185,26 @@ export default function EarningsScreen({navigation}) {
             </TouchableOpacity>
           }
           stats={stats}>
-          <AppText style={styles.grossValue}>{data.gross}</AppText>
+          {/* The gross figure waits behind its own bone and, if the call
+              failed, becomes a retry that re-asks `/drivers/earnings` for the
+              period on screen — the two cards above keep whatever they got. */}
+          {loading ? (
+            <Skeleton
+              isLoading
+              onDark
+              layout={GROSS_BONES}
+              containerStyle={styles.grossBones}
+            />
+          ) : error ? (
+            <RetryButton
+              onDark
+              label="Retry"
+              onPress={refresh}
+              style={styles.grossRetry}
+            />
+          ) : (
+            <AppText style={styles.grossValue}>{data.gross}</AppText>
+          )}
           <AppText style={styles.grossLabel}>{data.grossLabel}</AppText>
         </DashboardHeader>
 
@@ -165,7 +222,10 @@ export default function EarningsScreen({navigation}) {
           </View>
 
           <FlatList
-            data={transactions}
+            // Emptied while a period is in flight so the table draws bones
+            // rather than leaving the period before it on screen under a
+            // header that has already moved on.
+            data={loading ? [] : transactions}
             keyExtractor={tx => tx.id}
             contentContainerStyle={styles.scrollContent}
             nestedScrollEnabled
@@ -178,6 +238,13 @@ export default function EarningsScreen({navigation}) {
                   <AppText style={styles.listEmptyText}>
                     {error || 'No earnings in this period'}
                   </AppText>
+                  {error ? (
+                    <RetryButton
+                      label="Try again"
+                      onPress={refresh}
+                      style={styles.listEmptyRetry}
+                    />
+                  ) : null}
                 </View>
               )
             }

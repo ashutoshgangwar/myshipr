@@ -4,6 +4,9 @@ import {View, TouchableOpacity} from 'react-native';
 import styles from './DashboardHeader.styles';
 import AppText from '../../theme/AppText';
 import Sparkline from '../Sparkline/Sparkline';
+import Skeleton from '../Skeleton/Skeleton';
+import {STAT_CARD_BONES} from '../Skeleton/Skeleton.layouts';
+import RetryButton from '../RetryButton/RetryButton';
 import {IS_TABLET} from '../../theme/device';
 import {ms} from '../../theme/scale';
 
@@ -49,6 +52,32 @@ const DashboardHeader = ({
   activeStat,
   onStatPress,
 }) => {
+  // Each stat card waits on — and fails with — its own call, so `loading` and
+  // `onRetry` are read off the stat, not the header. A card whose call is out
+  // draws bones where its value goes; one whose call failed draws a retry icon
+  // that calls that endpoint alone.
+  const statBody = stat => {
+    if (stat.loading) {
+      return (
+        <Skeleton
+          isLoading
+          layout={STAT_CARD_BONES}
+          containerStyle={styles.chartCardBones}
+        />
+      );
+    }
+
+    if (stat.onRetry) {
+      return (
+        <View style={styles.chartCardRetryRow}>
+          <RetryButton onPress={stat.onRetry} label="Retry" />
+        </View>
+      );
+    }
+
+    return null;
+  };
+
   const hasStats = Array.isArray(stats) && stats.length > 0;
 
   const headerSizeStyle = {
@@ -120,23 +149,25 @@ const DashboardHeader = ({
 
                   <View style={styles.chartCardDivider} />
 
-                  <View style={styles.chartCardBottomRow}>
-                    <AppText
-                      style={styles.chartCardValue}
-                      numberOfLines={1}
-                      adjustsFontSizeToFit
-                      minimumFontScale={0.95}>
-                      {stat.value}
-                    </AppText>
-                    <View style={styles.chartCardSpark}>
-                      <Sparkline
-                        data={stat.chart}
-                        color={stat.chartColor ?? stat.accent}
-                        width={SPARK_W}
-                        height={SPARK_H}
-                      />
+                  {statBody(stat) ?? (
+                    <View style={styles.chartCardBottomRow}>
+                      <AppText
+                        style={styles.chartCardValue}
+                        numberOfLines={1}
+                        adjustsFontSizeToFit
+                        minimumFontScale={0.95}>
+                        {stat.value}
+                      </AppText>
+                      <View style={styles.chartCardSpark}>
+                        <Sparkline
+                          data={stat.chart}
+                          color={stat.chartColor ?? stat.accent}
+                          width={SPARK_W}
+                          height={SPARK_H}
+                        />
+                      </View>
                     </View>
-                  </View>
+                  )}
 
                   {stat.delta ? (
                     <View style={styles.chartCardDeltaRow}>

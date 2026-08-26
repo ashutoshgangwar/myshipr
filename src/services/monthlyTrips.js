@@ -26,13 +26,6 @@ export const toTripsRange = (dailyTrips, now = new Date()) =>
   toRange(dailyTrips, now);
 
 /**
- * The whole payload → the two fields of the stat card that come from the API.
- * The icon, label, colour, sparkline and delta pill stay with the screen that
- * draws the card.
- *
- * While the call is still out — `trips` null — the value shows `MISSING`, so
- * the card keeps its shape and its heading instead of shimmering or
- * collapsing the row beside it.
  *
  * @param {object|null} trips the payload from `getMonthlyTrips`
  * @param {Date} [now] injectable for tests

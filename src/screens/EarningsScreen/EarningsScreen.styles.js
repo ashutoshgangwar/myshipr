@@ -40,6 +40,11 @@ export default StyleSheet.create({
     fontSize: ms(11),
     textAlign: 'center',
   },
+
+  listEmptyRetry: {
+    alignSelf: 'center',
+    marginTop: vs(12),
+  },
  // Height/padding come from the shared DashboardHeader constants — the same ones
  // Home uses — so both dashboards render an identical blue header and neither
  // hides its copy behind the floating stat cards.
@@ -120,6 +125,21 @@ export default StyleSheet.create({
        lineHeight: Math.round(ms(20) * 1.4),
        fontWeight: '500',
        marginTop: IS_TABLET ? vs(2) : vs(8),
+  },
+
+  // The bone and the retry both stand in the line box the gross figure would
+  // fill — same height, same top margin — so the header does not resize
+  // between waiting, failing and showing the money.
+  grossBones: {
+    width: '100%',
+    height: Math.round(ms(20) * 1.4),
+    justifyContent: 'center',
+    marginTop: IS_TABLET ? vs(2) : vs(8),
+  },
+
+  grossRetry: {
+    height: Math.round(ms(20) * 1.4),
+    marginTop: IS_TABLET ? vs(2) : vs(8),
   },
 
   grossLabel: {

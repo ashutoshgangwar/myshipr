@@ -204,3 +204,39 @@ export const shipmentRowBones = (count = 6) =>
       ],
     ),
   );
+
+/* ------------------------------------------------------------------ *
+ * Dashboard header — the floating stat cards and the gross figure
+ * The cards each wait on their own call, so their bones cover only the two
+ * things that call fills: the value and the sparkline beside it. The label,
+ * icon and delta pill are the screen's own and stay drawn while the call is
+ * out, which is what keeps the card its full height and stops the row from
+ * shifting when the payload lands.
+ * ------------------------------------------------------------------ */
+
+const HEADER_FACTOR = IS_TABLET ? 1 : 0.82;
+const dms = n => ms(n) * HEADER_FACTOR;
+const dvs = n => vs(n) * HEADER_FACTOR;
+
+/** Stands in for a stat card's value and its sparkline, side by side. */
+export const STAT_CARD_BONES = [
+  group(
+    {
+      flexDirection: 'row',
+      alignItems: 'flex-end',
+      justifyContent: 'space-between',
+      marginTop: dvs(6),
+    },
+    [
+      bone(dms(78), dvs(20)),
+      bone(dms(IS_TABLET ? 105 : 60), dvs(IS_TABLET ? 30 : 20)),
+    ],
+  ),
+];
+
+/**
+ * Stands in for the gross figure in the blue header — one wide bone the size
+ * of the money it replaces. Drawn with `onDark`, so it shows as translucent
+ * white rather than a grey hole in the gradient.
+ */
+export const GROSS_BONES = [bone(dms(140), dvs(18))];

@@ -294,4 +294,18 @@ export default StyleSheet.create({
     alignItems: 'flex-end',
     justifyContent: 'flex-end',
   },
+
+  // The bones stand where the value and sparkline do, so the card keeps its
+  // height while the call is out and nothing shifts when the figure lands.
+  chartCardBones: {
+    width: '100%',
+  },
+
+  // Same height the value row occupies, so a card that failed is exactly as
+  // tall as the one beside it that answered.
+  chartCardRetryRow: {
+    justifyContent: 'center',
+    marginTop: vs(6),
+    minHeight: vs(26),
+  },
 });
