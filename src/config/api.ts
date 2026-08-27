@@ -39,14 +39,6 @@ const API_PREFIX = 'api/v1';
 
 export const REQUEST_TIMEOUT_MS = Number(API_TIMEOUT) || 30000;
 
-/**
- * The gateway fronts each backend service under its own prefix and only then
- * the shared `/api/v1` path — the driver service answers at
- * `…/drivers/api/v1/drivers/…`. Auth is the exception: it sits at the root,
- * which is what `apiClient`'s baseURL is set to. An absolute URL built here
- * overrides that baseURL while keeping every interceptor (bearer token, 401
- * refresh, logging) in play.
- */
 export const serviceUrl = (service: string, path: string): string =>
   `${BASE_URL}/${service}/${API_PREFIX}${path}`;
 
@@ -141,25 +133,17 @@ export const getAccessToken = () =>
 export const getRefreshToken = () =>
   AsyncStorage.getItem(AUTH_STORAGE_KEYS.refreshToken);
 
-/** True when an access token exists — it may still be expired. */
 export const hasSession = async (): Promise<boolean> =>
   Boolean(await getAccessToken());
 
-/** Epoch-ms the stored access token stops being valid, or null when unknown. */
 export const getSessionExpiresAt = async (): Promise<number | null> => {
   const raw = await AsyncStorage.getItem(AUTH_STORAGE_KEYS.expiresAt);
   const value = Number(raw);
   return raw && Number.isFinite(value) ? value : null;
 };
 
-// Treat the token as dead slightly early, so a request never leaves with one
-// that expires while it is still in flight.
 const EXPIRY_SKEW_MS = 60 * 1000;
 
-/**
- * True when the stored access token is past (or nearly past) its expiry.
- * With no recorded expiry we say "not expired" and let a 401 decide instead.
- */
 export const isAccessTokenExpired = async (): Promise<boolean> => {
   const expiresAt = await getSessionExpiresAt();
   if (expiresAt == null) return false;
@@ -169,7 +153,6 @@ export const isAccessTokenExpired = async (): Promise<boolean> => {
 export const clearSession = () =>
   AsyncStorage.multiRemove(Object.values(AUTH_STORAGE_KEYS));
 
-// --- Axios client --------------------------------------------------------
 
 const apiClient = axios.create({
   baseURL: `${BASE_URL}/${API_PREFIX}`,
@@ -193,9 +176,6 @@ const refreshClient = axios.create({
 const AUTH_FREE_PATHS = [
   API_ENDPOINTS.auth.login,
   API_ENDPOINTS.auth.refresh,
-  // A driver setting their first password has no session at all. Sending a
-  // stale bearer token here — or letting a 401 kick off a refresh — would turn
-  // "this link expired" into a spurious sign-out of whoever used the phone last.
   API_ENDPOINTS.auth.verifyPasswordToken,
   API_ENDPOINTS.auth.setPassword,
   API_ENDPOINTS.auth.forgotPassword,
@@ -207,10 +187,6 @@ const isAuthFree = (url?: string): boolean =>
 apiClient.interceptors.request.use(async (config: ApiRequestConfig) => {
   if (!isAuthFree(config.url)) {
     try {
-      // Access token already expired: trade the refresh token for a new one
-      // before the request goes out, instead of paying for a 401 round-trip.
-      // If that fails, fall through and send whatever is stored — the 401
-      // handler below is the backstop.
       if (await isAccessTokenExpired()) {
         await refreshAccessToken().catch(() => {});
       }
@@ -229,9 +205,6 @@ apiClient.interceptors.request.use(async (config: ApiRequestConfig) => {
 
 // Single in-flight refresh shared by every request that 401s at the same time.
 let refreshPromise: Promise<string> | null = null;
-
-// Marks "the session itself is unusable" (as opposed to "the network failed"),
-// so callers know whether the stored tokens are worth keeping.
 const sessionExpiredError = (): AppApiError => {
   const error: AppApiError = new Error('Session expired. Please log in again.');
   error.sessionInvalid = true;
@@ -267,8 +240,6 @@ export const refreshAccessToken = (): Promise<string> => {
   return refreshPromise;
 };
 
-// Callbacks fired when the session can no longer be recovered, so the app can
-// send the user back to the login screen.
 const sessionExpiredHandlers = new Set<SessionExpiredHandler>();
 
 /** @param {() => void} handler @returns {() => void} unsubscribe */
@@ -284,15 +255,6 @@ export const onSessionExpired = (
 /**
  * Decides at app start whether the user goes straight to the home screen.
  *
- * - valid access token            → authenticated, no network call
- * - expired token + refresh token → refreshes first, then authenticated
- * - refresh rejected by server    → session cleared, back to login
- * - refresh failed offline        → STILL authenticated: the tokens are kept
- *                                   and the refresh is retried by the request
- *                                   interceptor once there is a connection
- *
- * Only the server gets to end a session. A driver who opens the app in a dead
- * zone — which is most of a long haul — stays signed in.
  *
  * @returns {Promise<{authenticated: boolean, refreshed: boolean,
  *                    reason: 'valid'|'refreshed'|'no-session'|'expired'|'offline'}>}
@@ -322,20 +284,16 @@ export const restoreSession = async (): Promise<SessionRestoreResult> => {
     return {authenticated: true, refreshed: true, reason: 'refreshed'};
   } catch (e) {
     const err = e as AppApiError & {response?: unknown};
-    // The server answered — the refresh token really is dead, so drop it.
     if (err?.response || err?.sessionInvalid) {
       await clearSession();
       return {authenticated: false, refreshed: false, reason: 'expired'};
     }
-    // No answer at all (offline / timeout). The refresh token was never
-    // judged, so it is probably still good: keep the session and let the
-    // request interceptor retry the refresh when the first call goes out.
     log('session restore failed offline — staying signed in');
     return {authenticated: true, refreshed: false, reason: 'offline'};
   }
 };
 
-// On 401, refresh once and replay the original request.
+
 apiClient.interceptors.response.use(
   response => {
     log(`← ${response.status} ${response.config.url}`, safe(response.data));
@@ -366,10 +324,6 @@ apiClient.interceptors.response.use(
         return apiClient(config);
       } catch (e) {
         const refreshError = e as AppApiError & {response?: unknown};
-        // A refresh the server REJECTED means the session is genuinely dead —
-        // clear it and send the user back to login. A refresh that never
-        // reached the server (offline, timeout) says nothing about the token,
-        // so the request simply fails and the tokens stay put for the retry.
         if (refreshError?.response || refreshError?.sessionInvalid) {
           await clearSession();
           sessionExpiredHandlers.forEach(handler => handler());
@@ -390,11 +344,7 @@ const EMAIL_REGEX = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PHONE_REGEX = /^\+?\d{10,15}$/;
 const MIN_PASSWORD_LENGTH = 4;
 
-/**
- * Seconds left on a rate-limit window. `Retry-After` is either a delay in
- * seconds or an HTTP date, and plenty of gateways send neither — null means
- * "rate limited, duration unknown".
- */
+
 const parseRetryAfter = (headers: unknown): number | null => {
   const bag = headers as Record<string, string | undefined> | undefined;
   const raw = bag?.['retry-after'] ?? bag?.['Retry-After'];
@@ -408,7 +358,6 @@ const parseRetryAfter = (headers: unknown): number | null => {
   return Math.max(0, Math.round((retryAt - Date.now()) / 1000));
 };
 
-/** "45 seconds" / "3 minutes" — rounded up so we never tell the user to retry early. */
 const formatWait = (seconds: number | null | undefined): string => {
   if (!seconds) return '';
   if (seconds < 60) return `${seconds} second${seconds === 1 ? '' : 's'}`;
@@ -432,8 +381,6 @@ const messageForStatus = (
     case 423:
       return serverMessage || 'Account locked. Please try again later.';
     case 429: {
-      // A concrete wait beats the server's wording — it tells the user when
-      // trying again is actually worth it.
       const wait = formatWait(retryAfterSeconds);
       if (wait) return `Too many login attempts. Please try again in ${wait}.`;
       return (
@@ -448,8 +395,6 @@ const messageForStatus = (
 
 /**
  * Checks what the login form collected, in the order the user reads the fields.
- * The screen only renders the result — it holds no rules of its own.
- *
  * @param {string} identifier email address or phone number
  * @param {string} password
  * @returns {{ok: true} | {ok: false, title: string, message: string}}
@@ -504,20 +449,6 @@ export const validateLogin = (
 
 /**
  * Registers this device for push notifications against the logged-in user.
- *
- * POST /api/v1/auth/devices/register
- * → { fcmRegistrationToken, platform: 'ANDROID' | 'IOS', deviceName,
- *     firebaseInstallationId? }
- *
- * The endpoint is authenticated: pass the `accessToken` the login response just
- * returned and it goes out as `Authorization: Bearer <token>`. Without it the
- * request interceptor still attaches whatever token is in storage, so an
- * already-logged-in caller can omit it.
- *
- * `firebaseInstallationId` is optional and is only sent when a caller supplies
- * one; reading it would need the @react-native-firebase/installations package,
- * which is not part of this app.
- *
  * @param {{fcmRegistrationToken?: string, firebaseInstallationId?: string,
  *          accessToken?: string}} [params]
  * @returns {Promise<object|null>} the response body, or null when there is no
@@ -535,9 +466,6 @@ export const registerDevice = async ({
     return null;
   }
 
-  // getDeviceName() is the user-set name ("Ashutosh's iPhone", "Pixel 8"); it
-  // is the only async call here and a native failure must not break the flow,
-  // so we fall back to the model name.
   const deviceName =
     (await DeviceInfo.getDeviceName().catch(() => null)) || DeviceInfo.getModel();
 
@@ -550,9 +478,6 @@ export const registerDevice = async ({
     body.firebaseInstallationId = firebaseInstallationId;
   }
 
-  // Explicit header when the caller hands us the token straight from the login
-  // response — it removes any dependency on the write to storage having landed.
-  // Otherwise the request interceptor fills in the stored one.
   const config = accessToken
     ? {headers: {Authorization: `Bearer ${accessToken}`}}
     : undefined;
@@ -569,13 +494,6 @@ export const registerDevice = async ({
 };
 
 /**
- * Logs in with a phone number OR an email address, plus the password, and
- * stores the returned session.
- *
- * POST /api/v1/auth/login
- * → { status, message, data: { userId, accessToken, refreshToken, expiresIn,
- *                              organizationId, organizationType } }
- *
  * @param {{identifier: string, password: string}} params
  * @returns {Promise<object>} the `data` payload, already saved to storage
  * @throws {Error} with a message ready to show in the error modal
@@ -585,22 +503,13 @@ export const login = async ({
   password,
 }: LoginCredentials): Promise<SessionPayload> => {
   const entered = (identifier || '').trim();
-  // Whichever field the user filled in decides the payload key the API gets.
   const payload: LoginRequestBody = entered.includes('@')
     ? {email: entered, password}
     : {phoneNumber: entered.replace(/[\s()-]/g, ''), password};
-
-  // Registers this device for push at login time. getFcmToken() never throws —
-  // it returns null when permission is denied or the token can't be minted, and
-  // a missing token must not block the login, so the key is simply omitted.
   const fcmRegistrationToken = await getFcmToken();
   if (fcmRegistrationToken) {
     payload.fcmRegistrationToken = fcmRegistrationToken;
   }
-
-  // getDeviceName() is the only async one (it reads the user-set name, e.g.
-  // "Ashutosh's iPhone") and needs a permission-free native call, so a failure
-  // must not take the login down with it.
   const deviceName = await DeviceInfo.getDeviceName().catch(() => null);
   const deviceInfo = {
     deviceName,
@@ -609,10 +518,6 @@ export const login = async ({
     deviceModel: DeviceInfo.getModel(),
     isTablet: DeviceInfo.isTablet(),
   };
-
-  // safe() masks every *token key, so the FCM token is put back in full — it is
-  // a device address, not a credential, and seeing it is the point of this log.
-  // The password stays masked.
   log('login payload', {...(safe(payload) as object), fcmRegistrationToken});
   log('device info', deviceInfo);
 
@@ -620,30 +525,17 @@ export const login = async ({
     const {data: body} = await apiClient.post(API_ENDPOINTS.auth.login, payload);
     const data = body?.data;
 
-    // No token means no session, whatever the HTTP status said — the caller
-    // must treat this as a failed login and stay on the screen.
     if (!data?.accessToken) {
       throw new Error(body?.message || 'Login failed. Please try again.');
     }
-
-    // Drop anything left over from a previous account before writing the new
-    // session, so a stale expiresAt/refreshToken can never survive a re-login.
     await clearSession();
     await saveSession(data);
     log('session stored', {
       hasRefreshToken: Boolean(data.refreshToken),
       expiresIn: data.expiresIn,
     });
-    // DEV ONLY — the raw bearer token, printed so it can be copied into curl
-    // while endpoints are being wired up. safe() is deliberately bypassed
-    // here; drop this line (or keep DEBUG=false outside development) before
-    // anything ships, since it puts a live credential in the Metro log.
     log('access token (dev only)\n' + data.accessToken);
 
-    // Push registration is a side effect of logging in, not part of it: it runs
-    // after the session is stored (the endpoint needs the bearer token) and is
-    // deliberately not awaited, so a slow or failing /devices/register can
-    // neither delay the user nor turn a successful login into an error.
     registerDevice({
       fcmRegistrationToken,
       accessToken: data.accessToken,
@@ -665,8 +557,6 @@ export const login = async ({
       );
       error.status = status;
       if (status === 429) {
-        // Flagged so the screen can drop the Retry action — retrying inside
-        // the window only spends another attempt on the same 429.
         error.rateLimited = true;
         error.retryAfterSeconds = retryAfterSeconds;
       }
@@ -685,17 +575,11 @@ export const login = async ({
   }
 };
 
-// --- Password link flow (driver activation) ------------------------------
-
-// One digit and one special character, at least 8 long. Kept here rather than
-// in the screen so the invite flow and the OTP flow cannot drift apart.
 const PASSWORD_MIN_LENGTH = 8;
 const PASSWORD_HAS_DIGIT = /[0-9]/;
 const PASSWORD_HAS_SYMBOL = /[^A-Za-z0-9]/;
 
 /**
- * Checks a new password the way the user reads the two fields.
- * The screen only renders the result — it holds no rules of its own.
  *
  * @param {string} password
  * @param {string} confirmPassword
@@ -731,12 +615,7 @@ export const validateNewPassword = (
   return {ok: true};
 };
 
-/**
- * Wording for a rejected invite/reset link. The three failures the driver can
- * actually do something about — expired, already used, never valid — must read
- * differently, because the fix differs: ask for a new link, just sign in, or
- * contact the carrier.
- */
+
 const messageForLinkStatus = (
   status: number,
   body: ApiErrorBody | undefined,
@@ -794,19 +673,10 @@ const linkError = (err: AxiosError<ApiErrorBody> & ErrorLike): Error => {
 };
 
 /**
- * Trades the emailed token for the account it belongs to, before showing the
- * password form. Doing this up front means an expired link is caught while the
- * driver still has an empty form, not after they typed a password twice — and
- * it lets the screen greet them by name so they can see the link is theirs.
- *
- * POST /api/v1/auth/password/token/verify  → { token }
- * ← { status, message, data: { valid, purpose: 'ACTIVATION',
- *                              email, phoneNumber, fullName, expiresAt } }
- *
  * @param {string} token
  * @returns {Promise<{purpose: string, email?: string, phoneNumber?: string,
  *                    fullName?: string, expiresAt?: string}>}
- * @throws {Error} `.linkDead` is true when a new link is the only way forward
+ * @throws {Error} `
  */
 export const verifyPasswordToken = async (
   token: string,
@@ -823,9 +693,6 @@ export const verifyPasswordToken = async (
       {token},
     );
     const data = body?.data || {};
-
-    // A 200 that says `valid: false` is still a dead link — some gateways
-    // answer this way rather than with a 4xx.
     if (data.valid === false) {
       const error: AppApiError = new Error(
         body?.message ||
@@ -845,16 +712,6 @@ export const verifyPasswordToken = async (
 };
 
 /**
- * Sets the password the token authorises and, when the backend answers with a
- * session, signs the driver straight in — coming back to a login screen to
- * retype credentials they just chose is the one thing this flow exists to
- * avoid. A backend that deliberately does not auto-login simply omits the
- * tokens, and the caller sends the driver to the login screen instead.
- *
- * POST /api/v1/auth/password/set  → { token, newPassword }
- * ← { status, message, data: { userId, accessToken, refreshToken, expiresIn,
- *                              organizationId, organizationType } }
- *
  * @param {{token: string, newPassword: string}} params
  * @returns {Promise<{session: object|null, message: string}>}
  */
@@ -871,14 +728,9 @@ export const setPasswordWithToken = async ({
     const session = body?.data?.accessToken ? body.data : null;
 
     if (session) {
-      // Drop anything left over from a previous account on this device before
-      // writing the new session — the same rule login follows.
       await clearSession();
       await saveSession(session);
       log('session stored from password setup');
-
-      // Push registration is a side effect, not part of setting the password:
-      // it must not delay the driver or turn success into an error.
       registerDevice({accessToken: session.accessToken}).catch(err =>
         log('device register failed', err?.response?.status || err?.message),
       );
@@ -891,14 +743,7 @@ export const setPasswordWithToken = async ({
 };
 
 /**
- * Asks the backend to email a fresh reset link.
- *
- * POST /api/v1/auth/password/forgot  → { email } or { phoneNumber }
- *
- * Resolves even when the address is unknown: the backend answers 202 either
- * way so the screen cannot be used to find out which drivers exist.
- *
- * @param {string} identifier email address or phone number
+ * @param {string} identifier
  * @returns {Promise<{message: string}>}
  */
 export const requestPasswordReset = async (
@@ -925,8 +770,6 @@ export const requestPasswordReset = async (
 };
 
 /**
- * Clears the local session. The server call is best-effort — the user is
- * logged out on device either way.
  */
 export const logout = async () => {
   try {
@@ -935,7 +778,6 @@ export const logout = async () => {
       await apiClient.post(API_ENDPOINTS.auth.logout, {refreshToken});
     }
   } catch {
-    // Ignore: local sign-out must always succeed.
   } finally {
     await clearSession();
   }
