@@ -263,6 +263,10 @@ export const toShipmentRows = (shipments, now = new Date()) => {
 
     return {
       id: rowId(shipment, index),
+      // The id the details endpoint takes. Kept apart from `id`, which falls
+      // back to a positional key so every row still has one — a synthesised
+      // key must never be sent to the API as if it were a real shipment.
+      shipmentId: shipment?.shipmentId ?? shipment?.tripId ?? null,
       awb: shipment?.awb || MISSING,
       // Left null when absent: the row hides the badge entirely.
       type: loadType(shipment?.shipmentType ?? shipment?.type),

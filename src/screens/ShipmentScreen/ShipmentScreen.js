@@ -307,7 +307,9 @@ export default function ShipmentScreen({navigation}) {
               <TouchableOpacity
                 activeOpacity={0.7}
                 onPress={() =>
-                  navigation?.navigate('Shipmentdetails', {shipment: item.details})
+                  navigation?.navigate('Shipmentdetails', {
+                    shipmentId: item.shipmentId,
+                  })
                 }
                 style={[
                   styles.row,

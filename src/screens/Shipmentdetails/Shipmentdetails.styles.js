@@ -101,11 +101,24 @@ export default StyleSheet.create({
     marginLeft: ms(8),
   },
 
+  // The endpoint sends no status, so the badge drops its solid blue: a filled
+  // pill reads as a live state the load does not actually have.
+  statusBadgeMissing: {
+    backgroundColor: colors.lightbg_gray,
+  },
+
   statusBadgeText: {
     fontSize: IS_TABLET ? ms(8) : ms(12),
     color: colors.white,
     fontWeight: '700',
     letterSpacing: 0.5,
+  },
+
+  // White on the grey placeholder pill would be unreadable.
+  statusBadgeTextMissing: {
+    color: colors.textMuted,
+    fontWeight: '500',
+    fontStyle: 'italic',
   },
 
   /* ---------- Route title ---------- */
@@ -145,6 +158,55 @@ export default StyleSheet.create({
   mapThumb: {
     height: vs(150),
     marginBottom: 0,
+  },
+
+  // The placeholder that stands where the map would, when the payload carries
+  // addresses but no coordinates. It repeats the thumbnail's own box — the
+  // real one gets that from RouteMapThumb's stylesheet, which this View does
+  // not go through — so the route block keeps its proportions either way.
+  mapMissing: {
+    flexBasis: '45%',
+    flexGrow: 0,
+    flexShrink: 1,
+    borderRadius: ms(8),
+    marginLeft: ms(10),
+    overflow: 'hidden',
+    backgroundColor: colors.lightbg_gray,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: ms(6),
+  },
+
+  mapMissingText: {
+    fontSize: IS_TABLET ? ms(8) : ms(10),
+    color: colors.textMuted,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+
+  /* ---------- Waiting on / failing the call ---------- */
+  // The whole sheet stands in for the ScrollView while the detail call is out,
+  // so the page never shows a half-drawn load.
+  stateBox: {
+    flex: 1,
+    backgroundColor: colors.white,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: ms(24),
+  },
+
+  stateText: {
+    fontSize: IS_TABLET ? ms(11) : ms(13),
+    color: colors.textMuted,
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+
+  // Every "Not in API" on the page is greyed and un-bolded, so a slot the
+  // backend has not filled never reads as a real value.
+  textMissing: {
+    color: colors.textMuted,
+    fontStyle: 'italic',
   },
 
   /* ---------- Contacts ---------- */
@@ -270,6 +332,12 @@ export default StyleSheet.create({
 
   gridValueSuccess: {
     color: colors.success_text,
+  },
+
+  gridValueMissing: {
+    color: colors.textMuted,
+    fontWeight: '400',
+    fontStyle: 'italic',
   },
 
   gridSub: {

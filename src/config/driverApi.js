@@ -24,6 +24,17 @@ export const DRIVER_ENDPOINTS = {
     serviceUrl('drivers', `/drivers/shipments/${encodeURIComponent(tripId)}`),
 
   /**
+   * One shipment as the details screen shows it — the route, both contacts,
+   * the trailer terms and the load itself. Keyed by the `shipmentId` the list
+   * endpoints hand back on every row, so tapping a row is all it takes.
+   */
+  shipmentDetail: shipmentId =>
+    serviceUrl(
+      'drivers',
+      `/drivers/shipments/${encodeURIComponent(shipmentId)}/detail`,
+    ),
+
+  /**
    * The signed-in driver's upcoming shipments — the Home "Upcoming Shipment"
    * list. `date` is an optional query param; without it the backend decides
    * the window itself, so nothing is sent by default.
@@ -123,6 +134,55 @@ export const getUpcomingShipments = ({date} = {}) =>
  */
 export const getPastShipments = ({date} = {}) =>
   getShipmentList(DRIVER_ENDPOINTS.pastShipments(), 'past', date);
+
+/**
+ * One shipment in full — everything the Shipment Details screen draws.
+ *
+ * GET /drivers/api/v1/drivers/shipments/{shipmentId}/detail
+ * ← { shipmentId, shipmentType, routeFrom, routeTo, pickupDate, pickupTime,
+ *     pickupCount, dropCount,
+ *     route: [{sequence, type, address, fromTime, toTime, dock}],
+ *     pickupContact: {name, phone, dock},
+ *     dropContact: {name, phone, dock},
+ *     trailerTerms: {trailer, trailerNumber, dimensions},
+ *     shipmentDetails: {equipment, truckClass, commodity, weightLbs,
+ *                       totalPallets, palletCapacity, distanceMiles} }
+ *
+ * The driver comes from the bearer token; `shipmentId` is the only input, and
+ * it is required — without one there is no load to ask about, so this throws
+ * rather than letting the gateway answer with someone else's shipment.
+ *
+ * @param {{shipmentId: string}} params
+ * @returns {Promise<object>} the detail payload (envelope unwrapped)
+ */
+export const getShipmentDetail = async ({shipmentId} = {}) => {
+  if (!shipmentId) {
+    throw new Error('getShipmentDetail: shipmentId is required');
+  }
+
+  const url = DRIVER_ENDPOINTS.shipmentDetail(shipmentId);
+
+  log('shipment detail request', {url, shipmentId});
+
+  let status;
+  let body;
+  try {
+    ({status, data: body} = await apiClient.get(url));
+  } catch (err) {
+    log('shipment detail failed', {
+      url,
+      status: err?.response?.status ?? null,
+      body: err?.response?.data ?? err?.message,
+    });
+    throw err;
+  }
+
+  log(`shipment detail response (${status})\n` + JSON.stringify(body, null, 2));
+
+  // Flat on this endpoint, but the gateway wraps some services in `data` —
+  // take whichever came back.
+  return body?.data ?? body;
+};
 
 /**
  * The GET the two shipment-list endpoints share: an optional `date` query
