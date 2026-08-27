@@ -1,5 +1,37 @@
 {
   "extends": "@react-native/typescript-config",
-  "include": ["src/**/*", "App.js", "index.js"],
-  "exclude": ["node_modules", "ios", "android", "vendor"]
+  "compilerOptions": {
+    // Both halves of the codebase compile side by side during the migration.
+    // `allowJs` lets a .ts file import an untouched .js one; `checkJs` stays
+    // OFF so the ~230 files not yet converted are never type-checked and can
+    // not fail the build. Turn `checkJs` on only once the migration is done.
+    "allowJs": true,
+    "checkJs": false,
+
+    // Inherited from the React Native base config and restated here because
+    // the migration depends on them: every converted file is fully strict, so
+    // implicit `any` is an error at the moment a file is converted rather than
+    // a cleanup pass later.
+    "strict": true,
+    "noEmit": true,
+
+    // Metro owns the build; tsc is only ever a checker in this project.
+    "skipLibCheck": true
+  },
+  "include": [
+    "src/**/*",
+    "__tests__/**/*",
+    "App.js",
+    "App.tsx",
+    "index.js"
+  ],
+  "exclude": [
+    "node_modules",
+    "ios",
+    "android",
+    "vendor",
+    "patches",
+    "scripts",
+    ".dist"
+  ]
 }

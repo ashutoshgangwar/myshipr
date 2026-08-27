@@ -1,0 +1,879 @@
+import React, {useState, useRef, useCallback} from 'react';
+import {
+  View,
+  Text,
+  TouchableOpacity,
+  Keyboard,
+  TextInput,
+  ActivityIndicator,
+  ScrollView,
+  useWindowDimensions,
+  Modal,
+} from 'react-native';
+import {scale} from 'react-native-size-matters';
+import Location_Icon from '../../assets/svg_icon/location.svg';
+import Arrow_left_right from '../../assets/svg_icon/arrow-right-lef.svg';
+import styles from './hereSearchCard.styles';
+import AppText from '../../theme/AppText';
+import {
+  autosuggest,
+  calculateRouteTolls,
+} from './services/hereTruckService';
+import Button from '../../component/Button/Button';
+import TrucksInput from './components/TruckInputs/TrucksInput';
+import type {Coordinates, MapLocation} from '../../types/common';
+import type {TruckDetails} from '../../types/navigation';
+import type {ErrorLike} from '../../types/common';
+
+/** Which of the two fields is being edited. */
+type SearchField = 'source' | 'destination';
+
+/**
+ * What this card hangs off the caller's ref.
+ *
+ * Not a `TextInput` ref: the effect below attaches a `setAddressText` shim so
+ * a parent can push text into the field the same way the Google Places
+ * autocomplete this replaced allowed.
+ */
+export interface AddressInputHandle {
+  setAddressText?: (text: string) => void;
+  [key: string]: unknown;
+}
+
+/** One autosuggest result from the HERE service. */
+interface Suggestion {
+  id?: string;
+  title?: string;
+  address?: string;
+  latitude?: number;
+  longitude?: number;
+  [key: string]: unknown;
+}
+
+/**
+ * The HERE routing payload, described only as deeply as this card reads it.
+ * Every level is optional because the card renders "N/A" for whatever the
+ * service left out rather than assuming a complete response.
+ */
+interface TollPrice {
+  currency?: string;
+  value?: number;
+}
+
+interface TollFare {
+  price?: TollPrice;
+  name?: string;
+  /** Present on season/return tickets; absent on a single crossing. */
+  pass?: {returnJourney?: boolean; validityPeriod?: unknown};
+  [key: string]: unknown;
+}
+
+/** A toll booth on one section of the route. */
+interface Toll {
+  currency?: string;
+  fares?: TollFare[];
+  name?: string;
+  /** The operator's name for the booth, shown in the toll list. */
+  tollSystem?: string;
+  countryCode?: string;
+  [key: string]: unknown;
+}
+
+interface RouteSection {
+  summary?: {length?: number; duration?: number; [key: string]: unknown};
+  departure?: {time?: string | null; [key: string]: unknown};
+  arrival?: {time?: string | null; [key: string]: unknown};
+  tolls?: Toll[];
+  [key: string]: unknown;
+}
+
+interface HereRoute {
+  id?: string;
+  sections?: RouteSection[];
+  [key: string]: unknown;
+}
+
+interface HereRouteResponse {
+  routes?: HereRoute[];
+  [key: string]: unknown;
+}
+
+/**
+ * What the toll modal renders. Two shapes are supported: the normalised
+ * `{total, tolls}` form, and the older `raw` HERE response the card falls
+ * back to reading section-by-section.
+ */
+interface TollSummary {
+  total?: number;
+  currency?: string;
+  tolls?: Toll[];
+  raw?: {routes?: HereRoute[]};
+  sections?: RouteSection[];
+  [key: string]: unknown;
+}
+
+
+const HERE_SEARCH_MIN_CHARS = 3;
+const HERE_SEARCH_DEBOUNCE_MS = 700;
+const HERE_SEARCH_CACHE_TTL_MS = 5 * 60 * 1000;
+const HERE_DEFAULT_COORDS = {latitude: 28.6139, longitude: 77.209};
+
+
+export interface HereSearchCardProps {
+  sourceRef?: React.MutableRefObject<AddressInputHandle | null>;
+  destinationRef?: React.MutableRefObject<AddressInputHandle | null>;
+  /** Which field the map's "drop a pin" result should fill. */
+  activeInput?: SearchField | null;
+  onActiveInputChange?: (field: SearchField | null) => void;
+  sourceLocation?: MapLocation | null;
+  destinationLocation?: MapLocation | null;
+  sourceText?: string;
+  destinationText?: string;
+  setSourceLocation?: (location: MapLocation | null) => void;
+  setDestinationLocation?: (location: MapLocation | null) => void;
+  setSourceText?: (text: string) => void;
+  setDestinationText?: (text: string) => void;
+  onCoordinateSelect?: (latitude: number, longitude: number) => void;
+  onSwap?: () => void;
+  onSourceSelected?: (location: MapLocation) => void;
+  /** The destination handler also receives the truck profile to route with. */
+  onDestinationSelected?: (
+    location: MapLocation,
+    truckDetails?: TruckDetails | null,
+  ) => void;
+}
+
+const HereSearchCard = ({
+  sourceRef,
+  destinationRef,
+  onActiveInputChange,
+  sourceLocation,
+  destinationLocation,
+  sourceText,
+  destinationText,
+  setSourceLocation,
+  setDestinationLocation,
+  setSourceText,
+  setDestinationText,
+  onCoordinateSelect,
+  onSwap,
+  onSourceSelected,
+  onDestinationSelected,
+}: HereSearchCardProps) => {
+  const {height: screenHeight} = useWindowDimensions();
+  const cardMaxHeight = Math.max(320, screenHeight * 0.68);
+
+  const [sourceQuery, setSourceQuery]           = useState('');
+  const [sourceSuggestions, setSourceSuggestions] = useState<Suggestion[]>([]);
+  const [sourceLoading, setSourceLoading]       = useState(false);
+  const [focusedField, setFocusedField]         = useState<SearchField>('source');
+  const sourceTimerRef                          = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [sourceCoords, setSourceCoords]         = useState<Coordinates | null>(null);
+
+  const [destQuery, setDestQuery]               = useState('');
+  const [destSuggestions, setDestSuggestions]   = useState<Suggestion[]>([]);
+  const [destLoading, setDestLoading]           = useState(false);
+  const destTimerRef                            = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [destCoords, setDestCoords]             = useState<Coordinates | null>(null);
+
+  const suggestionCacheRef  = useRef(
+    new Map<string, {items: Suggestion[]; timestamp: number}>(),
+  );
+  const lastRouteKeyRef     = useRef('');
+  const [routeLoading, setRouteLoading]   = useState(false);
+  const [routeError, setRouteError]       = useState('');
+  const [routeResponse, setRouteResponse] = useState<HereRouteResponse | null>(
+    null,
+  );
+  const [routeTollData, setRouteTollData] = useState<TollSummary | null>(null);
+  const [tollModalVisible, setTollModalVisible] = useState(false);
+  const [truckDetailsModalVisible, setTruckDetailsModalVisible] = useState(false);
+  const [truckDetails, setTruckDetails] = useState({
+    currency: 'USD',
+    departureTime: 'any',
+    currentWeight: '',
+    grossWeight: '',
+    height: '',
+    width: '',
+    length: '',
+    axleCount: '',
+    trailerCount: '',
+    type: '',
+  });
+
+  // ─── helpers ────────────────────────────────────────────────────────────
+  const clearRoutePreview = useCallback(() => {
+    lastRouteKeyRef.current = '';
+    setRouteResponse(null);
+    setRouteError('');
+    setRouteLoading(false);
+  }, []);
+
+  const formatDistance = (v: number | undefined): string =>
+    typeof v === 'number' && Number.isFinite(v)
+      ? `${(v / 1000).toFixed(1)} km`
+      : 'N/A';
+
+  const formatDuration = (v: number | undefined): string =>
+    typeof v === 'number' && Number.isFinite(v)
+      ? `${Math.ceil(v / 60)} min`
+      : 'N/A';
+
+  const getCurrencySymbol = (currency?: string): string => {
+    switch (currency) {
+      case 'USD': return '$';
+      case 'EUR': return '€';
+      case 'GBP': return '£';
+      case 'INR': return '₹';
+      default: return currency || '$';
+    }
+  };
+
+  // ─── route fetch ─────────────────────────────────────────────────────────
+  const fetchHereRoute = useCallback(
+    async (origin?: Coordinates | null, destination?: Coordinates | null) => {
+     console.log('🚀 [Route] Request Start');
+     console.log('📍 Origin:', origin);
+     console.log('📍 Destination:', destination);
+     console.log('🚚 Truck Details:', truckDetails);
+
+    if (
+      !Number.isFinite(origin?.latitude)      || !Number.isFinite(origin?.longitude) ||
+      !Number.isFinite(destination?.latitude) || !Number.isFinite(destination?.longitude)
+    ) return;
+
+    setRouteLoading(true);
+    setRouteError('');
+    setRouteResponse(null);
+    setRouteTollData(null);
+
+    try {
+      const resp = await calculateRouteTolls(
+        {latitude: origin!.latitude, longitude: origin!.longitude},
+        {
+          latitude: destination!.latitude,
+          longitude: destination!.longitude,
+        },
+        truckDetails?.currency || 'USD',
+        truckDetails,
+      ).catch(err => {
+        console.warn('🚧 Toll preview failed', err);
+        return null;
+      });
+
+      console.log('✅ Toll API Response (normalized):', resp);
+      const json = resp?.raw || null;
+      console.log('✅ Route API Response:', json);
+      setRouteResponse(json as HereRouteResponse | null);
+      // `calculateRouteTolls` returns a richer object than TollSummary
+      // spells out; the index signature admits the extra keys.
+      setRouteTollData(resp as TollSummary | null);
+    } catch (error) {
+       console.log('❌ Route API Error:', error);
+      setRouteResponse(null);
+      setRouteTollData(null);
+      setRouteError((error as ErrorLike)?.message || 'Unable to fetch route');
+    } finally {
+      setRouteLoading(false);
+    }
+  }, [truckDetails]);
+
+  // ─── autocomplete ────────────────────────────────────────────────────────
+  const fetchHereSuggestions = useCallback(
+    async (q: string, coords: Coordinates | null = null): Promise<Suggestion[]> => {
+    const query = (q || '').trim();
+     console.log('🔍 [Search] Query:', query);
+     console.log('📍 Coords:', coords);
+    if (!query || query.length < HERE_SEARCH_MIN_CHARS) return [];
+
+    const searchCoords =
+      coords && Number.isFinite(coords.latitude) && Number.isFinite(coords.longitude)
+        ? coords : HERE_DEFAULT_COORDS;
+
+    const cacheKey = `${query.toLowerCase()}@${searchCoords.latitude},${searchCoords.longitude}`;
+    const cached = suggestionCacheRef.current.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < HERE_SEARCH_CACHE_TTL_MS) return cached.items;
+
+    console.log('🌐 Calling HERE autosuggest API...');
+
+    try {
+      const items = await autosuggest(query, searchCoords, 5);
+        console.log('✅ Suggestions Response:', items);
+      suggestionCacheRef.current.set(cacheKey, {items, timestamp: Date.now()});
+      return items;
+    } catch (err) {
+      console.warn('HERE API suggestions error', err);
+      return [];
+    }
+  }, []);
+
+  const onSourceChange = useCallback((q: string) => {
+    console.log('⌨️ Source Input:', q);
+    setFocusedField('source');
+    setSourceQuery(q);
+    setSourceCoords(null);
+     console.log('🧹 Clearing route due to source change');
+    setDestSuggestions([]);
+    setDestLoading(false);
+    clearRoutePreview();
+    if (sourceTimerRef.current) clearTimeout(sourceTimerRef.current);
+    const normalized = (q || '').trim();
+    if (normalized.length < HERE_SEARCH_MIN_CHARS) {
+      setSourceSuggestions([]);
+      setSourceLoading(false);
+      return;
+    }
+    sourceTimerRef.current = setTimeout(async () => {
+      setSourceLoading(true);
+      const items = await fetchHereSuggestions(normalized, sourceCoords);
+      setSourceSuggestions(items);
+      setSourceLoading(false);
+    }, HERE_SEARCH_DEBOUNCE_MS);
+  }, [clearRoutePreview, fetchHereSuggestions, sourceCoords]);
+
+  const onDestChange = useCallback((q: string) => {
+      console.log('⌨️ Destination Input:', q);
+    setFocusedField('destination');
+    setDestQuery(q);
+    setDestCoords(null);
+      console.log('🧹 Clearing route due to destination change');
+    setSourceSuggestions([]);
+    setSourceLoading(false);
+    clearRoutePreview();
+    if (destTimerRef.current) clearTimeout(destTimerRef.current);
+    const normalized = (q || '').trim();
+    if (normalized.length < HERE_SEARCH_MIN_CHARS) {
+      setDestSuggestions([]);
+      setDestLoading(false);
+      return;
+    }
+    destTimerRef.current = setTimeout(async () => {
+      setDestLoading(true);
+      const items = await fetchHereSuggestions(normalized, destCoords);
+      setDestSuggestions(items);
+      setDestLoading(false);
+    }, HERE_SEARCH_DEBOUNCE_MS);
+  }, [clearRoutePreview, fetchHereSuggestions, destCoords]);
+
+  // ─── selection handlers ──────────────────────────────────────────────────
+  const handleHereSourceSelect = (item: Suggestion) => {
+     console.log('✅ Source Selected:', item);
+    const location: MapLocation = {
+      latitude: item.latitude as number,
+      longitude: item.longitude as number,
+      description: item.title ?? '',
+    };
+    setSourceLocation?.(location);
+    setSourceText?.(item.title ?? '');
+    setSourceCoords({
+      latitude: item.latitude as number,
+      longitude: item.longitude as number,
+    });
+    onCoordinateSelect?.(item.latitude as number, item.longitude as number);
+    onSourceSelected?.(location);
+    setSourceSuggestions([]);
+    setSourceQuery(item.title ?? '');
+    Keyboard.dismiss();
+  };
+
+  const handleHereDestSelect = (item: Suggestion) => {
+    console.log('✅ Destination Selected:', item);
+    const location: MapLocation = {
+      latitude: item.latitude as number,
+      longitude: item.longitude as number,
+      description: item.title ?? '',
+    };
+    setDestinationLocation?.(location);
+    setDestinationText?.(item.title ?? '');
+    setDestCoords({
+      latitude: item.latitude as number,
+      longitude: item.longitude as number,
+    });
+    onCoordinateSelect?.(item.latitude as number, item.longitude as number);
+    onDestinationSelected?.(location, truckDetails);
+    setDestSuggestions([]);
+    setDestQuery(item.title ?? '');
+    Keyboard.dismiss();
+  };
+
+  // ─── ref wiring ──────────────────────────────────────────────────────────
+  React.useEffect(() => {
+    try {
+      if (sourceRef && typeof sourceRef === 'object') {
+        sourceRef.current = sourceRef.current || {};
+        sourceRef.current.setAddressText = (text: string) =>
+          setSourceQuery(text || '');
+      }
+      if (destinationRef && typeof destinationRef === 'object') {
+        destinationRef.current = destinationRef.current || {};
+        destinationRef.current.setAddressText = (text: string) =>
+          setDestQuery(text || '');
+      }
+    } catch (err) { console.warn('HERE ref wiring failed', err); }
+    return () => {
+      try {
+        if (sourceRef?.current)      delete sourceRef.current.setAddressText;
+        if (destinationRef?.current) delete destinationRef.current.setAddressText;
+      } catch {}
+    };
+  }, [sourceRef, destinationRef]);
+
+  // ─── sync text from parent ───────────────────────────────────────────────
+  React.useEffect(() => { setSourceQuery(sourceText || ''); }, [sourceText]);
+  React.useEffect(() => { setDestQuery(destinationText || ''); }, [destinationText]);
+
+  // ─── FIX: sync coords from parent props (GPS auto-fill, swap, etc.) ──────
+  React.useEffect(() => {
+    if (sourceLocation && Number.isFinite(sourceLocation.latitude) && Number.isFinite(sourceLocation.longitude)) {
+      setSourceCoords({latitude: sourceLocation.latitude, longitude: sourceLocation.longitude});
+    } else {
+      setSourceCoords(null);
+    }
+  }, [sourceLocation]);
+
+  React.useEffect(() => {
+    if (destinationLocation && Number.isFinite(destinationLocation.latitude) && Number.isFinite(destinationLocation.longitude)) {
+      setDestCoords({latitude: destinationLocation.latitude, longitude: destinationLocation.longitude});
+    } else {
+      setDestCoords(null);
+    }
+  }, [destinationLocation]);
+
+  // ─── route preview trigger ───────────────────────────────────────────────
+  React.useEffect(() => {
+     console.log('🧭 Checking route trigger...');
+  console.log('SourceCoords:', sourceCoords);
+  console.log('DestCoords:', destCoords);
+    if (
+      !Number.isFinite(sourceCoords?.latitude)  || !Number.isFinite(sourceCoords?.longitude) ||
+      !Number.isFinite(destCoords?.latitude)    || !Number.isFinite(destCoords?.longitude)
+    ) return;
+
+    const vehicleKey = [
+      truckDetails.currentWeight,
+      truckDetails.grossWeight,
+      truckDetails.height,
+      truckDetails.width,
+      truckDetails.length,
+      truckDetails.axleCount,
+      truckDetails.trailerCount,
+      truckDetails.type,
+    ]
+      .map(value => String(value || ''))
+      .join('|');
+
+    const routeKey = `${sourceCoords!.latitude},${sourceCoords!.longitude}:${destCoords!.latitude},${destCoords!.longitude}:${vehicleKey}`;
+    if (lastRouteKeyRef.current === routeKey) return;
+    lastRouteKeyRef.current = routeKey;
+    fetchHereRoute(sourceCoords, destCoords);
+  }, [destCoords, fetchHereRoute, sourceCoords, truckDetails]);
+
+  // ─── swap ────────────────────────────────────────────────────────────────
+  const handleSwapPress = () => {
+    const canHandleInternally =
+      typeof setSourceLocation === 'function' &&
+      typeof setDestinationLocation === 'function' &&
+      typeof setSourceText === 'function' &&
+      typeof setDestinationText === 'function';
+
+    if (!canHandleInternally) { onSwap?.(); return; }
+
+    const nextSrc  = destinationLocation ?? null;
+    const nextDest = sourceLocation ?? null;
+
+    setSourceLocation(nextSrc);
+    setDestinationLocation(nextDest);
+    setSourceCoords(
+      Number.isFinite(nextSrc?.latitude) && Number.isFinite(nextSrc?.longitude)
+        ? {latitude: nextSrc!.latitude, longitude: nextSrc!.longitude}
+        : null,
+    );
+    setDestCoords(
+      Number.isFinite(nextDest?.latitude) && Number.isFinite(nextDest?.longitude)
+        ? {latitude: nextDest!.latitude, longitude: nextDest!.longitude}
+        : null,
+    );
+    setSourceText(destinationText || '');
+    setDestinationText(sourceText || '');
+    sourceRef?.current?.setAddressText?.(destinationText || '');
+    destinationRef?.current?.setAddressText?.(sourceText || '');
+
+    if (
+      typeof onCoordinateSelect === 'function' &&
+      Number.isFinite(nextDest?.latitude) && Number.isFinite(nextDest?.longitude)
+    ) onCoordinateSelect(nextDest!.latitude, nextDest!.longitude);
+  };
+
+  const handleTruckDetailsDone = useCallback(() => {
+    setTruckDetailsModalVisible(false);
+    if (
+      sourceCoords &&
+      destCoords &&
+      Number.isFinite(sourceCoords.latitude) &&
+      Number.isFinite(sourceCoords.longitude) &&
+      Number.isFinite(destCoords.latitude) &&
+      Number.isFinite(destCoords.longitude)
+    ) {
+      fetchHereRoute(sourceCoords, destCoords);
+    }
+  }, [destCoords, fetchHereRoute, sourceCoords]);
+
+  // ─── route data helpers ──────────────────────────────────────────────────
+  const routeSection      = routeResponse?.routes?.[0]?.sections?.[0];
+  const routeSummary      = routeSection?.summary;
+  const routeDepartureTime = routeSection?.departure?.time
+    ? new Date(routeSection.departure.time).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})
+    : 'N/A';
+  const routeArrivalTime  = routeSection?.arrival?.time
+    ? new Date(routeSection.arrival.time).toLocaleTimeString([], {hour: '2-digit', minute: '2-digit'})
+    : 'N/A';
+
+  // Support both old raw route shape and normalized toll response
+  const rawRoutes = routeTollData?.raw?.routes || null;
+  const tollSections = rawRoutes?.[0]?.sections || [];
+  let tollList: Toll[] = [];
+  if (tollSections && tollSections.length) {
+    tollList = tollSections.flatMap((section: RouteSection) => section.tolls || []);
+  } else if (Array.isArray(routeTollData?.tolls)) {
+    tollList = routeTollData?.tolls ?? [];
+  }
+  const tollCurrency =
+    tollList[0]?.fares?.[0]?.price?.currency || routeTollData?.currency || 'USD';
+  const tollTotal =
+    typeof routeTollData?.total === 'number'
+      ? routeTollData.total
+      : tollList.reduce((sum: number, toll: Toll) => {
+          const price = toll?.fares?.[0]?.price?.value;
+          return sum + (typeof price === 'number' && Number.isFinite(price) ? price : 0);
+        }, 0);
+  const tollLabel = tollList.length
+    ? `${getCurrencySymbol(tollCurrency)}${tollTotal.toFixed(2)} · ${tollList.length} booth${tollList.length > 1 ? 's' : ''}`
+    : 'No tolls';
+
+
+  // ─── render ──────────────────────────────────────────────────────────────
+  return (
+    <View style={styles.overlayRoot} pointerEvents="box-none">
+      <View style={styles.backgroundMapLayer} pointerEvents="none" />
+
+      <View style={[styles.searchCardStack, {maxHeight: cardMaxHeight}]}>
+        <ScrollView
+          style={styles.searchCardScroll}
+          contentContainerStyle={styles.searchCardContent}
+          keyboardShouldPersistTaps="handled"
+          nestedScrollEnabled
+          showsVerticalScrollIndicator={false}>
+
+          {/* ── Combined source + destination card ── */}
+          <View style={styles.floatingSectionCard}>
+            <View style={styles.topHandle} />
+
+            {/* Source row */}
+            <View style={styles.labelRow}>
+              <Location_Icon width={scale(14)} height={scale(14)} />
+              <AppText style={styles.labelText}>From</AppText>
+            </View>
+            <View style={[
+              styles.searchInputContainer,
+              focusedField === 'source' && styles.searchInputContainerActive,
+            ]}>
+              <TouchableOpacity style={styles.swapIconLeft} onPress={handleSwapPress} activeOpacity={0.7}>
+                <Arrow_left_right width={18} height={18} />
+              </TouchableOpacity>
+              <View style={{flex: 1}}>
+                <TextInput
+                  ref={sourceRef as unknown as React.Ref<TextInput>}
+                  style={[styles.searchInput, focusedField === 'source' && styles.searchInputActive]}
+                  placeholder="Current location"
+                  value={sourceQuery}
+                  onFocus={() => {
+                    setFocusedField('source');
+                    onActiveInputChange?.('source');
+                    setDestSuggestions([]);
+                  }}
+                  onChangeText={onSourceChange}
+                  placeholderTextColor="#A5B4FC"
+                />
+                {sourceLoading && (
+                  <ActivityIndicator size="small" style={styles.loadingIndicator} color="#6366F1" />
+                )}
+                {focusedField === 'source' && sourceSuggestions.length > 0 && (
+                  <View style={styles.suggestionList}>
+                    {sourceSuggestions.map(item => (
+                      <TouchableOpacity
+                        key={item.id}
+                        style={styles.suggestionItem}
+                        onPress={() => handleHereSourceSelect(item)}
+                        activeOpacity={0.7}>
+                        <Text style={styles.suggestionTitle}>{item.title}</Text>
+                        <Text style={styles.suggestionAddress}>{item.address}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+              </View>
+            </View>
+
+            {/* Divider. NOTE: `styles.inputDivider` is not defined in
+                hereSearchCard.styles — it was undefined and RN skipped it,
+                so this separator never had any styling. */}
+            <View />
+
+            {/* Destination row */}
+            <View style={styles.labelRowCompact}>
+              <Location_Icon width={scale(14)} height={scale(14)} />
+              <AppText style={styles.labelText}>To</AppText>
+            </View>
+            <View style={[
+              styles.searchInputContainer,
+              focusedField === 'destination' && styles.searchInputContainerActive,
+            ]}>
+              <TouchableOpacity style={styles.swapIconLeft} onPress={handleSwapPress} activeOpacity={0.7}>
+                <Arrow_left_right width={18} height={18} />
+              </TouchableOpacity>
+              <View style={{flex: 1}}>
+                <TextInput
+                  ref={destinationRef as unknown as React.Ref<TextInput>}
+                  style={[styles.searchInput, focusedField === 'destination' && styles.searchInputActive]}
+                  placeholder="Where to?"
+                  value={destQuery}
+                  onFocus={() => {
+                    setFocusedField('destination');
+                    onActiveInputChange?.('destination');
+                    setSourceSuggestions([]);
+                  }}
+                  onChangeText={onDestChange}
+                  placeholderTextColor="#A5B4FC"
+                />
+                {destLoading && (
+                  <ActivityIndicator size="small" style={styles.loadingIndicator} color="#6366F1" />
+                )}
+                {focusedField === 'destination' && destSuggestions.length > 0 && (
+                  <View style={styles.suggestionList}>
+                    {destSuggestions.map(item => (
+                      <TouchableOpacity
+                        key={item.id}
+                        style={styles.suggestionItem}
+                        onPress={() => handleHereDestSelect(item)}
+                        activeOpacity={0.7}>
+                        <Text style={styles.suggestionTitle}>{item.title}</Text>
+                        <Text style={styles.suggestionAddress}>{item.address}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </View>
+                )}
+              </View>
+            </View>
+          </View>
+
+          {/* ── Route loading ── */}
+          {routeLoading && (
+            <View style={styles.routeLoadingRowCompact}>
+              <ActivityIndicator size="small" color="#6366F1" />
+              <AppText style={styles.routeLoadingText}>Calculating best route…</AppText>
+            </View>
+          )}
+
+          {/* ── Route error ── */}
+          {!!routeError && (
+            <AppText style={styles.routeError}>{routeError}</AppText>
+          )}
+          {/* ── Route preview card ── */}
+          {routeResponse && (
+            <View style={styles.floatingSectionCard}>
+              <View style={styles.routeSummaryCard}>
+
+                {/* Header */}
+                <View style={styles.routeSummaryHeader}>
+                  {/* `styles.routeTitleRow` is not defined either (the
+                      styles file has `routeTitle`); it was undefined and
+                      skipped, so this wrapper was unstyled. */}
+                  <View>
+                    <AppText style={styles.routeTitle}>Route Preview</AppText>
+                  </View>
+                  <View style={styles.routeHeaderBadges}>
+                    <View style={styles.routeBadgeCompact}>
+                      <AppText style={styles.routeBadgeText}>ON ROUTE</AppText>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.routeBadgeSmall}
+                      onPress={() => setTollModalVisible(true)}
+                      activeOpacity={0.7}>
+                      <AppText style={styles.routeBadgeSmallText}>{tollLabel}</AppText>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+
+                {/* Scrollable pills */}
+                <View style={styles.routeMessageCard}>
+                  <ScrollView
+                    horizontal
+                    showsHorizontalScrollIndicator={false}
+                    contentContainerStyle={styles.routeInfoScroller}>
+
+                    <View style={styles.routeInfoPill}>
+                      <AppText style={styles.routeInfoPillLabel}>Departure</AppText>
+                      <AppText style={styles.routeInfoPillValue}>{routeDepartureTime}</AppText>
+                    </View>
+
+                    <View style={styles.routeInfoPill}>
+                      <AppText style={styles.routeInfoPillLabel}>Arrival</AppText>
+                      <AppText style={styles.routeInfoPillValue}>{routeArrivalTime}</AppText>
+                    </View>
+
+                    <View style={styles.routeInfoPill}>
+                      <AppText style={styles.routeInfoPillLabel}>Distance</AppText>
+                      <AppText style={styles.routeInfoPillValue}>
+                        {formatDistance(routeSummary?.length)}
+                      </AppText>
+                    </View>
+
+                    <View style={styles.routeInfoPill}>
+                      <AppText style={styles.routeInfoPillLabel}>Duration</AppText>
+                      <AppText style={styles.routeInfoPillValue}>
+                        {formatDuration(routeSummary?.duration)}
+                      </AppText>
+                    </View>
+
+                    <View style={styles.routeInfoPillWide}>
+                      <AppText style={styles.routeInfoPillLabel}>Toll Estimate</AppText>
+                      <AppText style={styles.routeInfoPillValue}>{tollLabel}</AppText>
+                    </View>
+
+                  </ScrollView>
+                </View>
+
+              </View>
+            </View>
+          )}
+        </ScrollView>
+        <Button
+          title="Truck Details"
+          onPress={() => setTruckDetailsModalVisible(true)}
+        />
+      </View>
+
+      {/* ── Truck Details Modal ── */}
+      <Modal
+        visible={truckDetailsModalVisible}
+        transparent
+        animationType="slide"
+        onRequestClose={() => setTruckDetailsModalVisible(false)}>
+        <TouchableOpacity
+          style={styles.tollModalOverlay}
+          activeOpacity={1}
+          onPress={() => setTruckDetailsModalVisible(false)}>
+          <TouchableOpacity activeOpacity={1} style={styles.tollModalContent}>
+            <View style={styles.tollModalHeader}>
+              <Text style={styles.tollModalTitle}>Truck Details</Text>
+              <TouchableOpacity
+                onPress={() => setTruckDetailsModalVisible(false)}
+                activeOpacity={0.7}>
+                <Text style={styles.tollModalClose}>✕</Text>
+              </TouchableOpacity>
+            </View>
+            <TrucksInput
+              truckDetails={truckDetails}
+              setTruckDetails={
+              setTruckDetails as React.Dispatch<
+                React.SetStateAction<Record<string, string> | null>
+              >
+            }
+              isLoading={false}
+              submitButtonText="Done"
+              onSubmit={handleTruckDetailsDone}
+              onCancel={() => setTruckDetailsModalVisible(false)}
+            />
+          </TouchableOpacity>
+        </TouchableOpacity>
+      </Modal>
+
+      {/* ── Toll Details Modal ── */}
+      <Modal
+        visible={tollModalVisible}
+        transparent={true}
+        animationType="fade"
+        onRequestClose={() => setTollModalVisible(false)}>
+        <TouchableOpacity
+          style={styles.tollModalOverlay}
+          activeOpacity={1}
+          onPress={() => setTollModalVisible(false)}>
+          <View style={styles.tollModalContent}>
+            <View style={styles.tollModalHeader}>
+              <Text style={styles.tollModalTitle}>Toll Breakdown</Text>
+              <TouchableOpacity
+                onPress={() => setTollModalVisible(false)}
+                activeOpacity={0.7}>
+                <Text style={styles.tollModalClose}>✕</Text>
+              </TouchableOpacity>
+            </View>
+
+            <ScrollView
+              style={styles.tollModalScroll}
+              showsVerticalScrollIndicator={false}
+              scrollEventThrottle={16}
+              decelerationRate="fast"
+              bounces={true}>
+              {tollSections.length
+                ? tollSections.map((section, si) =>
+                    (section.tolls || []).map((toll, ti) => {
+                      const fares = toll.fares || [];
+                      const singleFares = fares.filter(f => {
+                        if (!f.pass) return true;
+                        if (f.pass.returnJourney === true) return false;
+                        if (f.pass.validityPeriod != null) return false;
+                        return true;
+                      });
+                      const best = (singleFares.length ? singleFares : fares)[0];
+                      const amount = best?.price?.value || 0;
+                      const currency = best?.price?.currency || 'USD';
+
+                      return (
+                        <View key={`${si}-${ti}`} style={styles.tollItem}>
+                          <Text style={styles.tollItemName}>{toll.tollSystem}</Text>
+                          <Text style={styles.tollItemAmount}>
+                            {getCurrencySymbol(currency)}{amount.toFixed(2)}
+                          </Text>
+                        </View>
+                      );
+                    })
+                  )
+                : (routeTollData?.tolls || []).map((toll, ti) => {
+                    const fares = toll.fares || [];
+                    const singleFares = fares.filter(f => {
+                      if (!f.pass) return true;
+                      if (f.pass.returnJourney === true) return false;
+                      if (f.pass.validityPeriod != null) return false;
+                      return true;
+                    });
+                    const best = (singleFares.length ? singleFares : fares)[0];
+                    const amount = best?.price?.value || 0;
+                    const currency = best?.price?.currency || routeTollData?.currency || 'USD';
+
+                    return (
+                      <View key={`t-${ti}`} style={styles.tollItem}>
+                        <Text style={styles.tollItemName}>{toll.tollSystem || toll.name || 'Toll'}</Text>
+                        <Text style={styles.tollItemAmount}>
+                          {getCurrencySymbol(currency)}{amount.toFixed(2)}
+                        </Text>
+                      </View>
+                    );
+                  })}
+              <View style={styles.tollItemTotal}>
+                <Text style={styles.tollItemTotalLabel}>Total Estimate</Text>
+                <Text style={styles.tollItemTotalAmount}>
+                  {getCurrencySymbol(tollCurrency)}{tollTotal.toFixed(2)}
+                </Text>
+              </View>
+              <Text style={styles.tollModalNote}>
+                * Cheapest one-way per booth
+              </Text>
+            </ScrollView>
+          </View>
+        </TouchableOpacity>
+      </Modal>
+    </View>
+  );
+};
+
+export default HereSearchCard;
