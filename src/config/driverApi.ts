@@ -80,10 +80,6 @@ export const getPastShipments = ({
   getShipmentList(DRIVER_ENDPOINTS.pastShipments(), 'past', date);
 
 /**
- * The driver comes from the bearer token; `shipmentId` is the only input, and
- * it is required — without one there is no load to ask about, so this throws
- * rather than letting the gateway answer with someone else's shipment.
- *
  * @param {{shipmentId: string}} params
  * @returns {Promise<object>} the detail payload (envelope unwrapped)
  */

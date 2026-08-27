@@ -60,9 +60,6 @@ export const API_ENDPOINTS = {
 // The single debug switch for API traffic. Set DEBUG=false in .env.production.
 const DEBUG_ENABLED = String(DEBUG).toLowerCase() === 'true';
 
-// Masks passwords/tokens so credentials can never reach a Metro log. Walks
-// nested objects — login responses carry the tokens under `data`, so a
-// top-level-only pass would print them in full.
 const safe = (value: unknown): unknown => {
   if (!value || typeof value !== 'object') return value;
   if (Array.isArray(value)) return value.map(safe);
