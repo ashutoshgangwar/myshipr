@@ -4,7 +4,7 @@ import {moderateScale} from 'react-native-size-matters';
 
 import AppText from '../../theme/AppText';
 import {colors} from '../../theme/colors';
-import {NOTIF_TYPE} from '../../screens/NotificationScreen/constants';
+import {NOTIF_TYPE} from '../../screens/driver/NotificationScreen/constants';
 import styles from './FcmNotificationModal.styles';
 
 import TruckIcon from '../../assets/svg_icon/Truck_Frame.svg';

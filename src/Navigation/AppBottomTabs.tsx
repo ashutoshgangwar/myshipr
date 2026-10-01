@@ -4,10 +4,10 @@ import {createBottomTabNavigator} from '@react-navigation/bottom-tabs';
 import {useSafeAreaInsets} from 'react-native-safe-area-context';
 import {moderateScale} from 'react-native-size-matters';
 
-import HomeScreen from '../screens/HomeScreen/HomeScreen';
-import EarningsScreen from '../screens/EarningsScreen/EarningsScreen';
-import ShipmentScreen from '../screens/ShipmentScreen/ShipmentScreen';
-import BiddingScreen from '../screens/BiddingScreen/BiddingScreen';
+import HomeScreen from '../screens/driver/HomeScreen/HomeScreen';
+import EarningsScreen from '../screens/driver/EarningsScreen/EarningsScreen';
+import ShipmentScreen from '../screens/driver/ShipmentScreen/ShipmentScreen';
+import BiddingScreen from '../screens/driver/BiddingScreen/BiddingScreen';
 import BiddingIcon from '../assets/svg_icon/Bidding.svg';
 import HomeIcon from '../assets/svg_icon/Home.svg';
 import EarningsIcon from '../assets/svg_icon/Earnings.svg';
@@ -16,8 +16,8 @@ import SettingsIcon from '../assets/svg_icon/Settings_Tab.svg';
 import useDriverRole from '../hooks/useDriverRole';
 import {colors} from '../theme/colors';
 import {IS_TABLET, select} from '../theme/device';
-import SalaryScreen from '../screens/SalaryScreen/SalaryScreen';
-import Profile from '../screens/Profile/Profile';
+import SalaryScreen from '../screens/driver/SalaryScreen/SalaryScreen';
+import Profile from '../screens/driver/Profile/Profile';
 import type {SvgProps} from 'react-native-svg';
 import type {MainTabParamList, MainTabScreenProps} from '../types/navigation';
 

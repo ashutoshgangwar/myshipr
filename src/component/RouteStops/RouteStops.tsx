@@ -7,7 +7,7 @@ import CityRing from '../../assets/svg_icon/city_ring.svg';
 import DropPin from '../../assets/svg_icon/stop_pin_green.svg';
 import RouteDashedLine from '../../assets/svg_icon/RouteDashedLine.svg';
 import {useLocation} from '../../services/LocationService';
-import {reverseGeocode} from '../../screens/HereMapScreen/services/hereTruckService';
+import {reverseGeocode} from '../../screens/driver/HereMapScreen/services/hereTruckService';
 import type {StyleProp, ViewStyle} from 'react-native';
 const DASH_GAP = 11;
 

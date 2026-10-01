@@ -22,7 +22,7 @@ import {HereMapView} from '../../here';
 import {
   autosuggest,
   reverseGeocode,
-} from '../../screens/HereMapScreen/services/hereTruckService';
+} from '../../screens/driver/HereMapScreen/services/hereTruckService';
 import {getCurrentLocation} from '../../services/LocationService';
 
 import Location_Icon from '../../assets/svg_icon/location.svg';

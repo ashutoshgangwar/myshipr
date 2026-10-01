@@ -19,8 +19,8 @@ import {
   formatManeuverDistance,
   maneuverLabel,
 } from '../../utils/here/maneuverFormat';
-import {NAVIGATION_ROUTE_WIDTH} from '../../screens/HereMapScreen/constants/navigationConstants';
-import ManeuverIcon from '../../screens/ActiveTripScreen/components/ManeuverIcon';
+import {NAVIGATION_ROUTE_WIDTH} from '../../screens/driver/HereMapScreen/constants/navigationConstants';
+import ManeuverIcon from '../../screens/driver/ActiveTripScreen/components/ManeuverIcon';
 import GpsIcon from '../../assets/svg_icon/gps-svg.svg';
 import type {StyleProp, ViewStyle} from 'react-native';
 import type {TripSession} from '../../services/TripSessionService';

@@ -112,7 +112,7 @@ export type FavoriteDestinationHandoff =
  * the param type can never drift from the mock the screen actually renders.
  */
 export type AuctionDetail =
-  (typeof import('../screens/ActiveBidding/constants'))['AUCTION'];
+  (typeof import('../screens/driver/ActiveBidding/constants'))['AUCTION'];
 
 /**
  * A row of the loads board, as the bidding and delivery flows read it.

@@ -9,7 +9,7 @@ import {
   watchCurrentLocation,
 } from './LocationService';
 import {APP_PERMISSION_TYPES, checkAppPermission} from './PermissionService';
-import {CURRENT_TRIP_ID} from '../screens/HomeScreen/currentTrip';
+import {CURRENT_TRIP_ID} from '../screens/driver/HomeScreen/currentTrip';
 import type {LocationResult} from '../types/location';
 import type {ErrorLike} from '../types/common';
 
