@@ -471,6 +471,8 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
       </ScrollView>
 
       {/* FLOATING BID NOW PANEL — slides off to the right edge and back */}
+
+      
       <Animated.View
         style={[styles.bidDock, {transform: [{translateX: dockAnim}]}]}>
         <TouchableOpacity
