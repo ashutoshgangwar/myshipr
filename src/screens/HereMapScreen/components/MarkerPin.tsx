@@ -1,0 +1,42 @@
+import React from 'react';
+import {moderateScale} from 'react-native-size-matters';
+import HomeIcon from '../../../assets/svg_icon/Home.svg';
+import TruckIcon from '../../../assets/svg_icon/truck_icon.svg';
+import CarIcon from '../../../assets/svg_icon/car.svg';
+
+const ASSET_ICONS = {
+  home: HomeIcon,
+  truck: TruckIcon,
+  car: CarIcon,
+};
+
+// The drop stop is absent by design — its icon is shared with the other maps
+// rather than picked here (see `here/destinationMarker`).
+export const MARKER_ROLE_ICON = {
+  source: 'home',
+  vehicle: 'truck',
+};
+
+/**
+ * Renders a marker icon at the requested size. Used for the in-app picker
+ * preview and — via `svgRef.toDataURL()` — to rasterise the marker handed to
+ * the native HERE map.
+ *
+ * @param {{iconKey?: 'home'|'truck'|'car', width?: number, svgRef?: object}} props
+ */
+export default function MarkerPin({
+  iconKey = 'truck',
+  width = moderateScale(48),
+  svgRef,
+}: {
+  iconKey?: string;
+  width?: number;
+  /** Accepted by callers; the icons carry their own fill. */
+  color?: string;
+  /** Forwarded to the SVG so a rasteriser can call toDataURL() on it. */
+  svgRef?: React.Ref<never>;
+}) {
+  const Icon =
+    ASSET_ICONS[iconKey as keyof typeof ASSET_ICONS] || ASSET_ICONS.truck;
+  return <Icon ref={svgRef} width={width} height={width} />;
+}

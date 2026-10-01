@@ -1,0 +1,14 @@
+<svg width="32" height="40" viewBox="0 0 32 40" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <!-- Ground shadow, so the pole reads as planted rather than floating. -->
+  <ellipse cx="16" cy="37.6" rx="5" ry="1.8" fill="#000000" opacity="0.2"/>
+  <!-- Pole. Dead centre horizontally: native anchors the marker at (0.5, 1.0),
+       so the pole's foot is what lands on the stop's coordinate. -->
+  <path d="M16 3.4 V37.6" stroke="#ED7512" stroke-width="2.4" stroke-linecap="round"/>
+  <!-- Checkered flag: white ground, dark squares on the alternating cells. -->
+  <rect x="16.8" y="4.2" width="13.4" height="10.8" fill="#FFFFFF"/>
+  <rect x="16.80" y="4.2" width="3.35" height="5.4" fill="#171717"/>
+  <rect x="23.50" y="4.2" width="3.35" height="5.4" fill="#171717"/>
+  <rect x="20.15" y="9.6" width="3.35" height="5.4" fill="#171717"/>
+  <rect x="26.85" y="9.6" width="3.35" height="5.4" fill="#171717"/>
+  <rect x="16.8" y="4.2" width="13.4" height="10.8" fill="none" stroke="#171717" stroke-width="0.9"/>
+</svg>

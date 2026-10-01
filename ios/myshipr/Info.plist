@@ -1,0 +1,168 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>CADisableMinimumFrameDurationOnPhone</key>
+	<true/>
+	<key>CFBundleDevelopmentRegion</key>
+	<string>en</string>
+	<key>CFBundleDisplayName</key>
+	<string>myshipr</string>
+	<key>CFBundleExecutable</key>
+	<string>$(EXECUTABLE_NAME)</string>
+	<key>CFBundleIdentifier</key>
+	<string>$(PRODUCT_BUNDLE_IDENTIFIER)</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleName</key>
+	<string></string>
+	<key>CFBundlePackageType</key>
+	<string>APPL</string>
+	<key>CFBundleShortVersionString</key>
+	<string>$(MARKETING_VERSION)</string>
+	<key>CFBundleSignature</key>
+	<string>????</string>
+	<!-- Custom scheme (myshipr://activate?token=…). Universal Links are the
+	     real delivery mechanism for the driver invite, but they need a live
+	     apple-app-site-association file on the domain AND a signed build, so
+	     this scheme is what works in development and is the "Open in app"
+	     fallback the landing page offers. Keep it in step with APP_LINK_SCHEME
+	     in .env — the app only acts on links whose scheme matches. -->
+	<key>CFBundleURLTypes</key>
+	<array>
+		<dict>
+			<key>CFBundleTypeRole</key>
+			<string>Editor</string>
+			<key>CFBundleURLName</key>
+			<string>com.myshipr</string>
+			<key>CFBundleURLSchemes</key>
+			<array>
+				<string>myshipr</string>
+			</array>
+		</dict>
+	</array>
+	<key>CFBundleVersion</key>
+	<string>$(CURRENT_PROJECT_VERSION)</string>
+	<key>HERE_ACCESS_KEY_ID</key>
+	<string>K8yahtGLkhVNX-Iccqs20Q</string>
+	<key>HERE_ACCESS_KEY_SECRET</key>
+	<string>23nHMHxJ3-6siXLbYaGwz3z14KZ_1P1lXl1lUUp0LYhAJgSU8__b19Xc_734Tq3OoQ5XTRoHjRjWOxFpcUmVOg</string>
+	<key>HERE_API_KEY</key>
+	<string>3nXPL2aYbn53qdzDc0rQ8Qbuhhtr8QjHR68m6XmFiwQ</string>
+	<!-- The app only talks to its backend and to HERE/Firebase over standard
+	     HTTPS/TLS and uses the system Keychain and Face ID; none of that counts
+	     as non-exempt encryption. Declaring it here keeps TestFlight builds out
+	     of "Missing Compliance" instead of asking on every upload. -->
+	<key>ITSAppUsesNonExemptEncryption</key>
+	<false/>
+	<key>LSApplicationCategoryType</key>
+	<string></string>
+	<key>LSRequiresIPhoneOS</key>
+	<false/>
+	<key>NSAppTransportSecurity</key>
+	<dict>
+		<key>NSAllowsArbitraryLoads</key>
+		<false/>
+		<key>NSAllowsLocalNetworking</key>
+		<true/>
+		<!-- NSExceptionDomains MUST live inside NSAppTransportSecurity; at the
+		     top level of the plist iOS silently ignores every entry. -->
+		<key>NSExceptionDomains</key>
+		<dict>
+			<key>autosuggest.search.hereapi.com</key>
+			<dict>
+				<key>NSIncludesSubdomains</key>
+				<true/>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<false/>
+			</dict>
+			<key>geocode.search.hereapi.com</key>
+			<dict>
+				<key>NSIncludesSubdomains</key>
+				<true/>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<false/>
+			</dict>
+			<key>lookup.search.hereapi.com</key>
+			<dict>
+				<key>NSIncludesSubdomains</key>
+				<true/>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<false/>
+			</dict>
+			<key>revgeocode.search.hereapi.com</key>
+			<dict>
+				<key>NSIncludesSubdomains</key>
+				<true/>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<false/>
+			</dict>
+			<key>router.hereapi.com</key>
+			<dict>
+				<key>NSIncludesSubdomains</key>
+				<true/>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<false/>
+			</dict>
+			<key>wps.hereapi.com</key>
+			<dict>
+				<key>NSIncludesSubdomains</key>
+				<true/>
+				<key>NSExceptionAllowsInsecureHTTPLoads</key>
+				<false/>
+			</dict>
+		</dict>
+	</dict>
+	<key>NSCameraUsageDescription</key>
+	<string>We need access to your camera to scan documents like CDL, medical certificates, and other IDs.</string>
+	<key>NSFaceIDUsageDescription</key>
+	<string>This app uses Face ID for secure biometric authentication.</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>myshipr uses your location for turn-by-turn truck navigation and to keep your dispatcher updated with live trip progress and ETA. Allowing "Always" lets the app keep following your route when the screen is off or you switch apps during a trip.</string>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Your location is required to fetch GPS coordinates</string>
+	<key>NSMotionUsageDescription</key>
+	<string>Motion access is required for device information</string>
+	<key>NSPhotoLibraryAddUsageDescription</key>
+	<string>We need permission to save scanned documents to your photo library.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>We need access to your photo library to select and scan documents.</string>
+	<key>RCTNewArchEnabled</key>
+	<true/>
+	<key>UIDeviceFamily</key>
+	<array>
+		<integer>1</integer>
+		<integer>0</integer>
+		<integer>0</integer>
+	</array>
+	<key>UILaunchStoryboardName</key>
+	<string>LaunchScreen</string>
+	<key>UIRequiredDeviceCapabilities</key>
+	<array>
+		<string>arm64</string>
+	</array>
+	<key>UIStatusBarStyle</key>
+	<string></string>
+	<key>UISupportedInterfaceOrientations</key>
+	<array>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+		<string>UIInterfaceOrientationPortrait</string>
+	</array>
+	<key>UISupportedInterfaceOrientations~ipad</key>
+	<array>
+		<string>UIInterfaceOrientationLandscapeLeft</string>
+		<string>UIInterfaceOrientationLandscapeRight</string>
+		<string>UIInterfaceOrientationPortrait</string>
+		<string>UIInterfaceOrientationPortraitUpsideDown</string>
+	</array>
+	<key>UIViewControllerBasedStatusBarAppearance</key>
+	<false/>
+	<!-- Allow the app to be woken in the background to handle incoming FCM
+	     data/notification messages (background message handler). -->
+	<key>UIBackgroundModes</key>
+	<array>
+		<string>remote-notification</string>
+	</array>
+</dict>
+</plist>

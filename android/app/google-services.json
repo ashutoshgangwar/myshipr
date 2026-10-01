@@ -1,0 +1,39 @@
+{
+  "project_info": {
+    "project_number": "490988165288",
+    "project_id": "innate-lacing-484116-t8",
+    "storage_bucket": "innate-lacing-484116-t8.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:490988165288:android:a93ab7426e3dc39313ca9d",
+        "android_client_info": {
+          "package_name": "com.myshipr"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "490988165288-4ajsktdlgjebmo1plsb3rtb70a6t2sqm.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBtJwfv9Gq31iglSuSC8zZ0JNBHMKlCOHc"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "490988165288-4ajsktdlgjebmo1plsb3rtb70a6t2sqm.apps.googleusercontent.com",
+              "client_type": 3
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

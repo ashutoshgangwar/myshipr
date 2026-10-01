@@ -1,0 +1,232 @@
+apply plugin: "com.android.application"
+apply plugin: "org.jetbrains.kotlin.android"
+apply plugin: "com.facebook.react"
+apply plugin: "com.google.gms.google-services"
+
+react {
+    autolinkLibrariesWithApp()
+}
+
+def enableProguardInReleaseBuilds = true
+def jscFlavor = 'io.github.react-native-community:jsc-android:2026004.+'
+
+// An .aab and a set of split .apks want opposite packaging decisions, and both
+// have to be settled at configuration time, so key them off the requested task.
+// Running assemble and bundle in one invocation resolves to the bundle setting.
+def isBundleBuild = gradle.startParameter.taskNames.any {
+    it.toLowerCase().contains("bundle")
+}
+
+android {
+    ndkVersion rootProject.ext.ndkVersion
+    buildToolsVersion rootProject.ext.buildToolsVersion
+    compileSdk rootProject.ext.compileSdkVersion
+
+    namespace "com.myshipr"
+
+    defaultConfig {
+        applicationId "com.myshipr"
+        // HERE SDK Navigate 4.27 requires API 24+ (see its bundled manifest).
+        minSdkVersion Math.max(24, rootProject.ext.minSdkVersion as int)
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode 1
+        versionName "1.0.0"
+
+        // HERE credentials are NOT declared here. They are read from .env by JS
+        // and passed to SDKNativeEngine.makeSharedInstance() through
+        // HereSdk.initialize(), so .env stays the single source of truth.
+        // APP_LINK_* feed the intent-filters in AndroidManifest.xml. They must
+        // stay in step with APP_LINK_SCHEME / APP_LINK_DOMAIN in .env — the
+        // manifest decides which links Android hands to the app, and
+        // DeepLinkService decides which of those it will act on. A host in one
+        // and not the other silently does nothing.
+        manifestPlaceholders = [
+            GOOGLE_MAPS_API_KEY: "AIzaSyDH6IejmpyYR5CpKxBEBmeLe_tbG6voOjg",
+            APP_LINK_SCHEME    : "myshipr",
+            APP_LINK_HOST      : "istio-dev.myshipr.com"
+        ]
+
+        // Play Services and AndroidX between them ship translations for ~80
+        // locales. Keep only the markets MyShipr serves. This covers Android
+        // resources only — the HERE SDK's own locale data is trimmed below.
+        resourceConfigurations += ["en", "es", "hi", "pa", "ru"]
+    }
+
+    signingConfigs {
+        debug {
+            storeFile file('debug.keystore')
+            storePassword 'android'
+            keyAlias 'androiddebugkey'
+            keyPassword 'android'
+        }
+    }
+
+    buildTypes {
+        debug {
+            signingConfig signingConfigs.debug
+        }
+
+        release {
+            signingConfig signingConfigs.debug
+            minifyEnabled enableProguardInReleaseBuilds
+            shrinkResources true
+
+            // Production invite links point at the public link host, not the
+            // dev API gateway.
+            manifestPlaceholders = [APP_LINK_HOST: "link.myshipr.com"]
+
+            proguardFiles getDefaultProguardFile(
+                "proguard-android-optimize.txt"
+            ),
+            "proguard-rules.pro"
+        }
+    }
+
+    splits {
+        abi {
+            // The bundle splits by ABI on Play's side; AGP rejects the build if
+            // we also split here (https://issuetracker.google.com/402800800).
+            enable !isBundleBuild
+            reset()
+
+            include 'armeabi-v7a', 'arm64-v8a'
+
+            universalApk true
+        }
+    }
+
+    packaging {
+        jniLibs {
+            pickFirsts += [
+                "lib/armeabi-v7a/libc++_shared.so",
+                "lib/arm64-v8a/libc++_shared.so",
+                "lib/x86/libc++_shared.so",
+                "lib/x86_64/libc++_shared.so",
+            ]
+
+            // AGP 8 stores .so uncompressed by default. That is the right
+            // default for the AAB — Play recompresses per device, and
+            // uncompressed libs let the installer map them straight out of the
+            // APK instead of keeping a second extracted copy. But nothing
+            // recompresses the standalone APKs we hand out directly, and there
+            // libheresdk.so alone is 87 MB stored against 31 MB deflated.
+            //
+            // So: compress for APK builds, leave the bundle on the Play-optimal
+            // default.
+            useLegacyPackaging = !isBundleBuild
+        }
+    }
+}
+
+// -----------------------------------------------------------------------------
+// HERE SDK asset trimming
+//
+// The Navigate .aar ships guidance voices for 48 languages, traffic-event
+// strings for 33 locales (each in a metric and an imperial flavour), and map
+// fallback fonts for every script HERE supports — together ~31 MB of the
+// release APK. MyShipr serves English, Spanish, Hindi, Punjabi and Russian, so
+// the rest never loads.
+//
+// These files come from inside the .aar, so the only place they can be removed
+// is the merged assets directory: after AGP has unpacked and merged every
+// library's assets, before it packages them.
+// -----------------------------------------------------------------------------
+
+// HERE has no pa-IN voice package, so Punjabi drivers fall back to en-US/hi-IN.
+def hereVoiceLocales = ["en-US", "en-GB", "es-ES", "es-MX", "hi-IN", "ru-RU"].toSet()
+
+// Likewise, HERE publishes no hi-IN or pa-IN traffic-event strings.
+def hereTmcLocales = ["en-US", "en-GB", "es-ES", "es-MX", "ru-RU"].toSet()
+
+// FiraGO covers Latin, Cyrillic and Greek (English, Spanish, Russian); Gurmukhi
+// covers Punjabi. The rest of the chain is CJK, SE-Asian and South-Indian.
+//
+// The fallback lists in geoviz/common/shared/list/fonts.json are deliberately
+// NOT pruned to match: HERE already ships them referencing desktop-only faces
+// (msgothic.ttc, ヒラギノ角ゴシック W3.ttc) that never exist on Android, so its
+// loader is built to skip fallback entries it cannot open.
+def hereKeepFonts = ["FiraGO_Map.ttf", "NotoSansGurmukhi-Regular-unhinted.ttf"].toSet()
+
+tasks.configureEach { task ->
+    if (!(task.name ==~ /^merge[A-Za-z]*Assets$/)) {
+        return
+    }
+
+    task.doLast {
+        File assets = task.outputDir.get().asFile
+        long freed = 0
+
+        Closure drop = { File f ->
+            if (!f.exists()) {
+                return
+            }
+            if (f.isDirectory()) {
+                freed += f.directorySize()
+                f.deleteDir()
+            } else {
+                freed += f.length()
+                f.delete()
+            }
+        }
+
+        new File(assets, "voice_assets").listFiles()?.each { File pkg ->
+            if (pkg.name.startsWith("voice_package_")
+                    && !hereVoiceLocales.contains(pkg.name - "voice_package_")) {
+                drop(pkg)
+            }
+        }
+
+        // tmcevents.<locale> and tmcevents.<locale>.imperial
+        new File(assets, "localization").listFiles()?.each { File f ->
+            if (!f.name.startsWith("tmcevents.")) {
+                return
+            }
+            def locale = f.name - "tmcevents." - ".imperial"
+            if (!hereTmcLocales.contains(locale)) {
+                drop(f)
+            }
+        }
+
+        new File(assets, "geoviz/fonts").listFiles()?.each { File f ->
+            if (!hereKeepFonts.contains(f.name)) {
+                drop(f)
+            }
+        }
+
+        if (freed > 0) {
+            logger.lifecycle("HERE asset trim: freed " +
+                "${(freed / (1024 * 1024)).setScale(1, BigDecimal.ROUND_HALF_UP)} MB")
+        }
+    }
+}
+
+repositories {
+    flatDir {
+        dirs 'libs'
+    }
+}
+
+dependencies {
+
+    implementation("com.facebook.react:react-android")
+
+    // HERE SDK Navigate ships as a local .aar in android/app/libs. Picking it up
+    // by fileTree rather than by exact artifact name means dropping in a newer
+    // heresdk-navigate-android-*.aar needs no Gradle edit — just delete the old
+    // one so exactly one HERE .aar remains in the folder.
+    implementation fileTree(dir: 'libs', include: ['*.aar'])
+
+    implementation "com.google.android.gms:play-services-location:21.0.1"
+    implementation 'com.caverock:androidsvg-aar:1.4'
+
+    // Fresco decodes GIFs only when this add-on is present; without it the
+    // falcon in src/assets/gif renders as a still first frame on Android.
+    // Version must match the Fresco that React Native itself pulls in (3.6.0).
+    implementation 'com.facebook.fresco:animated-gif:3.6.0'
+
+    if (hermesEnabled.toBoolean()) {
+        implementation("com.facebook.react:hermes-android")
+    } else {
+        implementation jscFlavor
+    }
+}

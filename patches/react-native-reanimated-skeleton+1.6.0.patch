@@ -1,0 +1,25 @@
+diff --git a/node_modules/react-native-reanimated-skeleton/lib/module/index.js b/node_modules/react-native-reanimated-skeleton/lib/module/index.js
+index a348f8e..f7312db 100644
+--- a/node_modules/react-native-reanimated-skeleton/lib/module/index.js
++++ b/node_modules/react-native-reanimated-skeleton/lib/module/index.js
+@@ -61,7 +61,7 @@ const Skeleton = ({
+         easing
+       }), -1, true);
+     }
+-  }, [isLoading, shiverValue]);
++  });
+   const opacity = useDerivedValue(() => {
+     if (!isLoading) {
+       return withTiming(1, {
+diff --git a/node_modules/react-native-reanimated-skeleton/src/index.tsx b/node_modules/react-native-reanimated-skeleton/src/index.tsx
+index 89554e8..3fad6ad 100644
+--- a/node_modules/react-native-reanimated-skeleton/src/index.tsx
++++ b/node_modules/react-native-reanimated-skeleton/src/index.tsx
+@@ -84,7 +84,6 @@ const Skeleton: React.FC<ISkeletonProps> = ({
+               );
+       }
+     },
+-    [isLoading, shiverValue],
+   );
+ 
+   const opacity = useDerivedValue(() => {

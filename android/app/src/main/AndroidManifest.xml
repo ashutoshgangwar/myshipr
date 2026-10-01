@@ -1,0 +1,103 @@
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+  xmlns:tools="http://schemas.android.com/tools">
+
+<uses-permission android:name="android.permission.INTERNET" />
+<uses-permission android:name="android.permission.CAMERA" />
+<uses-permission android:name="android.permission.USE_BIOMETRIC" />
+<uses-permission
+    android:name="android.permission.READ_EXTERNAL_STORAGE"
+    android:maxSdkVersion="32" />
+<uses-permission android:name="android.permission.READ_MEDIA_IMAGES" />
+<uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
+<uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
+ <uses-permission android:name="android.permission.ACCESS_BACKGROUND_LOCATION" />
+<uses-permission android:name="android.permission.WAKE_LOCK" />
+<uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+<!-- HERE Positioning fixes the vehicle from Wi-Fi and cell observations as well
+     as GNSS. Without these it falls back to satellites alone, which is slow to
+     first fix and unusable indoors or in street canyons. -->
+<uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
+<uses-permission android:name="android.permission.CHANGE_WIFI_STATE" />
+<uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- Android 11+ hides other packages from us unless we declare what we look
+         for. Spoken turn-by-turn guidance binds to whichever text-to-speech
+         engine the device ships; without this it cannot even see one, and
+         TextToSpeech fails to initialise instead of speaking. -->
+    <queries>
+      <intent>
+        <action android:name="android.intent.action.TTS_SERVICE" />
+      </intent>
+    </queries>
+
+    <application
+      android:name=".MainApplication"
+      android:label="@string/app_name"
+      android:icon="@mipmap/ic_launcher"
+      android:allowBackup="false"
+      tools:replace="android:allowBackup"
+      android:theme="@style/AppTheme"
+      android:supportsRtl="true"
+      android:usesCleartextTraffic="true">
+      <meta-data
+    android:name="com.google.android.geo.API_KEY"
+    android:value="${GOOGLE_MAPS_API_KEY}"/>
+      <!-- No com.here.sdk.access_key_id / access_key_secret meta-data here on
+           purpose. They previously held the literal placeholders
+           "YOUR_HERE_ACCESS_KEY_ID"/"YOUR_HERE_ACCESS_KEY_SECRET", which the
+           HERE SDK would have tried to auto-initialise with. The real
+           credentials come from .env via HereSdk.initialize(), and putting the
+           secret in the manifest would also expose it in the built APK. -->
+      <activity
+        android:name=".MainActivity"
+        android:label="@string/app_name"
+        android:screenOrientation="portrait"
+        android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
+        android:launchMode="singleTask"
+        android:windowSoftInputMode="adjustResize"
+        android:exported="true">
+        <intent-filter>
+            <action android:name="android.intent.action.MAIN" />
+            <category android:name="android.intent.category.LAUNCHER" />
+        </intent-filter>
+
+        <!-- Driver invite / password-reset links.
+
+             Two filters on purpose:
+
+             1. The verified App Link (https). autoVerify makes Android fetch
+                https://${APP_LINK_HOST}/.well-known/assetlinks.json at install
+                time; when the SHA-256 of our signing cert is listed there, the
+                link opens the app with no disambiguation dialog. Until that
+                file is served and the app is installed from a matching build,
+                verification fails and the link just opens the browser — which
+                is exactly the fallback we want.
+
+             2. The custom scheme (myshipr://). Needs no verification at all, so
+                it works today in development and is the "Open in app" escape
+                hatch the landing page offers.
+
+             pathPrefix keeps the filter to /d — the rest of the host keeps
+             opening in the browser as normal.
+
+             MainActivity is singleTask, so a link arriving while the app is
+             already running comes in through onNewIntent; see MainActivity.kt. -->
+        <intent-filter android:autoVerify="true">
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.DEFAULT" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data
+                android:scheme="https"
+                android:host="${APP_LINK_HOST}"
+                android:pathPrefix="/d" />
+        </intent-filter>
+
+        <intent-filter>
+            <action android:name="android.intent.action.VIEW" />
+            <category android:name="android.intent.category.DEFAULT" />
+            <category android:name="android.intent.category.BROWSABLE" />
+            <data android:scheme="${APP_LINK_SCHEME}" />
+        </intent-filter>
+      </activity>
+    </application>
+</manifest>
