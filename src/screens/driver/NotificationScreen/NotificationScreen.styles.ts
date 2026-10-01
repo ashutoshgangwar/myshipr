@@ -1,5 +1,6 @@
 import {StyleSheet} from 'react-native';
 import {colors} from '../../../theme/colors';
+import {fontSize} from '../../../theme/fontSizes';
 import {ms, vs} from './constants';
 import {IS_TABLET} from '../../../theme/device';
 
@@ -40,14 +41,14 @@ export default StyleSheet.create({
   headerTitle: {
     marginLeft: ms(4),
     color: colors.white,
-    fontSize: IS_TABLET ? ms(16) : ms(18),
+    fontSize: fontSize.title,
     fontWeight: '700',
     letterSpacing: 0.6,
   },
 
   headerSubtitle: {
     color: colors.white,
-    fontSize: IS_TABLET ? ms(11) : ms(12),
+    fontSize: fontSize.label,
   },
 
   markAllBtn: {
@@ -60,7 +61,7 @@ export default StyleSheet.create({
 
   markAllText: {
     color: colors.white,
-    fontSize: IS_TABLET ? ms(10) : ms(11),
+    fontSize: fontSize.caption,
     fontWeight: '600',
   },
 
@@ -109,7 +110,7 @@ export default StyleSheet.create({
 
   filterChipText: {
     color: colors.textMuted,
-    fontSize: IS_TABLET ? ms(11) : ms(12),
+    fontSize: fontSize.label,
     fontWeight: '600',
   },
 
@@ -122,7 +123,7 @@ export default StyleSheet.create({
     marginTop: IS_TABLET ? vs(16) : vs(18),
     marginBottom: IS_TABLET ? vs(6) : vs(8),
     color: colors.textStrong,
-    fontSize: IS_TABLET ? ms(12) : ms(13),
+    fontSize: fontSize.subBody,
     fontWeight: '700',
   },
 
@@ -168,19 +169,19 @@ export default StyleSheet.create({
   cardTitle: {
     flex: 1,
     color: colors.textStrong,
-    fontSize: IS_TABLET ? ms(12) : ms(13),
+    fontSize: fontSize.subBody,
     fontWeight: '700',
   },
 
   cardTime: {
     color: colors.textMuted,
-    fontSize: IS_TABLET ? ms(9) : ms(10),
+    fontSize: fontSize.small,
   },
 
   cardMessage: {
     marginTop: vs(2),
     color: colors.textMuted,
-    fontSize: IS_TABLET ? ms(10) : ms(11),
+    fontSize: fontSize.caption,
     lineHeight: IS_TABLET ? ms(15) : ms(16),
   },
 
@@ -202,14 +203,14 @@ export default StyleSheet.create({
   emptyTitle: {
     marginTop: IS_TABLET ? vs(10) : vs(12),
     color: colors.textStrong,
-    fontSize: IS_TABLET ? ms(13) : ms(14),
+    fontSize: fontSize.body,
     fontWeight: '700',
   },
 
   emptyNote: {
     marginTop: vs(4),
     color: colors.textMuted,
-    fontSize: IS_TABLET ? ms(10) : ms(11),
+    fontSize: fontSize.caption,
     textAlign: 'center',
   },
 });

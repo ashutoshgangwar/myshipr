@@ -5,6 +5,7 @@ import {
   scale,
 } from 'react-native-size-matters';
 import { colors } from '../../../theme/colors';
+import { fontSize } from '../../../theme/fontSizes';
 
 export default StyleSheet.create({
   safe: {
@@ -20,13 +21,13 @@ export default StyleSheet.create({
   },
 
   headerTitle: {
-    fontSize: moderateScale(24),
+    fontSize: fontSize.mainHeading,
     fontWeight: '800',
     color: colors.textStrong,
   },
 
   headerSubtitle: {
-    fontSize: moderateScale(14),
+    fontSize: fontSize.body,
     color: colors.textMuted,
     marginTop: verticalScale(4),
   },
@@ -41,7 +42,7 @@ export default StyleSheet.create({
   },
 
   cardTitle: {
-    fontSize: moderateScale(20),
+    fontSize: fontSize.heading,
     fontWeight: '700',
     marginBottom: verticalScale(8),
     color: colors.textStrong,
@@ -55,13 +56,13 @@ export default StyleSheet.create({
   },
 
   progressLabel: {
-    fontSize: moderateScale(15),
+    fontSize: fontSize.body,
     fontWeight: '600',
     color: colors.textMuted,
   },
 
   progressValue: {
-    fontSize: moderateScale(15),
+    fontSize: fontSize.body,
     fontWeight: '700',
     color: colors.textStrong,
   },
@@ -94,7 +95,7 @@ export default StyleSheet.create({
   },
 
   statusTitle: {
-    fontSize: moderateScale(20),
+    fontSize: fontSize.heading,
     fontWeight: '800',
     color: colors.white,
   },
@@ -109,13 +110,13 @@ export default StyleSheet.create({
   statusBadgeText: {
     color: colors.success,
     fontWeight: '700',
-    fontSize: moderateScale(12),
+    fontSize: fontSize.label,
   },
 
   statusInfo: {
     color: colors.successLight,
     marginTop: verticalScale(10),
-    fontSize: moderateScale(14),
+    fontSize: fontSize.body,
     lineHeight: moderateScale(20),
   },
 
@@ -136,13 +137,13 @@ export default StyleSheet.create({
   },
 
   eldTitle: {
-    fontSize: moderateScale(18),
+    fontSize: fontSize.title,
     fontWeight: '700',
     color: colors.textStrong,
   },
 
   eldSub: {
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
     color: colors.textMuted,
     marginTop: verticalScale(2),
   },
@@ -157,7 +158,7 @@ export default StyleSheet.create({
 
   uploadBtnText: {
     color: colors.white,
-    fontSize: moderateScale(16),
+    fontSize: fontSize.subHeading,
     fontWeight: '700',
   },
 
@@ -183,19 +184,19 @@ export default StyleSheet.create({
   },
 
   activityTitle: {
-    fontSize: moderateScale(16),
+    fontSize: fontSize.subHeading,
     fontWeight: '600',
     color: colors.textStrong,
   },
 
   activityTime: {
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
     color: colors.textMuted,
     marginTop: verticalScale(2),
   },
 
   activityDuration: {
-    fontSize: moderateScale(16),
+    fontSize: fontSize.subHeading,
     fontWeight: '600',
     color: colors.textMuted,
   },

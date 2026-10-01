@@ -1,6 +1,7 @@
 import {StyleSheet, Platform} from 'react-native';
 import {scale, verticalScale, moderateScale} from 'react-native-size-matters';
 import {colors} from '../../../theme/colors';
+import {fontSize} from '../../../theme/fontSizes';
 
 const styles = StyleSheet.create({
   keyboardAvoiding: {
@@ -86,21 +87,21 @@ const styles = StyleSheet.create({
   },
 
   title: {
-    fontSize: moderateScale(26),
+    fontSize: fontSize.mainHeading,
     fontWeight: '700',
     marginBottom: verticalScale(5),
     color: colors.white,
   },
 
   subtitle: {
-    fontSize: moderateScale(14),
+    fontSize: fontSize.body,
     lineHeight: moderateScale(20),
     color: colors.white,
     marginBottom: verticalScale(60),
   },
 
   label: {
-    fontSize: moderateScale(16),
+    fontSize: fontSize.subHeading,
     fontWeight: '500',
     color: colors.textStrong,
     marginBottom: verticalScale(10),
@@ -116,7 +117,7 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(12),
     paddingVertical: verticalScale(12),
     paddingHorizontal: scale(16),
-    fontSize: moderateScale(15),
+    fontSize: fontSize.body,
     marginBottom: verticalScale(16),
     color: colors.textStrong,
     textAlign: 'left',
@@ -143,7 +144,7 @@ const styles = StyleSheet.create({
   buttonText: {
     color: colors.textStrong || colors.white,
     textAlign: 'center',
-    fontSize: moderateScale(16),
+    fontSize: fontSize.subHeading,
     fontWeight: '700',
     letterSpacing: 0.5,
   },
@@ -169,7 +170,7 @@ const styles = StyleSheet.create({
 
   primaryButtonText: {
     color: colors.white,
-    fontSize: moderateScale(16),
+    fontSize: fontSize.subHeading,
     fontWeight: '700',
   },
 });

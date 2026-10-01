@@ -1,6 +1,7 @@
 import {StyleSheet, Platform} from 'react-native';
 import {scale, verticalScale, moderateScale} from 'react-native-size-matters';
 import { colors } from '../../../theme/colors';
+import { fontSize } from '../../../theme/fontSizes';
 import {IS_TABLET, select} from '../../../theme/device';
 
 // Cap the form column on tablets so inputs/buttons don't stretch edge-to-edge.
@@ -51,13 +52,13 @@ const styles = StyleSheet.create({
 
   heroTitle: {
     color: colors.white,
-    fontSize: moderateScale(24),
+    fontSize: fontSize.mainHeading,
     fontWeight: '800',
   },
 
   heroSubtitle: {
     color: colors.white,
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
     marginTop: verticalScale(4),
   },
 
@@ -75,7 +76,7 @@ const styles = StyleSheet.create({
 
   roleBadgeText: {
     color: colors.white,
-    fontSize: moderateScale(11),
+    fontSize: fontSize.body,
     fontWeight: '700',
     letterSpacing: 0.8,
   },
@@ -124,7 +125,7 @@ const styles = StyleSheet.create({
   },
 
   tabText: {
-    fontSize: moderateScale(10),
+    fontSize: fontSize.subBody,
     fontWeight: '400',
     color: colors.white,
   },
@@ -155,7 +156,7 @@ const styles = StyleSheet.create({
 
   selectedText: {
     flex: 1,
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
     color: colors.textStrong,
     fontWeight: '500',
   },
@@ -167,7 +168,7 @@ const styles = StyleSheet.create({
 
   /* Manual form */
   label: {
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
     fontWeight: '600',
     color: colors.textStrong,
     marginBottom: verticalScale(6),
@@ -184,7 +185,7 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(12),
     paddingVertical: Platform.OS === 'ios' ? verticalScale(12) : verticalScale(10),
     paddingHorizontal: scale(14),
-    fontSize: moderateScale(14),
+    fontSize: fontSize.body,
     color: colors.textStrong,
     marginBottom: verticalScale(14),
   },
@@ -195,7 +196,7 @@ const styles = StyleSheet.create({
 
   errorText: {
     color: colors.danger,
-    fontSize: moderateScale(11),
+    fontSize: fontSize.caption,
     marginTop: -verticalScale(10),
     marginBottom: verticalScale(10),
   },
@@ -225,7 +226,7 @@ const styles = StyleSheet.create({
 
   confirmBtnText: {
     color: colors.white,
-    fontSize: moderateScale(15),
+    fontSize: fontSize.body,
     fontWeight: '700',
   },
 });

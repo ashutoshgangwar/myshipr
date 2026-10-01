@@ -1,6 +1,7 @@
 import {Platform, StyleSheet} from 'react-native';
 import {moderateScale, verticalScale, scale} from 'react-native-size-matters';
 import {colors} from '../../../theme/colors';
+import {fontSize} from '../../../theme/fontSizes';
 
 export default StyleSheet.create({
   container: {flex: 1, backgroundColor: colors.textStrong},
@@ -23,7 +24,7 @@ export default StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors.textStrong,
   },
-  loadingText: {color: colors.textMuted, fontSize: moderateScale(14)},
+  loadingText: {color: colors.textMuted, fontSize: fontSize.body},
 
   topOverlay: {
     position: 'absolute',
@@ -56,7 +57,7 @@ export default StyleSheet.create({
   },
   searchButtonText: {
     color: colors.white,
-    fontSize: moderateScale(15),
+    fontSize: fontSize.body,
     fontWeight: '700',
   },
 
@@ -117,13 +118,13 @@ export default StyleSheet.create({
   },
   reCenterIcon: {
     color: colors.accentBlue,
-    fontSize: moderateScale(18),
+    fontSize: fontSize.title,
     marginRight: scale(5),
     lineHeight: moderateScale(20),
   },
   reCenterLabel: {
     color: colors.border_Color,
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
     fontWeight: '600',
   },
 
@@ -174,7 +175,7 @@ export default StyleSheet.create({
   },
   sheetHandleLabel: {
     color: colors.textMuted,
-    fontSize: moderateScale(11),
+    fontSize: fontSize.caption,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.4,
@@ -197,18 +198,18 @@ export default StyleSheet.create({
     marginBottom: verticalScale(10),
   },
   navDirectionsIcon: {
-    fontSize: moderateScale(18),
+    fontSize: fontSize.title,
     marginRight: scale(10),
   },
   navDirectionsText: {
     flex: 1,
     color: colors.border_Color,
-    fontSize: moderateScale(14),
+    fontSize: fontSize.body,
     fontWeight: '700',
   },
   navDirectionsChevron: {
     color: colors.accentBlue,
-    fontSize: moderateScale(22),
+    fontSize: fontSize.heading,
     fontWeight: '700',
   },
   navTopRow: {
@@ -225,13 +226,13 @@ export default StyleSheet.create({
   },
   navSpeedValue: {
     color: colors.white,
-    fontSize: moderateScale(48),
+    fontSize: fontSize.giant,
     fontWeight: '800',
     lineHeight: moderateScale(52),
   },
   navSpeedUnit: {
     color: colors.textMuted,
-    fontSize: moderateScale(16),
+    fontSize: fontSize.subHeading,
     fontWeight: '600',
     marginLeft: scale(6),
     marginBottom: verticalScale(6),
@@ -249,12 +250,12 @@ export default StyleSheet.create({
   navStatItem: {flex: 1, alignItems: 'center'},
   navStatValue: {
     color: colors.accentBlue,
-    fontSize: moderateScale(16),
+    fontSize: fontSize.subHeading,
     fontWeight: '800',
   },
   navStatLabel: {
     color: colors.textMuted,
-    fontSize: moderateScale(11),
+    fontSize: fontSize.caption,
     fontWeight: '600',
     marginTop: verticalScale(3),
     textTransform: 'uppercase',
@@ -274,7 +275,7 @@ export default StyleSheet.create({
   },
   navMetaLabel: {
     color: colors.textMuted,
-    fontSize: moderateScale(11),
+    fontSize: fontSize.caption,
     fontWeight: '700',
     textTransform: 'uppercase',
     letterSpacing: 0.3,
@@ -282,12 +283,12 @@ export default StyleSheet.create({
   },
   navMetaValue: {
     color: colors.border_Color,
-    fontSize: moderateScale(14),
+    fontSize: fontSize.body,
     fontWeight: '600',
   },
   navTollValue: {
     color: colors.success,
-    fontSize: moderateScale(15),
+    fontSize: fontSize.body,
     fontWeight: '800',
   },
   navStopBtn: {
@@ -298,7 +299,7 @@ export default StyleSheet.create({
   },
   navStopBtnText: {
     color: colors.white,
-    fontSize: moderateScale(15),
+    fontSize: fontSize.body,
     fontWeight: '800',
     letterSpacing: 0.3,
   },
@@ -324,13 +325,13 @@ export default StyleSheet.create({
   },
   placeholderTitle: {
     color: colors.white,
-    fontSize: moderateScale(18),
+    fontSize: fontSize.title,
     fontWeight: '700',
     marginBottom: verticalScale(8),
   },
   placeholderText: {
     color: colors.border_Color,
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
     lineHeight: moderateScale(20),
   },
 
@@ -362,7 +363,7 @@ export default StyleSheet.create({
   },
   detailsTitle: {
     color: colors.accentBlue,
-    fontSize: moderateScale(12),
+    fontSize: fontSize.label,
     fontWeight: '700',
     letterSpacing: 0.5,
     textTransform: 'uppercase',
@@ -380,20 +381,20 @@ export default StyleSheet.create({
   },
   detailLabel: {
     color: colors.textStrong,
-    fontSize: moderateScale(12),
+    fontSize: fontSize.label,
     fontWeight: '700',
     flex: 0.4,
   },
   detailValue: {
     color: colors.textStrong,
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
     fontWeight: '600',
     flex: 0.6,
     textAlign: 'right',
   },
   tollValueClickable: {
     color: colors.accentBlue,
-    fontSize: moderateScale(12),
+    fontSize: fontSize.label,
     textDecorationLine: 'underline',
   },
 
@@ -416,7 +417,7 @@ export default StyleSheet.create({
   },
   summaryLabel: {
     color: colors.accentBlue,
-    fontSize: moderateScale(12),
+    fontSize: fontSize.label,
     fontWeight: '700',
     marginBottom: verticalScale(5),
     textTransform: 'uppercase',
@@ -424,12 +425,12 @@ export default StyleSheet.create({
   },
   summaryValue: {
     color: colors.accentBlue,
-    fontSize: moderateScale(15),
+    fontSize: fontSize.body,
     fontWeight: '800',
   },
   summaryValueToll: {
     color: colors.success,
-    fontSize: moderateScale(15),
+    fontSize: fontSize.body,
     fontWeight: '800',
     // textDecorationLine: 'underline',
   },
@@ -481,17 +482,17 @@ export default StyleSheet.create({
   turnInfo: {flex: 1},
   turnAction: {
     color: colors.border_Color,
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
     fontWeight: '600',
   },
   turnStreet: {
     color: colors.textMuted,
-    fontSize: moderateScale(11),
+    fontSize: fontSize.caption,
     marginTop: verticalScale(2),
   },
   turnDist: {
     color: colors.accentBlue,
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
     fontWeight: '700',
   },
 
@@ -519,13 +520,13 @@ export default StyleSheet.create({
   navInfoEta: {alignItems: 'center', minWidth: scale(50)},
   navInfoEtaText: {
     color: colors.accentBlue,
-    fontSize: moderateScale(28),
+    fontSize: fontSize.display,
     fontWeight: '700',
     lineHeight: moderateScale(30),
   },
   navInfoEtaLabel: {
     color: colors.textMuted,
-    fontSize: moderateScale(11),
+    fontSize: fontSize.caption,
     fontWeight: '500',
   },
   navInfoDivider: {
@@ -536,12 +537,12 @@ export default StyleSheet.create({
   navInfoDetails: {flex: 1},
   navInfoDistText: {
     color: colors.border_Color,
-    fontSize: moderateScale(14),
+    fontSize: fontSize.body,
     fontWeight: '600',
   },
   navInfoArrivalText: {
     color: colors.textMuted,
-    fontSize: moderateScale(12),
+    fontSize: fontSize.label,
     marginTop: verticalScale(2),
   },
   navStopButton: {
@@ -552,7 +553,7 @@ export default StyleSheet.create({
   },
   navStopButtonText: {
     color: colors.white,
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
     fontWeight: '700',
   },
 
@@ -583,7 +584,7 @@ export default StyleSheet.create({
   buttonHighlight: {backgroundColor: colors.danger, borderColor: colors.danger},
   buttonText: {
     color: colors.textMuted,
-    fontSize: moderateScale(11),
+    fontSize: fontSize.caption,
     fontWeight: '600',
   },
   buttonTextHighlight: {color: colors.white},
@@ -613,12 +614,12 @@ export default StyleSheet.create({
     borderBottomColor: colors.whiteAlpha20,
   },
   tollModalTitle: {
-    fontSize: moderateScale(16),
+    fontSize: fontSize.subHeading,
     fontWeight: '700',
     color: colors.accentBlue,
   },
   tollModalClose: {
-    fontSize: moderateScale(22),
+    fontSize: fontSize.heading,
     color: colors.textMuted,
     fontWeight: '500',
     paddingHorizontal: scale(4),
@@ -641,17 +642,17 @@ export default StyleSheet.create({
   },
   tollItemLeft: {flex: 1},
   tollItemName: {
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
     fontWeight: '700',
     color: colors.border_Color,
   },
   tollItemRoad: {
-    fontSize: moderateScale(11),
+    fontSize: fontSize.caption,
     color: colors.textMuted,
     marginTop: verticalScale(2),
   },
   tollItemAmount: {
-    fontSize: moderateScale(14),
+    fontSize: fontSize.body,
     fontWeight: '800',
     color: colors.accentBlue,
   },
@@ -669,17 +670,17 @@ export default StyleSheet.create({
     borderColor: colors.success,
   },
   tollItemTotalLabel: {
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
     fontWeight: '700',
     color: colors.success,
   },
   tollItemTotalAmount: {
-    fontSize: moderateScale(15),
+    fontSize: fontSize.body,
     fontWeight: '800',
     color: colors.success,
   },
   tollModalNote: {
-    fontSize: moderateScale(11),
+    fontSize: fontSize.caption,
     color: colors.textMuted,
     fontStyle: 'italic',
     textAlign: 'center',
@@ -712,7 +713,7 @@ export default StyleSheet.create({
     borderBottomColor: colors.whiteAlpha20,
   },
   turnModalTitle: {
-    fontSize: moderateScale(16),
+    fontSize: fontSize.subHeading,
     fontWeight: '700',
     color: colors.accentBlue,
   },
@@ -740,13 +741,13 @@ export default StyleSheet.create({
   },
   routeSummaryText: {
     color: colors.border_Color,
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
     fontWeight: '600',
     textAlign: 'center',
   },
   routeSummarySubText: {
     color: colors.border_Color,
-    fontSize: moderateScale(11),
+    fontSize: fontSize.caption,
     textAlign: 'center',
     marginTop: verticalScale(4),
   },
@@ -766,7 +767,7 @@ export default StyleSheet.create({
   loadingOverlayText: {
     color: colors.border_Color,
     marginTop: verticalScale(12),
-    fontSize: moderateScale(15),
+    fontSize: fontSize.body,
     fontWeight: '600',
   },
 
@@ -791,12 +792,12 @@ export default StyleSheet.create({
   },
   speedHudArrow: {
     color: colors.button_color,
-    fontSize: moderateScale(40),
+    fontSize: fontSize.hero,
     lineHeight: moderateScale(20),
   },
   speedHudDir: {
     color: colors.border_Color,
-    fontSize: moderateScale(12),
+    fontSize: fontSize.label,
     fontWeight: '700',
     lineHeight: moderateScale(16),
   },
@@ -863,13 +864,13 @@ export default StyleSheet.create({
     padding: moderateScale(20),
   },
   markerModalTitle: {
-    fontSize: moderateScale(17),
+    fontSize: fontSize.subHeading,
     fontWeight: '700',
     color: colors.textStrong,
     marginBottom: verticalScale(4),
   },
   markerModalSubtitle: {
-    fontSize: moderateScale(12),
+    fontSize: fontSize.label,
     color: colors.textMuted,
     marginBottom: verticalScale(16),
   },
@@ -886,7 +887,7 @@ export default StyleSheet.create({
   },
   markerOptionLabel: {
     marginTop: verticalScale(8),
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
     fontWeight: '600',
     textTransform: 'capitalize',
   },
@@ -910,7 +911,7 @@ export default StyleSheet.create({
   },
   mapErrorText: {
     color: colors.danger,
-    fontSize: moderateScale(12),
+    fontSize: fontSize.label,
   },
 
   // ── Posted speed limit (navigation) ──────────────────────────────────────
@@ -935,12 +936,12 @@ export default StyleSheet.create({
     borderColor: colors.danger,
   },
   speedLimitValue: {
-    fontSize: moderateScale(18),
+    fontSize: fontSize.title,
     fontWeight: '700',
     color: colors.textStrong,
   },
   speedLimitUnit: {
-    fontSize: moderateScale(9),
+    fontSize: fontSize.tiny,
     color: colors.textMuted,
   },
 
@@ -953,7 +954,7 @@ export default StyleSheet.create({
     marginBottom: verticalScale(8),
   },
   voiceBannerText: {
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
     color: colors.accentBlue,
   },
 
@@ -972,13 +973,13 @@ export default StyleSheet.create({
     paddingRight: moderateScale(12),
   },
   simulateLabel: {
-    fontSize: moderateScale(14),
+    fontSize: fontSize.body,
     fontWeight: '600',
     color: colors.textStrong,
   },
   simulateHint: {
     marginTop: verticalScale(2),
-    fontSize: moderateScale(11),
+    fontSize: fontSize.caption,
     color: colors.textMuted,
   },
 });

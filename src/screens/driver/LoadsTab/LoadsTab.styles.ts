@@ -5,6 +5,7 @@ import {
   scale,
 } from 'react-native-size-matters';
 import { colors } from '../../../theme/colors';
+import { fontSize } from '../../../theme/fontSizes';
 
 export default StyleSheet.create({
    safe: {
@@ -19,7 +20,7 @@ export default StyleSheet.create({
   },
 
   title: {
-    fontSize: moderateScale(22),
+    fontSize: fontSize.heading,
     fontWeight: '700',
     marginBottom: verticalScale(14),
     color: colors.textStrong,
@@ -53,14 +54,14 @@ export default StyleSheet.create({
   },
 
   tabText: {
-    fontSize: moderateScale(11),
+    fontSize: fontSize.caption,
     fontWeight: '700',
     color: colors.textMuted,
   },
 
   activeTabText: {
     color: colors.white,
-    fontSize: moderateScale(11),
+    fontSize: fontSize.caption,
   },
 
   /* Card */
@@ -80,7 +81,7 @@ export default StyleSheet.create({
   },
 
   loadId: {
-    fontSize: moderateScale(17),
+    fontSize: fontSize.subHeading,
     fontWeight: '700',
     color: colors.textStrong,
   },
@@ -92,7 +93,7 @@ export default StyleSheet.create({
   },
 
   statusText: {
-    fontSize: moderateScale(11),
+    fontSize: fontSize.caption,
     fontWeight: '700',
     color: colors.white,
   },
@@ -115,7 +116,7 @@ export default StyleSheet.create({
 
   subText: {
     marginTop: verticalScale(6),
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
     color: colors.textMuted,
   },
 
@@ -124,7 +125,7 @@ export default StyleSheet.create({
   },
 
   location: {
-    fontSize: moderateScale(14),
+    fontSize: fontSize.body,
     marginBottom: verticalScale(4),
     color: colors.textStrong,
   },
@@ -137,12 +138,12 @@ export default StyleSheet.create({
   },
 
   estimate: {
-    fontSize: moderateScale(12),
+    fontSize: fontSize.label,
     color: colors.textMuted,
   },
 
   pay: {
-    fontSize: moderateScale(20),
+    fontSize: fontSize.heading,
     fontWeight: '700',
     color: colors.success,
   },
@@ -156,7 +157,7 @@ export default StyleSheet.create({
 
   acceptText: {
     color: colors.white,
-    fontSize: moderateScale(14),
+    fontSize: fontSize.body,
     fontWeight: '700',
   },
 
@@ -169,7 +170,7 @@ export default StyleSheet.create({
 
   bidText: {
     color: colors.white,
-    fontSize: moderateScale(14),
+    fontSize: fontSize.body,
     fontWeight: '700',
   },
 
@@ -182,12 +183,12 @@ export default StyleSheet.create({
 
   trackText: {
     color: colors.white,
-    fontSize: moderateScale(14),
+    fontSize: fontSize.body,
     fontWeight: '700',
   },
 
   completedText: {
-    fontSize: moderateScale(14),
+    fontSize: fontSize.body,
     fontWeight: '700',
     color: colors.success,
   },
@@ -195,7 +196,7 @@ export default StyleSheet.create({
   emptyText: {
     textAlign: 'center',
     marginTop: verticalScale(40),
-    fontSize: moderateScale(14),
+    fontSize: fontSize.body,
     color: colors.textMuted,
   },
 });

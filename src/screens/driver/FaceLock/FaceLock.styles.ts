@@ -1,7 +1,7 @@
 import {StyleSheet} from 'react-native';
 
 import {colors} from '../../../theme/colors';
-import {IS_TABLET} from '../../../theme/device';
+import {fontSize} from '../../../theme/fontSizes';
 import {ms, vs} from './constants';
 
 export default StyleSheet.create({
@@ -42,13 +42,13 @@ export default StyleSheet.create({
   headerTitle: {
     marginLeft: ms(4),
     color: colors.white,
-    fontSize: IS_TABLET ? ms(17) : ms(19),
+    fontSize: fontSize.title,
     fontWeight: '700',
   },
 
   headerSubtitle: {
     color: colors.white,
-    fontSize: IS_TABLET ? ms(11) : ms(12),
+    fontSize: fontSize.label,
   },
 
   /* ---------- Status card ---------- */
@@ -71,13 +71,13 @@ export default StyleSheet.create({
 
   cardTitle: {
     color: colors.textStrong,
-    fontSize: ms(16),
+    fontSize: fontSize.subHeading,
     fontWeight: '700',
   },
 
   cardSub: {
     color: colors.textMuted,
-    fontSize: ms(13),
+    fontSize: fontSize.subBody,
     fontWeight: '500',
     marginTop: vs(3),
   },
@@ -98,7 +98,7 @@ export default StyleSheet.create({
   actionText: {
     flex: 1,
     color: colors.textStrong,
-    fontSize: ms(14),
+    fontSize: fontSize.body,
     fontWeight: '600',
   },
 

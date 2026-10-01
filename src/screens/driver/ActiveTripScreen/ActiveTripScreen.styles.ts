@@ -5,6 +5,7 @@ import {
   scale as s,
 } from 'react-native-size-matters';
 import {colors} from '../../../theme/colors';
+import {fontSize} from '../../../theme/fontSizes';
 import {IS_TABLET} from '../../../theme/device';
 
 // Width of the floating panels (chat / documents / bidding) in the centre.
@@ -79,7 +80,7 @@ export default StyleSheet.create({
     justifyContent: 'center',
     backgroundColor: colors.border_Color,
   },
-  mapLoadingText: {color: colors.textMuted, fontSize: ms(13), marginTop: vs(8)},
+  mapLoadingText: {color: colors.textMuted, fontSize: fontSize.subBody, marginTop: vs(8)},
 
   gpsButton: {...FLOAT_BTN, left: s(12)},
   navFloatBtn: {...FLOAT_BTN, right: s(12)},
@@ -113,14 +114,14 @@ export default StyleSheet.create({
   },
   directionLabel: {
     color: colors.white,
-    fontSize: ms(11),
+    fontSize: fontSize.caption,
     fontWeight: '700',
     marginTop: vs(6),
     textAlign: 'center',
   },
   directionDistance: {
     color: colors.white,
-    fontSize: ms(9),
+    fontSize: fontSize.tiny,
     marginTop: vs(1),
     textAlign: 'center',
   },
@@ -161,7 +162,7 @@ export default StyleSheet.create({
       android: {elevation: 4},
     }),
   },
-  backGlyph: {fontSize: ms(20), color: colors.primary, lineHeight: ms(22)},
+  backGlyph: {fontSize: fontSize.heading, color: colors.primary, lineHeight: ms(22)},
 
   dutyPill: {
     flexDirection: 'row',
@@ -174,13 +175,13 @@ export default StyleSheet.create({
   },
   dutyText: {
     color: colors.white,
-    fontSize: ms(13),
+    fontSize: fontSize.subBody,
     fontWeight: '600',
     letterSpacing: 0.5,
     marginRight: s(6),
     marginLeft: s(5),
   },
-  dutyChevron: {color: colors.white, fontSize: ms(11)},
+  dutyChevron: {color: colors.white, fontSize: fontSize.caption},
 
   // ── Duty-status dropdown ──────────────────────────────────────────────
   // minHeight matches the back button so the pill stays centred against it
@@ -224,7 +225,7 @@ export default StyleSheet.create({
   dutyMenuItemActive: {backgroundColor: colors.white},
   dutyMenuText: {
     color: colors.textMuted,
-    fontSize: ms(13),
+    fontSize: fontSize.subBody,
     fontWeight: '600',
     letterSpacing: 0.3,
   },
@@ -240,7 +241,7 @@ export default StyleSheet.create({
   },
   sosText: {
     color: colors.white,
-    fontSize: ms(13),
+    fontSize: fontSize.subBody,
     fontWeight: '600',
     letterSpacing: 0.5,
   },
@@ -369,10 +370,10 @@ export default StyleSheet.create({
     alignItems: 'center',
   },
   panelHeaderTexts: {flex: 1},
-  panelTitle: {color: colors.white, fontSize: ms(14), fontWeight: '700'},
+  panelTitle: {color: colors.white, fontSize: fontSize.body, fontWeight: '700'},
   panelSubtitle: {
     color: colors.white,
-    fontSize: ms(10),
+    fontSize: fontSize.small,
     marginTop: vs(1),
   },
   panelHeaderIcon: {
@@ -384,7 +385,7 @@ export default StyleSheet.create({
     justifyContent: 'center',
     marginLeft: s(8),
   },
-  panelHeaderIconGlyph: {color: colors.white, fontSize: ms(16)},
+  panelHeaderIconGlyph: {color: colors.white, fontSize: fontSize.subHeading},
 
   // ── Chat panel ────────────────────────────────────────────────────────
   chatBody: {
@@ -401,7 +402,7 @@ export default StyleSheet.create({
     paddingHorizontal: s(6),
     paddingBottom: vs(8),
   },
-  chatTitleFullscreen: {fontSize: ms(18)},
+  chatTitleFullscreen: {fontSize: fontSize.title},
   bubble: {
     maxWidth: '82%',
     borderRadius: ms(10),
@@ -419,8 +420,8 @@ export default StyleSheet.create({
     alignSelf: 'flex-end',
     borderTopRightRadius: ms(2),
   },
-  bubbleTextIn: {color: colors.textStrong, fontSize: ms(11), lineHeight: ms(15)},
-  bubbleTextOut: {color: colors.white, fontSize: ms(11), lineHeight: ms(15)},
+  bubbleTextIn: {color: colors.textStrong, fontSize: fontSize.caption, lineHeight: ms(15)},
+  bubbleTextOut: {color: colors.white, fontSize: fontSize.caption, lineHeight: ms(15)},
 
   // Stretched chat — a timestamp under each bubble.
   bubbleFullscreen: {
@@ -434,10 +435,10 @@ export default StyleSheet.create({
   // stay evenly rounded.
   bubbleInFullscreen: {borderTopLeftRadius: ms(8)},
   bubbleOutFullscreen: {borderTopRightRadius: ms(8)},
-  bubbleTextFullscreen: {fontSize: ms(11), lineHeight: ms(15)},
+  bubbleTextFullscreen: {fontSize: fontSize.caption, lineHeight: ms(15)},
   chatTime: {
     color: colors.textMuted,
-    fontSize: ms(8),
+    fontSize: fontSize.micro,
     marginBottom: vs(8),
   },
   chatTimeIn: {alignSelf: 'flex-start'},
@@ -457,7 +458,7 @@ export default StyleSheet.create({
     borderRadius: ms(8),
     paddingHorizontal: s(10),
     paddingVertical: Platform.OS === 'ios' ? vs(8) : vs(4),
-    fontSize: ms(11),
+    fontSize: fontSize.caption,
     color: colors.textStrong,
   },
   sendBtn: {
@@ -478,7 +479,7 @@ export default StyleSheet.create({
     borderRadius: ms(10),
     paddingHorizontal: s(14),
     paddingVertical: Platform.OS === 'ios' ? vs(13) : vs(9),
-    fontSize: ms(13),
+    fontSize: fontSize.subBody,
   },
   sendBtnFullscreen: {
     width: ms(42),
@@ -486,7 +487,7 @@ export default StyleSheet.create({
     borderRadius: ms(21),
     marginLeft: s(10),
   },
-  sendGlyphFullscreen: {fontSize: ms(19)},
+  sendGlyphFullscreen: {fontSize: fontSize.title},
 
   // ── Documents / camera panel ──────────────────────────────────────────
   cameraPreview: {
@@ -514,7 +515,7 @@ export default StyleSheet.create({
     right: 0,
     overflow: 'hidden',
   },
-  captureLabel: {color: colors.white, fontSize: ms(9), marginTop: vs(6)},
+  captureLabel: {color: colors.white, fontSize: fontSize.tiny, marginTop: vs(6)},
   documentPreviewImage: {
     ...StyleSheet.absoluteFillObject,
   },
@@ -527,7 +528,7 @@ export default StyleSheet.create({
   // Same split as chatBody / chatBodyDocked above.
   biddingBodyDocked: {height: vs(190)},
   biddingBodyFullscreen: {flex: 1},
-  biddingText: {color: colors.textStrong, fontSize: ms(14), fontWeight: '600'},
+  biddingText: {color: colors.textStrong, fontSize: fontSize.body, fontWeight: '600'},
 
   // Bidding panel docked against the right edge (like the chat panel).
   biddingPanelWrap: {
@@ -551,7 +552,7 @@ export default StyleSheet.create({
   },
   fuelSectionTitle: {
     color: colors.textStrong,
-    fontSize: ms(15),
+    fontSize: fontSize.body,
     fontWeight: '700',
     marginBottom: vs(12),
   },
@@ -561,7 +562,7 @@ export default StyleSheet.create({
     borderRadius: ms(8),
     paddingHorizontal: s(12),
     paddingVertical: Platform.OS === 'ios' ? vs(11) : vs(8),
-    fontSize: ms(13),
+    fontSize: fontSize.subBody,
     color: colors.textStrong,
     marginBottom: vs(10),
   },
@@ -576,20 +577,20 @@ export default StyleSheet.create({
   },
   fuelPriceCurrency: {
     color: colors.textStrong,
-    fontSize: ms(18),
+    fontSize: fontSize.title,
     fontWeight: '700',
     marginRight: s(6),
   },
   fuelPriceInput: {
     flex: 1,
     paddingVertical: Platform.OS === 'ios' ? vs(11) : vs(8),
-    fontSize: ms(18),
+    fontSize: fontSize.title,
     fontWeight: '600',
     color: colors.textStrong,
   },
   fuelPriceUnit: {
     color: colors.textMuted,
-    fontSize: ms(12),
+    fontSize: fontSize.label,
     marginLeft: s(6),
   },
   fuelChipsRow: {
@@ -610,7 +611,7 @@ export default StyleSheet.create({
   },
   fuelChipText: {
     color: colors.textStrong,
-    fontSize: ms(12),
+    fontSize: fontSize.label,
     fontWeight: '600',
   },
   fuelChipTextActive: {color: colors.accentBlue},
@@ -621,7 +622,7 @@ export default StyleSheet.create({
     alignItems: 'center',
   },
   fuelSubmitBtnDisabled: {backgroundColor: colors.textMuted},
-  fuelSubmitText: {color: colors.white, fontSize: ms(14), fontWeight: '700'},
+  fuelSubmitText: {color: colors.white, fontSize: fontSize.body, fontWeight: '700'},
 
   // ── Hours of Service panel (stepper) ──────────────────────────────────
   hosBodyContent: {
@@ -654,7 +655,7 @@ export default StyleSheet.create({
   // The one step the driver can act on: ringed rather than filled, so it reads
   // as outstanding next to the filled ticks of the steps already cleared.
   hosBulletActive: {borderColor: colors.primary, backgroundColor: colors.white},
-  hosBulletCheck: {color: colors.white, fontSize: ms(11), fontWeight: '700'},
+  hosBulletCheck: {color: colors.white, fontSize: fontSize.caption, fontWeight: '700'},
   hosConnector: {
     flex: 1,
     width: ms(2),
@@ -677,18 +678,18 @@ export default StyleSheet.create({
   hosStepTitle: {
     flex: 1,
     color: colors.textStrong,
-    fontSize: ms(13),
+    fontSize: fontSize.subBody,
     fontWeight: '700',
   },
   hosStepTime: {
     color: colors.textMuted,
-    fontSize: ms(10),
+    fontSize: fontSize.small,
     paddingLeft: s(8),
     paddingTop: vs(2),
   },
   hosStepTitleDone: {color: colors.accentBlue},
   hosStepTitleActive: {color: colors.primary},
-  hosStepDetail: {color: colors.textMuted, fontSize: ms(11), marginTop: vs(2)},
+  hosStepDetail: {color: colors.textMuted, fontSize: fontSize.caption, marginTop: vs(2)},
   hosFooter: {
     borderTopWidth: 1,
     borderTopColor: colors.border_Color,
@@ -701,8 +702,8 @@ export default StyleSheet.create({
     alignItems: 'center',
     marginBottom: vs(6),
   },
-  hosFooterText: {color: colors.textMuted, fontSize: ms(11)},
-  hosFooterPct: {color: colors.success, fontSize: ms(12), fontWeight: '700'},
+  hosFooterText: {color: colors.textMuted, fontSize: fontSize.caption},
+  hosFooterPct: {color: colors.success, fontSize: fontSize.label, fontWeight: '700'},
   hosProgressTrack: {
     height: vs(4),
     borderRadius: ms(2),
@@ -748,10 +749,10 @@ export default StyleSheet.create({
     alignItems: 'flex-start',
     justifyContent: 'space-between',
   },
-  stepLabel: {color: colors.textMuted, fontSize: ms(10)},
+  stepLabel: {color: colors.textMuted, fontSize: fontSize.small},
   stepTitle: {
     color: colors.textStrong,
-    fontSize: ms(12),
+    fontSize: fontSize.label,
     fontWeight: 'bold',
     marginTop: vs(2),
     marginBottom: vs(10),
@@ -762,13 +763,13 @@ export default StyleSheet.create({
     paddingVertical: vs(6),
     alignItems: 'center',
   },
-  stepConfirmText: {color: colors.white, fontSize: ms(13), fontWeight: '700'},
+  stepConfirmText: {color: colors.white, fontSize: fontSize.subBody, fontWeight: '700'},
   // The title sits in the header row when the card carries no "Step x of y"
   // caption, so it has to give way to the chevron rather than push it off.
   stepHeaderTitle: {flexShrink: 1, marginRight: s(8), marginTop: 0},
   stepError: {
     color: colors.danger,
-    fontSize: ms(11),
+    fontSize: fontSize.caption,
     marginTop: vs(6),
     textAlign: 'center',
   },
@@ -800,7 +801,7 @@ export default StyleSheet.create({
   stepPillTexts: {flexShrink: 1, marginRight: s(8)},
   stepPillTitle: {
     color: colors.textStrong,
-    fontSize: ms(13),
+    fontSize: fontSize.subBody,
     fontWeight: 'bold',
   },
   stepChevronUp: {transform: [{rotate: '180deg'}]},
@@ -839,10 +840,10 @@ export default StyleSheet.create({
     alignItems: 'center',
     marginBottom: vs(8),
   },
-  progressLabel: {color: colors.textStrong, fontSize: ms(13), fontWeight: '600'},
+  progressLabel: {color: colors.textStrong, fontSize: fontSize.subBody, fontWeight: '600'},
   progressPercent: {
     color: colors.textStrong,
-    fontSize: ms(13),
+    fontSize: fontSize.subBody,
     fontWeight: '700',
   },
 
@@ -867,13 +868,13 @@ export default StyleSheet.create({
   progressStopLabel: {
     width: ms(38),
     color: colors.textMuted,
-    fontSize: ms(9),
+    fontSize: fontSize.tiny,
   },
   progressStopLabelEnd: {textAlign: 'right'},
   progressSummary: {
     flex: 1,
     color: colors.textMuted,
-    fontSize: ms(10),
+    fontSize: fontSize.small,
     textAlign: 'center',
   },
   // A routing failure takes the same slot — this is the only place it can be
@@ -899,7 +900,7 @@ export default StyleSheet.create({
   },
   endTripText: {
     color: colors.danger,
-    fontSize: ms(13),
+    fontSize: fontSize.subBody,
     fontWeight: '700',
   },
 
@@ -929,7 +930,7 @@ export default StyleSheet.create({
   },
   verifyActionText: {
     color: colors.white,
-    fontSize: ms(15),
+    fontSize: fontSize.body,
     fontWeight: '700',
     letterSpacing: 0.6,
   },
@@ -943,7 +944,7 @@ export default StyleSheet.create({
   // Why the code was rejected, between the boxes and the resend link.
   verifyError: {
     color: colors.danger,
-    fontSize: ms(11),
+    fontSize: fontSize.caption,
     fontWeight: '600',
     marginBottom: vs(8),
   },
@@ -951,13 +952,13 @@ export default StyleSheet.create({
   // sits in the same slot and is why this carries the same metrics.
   verifyNotice: {
     color: colors.success,
-    fontSize: ms(11),
+    fontSize: fontSize.caption,
     fontWeight: '600',
     marginBottom: vs(8),
   },
   verifyResend: {
     color: colors.textStrong,
-    fontSize: ms(11),
+    fontSize: fontSize.caption,
     fontWeight: '600',
     textDecorationLine: 'underline',
     marginBottom: vs(16),
@@ -998,7 +999,7 @@ export default StyleSheet.create({
   },
   verifyDoneHeaderText: {
     color: colors.white,
-    fontSize: ms(13),
+    fontSize: fontSize.subBody,
     fontWeight: '700',
   },
   verifyDoneBody: {
@@ -1017,13 +1018,13 @@ export default StyleSheet.create({
   },
   verifyDoneTitle: {
     color: colors.textStrong,
-    fontSize: ms(12),
+    fontSize: fontSize.label,
     fontWeight: '700',
     textAlign: 'center',
   },
   verifyDoneSub: {
     color: colors.textMuted,
-    fontSize: ms(9),
+    fontSize: fontSize.tiny,
     marginTop: vs(4),
     textAlign: 'center',
   },
@@ -1060,7 +1061,7 @@ export default StyleSheet.create({
   },
   podStepCircleActive: {backgroundColor: colors.accentBlue},
   podStepCircleDone: {backgroundColor: colors.accentBlue},
-  podStepNum: {color: colors.textMuted, fontSize: ms(12), fontWeight: '700'},
+  podStepNum: {color: colors.textMuted, fontSize: fontSize.label, fontWeight: '700'},
   podStepNumActive: {color: colors.white},
   podStepLine: {
     width: s(26),
@@ -1071,11 +1072,11 @@ export default StyleSheet.create({
   podStepLineActive: {backgroundColor: colors.accentBlue},
 
   // Headings
-  podStepLabel: {color: colors.textMuted, fontSize: ms(11), marginBottom: vs(4)},
-  podTitle: {color: colors.textStrong, fontSize: ms(16), fontWeight: 'bold', marginBottom: vs(6)},
+  podStepLabel: {color: colors.textMuted, fontSize: fontSize.caption, marginBottom: vs(4)},
+  podTitle: {color: colors.textStrong, fontSize: fontSize.subHeading, fontWeight: 'bold', marginBottom: vs(6)},
   podDesc: {
     color: colors.textMuted,
-    fontSize: ms(12),
+    fontSize: fontSize.label,
     lineHeight: ms(17),
     marginTop: vs(4),
     marginBottom: vs(14),
@@ -1092,8 +1093,8 @@ export default StyleSheet.create({
   },
   // A gutter so the leg's two towns never run into the load beside them.
   podInfoCol: {flex: 1, paddingRight: s(8)},
-  podInfoLabel: {color: colors.textMuted, fontSize: ms(11), marginBottom: vs(2)},
-  podInfoValue: {color: colors.textStrong, fontSize: ms(13), fontWeight: '600'},
+  podInfoLabel: {color: colors.textMuted, fontSize: fontSize.caption, marginBottom: vs(2)},
+  podInfoValue: {color: colors.textStrong, fontSize: fontSize.subBody, fontWeight: '600'},
 
   // Photo capture box
   podPhotoBox: {
@@ -1118,8 +1119,8 @@ export default StyleSheet.create({
     paddingHorizontal: s(6),
     paddingVertical: vs(2),
   },
-  podRequiredText: {color: colors.danger, fontSize: ms(9), fontWeight: '600'},
-  podPhotoHint: {color: colors.textMuted, fontSize: ms(12), marginTop: vs(6)},
+  podRequiredText: {color: colors.danger, fontSize: fontSize.tiny, fontWeight: '600'},
+  podPhotoHint: {color: colors.textMuted, fontSize: fontSize.label, marginTop: vs(6)},
   podPhotoImage: {...StyleSheet.absoluteFillObject},
 
   // Success (captured) box
@@ -1133,12 +1134,12 @@ export default StyleSheet.create({
   },
   podSuccessText: {
     color: colors.success,
-    fontSize: ms(13),
+    fontSize: fontSize.subBody,
     fontWeight: '700',
   },
   podRetake: {
     color: colors.textStrong,
-    fontSize: ms(11),
+    fontSize: fontSize.caption,
     fontWeight: '600',
     textDecorationLine: 'underline',
     marginTop: vs(4),
@@ -1158,7 +1159,7 @@ export default StyleSheet.create({
     borderRadius: ms(8),
     marginHorizontal: s(4),
     textAlign: 'center',
-    fontSize: ms(18),
+    fontSize: fontSize.title,
     fontWeight: '700',
     color: colors.textStrong,
     padding: 0,
@@ -1166,12 +1167,12 @@ export default StyleSheet.create({
   podOtpBoxFilled: {borderColor: colors.accentBlue},
   podOtpExpiry: {
     color: colors.textMuted,
-    fontSize: ms(11),
+    fontSize: fontSize.caption,
     textAlign: 'center',
   },
   podResend: {
     color: colors.textStrong,
-    fontSize: ms(11),
+    fontSize: fontSize.caption,
     fontWeight: '600',
     textDecorationLine: 'underline',
     textAlign: 'center',
@@ -1195,14 +1196,14 @@ export default StyleSheet.create({
     backgroundColor: colors.white,
   },
   podSummaryRowAlt: {backgroundColor: colors.white},
-  podSummaryKey: {color: colors.textMuted, fontSize: ms(12)},
-  podSummaryVal: {color: colors.textStrong, fontSize: ms(12), fontWeight: '600'},
+  podSummaryKey: {color: colors.textMuted, fontSize: fontSize.label},
+  podSummaryVal: {color: colors.textStrong, fontSize: fontSize.label, fontWeight: '600'},
 
   // Why the last upload was turned down — sits between the photo and the
   // button that will retry it.
   podError: {
     color: colors.danger,
-    fontSize: ms(11),
+    fontSize: fontSize.caption,
     fontWeight: '600',
     marginBottom: vs(8),
   },
@@ -1216,7 +1217,7 @@ export default StyleSheet.create({
     marginBottom: vs(8),
   },
   podPrimaryBtnDisabled: {backgroundColor: colors.textMuted},
-  podPrimaryText: {color: colors.white, fontSize: ms(14), fontWeight: '700'},
+  podPrimaryText: {color: colors.white, fontSize: fontSize.body, fontWeight: '700'},
   podSecondaryBtn: {
     backgroundColor: colors.border_Color,
     borderRadius: ms(8),
@@ -1224,7 +1225,7 @@ export default StyleSheet.create({
     alignItems: 'center',
   },
   podSecondaryBtnDisabled: {opacity: 0.6},
-  podSecondaryText: {color: colors.textMuted, fontSize: ms(14), fontWeight: '600'},
+  podSecondaryText: {color: colors.textMuted, fontSize: fontSize.body, fontWeight: '600'},
 
   // Inline camera (over the photo box)
   podCameraFeed: {...StyleSheet.absoluteFillObject, overflow: 'hidden'},
@@ -1274,13 +1275,13 @@ export default StyleSheet.create({
   },
   podExpandText: {
     color: colors.white,
-    fontSize: ms(10),
+    fontSize: fontSize.small,
     fontWeight: '700',
     marginLeft: s(6),
   },
   podRetakePhoto: {
     color: colors.textStrong,
-    fontSize: ms(12),
+    fontSize: fontSize.label,
     fontWeight: '600',
     textDecorationLine: 'underline',
     marginTop: vs(8),
@@ -1293,7 +1294,7 @@ export default StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  podCamEmptyText: {color: colors.white, fontSize: ms(13)},
+  podCamEmptyText: {color: colors.white, fontSize: fontSize.subBody},
   podCamTopBar: {
     position: 'absolute',
     top: 0,
@@ -1309,7 +1310,7 @@ export default StyleSheet.create({
   podCamTitle: {
     flex: 1,
     color: colors.white,
-    fontSize: ms(15),
+    fontSize: fontSize.body,
     fontWeight: '700',
     marginRight: s(12),
   },
@@ -1361,7 +1362,7 @@ export default StyleSheet.create({
     borderColor: colors.white,
     marginRight: s(10),
   },
-  podCamRetakeText: {color: colors.white, fontSize: ms(14), fontWeight: '700'},
+  podCamRetakeText: {color: colors.white, fontSize: fontSize.body, fontWeight: '700'},
   podCamSaveBtn: {
     flex: 1,
     borderRadius: ms(8),
@@ -1369,7 +1370,7 @@ export default StyleSheet.create({
     alignItems: 'center',
     backgroundColor: colors.primary,
   },
-  podCamSaveText: {color: colors.white, fontSize: ms(14), fontWeight: '700'},
+  podCamSaveText: {color: colors.white, fontSize: fontSize.body, fontWeight: '700'},
 
   // ── Full-screen photo preview (zoom + Retake / Use this Photo) ────────
   podPvRoot: {flex: 1, backgroundColor: colors.textStrong},
@@ -1408,7 +1409,7 @@ export default StyleSheet.create({
   },
   podPvHintText: {
     color: colors.accentBlue,
-    fontSize: ms(12),
+    fontSize: fontSize.label,
     fontWeight: '600',
     marginLeft: s(4),
   },
@@ -1431,7 +1432,7 @@ export default StyleSheet.create({
   },
   podPvRetakeText: {
     color: colors.textStrong,
-    fontSize: IS_TABLET ? ms(18) : ms(14),
+    fontSize: fontSize.body,
     fontWeight: '700',
     marginLeft: s(5),
   },
@@ -1446,7 +1447,7 @@ export default StyleSheet.create({
   },
   podPvUseText: {
     color: colors.white,
-    fontSize: IS_TABLET ? ms(18) : ms(14),
+    fontSize: fontSize.body,
     fontWeight: '700',
     marginLeft: s(5),
   },
@@ -1480,12 +1481,12 @@ export default StyleSheet.create({
   callRowName: {
     flex: 1,
     color: colors.textStrong,
-    fontSize: ms(11),
+    fontSize: fontSize.caption,
     fontWeight: '600',
   },
   callRowRole: {
     color: colors.textMuted,
-    fontSize: ms(10),
+    fontSize: fontSize.small,
     marginLeft: s(8),
     textAlign: 'right',
   },
@@ -1493,7 +1494,7 @@ export default StyleSheet.create({
   // tapping, though the number they reach is the bridge's, not this one.
   callRowPhone: {
     color: colors.textMuted,
-    fontSize: ms(10),
+    fontSize: fontSize.small,
     marginTop: vs(3),
   },
   callRowBtn: {
@@ -1526,13 +1527,13 @@ export default StyleSheet.create({
   callGroupBadgeDrop: {backgroundColor: colors.danger},
   callGroupBadgeText: {
     color: colors.white,
-    fontSize: ms(9),
+    fontSize: fontSize.tiny,
     fontWeight: '700',
   },
   callGroupLabel: {
     flex: 1,
     color: colors.primary,
-    fontSize: ms(11),
+    fontSize: fontSize.caption,
     fontWeight: '700',
   },
   // The slot the spinner, the fetch's error and "no contacts" all share, so
@@ -1547,7 +1548,7 @@ export default StyleSheet.create({
   },
   callStateText: {
     color: colors.textMuted,
-    fontSize: ms(11),
+    fontSize: fontSize.caption,
     textAlign: 'center',
   },
 
@@ -1576,12 +1577,12 @@ export default StyleSheet.create({
   },
   callSheetTitle: {
     color: colors.primary,
-    fontSize: ms(15),
+    fontSize: fontSize.body,
     fontWeight: '700',
   },
   callSheetSubtitle: {
     color: colors.textMuted,
-    fontSize: ms(11),
+    fontSize: fontSize.caption,
     marginTop: vs(2),
     marginBottom: vs(12),
   },
@@ -1620,12 +1621,12 @@ export default StyleSheet.create({
   callSheetOptionTexts: {flex: 1},
   callSheetOptionLabel: {
     color: colors.primary,
-    fontSize: ms(11),
+    fontSize: fontSize.caption,
     fontWeight: '700',
   },
   callSheetOptionPhone: {
     color: colors.textStrong,
-    fontSize: ms(13),
+    fontSize: fontSize.subBody,
     marginTop: vs(2),
   },
 
@@ -1641,7 +1642,7 @@ export default StyleSheet.create({
   },
   callSheetCancelText: {
     color: colors.textMuted,
-    fontSize: ms(12),
+    fontSize: fontSize.label,
     fontWeight: '600',
   },
   callSheetConfirm: {
@@ -1655,7 +1656,7 @@ export default StyleSheet.create({
   },
   callSheetConfirmText: {
     color: colors.white,
-    fontSize: ms(12),
+    fontSize: fontSize.label,
     fontWeight: '700',
     marginLeft: s(7),
   },

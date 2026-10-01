@@ -1,6 +1,7 @@
 import {Platform, StyleSheet} from 'react-native';
 import {ms as baseMs, vs as baseVs} from '../../../theme/scale';
 import {colors} from '../../../theme/colors';
+import {fontSize} from '../../../theme/fontSizes';
 import {IS_TABLET, select} from '../../../theme/device';
 import {
   DASHBOARD_HEADER_H,
@@ -69,12 +70,12 @@ export default StyleSheet.create({
   },
 
   brandGlyph: {
-    fontSize: ms(20),
+    fontSize: fontSize.heading,
   },
 
   brandText: {
     color: colors.white,
-    fontSize: ms(20),
+    fontSize: fontSize.heading,
     fontWeight: '500',
     letterSpacing: 1,
   },
@@ -91,14 +92,14 @@ export default StyleSheet.create({
 
   dieselLabel: {
     color: colors.white,
-    fontSize: ms(10),
+    fontSize: fontSize.small,
     fontWeight: '500',
     letterSpacing: 0.5,
   },
 
   dieselValue: {
     color: colors.success,
-    fontSize: ms(15),
+    fontSize: fontSize.body,
     fontWeight: '500',
     marginTop: vs(2),
   },
@@ -134,7 +135,7 @@ export default StyleSheet.create({
 
   avatarInitials: {
     color: colors.primary,
-    fontSize: IS_TABLET ? ms(13) : ms(15),
+    fontSize: fontSize.body,
     fontWeight: '700',
   },
 
@@ -177,13 +178,13 @@ export default StyleSheet.create({
 
   menuAvatarText: {
     color: colors.primary,
-    fontSize: ms(10),
+    fontSize: fontSize.small,
     fontWeight: '700',
   },
 
   menuName: {
     color: colors.textStrong,
-    fontSize: ms(10),
+    fontSize: fontSize.small,
     fontWeight: '600',
   },
 
@@ -211,7 +212,7 @@ export default StyleSheet.create({
 
   menuItemText: {
     color: colors.textStrong,
-    fontSize: ms(10),
+    fontSize: fontSize.small,
     fontWeight: '500',
   },
 
@@ -221,14 +222,14 @@ export default StyleSheet.create({
 
   headerLocation: {
     color: colors.white,
-    fontSize: ms(15),
+    fontSize: fontSize.body,
     fontWeight: '500',
     marginTop: IS_TABLET ? vs(10) : vs(10),
   },
 
   headerWelcome: {
     color: colors.white,
-    fontSize: IS_TABLET ? ms(20) : ms(24),
+    fontSize: fontSize.mainHeading,
     fontWeight: '500',
     marginTop: vs(2),
     marginBottom:IS_TABLET ? vs(6) : Platform.OS === 'ios' ? vs(1) : vs(8),
@@ -263,19 +264,19 @@ export default StyleSheet.create({
 
   statLabel: {
     color: colors.textMuted,
-    fontSize: ms(13),
+    fontSize: fontSize.subBody,
     fontWeight: '600',
   },
 
   statValue: {
     color: colors.textStrong,
-    fontSize: ms(24),
+    fontSize: fontSize.mainHeading,
     fontWeight: '800',
     marginTop: vs(4),
   },
 
   statNote: {
-    fontSize: IS_TABLET ? ms(11) : Platform.OS === 'ios' ? ms(16) : ms(16),
+    fontSize: fontSize.subHeading,
     fontWeight: '600',
     marginTop: vs(6),
   },
@@ -308,7 +309,7 @@ export default StyleSheet.create({
   },
 
   cardTitle: {
-    fontSize: IS_TABLET ? ms(10) : ms(15),
+    fontSize: fontSize.body,
     fontWeight: '500',
     color: colors.textStrong,
   },
@@ -329,7 +330,7 @@ export default StyleSheet.create({
 
   pillStartsInText: {
     color: colors.amber800,
-    fontSize: ms(11),
+    fontSize: fontSize.caption,
     fontWeight: '700',
   },
 
@@ -340,7 +341,7 @@ export default StyleSheet.create({
 
   pillOnTimeText: {
     color: colors.success,
-    fontSize: ms(11),
+    fontSize: fontSize.caption,
     fontWeight: '700',
   },
 
@@ -352,7 +353,7 @@ export default StyleSheet.create({
 
   pillDelayedText: {
     color: colors.danger,
-    fontSize: ms(11),
+    fontSize: fontSize.caption,
     fontWeight: '700',
   },
 
@@ -363,7 +364,7 @@ export default StyleSheet.create({
 
   pillOnDutyText: {
     color: colors.amber800,
-    fontSize: ms(11),
+    fontSize: fontSize.caption,
     fontWeight: '700',
   },
 
@@ -376,7 +377,7 @@ export default StyleSheet.create({
 
   pillOffDutyText: {
     color: colors.textMuted,
-    fontSize: ms(11),
+    fontSize: fontSize.caption,
     fontWeight: '700',
   },
 
@@ -391,13 +392,13 @@ export default StyleSheet.create({
 
   payoutValue: {
     color: colors.success,
-    fontSize: IS_TABLET ? ms(18) : ms(25),
+    fontSize: fontSize.mainHeading,
     fontWeight: '500',
   },
 
   payoutLabel: {
     color: colors.textMuted,
-    fontSize: IS_TABLET ? ms(13) : ms(15),
+    fontSize: fontSize.body,
     textAlign: 'center',
     fontWeight: '400',
   },
@@ -417,7 +418,7 @@ export default StyleSheet.create({
 
   tripEmptyText: {
     color: colors.textMuted,
-    fontSize: IS_TABLET ? ms(12) : ms(13),
+    fontSize: fontSize.subBody,
     textAlign: 'center',
   },
 
@@ -455,7 +456,7 @@ export default StyleSheet.create({
 
   tripStatValue: {
     color: colors.textStrong,
-    fontSize: IS_TABLET ? ms(10) : ms(9),
+    fontSize: fontSize.tiny,
     fontWeight: '600',
     textAlign: 'center',
   },
@@ -463,7 +464,7 @@ export default StyleSheet.create({
   tripStatLabel: {
     color: colors.textMuted,
     fontWeight: '400',
-    fontSize: IS_TABLET ? ms(8) : ms(10),
+    fontSize: fontSize.small,
     marginTop: vs(2),
     textAlign: 'center',
   },
@@ -479,13 +480,13 @@ export default StyleSheet.create({
 
   progressCaption: {
     color: colors.textStrong,
-    fontSize: IS_TABLET ? ms(12) : ms(13),
+    fontSize: fontSize.subBody,
     fontWeight: '500',
   },
 
   progressCaptionAccent: {
     color: colors.accentBlue,
-    fontSize: IS_TABLET ? ms(12) : ms(13),
+    fontSize: fontSize.subBody,
     fontWeight: '700',
   },
 
@@ -521,7 +522,7 @@ export default StyleSheet.create({
 
   primaryBtnText: {
     color: colors.white,
-    fontSize: ms(12),
+    fontSize: fontSize.label,
     fontWeight: '800',
     letterSpacing: 0.5,
   },
@@ -536,13 +537,13 @@ export default StyleSheet.create({
 
   hosDrivenText: {
     color: colors.textStrong,
-    fontSize: ms(14),
+    fontSize: fontSize.body,
     fontWeight: '700',
   },
 
   hosRemText: {
     color: colors.textMuted,
-    fontSize: ms(13),
+    fontSize: fontSize.subBody,
     fontWeight: '600',
   },
 
@@ -563,19 +564,19 @@ export default StyleSheet.create({
 
   detailLabel: {
     color: colors.textStrong,
-    fontSize: ms(10),
+    fontSize: fontSize.small,
     fontWeight: '600',
   },
 
   detailValue: {
     color: colors.textMuted,
-    fontSize: ms(10),
+    fontSize: fontSize.small,
     fontWeight: '400',
   },
 
   detailValueStrong: {
     color: colors.textMuted,
-    fontSize: ms(10),
+    fontSize: fontSize.small,
     fontWeight: '400',
   },
   rewardsCard: {
@@ -606,13 +607,13 @@ export default StyleSheet.create({
 
   rewardsLabel: {
     color: colors.success,
-    fontSize: ms(10),
+    fontSize: fontSize.small,
     fontWeight: '600',
   },
 
   rewardsTitle: {
     color: colors.white,
-    fontSize: IS_TABLET ? ms(12) : ms(10),
+    fontSize: fontSize.small,
     fontWeight: '800',
     marginTop: vs(5),
     lineHeight: IS_TABLET ? ms(19) : ms(20),
@@ -620,7 +621,7 @@ export default StyleSheet.create({
   },
   rewardsBody: {
     color: colors.white,
-    fontSize: IS_TABLET ? ms(7) : ms(8),
+    fontSize: fontSize.micro,
     lineHeight: ms(12),
     marginTop: vs(1),
   },
@@ -666,7 +667,7 @@ export default StyleSheet.create({
 
   rewardsBalanceLabel: {
     color: colors.white,
-    fontSize:IS_TABLET ? ms(8) : ms(10),
+    fontSize: fontSize.small,
     fontWeight: '500',
     marginBottom: vs(2),
     textAlign: 'left',
@@ -674,7 +675,7 @@ export default StyleSheet.create({
 
   rewardsPoints: {
     color: colors.white,
-    fontSize: IS_TABLET ? ms(10) : ms(12),
+    fontSize: fontSize.label,
     fontWeight: '800',
     textAlign: 'left',
     alignSelf: 'flex-start',
@@ -683,7 +684,7 @@ export default StyleSheet.create({
 
   rewardsPointsUnit: {
     color: colors.success,
-    fontSize: ms(8),
+    fontSize: fontSize.micro,
     fontWeight: '600',
   },
   /* ---------- Upcoming loads ---------- */
@@ -707,7 +708,7 @@ export default StyleSheet.create({
 
   loadsHeaderText: {
     color: colors.white,
-    fontSize: IS_TABLET ? ms(10) : ms(13),
+    fontSize: fontSize.subBody,
     fontWeight: '700',
   },
 
@@ -752,7 +753,7 @@ export default StyleSheet.create({
   loadWhen: {
     maxWidth: IS_TABLET ? '46%' : '54%',
     color: colors.textStrong,
-    fontSize: IS_TABLET ? ms(7.5) : ms(6.8),
+    fontSize: fontSize.micro,
     lineHeight: IS_TABLET ? ms(11) : ms(10),
     fontWeight: '500',
     textAlign: 'right',
@@ -772,7 +773,7 @@ export default StyleSheet.create({
 
   loadsEmptyText: {
     color: colors.textMuted,
-    fontSize: ms(10),
+    fontSize: fontSize.small,
     textAlign: 'center',
   },
 
@@ -786,7 +787,7 @@ export default StyleSheet.create({
 
   loadChevronGlyph: {
     color: colors.textMuted,
-    fontSize: ms(16),
+    fontSize: fontSize.subHeading,
   },
 
   /* ---------- Trip in Progress banner ---------- */
@@ -813,14 +814,14 @@ export default StyleSheet.create({
 
   tripBannerTitle: {
     color: colors.white,
-    fontSize: ms(20),
+    fontSize: fontSize.heading,
     fontWeight: '600',
     textAlign: 'left',
     alignSelf: 'flex-start',
   },
   tripBannerSubtitle: {
     color: colors.white,
-    fontSize: ms(10),
+    fontSize: fontSize.small,
     marginTop: vs(2),
     fontWeight: '500',
     opacity: 0.9,

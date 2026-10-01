@@ -1,6 +1,7 @@
 import {Platform, StyleSheet} from 'react-native';
 import {ms as baseMs, vs as baseVs} from '../../../theme/scale';
 import {colors} from '../../../theme/colors';
+import {fontSize} from '../../../theme/fontSizes';
 import {IS_TABLET, select} from '../../../theme/device';
 import {
   DASHBOARD_HEADER_H,
@@ -37,7 +38,7 @@ export default StyleSheet.create({
 
   listEmptyText: {
     color: colors.textMuted,
-    fontSize: ms(11),
+    fontSize: fontSize.caption,
     textAlign: 'center',
   },
 
@@ -73,7 +74,7 @@ export default StyleSheet.create({
 
   periodBtnText: {
     color: colors.white,
-    fontSize: ms(14),
+    fontSize: fontSize.body,
     fontWeight: '600',
   },
 
@@ -108,7 +109,7 @@ export default StyleSheet.create({
   },
 
   menuItemText: {
-    fontSize: ms(14),
+    fontSize: fontSize.body,
     fontWeight: '500',
     color: colors.textStrong,
   },
@@ -121,7 +122,7 @@ export default StyleSheet.create({
   /* ---------- Gross earning ---------- */
   grossValue: {
      color: colors.white,
-       fontSize: ms(20),
+       fontSize: fontSize.heading,
        lineHeight: Math.round(ms(20) * 1.4),
        fontWeight: '500',
        marginTop: IS_TABLET ? vs(2) : vs(8),
@@ -144,7 +145,7 @@ export default StyleSheet.create({
 
   grossLabel: {
       color: colors.white,
-      fontSize: IS_TABLET ? ms(20) : ms(24),
+      fontSize: fontSize.mainHeading,
       lineHeight: Math.round((IS_TABLET ? ms(20) : ms(24)) * 1.4),
       fontWeight: '500',
       marginTop: vs(2),
@@ -178,7 +179,7 @@ export default StyleSheet.create({
 
   tableHeadText: {
     color: colors.textStrong,
-    fontSize: ms(10),
+    fontSize: fontSize.small,
     fontWeight: '700',
     textAlign: 'center',
   },
@@ -223,7 +224,7 @@ export default StyleSheet.create({
   /* ----- AWB number ----- */
   awbText: {
     color: colors.textStrong,
-    fontSize: ms(9),
+    fontSize: fontSize.tiny,
     fontWeight: '600',
     textAlign: 'center',
   },
@@ -247,14 +248,14 @@ export default StyleSheet.create({
 
   typeText: {
     color: colors.textMuted,
-    fontSize: ms(9),
+    fontSize: fontSize.tiny,
     fontWeight: '600',
   },
 
   /* ----- Center: distance + duration ----- */
   centerMiles: {
     color: colors.textStrong,
-    fontSize: ms(11),
+    fontSize: fontSize.caption,
     fontWeight: '700',
     letterSpacing: 0.3,
     textAlign: 'center',
@@ -262,7 +263,7 @@ export default StyleSheet.create({
 
   centerTime: {
     color: colors.border_Color,
-    fontSize: IS_TABLET ? ms(8) : ms(10),
+    fontSize: fontSize.small,
     fontWeight: '500',
     marginTop: vs(2),
     textAlign: 'center',
@@ -271,7 +272,7 @@ export default StyleSheet.create({
   /* ----- Right: amount + status ----- */
   rowAmount: {
     color: colors.textStrong,
-    fontSize: ms(12),
+    fontSize: fontSize.label,
     fontWeight: '700',
     textAlign: 'center',
   },
@@ -285,7 +286,7 @@ export default StyleSheet.create({
   },
 
   pillText: {
-    fontSize: ms(8),
+    fontSize: fontSize.micro,
     fontWeight: '700',
     color: colors.white,
   },

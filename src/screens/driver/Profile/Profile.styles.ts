@@ -1,6 +1,6 @@
 import {StyleSheet} from 'react-native';
 import {colors} from '../../../theme/colors';
-import {IS_TABLET} from '../../../theme/device';
+import {fontSize} from '../../../theme/fontSizes';
 import {ms, vs} from './constants';
 
 export const FIELD_GUTTER = ms(14);
@@ -44,13 +44,13 @@ export default StyleSheet.create({
   headerTitle: {
     marginLeft: ms(4),
     color: colors.white,
-    fontSize: IS_TABLET ? ms(17) : ms(19),
+    fontSize: fontSize.title,
     fontWeight: '700',
   },
 
   headerSubtitle: {
     color: colors.white,
-    fontSize: IS_TABLET ? ms(11) : ms(12),
+    fontSize: fontSize.label,
   },
 
   /* ---------- Identity card ---------- */
@@ -108,13 +108,13 @@ export default StyleSheet.create({
 
   driverName: {
     color: colors.textStrong,
-    fontSize: ms(18),
+    fontSize: fontSize.title,
     fontWeight: '700',
   },
 
   driverRole: {
     color: colors.textMuted,
-    fontSize: ms(12),
+    fontSize: fontSize.label,
     fontWeight: '500',
     marginTop: vs(3),
   },
@@ -140,7 +140,7 @@ export default StyleSheet.create({
 
   sectionTitle: {
     color: colors.white,
-    fontSize: ms(13),
+    fontSize: fontSize.subBody,
     fontWeight: '600',
   },
 
@@ -164,7 +164,7 @@ export default StyleSheet.create({
 
   fieldLabel: {
     color: colors.textStrong,
-    fontSize: ms(12),
+    fontSize: fontSize.label,
     fontWeight: '600',
     marginBottom: vs(6),
   },
@@ -174,7 +174,7 @@ export default StyleSheet.create({
     borderRadius: ms(8),
     paddingHorizontal: ms(12),
     paddingVertical: vs(9),
-    fontSize: ms(13),
+    fontSize: fontSize.subBody,
     fontWeight: '500',
     color: colors.textStrong,
     // RN's default input padding fights the fixed height on Android.
@@ -205,13 +205,13 @@ export default StyleSheet.create({
 
   faceLockTitle: {
     color: colors.textStrong,
-    fontSize: ms(14),
+    fontSize: fontSize.body,
     fontWeight: '600',
   },
 
   faceLockSub: {
     color: colors.textMuted,
-    fontSize: ms(11),
+    fontSize: fontSize.caption,
     fontWeight: '500',
     marginTop: vs(2),
   },
@@ -237,13 +237,13 @@ export default StyleSheet.create({
 
   insuranceTitle: {
     color: colors.textStrong,
-    fontSize: ms(14),
+    fontSize: fontSize.body,
     fontWeight: '600',
   },
 
   insuranceSub: {
     color: colors.textMuted,
-    fontSize: ms(11),
+    fontSize: fontSize.caption,
     fontWeight: '500',
     marginTop: vs(2),
   },
@@ -266,7 +266,7 @@ export default StyleSheet.create({
 
   insurancePillText: {
     color: colors.success,
-    fontSize: ms(12),
+    fontSize: fontSize.label,
     fontWeight: '600',
   },
 
@@ -289,7 +289,7 @@ export default StyleSheet.create({
   noticeText: {
     flex: 1,
     color: colors.white,
-    fontSize: IS_TABLET ? ms(8) : ms(10),
+    fontSize: fontSize.small,
     fontWeight: '500',
   },
 
@@ -302,7 +302,7 @@ export default StyleSheet.create({
 
   versionText: {
     color: colors.textMuted,
-    fontSize: ms(11),
+    fontSize: fontSize.caption,
     fontWeight: '500',
   },
 });

@@ -1,6 +1,7 @@
 import {StyleSheet} from 'react-native';
 import {ms as baseMs, vs as baseVs} from '../../../theme/scale';
 import {colors} from '../../../theme/colors';
+import {fontSize} from '../../../theme/fontSizes';
 import {IS_TABLET, select} from '../../../theme/device';
 import {
   DASHBOARD_HEADER_RADIUS,
@@ -69,7 +70,7 @@ export default StyleSheet.create({
 
   monthBtnText: {
     color: colors.white,
-    fontSize: ms(14),
+    fontSize: fontSize.body,
     fontWeight: '600',
   },
 
@@ -104,7 +105,7 @@ export default StyleSheet.create({
   },
 
   menuItemText: {
-    fontSize: ms(14),
+    fontSize: fontSize.body,
     fontWeight: '500',
     color: colors.textStrong,
   },
@@ -171,20 +172,20 @@ export default StyleSheet.create({
 
   summaryTitle: {
     color: colors.textStrong,
-    fontSize: ms(18),
+    fontSize: fontSize.title,
     fontWeight: '600',
   },
 
   summaryMonth: {
     color: colors.textMuted,
-    fontSize: ms(11),
+    fontSize: fontSize.caption,
     fontWeight: '500',
     marginTop: vs(1),
   },
 
   summaryAmount: {
     color: colors.textStrong,
-    fontSize: IS_TABLET ? ms(22) : ms(28),
+    fontSize: fontSize.display,
     lineHeight: Math.round((IS_TABLET ? ms(26) : ms(32)) * 1.35),
     fontWeight: '700',
   },
@@ -206,19 +207,19 @@ export default StyleSheet.create({
 
   metaLabel: {
     color: colors.textStrong,
-    fontSize: ms(12),
+    fontSize: fontSize.label,
     fontWeight: '600',
   },
 
   metaValue: {
     color: colors.textMuted,
-    fontSize: ms(12),
+    fontSize: fontSize.label,
     fontWeight: '500',
   },
 
   metaValueNegative: {
     color: colors.danger,
-    fontSize: ms(12),
+    fontSize: fontSize.label,
     fontWeight: '600',
   },
 
@@ -232,7 +233,7 @@ export default StyleSheet.create({
 
   statusPillText: {
     color: colors.white,
-    fontSize: ms(12),
+    fontSize: fontSize.label,
     fontWeight: '600',
     textAlign: 'center',
   },
@@ -250,7 +251,7 @@ export default StyleSheet.create({
 
   cardTitle: {
     color: colors.textMuted,
-    fontSize: ms(14),
+    fontSize: fontSize.body,
     fontWeight: '600',
     marginBottom: vs(6),
   },
@@ -265,14 +266,14 @@ export default StyleSheet.create({
 
   breakdownLabel: {
     color: colors.textStrong,
-    fontSize: ms(14),
+    fontSize: fontSize.body,
     fontWeight: '500',
     flexShrink: 1,
   },
 
   breakdownValue: {
     color: colors.textStrong,
-    fontSize: ms(14),
+    fontSize: fontSize.body,
     fontWeight: '500',
   },
 
@@ -296,20 +297,20 @@ export default StyleSheet.create({
 
   netLabel: {
     color: colors.textStrong,
-    fontSize: ms(15),
+    fontSize: fontSize.body,
     fontWeight: '700',
   },
 
   netValue: {
     color: colors.textStrong,
-    fontSize: ms(15),
+    fontSize: fontSize.body,
     fontWeight: '700',
   },
 
   /* ---------- Salary history ---------- */
   sectionTitle: {
     color: colors.textMuted,
-    fontSize: IS_TABLET ? ms(12) : ms(14),
+    fontSize: fontSize.body,
     fontWeight: '600',
     marginTop: vs(16),
     marginBottom: vs(6),
@@ -334,7 +335,7 @@ export default StyleSheet.create({
 
   tableHeadText: {
     color: colors.textStrong,
-    fontSize: ms(12),
+    fontSize: fontSize.label,
     fontWeight: '700',
   },
 
@@ -383,13 +384,13 @@ export default StyleSheet.create({
 
   historyMonth: {
     color: colors.textStrong,
-    fontSize: ms(13),
+    fontSize: fontSize.subBody,
     fontWeight: '500',
   },
 
   historyValue: {
     color: colors.textStrong,
-    fontSize: ms(13),
+    fontSize: fontSize.subBody,
     fontWeight: '500',
     textAlign: 'center',
   },
@@ -402,7 +403,7 @@ export default StyleSheet.create({
 
   historyPillText: {
     color: colors.white,
-    fontSize: ms(11),
+    fontSize: fontSize.caption,
     fontWeight: '600',
   },
 });

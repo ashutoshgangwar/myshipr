@@ -1,6 +1,7 @@
 import {StyleSheet, Platform, Dimensions} from 'react-native';
 import {scale, verticalScale, moderateScale} from 'react-native-size-matters';
 import {colors} from '../../../theme/colors';
+import {fontSize} from '../../../theme/fontSizes';
 
 const isIOS = Platform.OS === 'ios';
 
@@ -90,14 +91,14 @@ const makeStyles = (isTablet = false) => {
     },
 
     title: {
-      fontSize: isTablet ? moderateScale(30) : moderateScale(26),
+      fontSize: fontSize.mainHeading,
       fontWeight: '700',
-      marginBottom: verticalScale(10),
+      marginBottom: verticalScale(8),
       color: colors.white,
     },
 
     subtitle: {
-      fontSize: isTablet ? moderateScale(15) : moderateScale(14),
+      fontSize: fontSize.title,
       lineHeight: isTablet ? moderateScale(22) : moderateScale(20),
       color: colors.white,
       marginBottom: verticalScale(10),
@@ -118,7 +119,7 @@ const makeStyles = (isTablet = false) => {
     },
 
     roleBadgeText: {
-      fontSize: isTablet ? moderateScale(13) : moderateScale(12),
+      fontSize: fontSize.subBody,
       fontWeight: '600',
       letterSpacing: 0.6,
       color: colors.white,
@@ -150,7 +151,7 @@ const makeStyles = (isTablet = false) => {
     },
 
     tabText: {
-      fontSize: moderateScale(13),
+      fontSize: fontSize.subBody,
       fontWeight: '600',
       color: colors.textMuted,
     },
@@ -159,7 +160,7 @@ const makeStyles = (isTablet = false) => {
       color: colors.textStrong,
     },
     label: {
-      fontSize: isTablet ? moderateScale(15) : moderateScale(16),
+      fontSize: fontSize.subHeading,
       fontWeight: '500',
       color: colors.textStrong,
       marginBottom: verticalScale(10),
@@ -173,15 +174,12 @@ const makeStyles = (isTablet = false) => {
       borderColor: colors.border_Color,
       backgroundColor: colors.screenBg,
       borderRadius: moderateScale(12),
-      // Android measures a TextInput from its font metrics, so padding alone
-      // leaves the box height drifting with the text. A fixed height plus
-      // centered alignment keeps the field steady while typing.
       height: isTablet ? verticalScale(38) : verticalScale(44),
       paddingVertical: 0,
       paddingHorizontal: scale(16),
       textAlignVertical: 'center',
       includeFontPadding: false,
-      fontSize: isTablet ? moderateScale(14) : moderateScale(15),
+      fontSize: fontSize.body,
       marginBottom: verticalScale(16),
       color: colors.textStrong,
       textAlign: 'left',
@@ -208,7 +206,7 @@ const makeStyles = (isTablet = false) => {
     dividerText: {
       marginHorizontal: scale(10),
       color: colors.textStrong,
-      fontSize: moderateScale(12),
+      fontSize: fontSize.label,
       fontWeight: '400',
     },
     passwordContainer: {
@@ -243,7 +241,7 @@ const makeStyles = (isTablet = false) => {
       backgroundColor: colors.screenBg,
       borderRadius: moderateScale(12),
       textAlign: 'center',
-      fontSize: moderateScale(18),
+      fontSize: fontSize.title,
       paddingVertical: verticalScale(12),
       marginHorizontal: scale(4),
       color: colors.textStrong,
@@ -252,7 +250,7 @@ const makeStyles = (isTablet = false) => {
     otpTimerText: {
       textAlign: 'right',
       color: colors.textMuted,
-      fontSize: moderateScale(13),
+      fontSize: fontSize.subBody,
       marginBottom: verticalScale(10),
     },
 
@@ -277,7 +275,7 @@ const makeStyles = (isTablet = false) => {
     forgotPasswordText: {
       color: colors.textStrong,
       fontWeight: '400',
-      fontSize: moderateScale(12),
+      fontSize: fontSize.label,
     },
     buttonContainer: {
       marginTop: isTablet ? 'auto' : verticalScale(80),
@@ -301,7 +299,7 @@ const makeStyles = (isTablet = false) => {
     buttonText: {
       color: colors.white,
       textAlign: 'center',
-      fontSize: moderateScale(16),
+      fontSize: fontSize.subHeading,
       fontWeight: '700',
       letterSpacing: 0.5,
     },
@@ -341,7 +339,7 @@ const makeStyles = (isTablet = false) => {
 
     primaryButtonText: {
       color: colors.white,
-      fontSize: isTablet ? moderateScale(15) : moderateScale(16),
+      fontSize: fontSize.subHeading,
       fontWeight: '700',
     },
 
@@ -362,7 +360,7 @@ const makeStyles = (isTablet = false) => {
       alignSelf: 'center',
       textAlign: 'center',
       color: colors.textStrong,
-      fontSize: moderateScale(12),
+      fontSize: fontSize.label,
       fontWeight: '400',
       marginVertical: verticalScale(12),
       marginBottom: verticalScale(10),
@@ -371,7 +369,7 @@ const makeStyles = (isTablet = false) => {
       opacity: 0.5,
     },
     googleText: {
-      fontSize: moderateScale(14),
+      fontSize: fontSize.body,
       fontWeight: '500',
       color: colors.textStrong,
     },
@@ -385,12 +383,12 @@ const makeStyles = (isTablet = false) => {
     },
 
     signupText: {
-      fontSize: moderateScale(13),
+      fontSize: fontSize.subBody,
       color: colors.textStrong,
     },
 
     signupAction: {
-      fontSize: moderateScale(13),
+      fontSize: fontSize.subBody,
       color: colors.textStrong,
       fontWeight: '700',
     },

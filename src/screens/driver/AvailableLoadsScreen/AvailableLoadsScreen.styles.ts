@@ -1,6 +1,7 @@
 import { StyleSheet } from 'react-native';
 import { moderateScale, verticalScale } from 'react-native-size-matters';
 import {colors} from '../../../theme/colors';
+import {fontSize} from '../../../theme/fontSizes';
 
 const styles = StyleSheet.create({
   container: {
@@ -29,7 +30,7 @@ const styles = StyleSheet.create({
   },
 
   filterText: {
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
     fontWeight: '600',
     color: colors.textStrong,
   },
@@ -55,31 +56,31 @@ const styles = StyleSheet.create({
   },
 
   loadId: {
-    fontSize: moderateScale(14),
+    fontSize: fontSize.body,
     fontWeight: '700',
     color: colors.textStrong,
   },
 
   rate: {
-    fontSize: moderateScale(14),
+    fontSize: fontSize.body,
     fontWeight: '700',
     color: colors.success,
   },
 
   detailText: {
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
     marginBottom: verticalScale(6),
     color: colors.textMuted,
   },
 
   locationText: {
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
     marginBottom: verticalScale(4),
     color: colors.textStrong,
   },
 
   notes: {
-    fontSize: moderateScale(12),
+    fontSize: fontSize.label,
     color: colors.textMuted,
     marginVertical: verticalScale(6),
   },
@@ -95,7 +96,7 @@ const styles = StyleSheet.create({
   bidText: {
     color: colors.white,
     fontWeight: '700',
-    fontSize: moderateScale(14),
+    fontSize: fontSize.body,
   },
 
   /* MAP BUTTON */
@@ -110,7 +111,7 @@ const styles = StyleSheet.create({
   mapButtonText: {
     color: colors.white,
     fontWeight: '700',
-    fontSize: moderateScale(14),
+    fontSize: fontSize.body,
   },
 
   listPadding: {

@@ -1,6 +1,7 @@
 import {StyleSheet, Platform} from 'react-native';
 import {scale, verticalScale, moderateScale} from 'react-native-size-matters';
 import {colors} from '../../../theme/colors';
+import {fontSize} from '../../../theme/fontSizes';
 import {IS_TABLET, select} from '../../../theme/device';
 
 // Cap the form column on tablets so inputs/buttons don't stretch edge-to-edge.
@@ -95,14 +96,14 @@ const styles = StyleSheet.create({
   },
 
   title: {
-    fontSize: moderateScale(26),
+    fontSize: fontSize.mainHeading,
     fontWeight: '700',
     marginBottom: verticalScale(10),
     color: colors.white,
   },
 
   subtitle: {
-    fontSize: moderateScale(14),
+    fontSize: fontSize.body,
     lineHeight: moderateScale(20),
     color: colors.white,
     marginBottom: verticalScale(10),
@@ -123,7 +124,7 @@ const styles = StyleSheet.create({
   },
 
   roleBadgeText: {
-    fontSize: moderateScale(12),
+    fontSize: fontSize.label,
     fontWeight: '600',
     letterSpacing: 0.6,
     color: colors.white,
@@ -155,7 +156,7 @@ const styles = StyleSheet.create({
   },
 
   tabText: {
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
     fontWeight: '600',
     color: colors.textMuted,
   },
@@ -165,7 +166,7 @@ const styles = StyleSheet.create({
   },
 
   label: {
-    fontSize: moderateScale(15),
+    fontSize: fontSize.body,
     fontWeight: '500',
     color: colors.textStrong,
     marginBottom: verticalScale(5),
@@ -182,7 +183,7 @@ const styles = StyleSheet.create({
     borderRadius: moderateScale(12),
     paddingVertical: select({phone: verticalScale(12), tablet: moderateScale(9)}),
     paddingHorizontal: scale(16),
-    fontSize: select({phone: moderateScale(15), tablet: moderateScale(14)}),
+    fontSize: fontSize.body,
     marginBottom: verticalScale(16),
     color: colors.textStrong,
     textAlign: 'left',
@@ -205,7 +206,7 @@ const styles = StyleSheet.create({
     position: 'absolute',
     right: scale(14),
     fontWeight: '400',
-    fontSize: moderateScale(12),
+    fontSize: fontSize.label,
     backgroundColor: colors.primary,
     borderRadius: moderateScale(5),
     top: Platform.OS === 'ios' ? verticalScale(12) : verticalScale(10),
@@ -217,7 +218,7 @@ const styles = StyleSheet.create({
 
   sendOtpText: {
     color: colors.white,
-    fontSize: moderateScale(12),
+    fontSize: fontSize.label,
     fontWeight: '700',
   },
 
@@ -239,7 +240,7 @@ const styles = StyleSheet.create({
   },
 
   otpLabel: {
-     fontSize: moderateScale(16),
+     fontSize: fontSize.subHeading,
     fontWeight: '500',
     color: colors.textStrong,
     marginBottom: verticalScale(8),
@@ -277,7 +278,7 @@ const styles = StyleSheet.create({
 
   otpSuccessText: {
     color: colors.success,
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
     fontWeight: '600',
     textAlign: 'center',
   },
@@ -289,7 +290,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.screenBg,
     borderRadius: moderateScale(12),
     textAlign: 'center',
-    fontSize: select({phone: moderateScale(18), tablet: moderateScale(18)}),
+    fontSize: fontSize.title,
     paddingVertical: select({phone: verticalScale(12), tablet: moderateScale(9)}),
     marginHorizontal: scale(4),
     color: colors.textStrong,
@@ -298,7 +299,7 @@ const styles = StyleSheet.create({
   otpTimerText: {
     textAlign: 'right',
     color: colors.textMuted,
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
     marginBottom: verticalScale(10),
   },
 
@@ -335,7 +336,7 @@ const styles = StyleSheet.create({
 
   captchaCodeText: {
     color: colors.primary,
-    fontSize: moderateScale(15),
+    fontSize: fontSize.body,
     fontWeight: '700',
     letterSpacing: 1.5,
   },
@@ -352,7 +353,7 @@ const styles = StyleSheet.create({
 
   captchaRefreshIcon: {
     color: colors.primary,
-    fontSize: moderateScale(18),
+    fontSize: fontSize.title,
     fontWeight: '700',
   },
 
@@ -380,7 +381,7 @@ const styles = StyleSheet.create({
   forgotPasswordText: {
     color: colors.textStrong,
     fontWeight: '400',
-    fontSize: moderateScale(12),
+    fontSize: fontSize.label,
   },
 
   button: {
@@ -406,7 +407,7 @@ const styles = StyleSheet.create({
   buttonText: {
     color: colors.white,
     textAlign: 'center',
-    fontSize: moderateScale(16),
+    fontSize: fontSize.subHeading,
     fontWeight: '700',
     letterSpacing: 0.5,
   },
@@ -433,14 +434,14 @@ const styles = StyleSheet.create({
 
   primaryButtonText: {
     color: colors.white,
-    fontSize: moderateScale(16),
+    fontSize: fontSize.subHeading,
     fontWeight: '700',
   },
 
   altLogin: {
     textAlign: 'center',
     color: colors.textStrong,
-    fontSize: moderateScale(12),
+    fontSize: fontSize.label,
     fontWeight: '400',
     marginTop: verticalScale(1),
   },
@@ -469,7 +470,7 @@ const styles = StyleSheet.create({
   },
 
   googleText: {
-    fontSize: moderateScale(14),
+    fontSize: fontSize.body,
     fontWeight: '500',
     color: colors.textStrong,
   },
@@ -483,12 +484,12 @@ const styles = StyleSheet.create({
   },
 
   signupText: {
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
     color: colors.textStrong,
   },
 
   signupAction: {
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
     color: colors.textStrong,
     fontWeight: '700',
   },
@@ -496,7 +497,7 @@ const styles = StyleSheet.create({
   orText: {
     textAlign: 'center',
     color: colors.textStrong,
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
     fontWeight: '500',
     marginVertical: verticalScale(10),
   },
@@ -514,19 +515,19 @@ const styles = StyleSheet.create({
   },
 
   resendText: {
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
     color: colors.textMuted,
     textAlign: 'right',
   },
 
   resendLink: {
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
     color: colors.primary,
     fontWeight: '700',
   },
 
   passwordHint: {
-    fontSize: moderateScale(12),
+    fontSize: fontSize.label,
     fontWeight: '400',
     color: colors.textStrong,
     lineHeight: moderateScale(18),
@@ -557,7 +558,7 @@ const styles = StyleSheet.create({
   orDividerText: {
     marginHorizontal: scale(12),
     color: colors.textStrong,
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
     fontWeight: '500',
   },
 
@@ -570,20 +571,20 @@ const styles = StyleSheet.create({
   },
 
   otpSectionLabel: {
-    fontSize: moderateScale(15),
+    fontSize: fontSize.body,
     fontWeight: '500',
     color: colors.textStrong,
     marginBottom: verticalScale(4),
   },
 
   otpSentText: {
-    fontSize: moderateScale(12),
+    fontSize: fontSize.label,
     color: colors.textStrong,
     marginBottom: verticalScale(10),
   },
 
   otpSentValue: {
-    fontSize: moderateScale(12),
+    fontSize: fontSize.label,
     fontWeight: '700',
     color: colors.textStrong,
   },
@@ -613,7 +614,7 @@ const styles = StyleSheet.create({
     backgroundColor: colors.screenBg,
     borderRadius:IS_TABLET ? moderateScale(12) : moderateScale(8),
     textAlign: 'center',
-    fontSize: moderateScale(16),
+    fontSize: fontSize.subHeading,
     paddingVertical: select({phone: verticalScale(10), tablet: moderateScale(8)}),
     marginHorizontal: scale(3),
     color: colors.textStrong,
@@ -635,7 +636,7 @@ const styles = StyleSheet.create({
 
   verifyButtonText: {
     color: colors.white,
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
     fontWeight: '700',
   },
 

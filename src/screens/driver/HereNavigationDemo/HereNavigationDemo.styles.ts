@@ -2,6 +2,7 @@ import {StyleSheet} from 'react-native';
 import {moderateScale, verticalScale} from 'react-native-size-matters';
 
 import {colors} from '../../../theme/colors';
+import {fontSize} from '../../../theme/fontSizes';
 
 export default StyleSheet.create({
   container: {
@@ -30,19 +31,19 @@ export default StyleSheet.create({
   },
   maneuverAction: {
     color: colors.white,
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
     textTransform: 'capitalize',
     opacity: 0.8,
   },
   maneuverText: {
     color: colors.white,
-    fontSize: moderateScale(15),
+    fontSize: fontSize.body,
     fontWeight: '600',
     marginTop: verticalScale(2),
   },
   maneuverDistance: {
     color: colors.white,
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
     marginTop: verticalScale(4),
     opacity: 0.9,
   },
@@ -65,12 +66,12 @@ export default StyleSheet.create({
     borderColor: colors.danger,
   },
   speedValue: {
-    fontSize: moderateScale(18),
+    fontSize: fontSize.title,
     fontWeight: '700',
     color: colors.textStrong,
   },
   speedUnit: {
-    fontSize: moderateScale(9),
+    fontSize: fontSize.tiny,
     color: colors.textStrong,
     opacity: 0.6,
   },
@@ -94,12 +95,12 @@ export default StyleSheet.create({
     paddingVertical: verticalScale(6),
   },
   statusLabel: {
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
     color: colors.textMuted,
   },
   statusValue: {
     flex: 1,
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
     color: colors.textStrong,
     textAlign: 'right',
     marginLeft: moderateScale(12),
@@ -112,7 +113,7 @@ export default StyleSheet.create({
     backgroundColor: colors.screenBg,
   },
   voiceText: {
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
     color: colors.textStrong,
   },
 
@@ -123,7 +124,7 @@ export default StyleSheet.create({
     marginBottom: verticalScale(8),
   },
   errorText: {
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
     color: colors.danger,
   },
 
@@ -134,7 +135,7 @@ export default StyleSheet.create({
   },
   busyText: {
     marginLeft: moderateScale(8),
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
     color: colors.textMuted,
   },
 
@@ -158,7 +159,7 @@ export default StyleSheet.create({
   },
   buttonText: {
     color: colors.white,
-    fontSize: moderateScale(15),
+    fontSize: fontSize.body,
     fontWeight: '600',
   },
   buttonGhostText: {

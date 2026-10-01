@@ -1,6 +1,7 @@
 import {StyleSheet, Platform} from 'react-native';
 import {moderateScale, scale, verticalScale} from 'react-native-size-matters';
 import {colors} from '../../../../theme/colors';
+import {fontSize} from '../../../../theme/fontSizes';
 import {IS_TABLET, select} from '../../../../theme/device';
 
 const isIOS = Platform.OS === 'ios';
@@ -122,7 +123,7 @@ const makeStyles = (isTablet = IS_TABLET) => {
       alignSelf: 'center',
     },
     title: {
-      fontSize: select({phone: moderateScale(30), tablet: moderateScale(26)}),
+      fontSize: fontSize.display,
       textAlignVertical: 'center',
       textAlign: 'center',
       color: colors.white,
@@ -133,7 +134,7 @@ const makeStyles = (isTablet = IS_TABLET) => {
     subtitle: {
       marginTop: verticalScale(10),
       color: colors.textMuted,
-      fontSize: select({phone: moderateScale(14), tablet: moderateScale(15)}),
+      fontSize: fontSize.body,
       fontWeight: '400',
       lineHeight: moderateScale(20),
       width: fieldWidth,
@@ -144,7 +145,7 @@ const makeStyles = (isTablet = IS_TABLET) => {
     subtitle_line2: {
       marginTop: verticalScale(1),
       color: colors.textMuted,
-      fontSize: select({phone: moderateScale(14), tablet: moderateScale(15)}),
+      fontSize: fontSize.body,
       fontWeight: '400',
       width: fieldWidth,
       alignSelf: 'center',
@@ -160,7 +161,7 @@ const makeStyles = (isTablet = IS_TABLET) => {
     },
 
     faceIdButtonText: {
-      fontSize: select({phone: moderateScale(15), tablet: moderateScale(16)}),
+      fontSize: fontSize.body,
       fontWeight: '400',
     },
 
@@ -172,7 +173,7 @@ const makeStyles = (isTablet = IS_TABLET) => {
     },
 
     credentialsButtonText: {
-      fontSize: select({phone: moderateScale(15), tablet: moderateScale(16)}),
+      fontSize: fontSize.body,
       fontWeight: '600',
     },
 

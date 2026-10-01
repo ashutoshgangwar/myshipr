@@ -1,6 +1,7 @@
 import {StyleSheet} from 'react-native';
 import {moderateScale, scale, verticalScale} from 'react-native-size-matters';
 import {colors} from '../../../theme/colors';
+import {fontSize} from '../../../theme/fontSizes';
 
 export default StyleSheet.create({
   overlayRoot: {
@@ -57,7 +58,7 @@ export default StyleSheet.create({
     gap: scale(6),
   },
   labelText: {
-    fontSize: moderateScale(17),
+    fontSize: fontSize.subHeading,
     fontWeight: '700',
     color: colors.textStrong,
   },
@@ -75,7 +76,7 @@ export default StyleSheet.create({
     borderColor: colors.textMuted,
     borderRadius: moderateScale(14),
     paddingHorizontal: scale(44),
-    fontSize: moderateScale(14),
+    fontSize: fontSize.body,
     backgroundColor: colors.white,
     marginBottom: verticalScale(8),
     fontWeight: '500',
@@ -121,12 +122,12 @@ export default StyleSheet.create({
     borderColor: colors.screenBg,
   },
   suggestionTitle: {
-    fontSize: moderateScale(14),
+    fontSize: fontSize.body,
     color: colors.textStrong,
     fontWeight: '600',
   },
   suggestionAddress: {
-    fontSize: moderateScale(12),
+    fontSize: fontSize.label,
     color: colors.textMuted,
     marginTop: verticalScale(4),
   },
@@ -158,12 +159,12 @@ export default StyleSheet.create({
     borderColor: colors.paleBlue,
   },
   routeBadgeSmallText: {
-    fontSize: moderateScale(10),
+    fontSize: fontSize.small,
     fontWeight: '700',
     color: colors.accentBlue,
   },
   routeTitle: {
-    fontSize: moderateScale(14),
+    fontSize: fontSize.body,
     fontWeight: '700',
     color: colors.accentBlue,
   },
@@ -174,7 +175,7 @@ export default StyleSheet.create({
     backgroundColor: colors.whiteAlpha20,
   },
   routeBadgeText: {
-    fontSize: moderateScale(11),
+    fontSize: fontSize.caption,
     fontWeight: '700',
     color: colors.success,
   },
@@ -191,14 +192,14 @@ export default StyleSheet.create({
     borderColor: colors.border_Color,
   },
   routeInfoLabel: {
-    fontSize: moderateScale(11),
+    fontSize: fontSize.caption,
     color: colors.textMuted,
     marginBottom: verticalScale(3),
     textTransform: 'uppercase',
     letterSpacing: 0.3,
   },
   routeInfoValue: {
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
     color: colors.textStrong,
     fontWeight: '700',
   },
@@ -233,13 +234,13 @@ export default StyleSheet.create({
     backgroundColor: colors.white,
   },
   routeEmptyTitle: {
-    fontSize: moderateScale(14),
+    fontSize: fontSize.body,
     color: colors.accentBlue,
     fontWeight: '700',
     marginBottom: verticalScale(6),
   },
   routeEmptyText: {
-    fontSize: moderateScale(12),
+    fontSize: fontSize.label,
     color: colors.textMuted,
     lineHeight: moderateScale(18),
   },
@@ -252,13 +253,13 @@ export default StyleSheet.create({
   },
   responseTitle: {
     color: colors.white,
-    fontSize: moderateScale(12),
+    fontSize: fontSize.label,
     fontWeight: '700',
     marginBottom: verticalScale(6),
   },
   responseText: {
     color: colors.border_Color,
-    fontSize: moderateScale(11),
+    fontSize: fontSize.caption,
     lineHeight: moderateScale(16),
   },
   routeMessageCard: {
@@ -270,13 +271,13 @@ export default StyleSheet.create({
     borderColor: colors.paleBlue,
   },
   routeMessageTitle: {
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
     fontWeight: '700',
     color: colors.accentBlue,
     marginBottom: verticalScale(6),
   },
   routeMessageText: {
-    fontSize: moderateScale(12),
+    fontSize: fontSize.label,
     lineHeight: moderateScale(18),
     color: colors.textMuted,
     fontWeight: '500',
@@ -307,14 +308,14 @@ export default StyleSheet.create({
     borderColor: colors.border_Color,
   },
   routeInfoPillLabel: {
-    fontSize: moderateScale(10),
+    fontSize: fontSize.small,
     color: colors.textMuted,
     fontWeight: '700',
     marginBottom: verticalScale(4),
     textTransform: 'uppercase',
   },
   routeInfoPillValue: {
-    fontSize: moderateScale(12),
+    fontSize: fontSize.label,
     color: colors.textStrong,
     fontWeight: '700',
   },
@@ -333,7 +334,7 @@ export default StyleSheet.create({
   },
   pillText: {
     color: colors.textMuted,
-    fontSize: moderateScale(11),
+    fontSize: fontSize.caption,
     fontWeight: '600',
   },
   pillTextActive: {
@@ -385,12 +386,12 @@ export default StyleSheet.create({
     borderBottomColor: colors.border_Color,
   },
   tollModalTitle: {
-    fontSize: moderateScale(16),
+    fontSize: fontSize.subHeading,
     fontWeight: '700',
     color: colors.accentBlue,
   },
   tollModalClose: {
-    fontSize: moderateScale(24),
+    fontSize: fontSize.mainHeading,
     color: colors.textMuted,
     fontWeight: '500',
   },
@@ -411,13 +412,13 @@ export default StyleSheet.create({
     borderColor: colors.border_Color,
   },
   tollItemName: {
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
     fontWeight: '600',
     color: colors.textStrong,
     flex: 1,
   },
   tollItemAmount: {
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
     fontWeight: '700',
     color: colors.accentBlue,
   },
@@ -435,17 +436,17 @@ export default StyleSheet.create({
     borderColor: colors.paleBlue,
   },
   tollItemTotalLabel: {
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
     fontWeight: '700',
     color: colors.accentBlue,
   },
   tollItemTotalAmount: {
-    fontSize: moderateScale(14),
+    fontSize: fontSize.body,
     fontWeight: '800',
     color: colors.accentBlue,
   },
   tollModalNote: {
-    fontSize: moderateScale(11),
+    fontSize: fontSize.caption,
     color: colors.textMuted,
     fontStyle: 'italic',
     textAlign: 'center',

@@ -1,5 +1,6 @@
 import {Platform, StyleSheet} from 'react-native';
 import {colors} from '../../../theme/colors';
+import {fontSize} from '../../../theme/fontSizes';
 import {ms, vs} from './constants';
 import { IS_TABLET } from '../../../theme/device';
 
@@ -41,12 +42,12 @@ export default StyleSheet.create({
     elevation: 3,
   },
   timerLabel: {
-    fontSize:IS_TABLET ? ms(10) : ms(12),
+    fontSize: fontSize.label,
     color: colors.textStrong,
     fontWeight: '500',
   },
   timerValue: {
-    fontSize: IS_TABLET ? ms(22) : ms(28),
+    fontSize: fontSize.display,
     color: colors.textStrong,
     fontWeight: '700',
     letterSpacing: 1,
@@ -69,7 +70,7 @@ export default StyleSheet.create({
     shadowOffset: {width: 0, height: 2},
   },
   toastText: {
-    fontSize: ms(11),
+    fontSize: fontSize.caption,
     color: colors.success,
     fontWeight: '600',
   },
@@ -113,7 +114,7 @@ export default StyleSheet.create({
   },
   modePillText: {
     marginLeft: ms(5),
-    fontSize: ms(10),
+    fontSize: fontSize.small,
     color: colors.accentBlue,
     fontWeight: '700',
   },
@@ -134,13 +135,13 @@ export default StyleSheet.create({
     marginHorizontal: ms(8),
   },
   metaChipText: {
-    fontSize: ms(10),
+    fontSize: fontSize.small,
     color: colors.textMuted,
     fontWeight: '500',
   },
   routeTitle: {
     marginTop: vs(6),
-    fontSize:IS_TABLET ? ms(20) : ms(16),
+    fontSize: fontSize.subHeading,
     color: colors.textStrong,
     fontWeight: '600',
   },
@@ -154,12 +155,12 @@ export default StyleSheet.create({
     fontWeight: '600',
   },
   routeSubLabel: {
-     fontSize: ms(12),
+     fontSize: fontSize.label,
     color: colors.textMuted,
     fontWeight: '400',
   },
   routeSubValue: {
-     fontSize:IS_TABLET ? ms(12) : ms(10),
+     fontSize: fontSize.small,
     color: colors.textStrong,
     fontWeight: 'bold',
   },
@@ -204,7 +205,7 @@ export default StyleSheet.create({
   },
   statusText: {
     flex: 1,
-    fontSize: ms(13),
+    fontSize: fontSize.subBody,
     fontWeight: '500',
   },
   statusTextOutbid: {color: colors.button_color},
@@ -233,7 +234,7 @@ export default StyleSheet.create({
     alignItems: 'center',
   },
   kicker: {
-    fontSize: ms(9),
+    fontSize: fontSize.tiny,
     color: colors.textMuted,
     fontWeight: '600',
     letterSpacing: 0.6,
@@ -258,7 +259,7 @@ export default StyleSheet.create({
   },
   vehicleText: {
     flex: 1,
-    fontSize: ms(13),
+    fontSize: fontSize.subBody,
     color: colors.textStrong,
     fontWeight: '600',
   },
@@ -281,7 +282,7 @@ export default StyleSheet.create({
     backgroundColor: colors.paleBlue,
   },
   vehicleOptionText: {
-    fontSize: ms(12),
+    fontSize: fontSize.label,
     color: colors.textStrong,
     fontWeight: '500',
   },
@@ -296,11 +297,11 @@ export default StyleSheet.create({
   },
   lockText: {
     flex: 1,
-    fontSize:IS_TABLET ? ms(7) : ms(8),
+    fontSize: fontSize.micro,
     color: colors.textMuted,
   },
   lockTextStrong: {
-    fontSize: IS_TABLET ? ms(7) : ms(8),
+    fontSize: fontSize.micro,
     color: colors.textStrong,
     fontWeight: '700',
   },
@@ -315,13 +316,13 @@ export default StyleSheet.create({
     marginTop: vs(8),
   },
   bidCurrency: {
-    fontSize: ms(24),
+    fontSize: fontSize.mainHeading,
     color: colors.textMuted,
     marginRight: ms(8),
   },
   bidInput: {
     minWidth: ms(70),
-    fontSize: ms(24),
+    fontSize: fontSize.mainHeading,
     color: colors.textStrong,
     fontWeight: '700',
     paddingVertical: 0,
@@ -330,7 +331,7 @@ export default StyleSheet.create({
   },
   bidHint: {
     flex: 1,
-    fontSize: ms(9),
+    fontSize: fontSize.tiny,
     color: colors.textStrong,
   },
   bidBtnRow: {
@@ -355,12 +356,12 @@ export default StyleSheet.create({
     borderBottomColor: colors.border_Color,
   },
   sectionCardTitle: {
-    fontSize: IS_TABLET ? ms(13) : ms(15),
+    fontSize: fontSize.body,
     color: colors.textStrong,
     fontWeight: '600',
   },
   sectionCardSub: {
-    fontSize: IS_TABLET ? ms(10) : ms(11),
+    fontSize: fontSize.caption,
     color: colors.textMuted,
     fontWeight: '400',
   },
@@ -390,7 +391,7 @@ export default StyleSheet.create({
     backgroundColor: colors.white,
   },
   stopBadgeText: {
-    fontSize: ms(12),
+    fontSize: fontSize.label,
     color: colors.accentBlue,
     fontWeight: '600',
   },
@@ -399,7 +400,7 @@ export default StyleSheet.create({
   },
   stopTextWrap: {flex: 1},
   stopCity: {
-    fontSize:IS_TABLET ? ms(12) : ms(14),
+    fontSize: fontSize.body,
     color: colors.textStrong,
     fontWeight: '500',
   },
@@ -408,17 +409,17 @@ export default StyleSheet.create({
     marginLeft: ms(8),
   },
   stopDate: {
-    fontSize: ms(11),
+    fontSize: fontSize.caption,
     color: colors.textStrong,
     fontWeight: '600',
   },
   stopWindow: {
-    fontSize: ms(9),
+    fontSize: fontSize.tiny,
     color: colors.textMuted,
     marginTop: vs(2),
   },
   stopDetail: {
-    fontSize: ms(11),
+    fontSize: fontSize.caption,
     color: colors.textMuted,
     marginTop: vs(2),
   },
@@ -434,11 +435,11 @@ export default StyleSheet.create({
     paddingRight: ms(8),
   },
   detailLabel: {
-    fontSize: ms(9),
+    fontSize: fontSize.tiny,
     color: colors.textMuted,
   },
   detailValue: {
-    fontSize: ms(12),
+    fontSize: fontSize.label,
     color: colors.textStrong,
     fontWeight: '500',
     marginTop: vs(2),
@@ -455,7 +456,7 @@ export default StyleSheet.create({
     alignItems: 'center',
   },
   withdrawText: {
-    fontSize: IS_TABLET ? ms(12) : ms(14),
+    fontSize: fontSize.body,
     color: colors.danger,
     fontWeight: '500',
   },
@@ -496,7 +497,7 @@ export default StyleSheet.create({
     backgroundColor: colors.white,
   },
   mapNoticeText: {
-    fontSize: IS_TABLET ? ms(8) : ms(10),
+    fontSize: fontSize.small,
     color: colors.textMuted,
     fontWeight: '500',
     textAlign: 'center',
@@ -546,7 +547,7 @@ export default StyleSheet.create({
     shadowOffset: {width: -2, height: 2},
   },
   bidPanelTitle: {
-    fontSize: ms(16),
+    fontSize: fontSize.subHeading,
     color: colors.white,
     fontWeight: '700',
     marginBottom: vs(8),
@@ -572,7 +573,7 @@ export default StyleSheet.create({
     marginRight: ms(10),
   },
   autoBidText: {
-    fontSize:IS_TABLET ? ms(12) : ms(14),
+    fontSize: fontSize.body,
     color: colors.accentBlue,
     fontWeight: '500',
   },
@@ -589,7 +590,7 @@ export default StyleSheet.create({
     opacity: 0.5,
   },
   placeBidText: {
-    fontSize: ms(14),
+    fontSize: fontSize.body,
     color: colors.white,
     fontWeight: '500',
   },
@@ -611,12 +612,12 @@ export default StyleSheet.create({
   },
   passHeaderText: {flex: 1},
   passTitle: {
-    fontSize: ms(16),
+    fontSize: fontSize.subHeading,
     color: colors.white,
     fontWeight: '500',
   },
   passSubtitle: {
-    fontSize: ms(9),
+    fontSize: fontSize.tiny,
     color: colors.white,
   },
   passCloseBtn: {
@@ -629,13 +630,13 @@ export default StyleSheet.create({
     marginLeft: ms(8),
   },
   passCloseText: {
-    fontSize: ms(16),
+    fontSize: fontSize.subHeading,
     lineHeight: ms(18),
     color: colors.textStrong,
     fontWeight: '600',
   },
   passBody: {
-    fontSize: ms(14),
+    fontSize: fontSize.body,
     color: colors.textStrong,
     paddingHorizontal: ms(12),
     paddingVertical: vs(18),
@@ -656,7 +657,7 @@ export default StyleSheet.create({
     marginRight: ms(8),
   },
   passBtnText: {
-    fontSize: ms(11),
+    fontSize: fontSize.caption,
     color: colors.danger,
     fontWeight: '500',
   },
@@ -667,7 +668,7 @@ export default StyleSheet.create({
     paddingVertical: vs(5),
   },
   keepBtnText: {
-    fontSize: ms(11),
+    fontSize: fontSize.caption,
     color: colors.white,
     fontWeight: '600',
   },
@@ -701,17 +702,17 @@ export default StyleSheet.create({
     borderBottomColor: colors.border_Color,
   },
   modalTitle: {
-    fontSize: ms(16),
+    fontSize: fontSize.subHeading,
     color: colors.textStrong,
     fontWeight: '700',
   },
   modalClose: {
-    fontSize: ms(22),
+    fontSize: fontSize.heading,
     color: colors.textMuted,
     lineHeight: ms(22),
   },
   modalLabel: {
-    fontSize: ms(12),
+    fontSize: fontSize.label,
     color: colors.textStrong,
     fontWeight: '600',
     marginBottom: vs(6),
@@ -725,19 +726,19 @@ export default StyleSheet.create({
     paddingHorizontal: ms(12),
   },
   inputPrefix: {
-    fontSize: ms(14),
+    fontSize: fontSize.body,
     color: colors.textMuted,
     marginRight: ms(6),
   },
   input: {
     flex: 1,
-    fontSize: ms(14),
+    fontSize: fontSize.body,
     color: colors.textStrong,
     paddingVertical: vs(8),
     fontFamily: 'Poppins-Regular',
   },
   modalHint: {
-    fontSize: ms(10),
+    fontSize: fontSize.small,
     color: colors.textMuted,
     marginTop: vs(8),
   },
@@ -749,7 +750,7 @@ export default StyleSheet.create({
     marginTop: vs(16),
   },
   saveBtnText: {
-    fontSize: ms(14),
+    fontSize: fontSize.body,
     color: colors.white,
     fontWeight: '600',
   },

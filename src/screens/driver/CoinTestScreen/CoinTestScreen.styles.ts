@@ -5,6 +5,7 @@ import {
   scale as s,
 } from 'react-native-size-matters';
 import {colors} from '../../../theme/colors';
+import {fontSize} from '../../../theme/fontSizes';
 
 export default StyleSheet.create({
   container: {flex: 1, backgroundColor: colors.white},
@@ -24,11 +25,11 @@ export default StyleSheet.create({
     justifyContent: 'center',
     marginRight: s(10),
   },
-  backGlyph: {fontSize: ms(26), color: colors.primary, lineHeight: ms(28)},
-  title: {fontSize: ms(20), fontWeight: '800', color: colors.textStrong},
+  backGlyph: {fontSize: fontSize.mainHeading, color: colors.primary, lineHeight: ms(28)},
+  title: {fontSize: fontSize.heading, fontWeight: '800', color: colors.textStrong},
 
   subtitle: {
-    fontSize: ms(13),
+    fontSize: fontSize.subBody,
     color: colors.textMuted,
     paddingHorizontal: s(14),
     marginTop: vs(6),
@@ -36,7 +37,7 @@ export default StyleSheet.create({
   },
 
   center: {flex: 1, alignItems: 'center', justifyContent: 'center'},
-  loadingText: {marginTop: vs(8), color: colors.textMuted, fontSize: ms(13)},
+  loadingText: {marginTop: vs(8), color: colors.textMuted, fontSize: fontSize.subBody},
 
   grid: {
     flexDirection: 'row',
@@ -59,7 +60,7 @@ export default StyleSheet.create({
     paddingBottom: vs(10),
   },
   selectedLabel: {
-    fontSize: ms(14),
+    fontSize: fontSize.body,
     fontWeight: '600',
     color: colors.textStrong,
     marginBottom: vs(10),
@@ -75,7 +76,7 @@ export default StyleSheet.create({
   submitBtnDisabled: {backgroundColor: colors.textMuted},
   submitText: {
     color: colors.white,
-    fontSize: ms(15),
+    fontSize: fontSize.body,
     fontWeight: '700',
     letterSpacing: 0.5,
   },

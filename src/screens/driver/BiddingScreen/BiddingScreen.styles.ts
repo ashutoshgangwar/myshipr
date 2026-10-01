@@ -1,6 +1,7 @@
 import {Dimensions, Platform, StyleSheet} from 'react-native';
 import {ms as baseMs, vs as baseVs} from '../../../theme/scale';
 import {colors} from '../../../theme/colors';
+import {fontSize} from '../../../theme/fontSizes';
 import {select, IS_TABLET} from '../../../theme/device';
 import {
   STOP_LINE_H as ROUTE_LINE_H,
@@ -28,9 +29,9 @@ const STATS_GAP = ms(8);
 const STAT_CARD_PAD_V = IS_ANDROID_PHONE ? ms(6) : ms(9);
 const STAT_CARD_PAD_H = IS_ANDROID_PHONE ? ms(7) : ms(9);
 const STAT_CARD_RADIUS = IS_ANDROID_PHONE ? ms(8) : ms(10);
-const STAT_VALUE_SIZE = IS_ANDROID_PHONE ? ms(16) : ms(20);
+const STAT_VALUE_SIZE = IS_ANDROID_PHONE ? fontSize.subHeading : fontSize.heading;
 const STAT_VALUE_GAP = IS_ANDROID_PHONE ? vs(2) : vs(3);
-const STAT_NOTE_SIZE = IS_ANDROID_PHONE ? ms(8) : ms(9);
+const STAT_NOTE_SIZE = IS_ANDROID_PHONE ? fontSize.micro : fontSize.tiny;
 
 // Width of "Currently Leading" in Poppins-Bold, in em (sum of its advance
 // widths). Any longer label added to STATS needs this re-measured.
@@ -74,7 +75,7 @@ const BLUE_HEADER_PAD_BOTTOM = BIDDING_STATS_OVERLAP + BIDDING_STATS_CLEARANCE;
 const BLUE_HEADER_RADIUS = IS_TABLET ? ms(60) : ms(45);
 
 /* Title type, local so Bidding's header copy can be sized on its own. */
-const BIDDING_TITLE_SIZE = ms(18);
+const BIDDING_TITLE_SIZE = fontSize.title;
 const BIDDING_TITLE_LINE_H = Math.round(BIDDING_TITLE_SIZE * 1.5);
 
 const FILTER_H = IS_TABLET ? vs(30) : vs(34);
@@ -99,7 +100,7 @@ export const GRID_COLS = 2;
 
 const CHIP_PAD = select({phone: ms(5), tablet: ms(4)});
 const CHIP_PAD_V = select({phone: vs(3), tablet: vs(2)});
-const CHIP_FONT = select({phone: ms(8), tablet: ms(8)});
+const CHIP_FONT = fontSize.micro;
 
 export const rowHeight = (stopCount: number): number =>
   Math.max(ROW_MIN_H, ROW_PAD_V * 2 + stopCount * STOP_LINE_H + STOP_SUMMARY_H);
@@ -144,7 +145,7 @@ const styles = StyleSheet.create({
   dashboardSubtitle: {
     // marginLeft clears the brand badge (ms(32)) plus its ms(10) row gap, so
     // "Live Auction" lines up under the "B" of Bidding.
-    fontSize: ms(11),
+    fontSize: fontSize.caption,
     fontWeight: '500',
     marginLeft: ms(42),
     marginTop: vs(1),
@@ -193,14 +194,14 @@ const styles = StyleSheet.create({
 
   dieselLabel: {
     color: colors.white,
-    fontSize: ms(9),
+    fontSize: fontSize.tiny,
     fontWeight: '500',
     letterSpacing: 0.5,
   },
 
   dieselValue: {
     color: colors.success,
-    fontSize: ms(14),
+    fontSize: fontSize.body,
     fontWeight: '700',
     marginTop: vs(1),
   },
@@ -238,7 +239,7 @@ const styles = StyleSheet.create({
   },
 
   modeTabText: {
-    fontSize: ms(12),
+    fontSize: fontSize.label,
     fontWeight: '600',
     color: colors.textMuted,
   },
@@ -262,7 +263,7 @@ const styles = StyleSheet.create({
 
   searchInput: {
     flex: 1,
-    fontSize: ms(12),
+    fontSize: fontSize.label,
     color: colors.textStrong,
     padding: 0,
   },
@@ -299,7 +300,7 @@ const styles = StyleSheet.create({
   },
 
   modeChipText: {
-    fontSize: ms(10),
+    fontSize: fontSize.small,
     fontWeight: '700',
     color: colors.accentBlue,
   },
@@ -315,7 +316,7 @@ const styles = StyleSheet.create({
   },
 
   metaChipText: {
-    fontSize: ms(8),
+    fontSize: fontSize.micro,
     fontWeight: '500',
     color: colors.textMuted,
   },
@@ -327,7 +328,7 @@ const styles = StyleSheet.create({
   },
 
   statusBadgeText: {
-    fontSize: ms(10),
+    fontSize: fontSize.small,
     fontWeight: '700',
   },
 
@@ -411,7 +412,7 @@ const styles = StyleSheet.create({
 
   thText: {
     flexShrink: 1,
-    fontSize: IS_TABLET ? ms(9) : ms(10),
+    fontSize: fontSize.small,
     fontWeight: '600',
     color: colors.textStrong,
   },
@@ -482,14 +483,14 @@ const styles = StyleSheet.create({
 
   stopCity: {
     flexShrink: 1,
-    fontSize: ms(11),
+    fontSize: fontSize.caption,
     fontWeight: '700',
     color: colors.textStrong,
   },
 
   stopSummary: {
     height: STOP_SUMMARY_H,
-    fontSize: ms(9),
+    fontSize: fontSize.tiny,
     fontWeight: '500',
     color: colors.textMuted,
     marginLeft: ms(16),
@@ -501,14 +502,14 @@ const styles = StyleSheet.create({
 
   /* Generic centered cell text */
   cellStrong: {
-    fontSize: IS_TABLET ? ms(10) : ms(11),
+    fontSize: fontSize.caption,
     fontWeight: '600',
     color: colors.textStrong,
     textAlign: 'center',
   },
 
   cellMuted: {
-    fontSize: IS_TABLET ? ms(9) : ms(10),
+    fontSize: fontSize.small,
     fontWeight: '500',
     color: colors.textMuted,
     marginTop: IS_TABLET ? vs(1) : vs(2),
@@ -516,7 +517,7 @@ const styles = StyleSheet.create({
   },
 
   cellText: {
-    fontSize: IS_TABLET ? ms(10) : ms(11),
+    fontSize: fontSize.caption,
     fontWeight: '500',
     color: colors.textStrong,
     textAlign: 'center',
@@ -540,7 +541,7 @@ const styles = StyleSheet.create({
   },
 
   pillText: {
-    fontSize: ms(10),
+    fontSize: fontSize.small,
     fontWeight: '600',
   },
 
@@ -603,7 +604,7 @@ const styles = StyleSheet.create({
   },
 
   filterPanelTitle: {
-    fontSize: ms(13),
+    fontSize: fontSize.subBody,
     fontWeight: '600',
     color: colors.textStrong,
     paddingBottom: vs(5),
@@ -629,7 +630,7 @@ const styles = StyleSheet.create({
   },
 
   filterFieldLabel: {
-    fontSize: ms(11),
+    fontSize: fontSize.caption,
     fontWeight: '500',
     color: colors.textStrong,
   },
@@ -643,7 +644,7 @@ const styles = StyleSheet.create({
 
   filterFieldValue: {
     flexShrink: 1,
-    fontSize: ms(11),
+    fontSize: fontSize.caption,
     fontWeight: '500',
     color: colors.textMuted,
   },
@@ -674,7 +675,7 @@ const styles = StyleSheet.create({
 
   filterOptionText: {
     flexShrink: 1,
-    fontSize: ms(11),
+    fontSize: fontSize.caption,
     fontWeight: '500',
     color: colors.textMuted,
   },
@@ -693,20 +694,20 @@ const styles = StyleSheet.create({
   },
 
   filterClearText: {
-    fontSize: ms(11),
+    fontSize: fontSize.caption,
     fontWeight: '600',
     color: colors.danger,
   },
 
   lowestBidValue: {
-    fontSize: ms(12),
+    fontSize: fontSize.label,
     fontWeight: '700',
     color: colors.textStrong,
     textAlign: 'center',
   },
 
   lowestBidRank: {
-    fontSize: ms(10),
+    fontSize: fontSize.small,
     fontWeight: '500',
     color: colors.textMuted,
     marginTop: vs(2),
@@ -750,11 +751,11 @@ const styles = StyleSheet.create({
   },
 
   cardStopCity: {
-    fontSize: ms(12),
+    fontSize: fontSize.label,
   },
 
   cardAmount: {
-    fontSize: ms(15),
+    fontSize: fontSize.body,
     fontWeight: '800',
     color: colors.textStrong,
   },
@@ -821,7 +822,7 @@ const styles = StyleSheet.create({
 
   cardTimeLabel: {
     flexShrink: 1,
-    fontSize: ms(8),
+    fontSize: fontSize.micro,
     fontWeight: '600',
     color: colors.textMuted,
   },

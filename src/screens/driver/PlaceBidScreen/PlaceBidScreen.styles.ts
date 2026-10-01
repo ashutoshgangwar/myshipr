@@ -1,6 +1,7 @@
 import { StyleSheet } from 'react-native';
 import { moderateScale, verticalScale } from 'react-native-size-matters';
 import { colors } from '../../../theme/colors';
+import { fontSize } from '../../../theme/fontSizes';
 
 const styles = StyleSheet.create({
   container: {
@@ -24,13 +25,13 @@ const styles = StyleSheet.create({
 
   backText: {
     color: colors.white,
-    fontSize: moderateScale(15),
+    fontSize: fontSize.body,
     fontWeight: '600',
   },
 
   title: {
     color: colors.white,
-    fontSize: moderateScale(18),
+    fontSize: fontSize.title,
     fontWeight: '700',
     letterSpacing: 0.5,
   },
@@ -82,13 +83,13 @@ const styles = StyleSheet.create({
 
   loadBadgeText: {
     color: colors.white,
-    fontSize: moderateScale(11),
+    fontSize: fontSize.caption,
     fontWeight: '700',
     letterSpacing: 1,
   },
 
   loadIdHero: {
-    fontSize: moderateScale(24),
+    fontSize: fontSize.mainHeading,
     fontWeight: '800',
     color: colors.textStrong,
   },
@@ -125,7 +126,7 @@ const styles = StyleSheet.create({
   },
 
   routeLabel: {
-    fontSize: moderateScale(11),
+    fontSize: fontSize.caption,
     fontWeight: '700',
     color: colors.textMuted,
     letterSpacing: 0.5,
@@ -133,7 +134,7 @@ const styles = StyleSheet.create({
   },
 
   routeLocation: {
-    fontSize: moderateScale(15),
+    fontSize: fontSize.body,
     fontWeight: '600',
     color: colors.textStrong,
     lineHeight: moderateScale(20),
@@ -152,7 +153,7 @@ const styles = StyleSheet.create({
   },
 
   statLabel: {
-    fontSize: moderateScale(11),
+    fontSize: fontSize.caption,
     fontWeight: '600',
     color: colors.textMuted,
     marginBottom: verticalScale(4),
@@ -161,13 +162,13 @@ const styles = StyleSheet.create({
   },
 
   statValue: {
-    fontSize: moderateScale(14),
+    fontSize: fontSize.body,
     fontWeight: '700',
     color: colors.textStrong,
   },
 
   statValueGreen: {
-    fontSize: moderateScale(14),
+    fontSize: fontSize.body,
     fontWeight: '700',
     color: colors.success,
   },
@@ -199,21 +200,21 @@ const styles = StyleSheet.create({
   },
 
   liveBadge: {
-    fontSize: moderateScale(12),
+    fontSize: fontSize.label,
     fontWeight: '700',
     color: colors.danger,
     marginRight: moderateScale(8),
   },
 
   biddingTitle: {
-    fontSize: moderateScale(18),
+    fontSize: fontSize.title,
     fontWeight: '700',
     color: colors.textStrong,
     flex: 1,
   },
 
   bidCount: {
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
     fontWeight: '600',
     color: colors.textMuted,
   },
@@ -233,7 +234,7 @@ const styles = StyleSheet.create({
   },
 
   winningBidLabel: {
-    fontSize: moderateScale(12),
+    fontSize: fontSize.label,
     fontWeight: '700',
     color: colors.button_color,
     letterSpacing: 1,
@@ -247,20 +248,20 @@ const styles = StyleSheet.create({
   },
 
   trendingText: {
-    fontSize: moderateScale(11),
+    fontSize: fontSize.caption,
     fontWeight: '600',
     color: colors.success,
   },
 
   winningBidAmount: {
-    fontSize: moderateScale(48),
+    fontSize: fontSize.giant,
     fontWeight: '800',
     color: colors.white,
     marginBottom: verticalScale(4),
   },
 
   winningBidSubtext: {
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
     color: colors.white,
     fontWeight: '500',
   },
@@ -270,7 +271,7 @@ const styles = StyleSheet.create({
   },
 
   recentBidsTitle: {
-    fontSize: moderateScale(14),
+    fontSize: fontSize.body,
     fontWeight: '700',
     color: colors.textMuted,
     marginBottom: verticalScale(10),
@@ -315,7 +316,7 @@ const styles = StyleSheet.create({
   },
 
   bidRankText: {
-    fontSize: moderateScale(14),
+    fontSize: fontSize.body,
     fontWeight: '700',
     color: colors.textMuted,
   },
@@ -325,13 +326,13 @@ const styles = StyleSheet.create({
   },
 
   bidderNameNew: {
-    fontSize: moderateScale(15),
+    fontSize: fontSize.body,
     fontWeight: '600',
     color: colors.textStrong,
   },
 
   bidTimeNew: {
-    fontSize: moderateScale(12),
+    fontSize: fontSize.label,
     color: colors.textMuted,
     marginTop: verticalScale(2),
   },
@@ -341,14 +342,14 @@ const styles = StyleSheet.create({
   },
 
   bidAmountNew: {
-    fontSize: moderateScale(18),
+    fontSize: fontSize.title,
     fontWeight: '700',
     color: colors.textMuted,
   },
 
   topBidAmount: {
     color: colors.amber800,
-    fontSize: moderateScale(20),
+    fontSize: fontSize.heading,
   },
 
   // Place Bid Card
@@ -370,14 +371,14 @@ const styles = StyleSheet.create({
   },
 
   placeBidTitle: {
-    fontSize: moderateScale(22),
+    fontSize: fontSize.heading,
     fontWeight: '800',
     color: colors.textStrong,
     marginBottom: verticalScale(4),
   },
 
   placeBidSubtitle: {
-    fontSize: moderateScale(14),
+    fontSize: fontSize.body,
     color: colors.textMuted,
     fontWeight: '500',
   },
@@ -387,7 +388,7 @@ const styles = StyleSheet.create({
   },
 
   quickBidsLabel: {
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
     fontWeight: '700',
     color: colors.textMuted,
     marginBottom: verticalScale(10),
@@ -411,14 +412,14 @@ const styles = StyleSheet.create({
   },
 
   quickBidAmount: {
-    fontSize: moderateScale(20),
+    fontSize: fontSize.heading,
     fontWeight: '700',
     color: colors.accentBlue,
     marginBottom: verticalScale(4),
   },
 
   quickBidLabel: {
-    fontSize: moderateScale(11),
+    fontSize: fontSize.caption,
     color: colors.textMuted,
     fontWeight: '600',
   },
@@ -428,7 +429,7 @@ const styles = StyleSheet.create({
   },
 
   bidInputLabel: {
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
     fontWeight: '700',
     color: colors.textStrong,
     marginBottom: verticalScale(10),
@@ -457,7 +458,7 @@ const styles = StyleSheet.create({
   },
 
   dollarSign: {
-    fontSize: moderateScale(28),
+    fontSize: fontSize.display,
     fontWeight: '700',
     color: colors.textMuted,
     marginRight: moderateScale(8),
@@ -465,7 +466,7 @@ const styles = StyleSheet.create({
 
   bidInput: {
     flex: 1,
-    fontSize: moderateScale(32),
+    fontSize: fontSize.hero,
     fontWeight: '700',
     color: colors.textStrong,
     padding: 0,
@@ -476,7 +477,7 @@ const styles = StyleSheet.create({
   },
 
   usdText: {
-    fontSize: moderateScale(16),
+    fontSize: fontSize.subHeading,
     fontWeight: '600',
     color: colors.textMuted,
   },
@@ -493,13 +494,13 @@ const styles = StyleSheet.create({
   },
 
   warningIcon: {
-    fontSize: moderateScale(18),
+    fontSize: fontSize.title,
     marginRight: moderateScale(8),
   },
 
   warningText: {
     flex: 1,
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
     color: colors.danger,
     fontWeight: '600',
   },
@@ -516,7 +517,7 @@ const styles = StyleSheet.create({
   },
 
   successIcon: {
-    fontSize: moderateScale(18),
+    fontSize: fontSize.title,
     marginRight: moderateScale(8),
     color: colors.success,
     fontWeight: '700',
@@ -524,7 +525,7 @@ const styles = StyleSheet.create({
 
   successText: {
     flex: 1,
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
     color: colors.success,
     fontWeight: '600',
   },
@@ -537,7 +538,7 @@ const styles = StyleSheet.create({
   },
 
   disclaimerText: {
-    fontSize: moderateScale(12),
+    fontSize: fontSize.label,
     color: colors.textMuted,
     textAlign: 'center',
     lineHeight: moderateScale(16),
@@ -562,7 +563,7 @@ const styles = StyleSheet.create({
   },
 
   submitButtonText: {
-    fontSize: moderateScale(16),
+    fontSize: fontSize.subHeading,
     fontWeight: '700',
     color: colors.white,
     letterSpacing: 0.5,

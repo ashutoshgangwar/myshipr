@@ -1,6 +1,7 @@
 import {StyleSheet, Platform} from 'react-native';
 import {moderateScale, scale, verticalScale} from 'react-native-size-matters';
 import {colors} from '../../../../theme/colors';
+import {fontSize} from '../../../../theme/fontSizes';
 import {IS_TABLET} from '../../../../theme/device';
 
 // Fixed on tablets: moderateScale() blows the radius up to ~60pt on a large
@@ -114,7 +115,7 @@ export default StyleSheet.create({
     alignSelf: 'center',
   },
   title: {
-    fontSize: moderateScale(36),
+    fontSize: fontSize.hero,
     color: colors.white,
     fontWeight: '400',
     lineHeight: moderateScale(48),
@@ -124,7 +125,7 @@ export default StyleSheet.create({
   subtitle: {
     marginTop: verticalScale(1),
     color: colors.textMuted,
-    fontSize: moderateScale(14),
+    fontSize: fontSize.body,
     fontWeight: '400',
     lineHeight: moderateScale(20),
     width: Platform.OS === 'ios' ? '92%' : '100%',
@@ -148,7 +149,7 @@ export default StyleSheet.create({
 
   loginButtonText: {
     color: colors.textStrong,
-    fontSize: moderateScale(14),
+    fontSize: fontSize.body,
     fontWeight: '800',
   },
 
@@ -165,7 +166,7 @@ export default StyleSheet.create({
 
   signupButtonText: {
     color: colors.white,
-    fontSize: moderateScale(24 / 2),
+    fontSize: fontSize.label,
     fontWeight: '700',
   },
 

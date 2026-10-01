@@ -1,5 +1,6 @@
 import {StyleSheet} from 'react-native';
 import {colors} from '../../../theme/colors';
+import {fontSize} from '../../../theme/fontSizes';
 import {ms, vs} from './constants';
 import {IS_TABLET} from '../../../theme/device';
 
@@ -71,7 +72,7 @@ export default StyleSheet.create({
 
   modePillText: {
     marginLeft: ms(5),
-    fontSize: IS_TABLET ? ms(8) : ms(10),
+    fontSize: fontSize.small,
     color: colors.accentBlue,
     fontWeight: '700',
   },
@@ -88,7 +89,7 @@ export default StyleSheet.create({
 
   metaChipText: {
     marginLeft: ms(4),
-    fontSize: IS_TABLET ? ms(8) : ms(10),
+    fontSize: fontSize.small,
     color: colors.textMuted,
     fontWeight: '500',
   },
@@ -108,7 +109,7 @@ export default StyleSheet.create({
   },
 
   statusBadgeText: {
-    fontSize: IS_TABLET ? ms(8) : ms(12),
+    fontSize: fontSize.label,
     color: colors.white,
     fontWeight: '700',
     letterSpacing: 0.5,
@@ -123,7 +124,7 @@ export default StyleSheet.create({
 
   /* ---------- Route title ---------- */
   routeTitle: {
-    fontSize: IS_TABLET ? ms(16) : ms(15),
+    fontSize: fontSize.body,
     color: colors.textStrong,
     fontWeight: '700',
     marginTop: vs(8),
@@ -173,7 +174,7 @@ export default StyleSheet.create({
   },
 
   stateText: {
-    fontSize: IS_TABLET ? ms(11) : ms(13),
+    fontSize: fontSize.subBody,
     color: colors.textMuted,
     fontWeight: '500',
     textAlign: 'center',
@@ -203,20 +204,20 @@ export default StyleSheet.create({
   },
 
   contactKicker: {
-    fontSize: IS_TABLET ? ms(7) : ms(9),
+    fontSize: fontSize.tiny,
     color: colors.accentBlue,
     fontWeight: '600',
   },
 
   contactName: {
-    fontSize: IS_TABLET ? ms(12) : ms(14),
+    fontSize: fontSize.body,
     color: colors.textStrong,
     fontWeight: '700',
     marginTop: vs(4),
   },
 
   contactRole: {
-    fontSize: IS_TABLET ? ms(8) : ms(10),
+    fontSize: fontSize.small,
     color: colors.textMuted,
     fontWeight: '400',
     marginTop: vs(1),
@@ -230,28 +231,28 @@ export default StyleSheet.create({
 
   phoneText: {
     marginLeft: ms(6),
-    fontSize: IS_TABLET ? ms(10) : ms(12),
+    fontSize: fontSize.label,
     color: colors.accentBlue,
     fontWeight: '700',
     textDecorationLine: 'underline',
   },
 
   contactAccess: {
-    fontSize: IS_TABLET ? ms(8) : ms(10),
+    fontSize: fontSize.small,
     color: colors.textStrong,
     fontWeight: '400',
     marginTop: vs(4),
   },
 
   remarksLabel: {
-    fontSize: IS_TABLET ? ms(8) : ms(10),
+    fontSize: fontSize.small,
     color: colors.danger,
     fontWeight: '700',
     marginTop: vs(8),
   },
 
   remarksText: {
-    fontSize: IS_TABLET ? ms(8) : ms(10),
+    fontSize: fontSize.small,
     color: colors.textStrong,
     fontWeight: '400',
     marginTop: vs(1),
@@ -259,7 +260,7 @@ export default StyleSheet.create({
 
   /* ---------- Grid sections ---------- */
   sectionLabel: {
-    fontSize: IS_TABLET ? ms(10) : ms(12),
+    fontSize: fontSize.label,
     color: colors.textMuted,
     fontWeight: '500',
     marginTop: vs(20),
@@ -294,14 +295,14 @@ export default StyleSheet.create({
   },
 
   gridLabel: {
-    fontSize: IS_TABLET ? ms(6) : ms(8),
+    fontSize: fontSize.micro,
     color: colors.textMuted,
     fontWeight: '600',
     letterSpacing: 0.3,
   },
 
   gridValue: {
-    fontSize: IS_TABLET ? ms(10) : ms(12),
+    fontSize: fontSize.label,
     color: colors.textStrong,
     fontWeight: '700',
     marginTop: vs(3),
@@ -318,7 +319,7 @@ export default StyleSheet.create({
   },
 
   gridSub: {
-    fontSize: IS_TABLET ? ms(8) : ms(10),
+    fontSize: fontSize.small,
     color: colors.textMuted,
     fontWeight: '400',
     marginTop: vs(2),

@@ -1,4 +1,5 @@
 import type {TextStyle} from 'react-native';
+import {fontSize} from './fontSizes';
 
 const FONT_WEIGHT_MAP: Record<string, string> = {
   '100': 'Poppins-Regular',
@@ -35,19 +36,22 @@ const typography = {
   fontFamily: DEFAULT_FONT_FAMILY,
   fontFamilyForWeight,
 
-  // Static typography scale for future development
-  heading1: 36,
-  heading2: 28,
-  heading3: 24,
-  paragraph: 16,
+  // The standard, device-responsive font-size scale. These are the sizes to
+  // use in screen styles — see `fontSizes.ts` for the tokens and how they
+  // scale per device.
+  fontSize,
 
-  // Backward-compatible aliases
-  title: 24,
-  subtitle: 16,
-  body: 16,
-  label: 13,
-  button: 16,
+  // Named scale, mapped onto the standard tokens (responsive + tablet-aware).
+  mainHeading: fontSize.mainHeading,
+  heading: fontSize.heading,
+  subHeading: fontSize.subHeading,
+  title: fontSize.title,
+  body: fontSize.body,
+  label: fontSize.label,
+  button: fontSize.label,
+  paragraph: fontSize.body,
+  subtitle: fontSize.subHeading,
 };
 
 export default typography;
-export {DEFAULT_FONT_FAMILY, fontFamilyForWeight};
+export {DEFAULT_FONT_FAMILY, fontFamilyForWeight, fontSize};

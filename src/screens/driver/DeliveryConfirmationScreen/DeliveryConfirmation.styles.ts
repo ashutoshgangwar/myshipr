@@ -1,6 +1,7 @@
 import { Platform, StyleSheet } from 'react-native';
 import { moderateScale, verticalScale, scale } from 'react-native-size-matters';
 import {colors} from '../../../theme/colors';
+import {fontSize} from '../../../theme/fontSizes';
 
 export default StyleSheet.create({
   container: {
@@ -20,7 +21,7 @@ export default StyleSheet.create({
     marginVertical: verticalScale(18),
   },
   stepDone: {
-    fontSize: moderateScale(12),
+    fontSize: fontSize.label,
     color: colors.success,
     fontWeight: '700',
   },
@@ -46,14 +47,14 @@ export default StyleSheet.create({
     shadowOffset: { width: 0, height: 6 },
   },
   cardTitle: {
-    fontSize: moderateScale(16),
+    fontSize: fontSize.subHeading,
     fontWeight: '800',
     marginBottom: verticalScale(22),
     marginTop: verticalScale(4),
     color: colors.textStrong,
   },
    cardTitleCheck: {
-    fontSize: moderateScale(16),
+    fontSize: fontSize.subHeading,
     fontWeight: '800',
     marginBottom: verticalScale(22),
     marginTop: verticalScale(24),
@@ -97,7 +98,7 @@ export default StyleSheet.create({
     justifyContent: 'center',
   },
   uploadLabel: {
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
     marginTop: verticalScale(8),
     textAlign: 'center',
     color: colors.textStrong,
@@ -121,7 +122,7 @@ export default StyleSheet.create({
     backgroundColor: colors.red50,
   },
   issueText: {
-    fontSize: moderateScale(12),
+    fontSize: fontSize.label,
     fontWeight: '700',
     color: colors.textStrong,
   },
@@ -134,12 +135,12 @@ export default StyleSheet.create({
     marginBottom: verticalScale(10),
   },
   infoLabel: {
-    fontSize: moderateScale(12),
+    fontSize: fontSize.label,
     color: colors.textMuted,
     marginRight: scale(8),
   },
   infoValue: {
-    fontSize: moderateScale(12),
+    fontSize: fontSize.label,
     fontWeight: '700',
     color: colors.textStrong,
     flex: 1,
@@ -162,7 +163,7 @@ export default StyleSheet.create({
   podTextDark: {
     color: colors.textStrong,
     fontWeight: '800',
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
   },
   retakeText: {
     marginTop: verticalScale(8),
@@ -183,12 +184,12 @@ export default StyleSheet.create({
   retakeButtonText: {
     color: colors.accentBlue,
     fontWeight: '800',
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
   },
   podText: {
     color: colors.white,
     fontWeight: '800',
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
   },
 
   /* ---------------- Signature ---------------- */
@@ -213,7 +214,7 @@ export default StyleSheet.create({
     borderBottomColor: colors.screenBg,
   },
   signatureTitle: {
-    fontSize: moderateScale(16),
+    fontSize: fontSize.subHeading,
     fontWeight: '800',
     color: colors.textStrong,
   },
@@ -263,7 +264,7 @@ export default StyleSheet.create({
     borderColor: colors.success,
   },
   checkText: {
-    fontSize: moderateScale(14),
+    fontSize: fontSize.body,
     fontWeight: '700',
     color: colors.textStrong,
   },

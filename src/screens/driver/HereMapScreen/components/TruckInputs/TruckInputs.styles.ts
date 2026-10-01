@@ -5,6 +5,7 @@ import {
   scale,
 } from 'react-native-size-matters';
 import {colors} from '../../../../../theme/colors';
+import {fontSize} from '../../../../../theme/fontSizes';
 
 export default StyleSheet.create({
   container: {
@@ -25,14 +26,14 @@ export default StyleSheet.create({
   },
 
   title: {
-    fontSize: moderateScale(22),
+    fontSize: fontSize.heading,
     fontWeight: '700',
     color: colors.textStrong,
     marginBottom: verticalScale(4),
   },
 
   subtitle: {
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
     color: colors.textMuted,
     marginBottom: verticalScale(20),
   },
@@ -46,7 +47,7 @@ export default StyleSheet.create({
   },
 
   label: {
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
     fontWeight: '600',
     color: colors.textMuted,
     marginBottom: verticalScale(6),
@@ -65,13 +66,13 @@ export default StyleSheet.create({
   input: {
     flex: 1,
     color: colors.textStrong,
-    fontSize: moderateScale(15),
+    fontSize: fontSize.body,
     paddingVertical: verticalScale(14),
   },
 
   unitText: {
     color: colors.textMuted,
-    fontSize: moderateScale(13),
+    fontSize: fontSize.subBody,
     fontWeight: '600',
   },
 
@@ -94,7 +95,7 @@ export default StyleSheet.create({
   cancelButtonText: {
     color: colors.textMuted,
     fontWeight: '600',
-    fontSize: moderateScale(14),
+    fontSize: fontSize.body,
   },
 
   applyButton: {
@@ -114,6 +115,6 @@ export default StyleSheet.create({
   applyButtonText: {
     color: colors.white,
     fontWeight: '700',
-    fontSize: moderateScale(14),
+    fontSize: fontSize.body,
   },
 });

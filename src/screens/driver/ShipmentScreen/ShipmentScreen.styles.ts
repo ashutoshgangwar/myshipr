@@ -1,6 +1,7 @@
 import {StyleSheet} from 'react-native';
 import {ms as baseMs, vs as baseVs} from '../../../theme/scale';
 import {colors} from '../../../theme/colors';
+import {fontSize} from '../../../theme/fontSizes';
 import {IS_TABLET, select} from '../../../theme/device';
 
 const PHONE_FACTOR = select({phone: 0.82, tablet: 1});
@@ -68,7 +69,7 @@ export default StyleSheet.create({
 
   dayLabel: {
     color: colors.white,
-    fontSize: IS_TABLET ? ms(10) : ms(10),
+    fontSize: fontSize.small,
     fontWeight: '600',
     marginBottom: IS_TABLET ? vs(2) : vs(3),
   },
@@ -79,7 +80,7 @@ export default StyleSheet.create({
 
   dayNumber: {
     color: colors.white,
-    fontSize: IS_TABLET ? ms(12) : ms(16),
+    fontSize: fontSize.subHeading,
     fontWeight: '700',
   },
 
@@ -126,7 +127,7 @@ export default StyleSheet.create({
 
   tabBtnText: {
     color: colors.white,
-    fontSize: ms(15),
+    fontSize: fontSize.body,
     lineHeight: Math.round(ms(15) * 1.4),
     fontWeight: '700',
     letterSpacing: 0.5,
@@ -163,7 +164,7 @@ export default StyleSheet.create({
 
   listEmptyText: {
     color: colors.textMuted,
-    fontSize: ms(11),
+    fontSize: fontSize.caption,
     textAlign: 'center',
   },
 
@@ -178,7 +179,7 @@ export default StyleSheet.create({
 
   tableHeadText: {
     color: colors.textStrong,
-    fontSize: ms(10),
+    fontSize: fontSize.small,
     fontWeight: '700',
     textAlign: 'center',
   },
@@ -223,7 +224,7 @@ export default StyleSheet.create({
   /* ----- AWB number ----- */
   awbText: {
     color: colors.textStrong,
-    fontSize: ms(9),
+    fontSize: fontSize.tiny,
     fontWeight: '600',
     textAlign: 'center',
   },
@@ -247,21 +248,21 @@ export default StyleSheet.create({
 
   typeText: {
     color: colors.textMuted,
-    fontSize: ms(9),
+    fontSize: fontSize.tiny,
     fontWeight: '600',
   },
 
   /* ----- Payout ----- */
   payoutAmount: {
     color: colors.textStrong,
-    fontSize: ms(12),
+    fontSize: fontSize.label,
     fontWeight: '700',
     textAlign: 'center',
   },
 
   payoutMiles: {
     color: colors.border_Color,
-    fontSize: IS_TABLET? ms(8) : ms(10),
+    fontSize: fontSize.small,
     fontWeight: '500',
     marginTop: vs(2),
     textAlign: 'center',
@@ -284,7 +285,7 @@ export default StyleSheet.create({
   },
 
   timePillText: {
-    fontSize: ms(9),
+    fontSize: fontSize.tiny,
     fontWeight: '700',
   },
 

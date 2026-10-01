@@ -1,5 +1,6 @@
 import {StyleSheet} from 'react-native';
 import {colors} from '../../../theme/colors';
+import {fontSize} from '../../../theme/fontSizes';
 import {ms, vs} from './constants';
 import {IS_TABLET} from '../../../theme/device';
 
@@ -44,7 +45,7 @@ export default StyleSheet.create({
   headerTitle: {
     marginLeft: ms(4),
     color: colors.white,
-    fontSize: IS_TABLET ? ms(16) : ms(18),
+    fontSize: fontSize.title,
     fontWeight: '700',
     letterSpacing: 0.6,
   },
@@ -94,13 +95,13 @@ export default StyleSheet.create({
   },
 
   payoutLabel: {
-    fontSize: IS_TABLET ? ms(11) : ms(13),
+    fontSize: fontSize.subBody,
     color: colors.textMuted,
     fontWeight: '500',
   },
 
   payoutAmount: {
-    fontSize: IS_TABLET ? ms(20) : ms(20),
+    fontSize: fontSize.heading,
     color: colors.textStrong,
     fontWeight: '700',
     marginTop: vs(2),
@@ -129,7 +130,7 @@ export default StyleSheet.create({
 
   modePillText: {
     marginLeft: ms(5),
-    fontSize: IS_TABLET ? ms(8) : ms(10),
+    fontSize: fontSize.small,
     color: colors.accentBlue,
     fontWeight: '700',
   },
@@ -145,7 +146,7 @@ export default StyleSheet.create({
 
   metaChipText: {
     marginLeft: ms(4),
-    fontSize: IS_TABLET ? ms(8) : ms(10),
+    fontSize: fontSize.small,
     color: colors.textMuted,
     fontWeight: '500',
   },
@@ -158,7 +159,7 @@ export default StyleSheet.create({
   },
 
   statusBadgeText: {
-    fontSize: IS_TABLET ? ms(8) : ms(11),
+    fontSize: fontSize.caption,
     color: colors.white,
     fontWeight: '700',
     letterSpacing: 0.4,
@@ -179,7 +180,7 @@ export default StyleSheet.create({
   },
 
   awbText: {
-    fontSize: IS_TABLET ? ms(10) : ms(10),
+    fontSize: fontSize.small,
     color: colors.textMuted,
     fontWeight: '500',
   },
@@ -187,14 +188,14 @@ export default StyleSheet.create({
   routeText: {
     flexShrink: 1,
     textAlign: 'right',
-    fontSize: IS_TABLET ? ms(10) : ms(12),
+    fontSize: fontSize.label,
     color: colors.textStrong,
     fontWeight: '500',
   },
 
   /* ---------- Section headings ---------- */
   sectionLabel: {
-    fontSize: IS_TABLET ? ms(10) : ms(12),
+    fontSize: fontSize.label,
     color: colors.textMuted,
     fontWeight: '500',
     marginTop: vs(18),
@@ -230,21 +231,21 @@ export default StyleSheet.create({
   },
 
   gridLabel: {
-    fontSize: IS_TABLET ? ms(6) : ms(8),
+    fontSize: fontSize.micro,
     color: colors.textMuted,
     fontWeight: '600',
     letterSpacing: 0.3,
   },
 
   gridValue: {
-    fontSize: IS_TABLET ? ms(10) : ms(12),
+    fontSize: fontSize.label,
     color: colors.textStrong,
     fontWeight: '700',
     marginTop: vs(3),
   },
 
   gridSub: {
-    fontSize: IS_TABLET ? ms(8) : ms(10),
+    fontSize: fontSize.small,
     color: colors.textMuted,
     fontWeight: '400',
     marginTop: vs(2),
@@ -282,7 +283,7 @@ export default StyleSheet.create({
   stepLabel: {
     flex: 1,
     minWidth: 0,
-    fontSize: IS_TABLET ? ms(10) : ms(12),
+    fontSize: fontSize.label,
     color: colors.textStrong,
     fontWeight: '500',
   },
@@ -294,7 +295,7 @@ export default StyleSheet.create({
   stepWhen: {
     flexShrink: 0,
     marginLeft: ms(8),
-    fontSize: IS_TABLET ? ms(10) : ms(12),
+    fontSize: fontSize.label,
     color: colors.textStrong,
     fontWeight: '400',
   },
@@ -313,13 +314,13 @@ export default StyleSheet.create({
 
   accountText: {
     marginLeft: ms(10),
-    fontSize: IS_TABLET ? ms(10) : ms(12),
+    fontSize: fontSize.label,
     color: colors.textStrong,
     fontWeight: '500',
   },
 
   accountNote: {
-    fontSize: IS_TABLET ? ms(8) : ms(10),
+    fontSize: fontSize.small,
     color: colors.textMuted,
     fontWeight: '400',
     marginTop: vs(6),
