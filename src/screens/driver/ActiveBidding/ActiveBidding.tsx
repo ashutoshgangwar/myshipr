@@ -4,6 +4,7 @@ import {
   ScrollView,
   TouchableOpacity,
   TextInput,
+  Pressable,
   ActivityIndicator,
   Animated,
 } from 'react-native';
@@ -67,6 +68,9 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
     CURRENT_TRIP_ID;
 
   const [yourBid, setYourBid] = useState(0);
+  // Lets a tap anywhere in the bordered box focus the field, not just the
+  // narrow TextInput itself.
+  const bidInputRef = useRef<TextInput>(null);
   const [vehicleIdx, setVehicleIdx] = useState(0);
   const [vehicleOpen, setVehicleOpen] = useState(false);
   const [autoBidVisible, setAutoBidVisible] = useState(false);
@@ -365,9 +369,12 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
 
           <View style={styles.bidCardBottom}>
             <AppText style={styles.kicker}>PLACE YOUR BID</AppText>
-            <View style={styles.bidInputBox}>
+            <Pressable
+              style={styles.bidInputBox}
+              onPress={() => bidInputRef.current?.focus()}>
               <AppText style={styles.bidCurrency}>$</AppText>
               <TextInput
+                ref={bidInputRef}
                 style={styles.bidInput}
                 value={yourBid ? String(yourBid) : ''}
                 onChangeText={handleBidChange}
@@ -378,7 +385,7 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
               <AppText style={styles.bidHint} numberOfLines={1}>
                 {yourBid && belowLowest ? 'Lower than the current bid' : ''}
               </AppText>
-            </View>
+            </Pressable>
 
             <View style={styles.bidBtnRow}>
               <TouchableOpacity

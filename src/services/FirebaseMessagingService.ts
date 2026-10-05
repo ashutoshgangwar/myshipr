@@ -109,8 +109,10 @@ export async function getFcmToken() {
     }
 
     const token = await getToken(messaging);
-    // The token itself is a delivery credential — log only that we have one.
-    console.log('[FCM] Token acquired:', Boolean(token));
+    // The token is a delivery credential — logging it in full is handy for
+    // grabbing it to send test pushes during development. Avoid shipping this
+    // log to production builds.
+    console.log('[FCM] Token:', token);
     return token;
   } catch (error) {
     console.warn('[FCM] getFcmToken error:', error);

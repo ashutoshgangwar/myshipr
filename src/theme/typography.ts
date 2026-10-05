@@ -17,14 +17,6 @@ const FONT_WEIGHT_MAP: Record<string, string> = {
 
 const DEFAULT_FONT_FAMILY = 'Poppins-Regular';
 
-/**
- * Resolve the Poppins family for a given fontWeight (string or number).
- *
- * The parameter is RN's own `TextStyle['fontWeight']` — which already covers
- * the numeric weights, the `'normal'`/`'bold'` keywords, `undefined` and
- * `null` — so a weight lifted straight off a flattened style passes through
- * with no cast. The lookup is by `String(weight)`, exactly as before.
- */
 const fontFamilyForWeight = (weight?: TextStyle['fontWeight']): string => {
   if (weight == null) {
     return DEFAULT_FONT_FAMILY;
@@ -36,12 +28,8 @@ const typography = {
   fontFamily: DEFAULT_FONT_FAMILY,
   fontFamilyForWeight,
 
-  // The standard, device-responsive font-size scale. These are the sizes to
-  // use in screen styles — see `fontSizes.ts` for the tokens and how they
-  // scale per device.
   fontSize,
 
-  // Named scale, mapped onto the standard tokens (responsive + tablet-aware).
   mainHeading: fontSize.mainHeading,
   heading: fontSize.heading,
   subHeading: fontSize.subHeading,

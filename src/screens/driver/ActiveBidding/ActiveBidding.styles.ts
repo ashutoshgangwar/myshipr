@@ -331,7 +331,7 @@ export default StyleSheet.create({
   },
   bidHint: {
     flex: 1,
-    fontSize: fontSize.tiny,
+    fontSize: fontSize.subBody,
     color: colors.textStrong,
   },
   bidBtnRow: {

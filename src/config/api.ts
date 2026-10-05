@@ -72,6 +72,13 @@ const DEBUG_ENABLED = String(DEBUG).toLowerCase() === 'true';
 const REDACTED_KEY = /secret|authorization/i;
 
 /**
+ * Keys whose string value is kept in full even when longer than
+ * MAX_LOGGED_STRING. The FCM token (~142 chars) needs to be copied whole for
+ * testing, so it must not be clipped. Only reaches the console in DEBUG builds.
+ */
+const NEVER_CLIP_KEY = /^fcmRegistrationToken$/;
+
+/**
  * Longest string a logged body keeps in full. A base64 photo runs to millions
  * of characters — printing one wedges the debugger and buries every other
  * line, so anything past this is clipped down to its head and its length.
@@ -89,7 +96,11 @@ const safe = (value: unknown): unknown => {
   return Object.fromEntries(
     Object.entries(value).map(([key, val]) => [
       key,
-      REDACTED_KEY.test(key) ? '***' : safe(val),
+      REDACTED_KEY.test(key)
+        ? '***'
+        : NEVER_CLIP_KEY.test(key)
+        ? val
+        : safe(val),
     ]),
   );
 };
@@ -659,7 +670,8 @@ export const registerDevice = async ({
     ? {headers: {Authorization: `Bearer ${accessToken}`}}
     : undefined;
 
-  // Through `safe()` so the FCM token is masked like every other credential.
+  // `safe()` keeps fcmRegistrationToken in full (NEVER_CLIP_KEY), so the token
+  // prints whole here. Only reaches the console in DEBUG builds.
   log('device register payload', safe(body));
 
   const {data} = await apiClient.post(

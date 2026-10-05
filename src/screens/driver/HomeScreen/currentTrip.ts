@@ -37,7 +37,7 @@ export {formatMiles, formatMinutes, formatMoney} from '../../../utils/format';
 // Static until the trip in progress is picked from the loads/assignment API.
 // export const CURRENT_TRIP_ID = 'f02f0373-a902-49ba-82a7-fe68f5a0229d';
 // export const CURRENT_TRIP_ID = 'e923da6c-899b-4c7b-9a2c-26454765a510';
-export const CURRENT_TRIP_ID = 'f83eaf28-6201-48cd-9116-43f0a0cd064e';
+export const CURRENT_TRIP_ID = '5818b12a-6c55-485c-97d3-f831bf641fc9';
 
 // The federal 11-hour driving limit, which is what the in-card bar fills
 // against — the API sends only the minutes that are left.
