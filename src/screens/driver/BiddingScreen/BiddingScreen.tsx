@@ -1,9 +1,11 @@
-import React, {useMemo, useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {FlatList} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
 import styles, {BIDDING_STATS_OVERLAP, GRID_COLS} from './BiddingScreen.styles';
-import {BIDS, BUCKETS, STATS, matchesFilters} from './constants';
+import {useBidSearch} from './useBidSearch';
+import Skeleton from '../../../component/Skeleton/Skeleton';
+import {biddingRowBones} from '../../../component/Skeleton/Skeleton.layouts';
 import FilterRow from './components/FilterRow';
 import BidTable from './components/BidTable';
 import GridCard from './components/GridCard';
@@ -20,26 +22,24 @@ import type {Filters} from './constants';
 export default function BiddingScreen() {
   const [mode, setMode] = useState('All Modes');
   const [search, setSearch] = useState('');
+  // The search text that actually drives the request — debounced so a keystroke
+  // does not fire a call per character.
+  const [query, setQuery] = useState('');
   const [grid, setGrid] = useState(false);
-  // which header card is driving the list — defaults to Currently Leading
-  const [bucket, setBucket] = useState(BUCKETS.leading);
+  // Which header card is driving the list. `undefined` is the default — no card
+  // selected, status ALL, every bucket shown.
+  const [bucket, setBucket] = useState<string | undefined>(undefined);
   // Filter Details popover selections, keyed by field.
   const [filters, setFilters] = useState<Filters>({});
-  const data = useMemo(() => {
-    let list = BIDS.filter(b => b.categories.includes(bucket));
-    if (mode !== 'All Modes') {
-      list = list.filter(b => b.mode === mode);
-    }
-    if (search.trim()) {
-      const q = search.trim().toLowerCase();
-      list = list.filter(
-        b =>
-          b.stops.some(s => s.city.toLowerCase().includes(q)) ||
-          b.ref.toLowerCase().includes(q),
-      );
-    }
-    return list.filter(b => matchesFilters(b, filters));
-  }, [bucket, mode, search, filters]);
+
+  useEffect(() => {
+    const id = setTimeout(() => setQuery(search), 300);
+    return () => clearTimeout(id);
+  }, [search]);
+
+  const {rows, stats, loading} = useBidSearch({bucket, mode, search: query, filters});
+  // Bones while the first search is in flight and nothing is on screen yet.
+  const showSkeleton = loading && rows.length === 0;
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -70,9 +70,13 @@ export default function BiddingScreen() {
           // mounted above the navigator.
           <DieselPriceBadge onPress={openFuelPriceEntry} />
         }
-        stats={STATS}
+        stats={stats}
         activeStat={bucket}
-        onStatPress={id => id && setBucket(id)}
+        // Tapping a card selects its bucket; tapping the selected card again
+        // clears back to ALL.
+        onStatPress={id =>
+          setBucket(prev => (prev === id ? undefined : id))
+        }
       />
 
       {/* FILTER ROW */}
@@ -88,10 +92,16 @@ export default function BiddingScreen() {
       />
 
       {/* LIST / GRID */}
-      {grid ? (
+      {showSkeleton ? (
+        <Skeleton
+          isLoading
+          layout={biddingRowBones(8)}
+          containerStyle={styles.skeletonWrap}
+        />
+      ) : grid ? (
         <FlatList
           key="grid"
-          data={data}
+          data={rows}
           keyExtractor={b => b.id}
           numColumns={GRID_COLS}
           columnWrapperStyle={GRID_COLS > 1 ? styles.gridColumn : undefined}
@@ -100,7 +110,7 @@ export default function BiddingScreen() {
           renderItem={({item}) => <GridCard item={item} />}
         />
       ) : (
-        <BidTable data={data} />
+        <BidTable data={rows} />
       )}
     </SafeAreaView>
   );

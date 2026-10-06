@@ -14,61 +14,16 @@ export const BID_STEPS = [
   {id: 's150', value: 150},
 ];
 
-// The auction the screen is showing. In a real build this comes from the
-// bidding row the user tapped (route params) / the backend.
-export const AUCTION = {
-  // The id POST /drivers/bids/{auctionId}/bid is sent with — the shipment's id.
-  // Empty on the mock: the real one comes from the row the user tapped.
-  auctionId: '',
-  mode: 'FTL',
-  date: 'Feb, 28',
-  time: '6:00 PM',
-  origin: 'San Jose, CA',
-  dest: 'Newark, NJ',
-  auctionRef: 'FTL 10009',
-  commodity: 'Imported Retail Goods (Transloaded)',
-
-  timeRemaining: '03:04:47',
-
-  // Starting value of the "Place your bid" field, and the live lowest it is
-  // compared against.
-  yourBid: 8450,
-  currentLowest: 8474,
-  // True when someone has beaten your last bid — shows the OUTBID banner.
-  outbid: true,
-
-  // Trucks that qualify for this load; the first one is preselected.
-  vehicles: [
-    {id: '#1094', model: 'Kenworth T680'},
-    {id: '#1102', model: 'Freightliner Cascadia'},
-    {id: '#1117', model: 'Volvo VNL 860'},
-  ],
-
-  stops: [
-    {
-      type: 'P',
-      city: 'San Jose, CA',
-      detail: 'Construction materials • 10 plt • 8,000 lbs • Live load',
-      date: '',
-      window: '',
-    },
-    {
-      type: 'D',
-      city: 'Newark, NJ',
-      detail: 'Live Unload | Dock 7 | 4-day Transit | 2,905 mi',
-      date: '2026-03-15',
-      window: '12:00-1:00',
-    },
-  ],
-
-  details: [
-    {label: 'Shipment ID', value: 'SHP-LTL-10001'},
-    {label: 'Type', value: 'LTL – Multiple Goods'},
-    {label: 'Mode', value: 'Multi-stop, auto AWB'},
-    {label: 'Auction Type', value: 'Normal Bidding'},
-    {label: 'Frequency', value: 'One Day'},
-    {label: 'Total Pallets', value: '30'},
-    {label: 'Total Weight', value: '15,000 lbs'},
-    {label: 'Equipment Type', value: '[Equipment]'},
-  ],
-};
+/**
+ * The trucks shown in the "Eligible Vehicle" dropdown. Static placeholder until
+ * a vehicle API exists: `assetId` is the number sent as the bid's `assetId` to
+ * `POST /drivers/bids/{auctionId}/bid`. Swap this list for the API's trucks when
+ * one is available — the screen already prefers `data.vehicles` when it has any.
+ */
+export const ELIGIBLE_VEHICLES = [
+  {id: '1001', model: '', assetId: 1001},
+  {id: '1002', model: '', assetId: 1002},
+  {id: '1003', model: '', assetId: 1003},
+  {id: '1004', model: '', assetId: 1004},
+  {id: '1005', model: '', assetId: 1005},
+];

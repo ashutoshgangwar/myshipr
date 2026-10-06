@@ -107,12 +107,37 @@ export type FavoriteDestinationHandoff =
   | {type: 'map'; coordinate: MapLocation};
 
 /**
- * The demo payload the bidding screen falls back on when opened without
- * params. Derived from the constants themselves rather than re-declared, so
- * the param type can never drift from the mock the screen actually renders.
+ * One auction as the ActiveBidding screen renders it. Built from the tapped
+ * bidding row (`toAuction`) and from `GET /drivers/bids/{auctionId}/detail`
+ * (`toActiveBidding`); fields neither source carries read "Not in API".
  */
-export type AuctionDetail =
-  (typeof import('../screens/driver/ActiveBidding/constants'))['AUCTION'];
+export interface AuctionDetail {
+  auctionId: string;
+  mode: string;
+  date: string;
+  time: string;
+  origin: string;
+  dest: string;
+  auctionRef: string;
+  /** The auction mode from the bidding row — "Normal"/"Instant". */
+  auctionMode?: string;
+  commodity: string;
+  timeRemaining: string;
+  /** The auction's end, ISO — drives the live countdown on the detail screen. */
+  endsAt?: string;
+  yourBid: number;
+  currentLowest: number;
+  outbid: boolean;
+  vehicles: {id: string; model: string; assetId?: number}[];
+  stops: {
+    type: string;
+    city: string;
+    detail: string;
+    date: string;
+    window: string;
+  }[];
+  details: {label: string; value: string}[];
+}
 
 /**
  * A row of the loads board, as the bidding and delivery flows read it.
@@ -243,10 +268,9 @@ export type RootStackParamList = {
   CdlDriverOnboarding: undefined;
 
   /**
-   * KNOWN DISCREPANCY, preserved deliberately: the screen reads
-   * `route.params.auction`, but all three callers navigate with `{item}`. The
-   * screen therefore always falls back to its `AUCTION` mock today. Both keys
-   * are typed so neither side breaks; see the migration notes.
+   * The bidding rows navigate with `{item, auction}` — `item` carries the real
+   * `auctionId`/`shipmentId` the bid is placed against, `auction` is the row
+   * mapped to the shape the screen paints before its detail call returns.
    */
   ActiveBidding:
     | {auction?: AuctionDetail; auctionId?: string; item?: unknown}

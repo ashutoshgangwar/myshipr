@@ -125,7 +125,9 @@ export default function DataRow({
     <TouchableOpacity
       activeOpacity={0.85}
       style={[styles.dataRow, {height}]}
-      onPress={() => navigation.navigate('ActiveBidding', {item})}>
+      onPress={() =>
+        navigation.navigate('ActiveBidding', {item, auction: item.auction})
+      }>
       {COLUMNS.map(col => (
         <View
           key={col.key}

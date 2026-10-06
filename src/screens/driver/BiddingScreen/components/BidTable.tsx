@@ -63,7 +63,12 @@ export default function BidTable({data}: {data: BidRow[]}) {
                 key={item.id}
                 activeOpacity={0.85}
                 style={[styles.loadCell, {height: rowHeight(item.stops.length)}]}
-                onPress={() => navigation.navigate('ActiveBidding', {item})}>
+                onPress={() =>
+                  navigation.navigate('ActiveBidding', {
+                    item,
+                    auction: item.auction,
+                  })
+                }>
                 <StopList stops={item.stops} />
               </TouchableOpacity>
             ))}

@@ -350,6 +350,18 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
 
+  // The loading skeleton stands where the table does, same card frame.
+  skeletonWrap: {
+    backgroundColor: colors.white,
+    marginHorizontal: IS_TABLET ? ms(30) : ms(12),
+    marginBottom: vs(12),
+    borderRadius: ms(12),
+    borderWidth: 1,
+    borderColor: colors.border_Color,
+    paddingVertical: vs(4),
+    overflow: 'hidden',
+  },
+
   // header band: frozen "Load" head + the scrolling heads, kept in lockstep
   tableHeaderRow: {
     flexDirection: 'row',

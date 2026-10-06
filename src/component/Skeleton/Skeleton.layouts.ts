@@ -550,3 +550,77 @@ export const tripChecklistBones = (count = 4) =>
       ]),
     ]),
   );
+
+/* ------------------------------------------------------------------ *
+ * BiddingScreen — the bid table / grid rows
+ * `POST /drivers/bids/search` fills the list, so the rows wait on it. The
+ * widths mirror a row's route-over-ref on the left and the mode/auction/
+ * distance/lowest cells that follow, staggered so the block reads as a list.
+ * ------------------------------------------------------------------ */
+
+const BID_ROUTE_WIDTHS = ['82%', '64%', '74%', '58%', '70%', '60%'] as const;
+
+/**
+ * @param count rows to draw — eight fills the table on a phone.
+ */
+export const biddingRowBones = (count = 8) =>
+  Array.from({length: count}, (_, index) =>
+    group(
+      {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingHorizontal: tms(14),
+        paddingVertical: tvs(14),
+      },
+      [
+        // Route over its ref — the frozen Location column.
+        group({flex: 1.3, paddingRight: tms(8)}, [
+          bone(BID_ROUTE_WIDTHS[index % BID_ROUTE_WIDTHS.length], tvs(9)),
+          bone('48%', tvs(8), {marginTop: tvs(6)}),
+        ]),
+        // Mode chip.
+        bone(tms(40), tvs(16), {borderRadius: tms(8)}),
+        // Pickup over its date.
+        group({flex: 0.9, alignItems: 'center', paddingHorizontal: tms(6)}, [
+          bone(tms(40), tvs(8)),
+          bone(tms(30), tvs(7), {marginTop: tvs(5)}),
+        ]),
+        // Lowest bid.
+        bone(tms(44), tvs(10), {marginLeft: tms(6)}),
+      ],
+    ),
+  );
+
+/* ------------------------------------------------------------------ *
+ * ActiveBidding — the detail-driven sections
+ * `GET /drivers/bids/{auctionId}/detail` fills the per-leg stops and the
+ * Shipment Details grid, so those two sections wait on it while the route
+ * header (from the tapped row) is already on screen.
+ * ------------------------------------------------------------------ */
+
+/**
+ * The per-leg stop rows: a badge, the city over its address, and the date/
+ * window beside it.
+ *
+ * @param count stops to draw.
+ */
+export const activeBidStopBones = (count = 2) =>
+  Array.from({length: count}, (_, index) =>
+    group(
+      {flexDirection: 'row', alignItems: 'flex-start', paddingVertical: svs(10)},
+      [
+        bone(ms(22), ms(22), {borderRadius: ms(4), marginRight: sms(10)}),
+        group({flex: 1, minWidth: 0}, [
+          bone(STOP_NAME_WIDTHS[index % STOP_NAME_WIDTHS.length], svs(10)),
+          bone('70%', svs(8), {marginTop: svs(6)}),
+        ]),
+        group({alignItems: 'flex-end'}, [
+          bone(sms(48), svs(9)),
+          bone(sms(60), svs(8), {marginTop: svs(5)}),
+        ]),
+      ],
+    ),
+  );
+
+/** The Shipment Details grid — four rows of two cells, matching the real one. */
+export const activeBidDetailBones = [detailGridBones(4)];

@@ -19,7 +19,9 @@ export default function GridCard({item}: {item: BidRow}) {
     <TouchableOpacity
       style={styles.card}
       activeOpacity={0.85}
-      onPress={() => navigation.navigate('ActiveBidding', {item})}>
+      onPress={() =>
+        navigation.navigate('ActiveBidding', {item, auction: item.auction})
+      }>
       <View style={styles.cardTopRow}>
         <View style={styles.cardRouteWrap}>
           {/* every stop on the load, same treatment as the table's Load column */}

@@ -36,7 +36,17 @@ import type {
   SavedFavoriteDestination,
 } from '../types/favoriteDestination';
 import type {DriverBank, DriverProfile} from '../types/driver';
-import type {PlaceBidParams, PlaceBidResult} from '../types/bidding';
+import type {
+  AutoBidParams,
+  AutoBidResult,
+  BidDetail,
+  BidDetailParams,
+  BidSearchItem,
+  BidSearchParams,
+  BidSearchResult,
+  PlaceBidParams,
+  PlaceBidResult,
+} from '../types/bidding';
 import type {
   DriverEarnings,
   DriverEarningsParams,
@@ -145,6 +155,20 @@ export const DRIVER_ENDPOINTS = {
   /** A bid on one auction — see `placeBid`. */
   placeBid: (auctionId: string) =>
     serviceUrl('drivers', `/drivers/bids/${encodeURIComponent(auctionId)}/bid`),
+  /** Set up auto-bidding on one auction — see `setAutoBid`. */
+  autoBid: (auctionId: string) =>
+    serviceUrl(
+      'drivers',
+      `/drivers/bids/${encodeURIComponent(auctionId)}/auto-bid`,
+    ),
+  /** The Bidding screen's list + header — see `searchBids`. */
+  searchBids: () => serviceUrl('drivers', '/drivers/bids/search'),
+  /** One auction's full detail — see `getBidDetail`. */
+  bidDetail: (auctionId: string) =>
+    serviceUrl(
+      'drivers',
+      `/drivers/bids/${encodeURIComponent(auctionId)}/detail`,
+    ),
 };
 
 export const EARNINGS_PERIODS = [
@@ -1281,6 +1305,124 @@ export const placeBid = async ({
     `place bid response (${status})\nPOST ${url}\n` +
       JSON.stringify(body, null, 2),
   );
+
+  return body?.data ?? body;
+};
+
+/**
+ * Sets up auto-bidding on an auction. `auctionId` (path) is required; `assetId`
+ * is the truck from the eligible-vehicle picker and is only sent when known.
+ *
+ * @returns the auto-bid as the server recorded it (envelope unwrapped)
+ */
+export const setAutoBid = async ({
+  auctionId,
+  assetId,
+  mode,
+  stopLossCents,
+}: AutoBidParams): Promise<AutoBidResult> => {
+  if (!auctionId) {
+    throw new Error('setAutoBid: auctionId is required');
+  }
+
+  const url = DRIVER_ENDPOINTS.autoBid(auctionId);
+  const payload = {
+    ...(Number.isFinite(assetId) ? {assetId} : {}),
+    mode,
+    stopLossCents,
+  };
+  log(`auto bid request\nPOST ${url}\n` + JSON.stringify(payload, null, 2));
+
+  let status;
+  let body;
+  try {
+    ({status, data: body} = await apiClient.post(url, payload));
+  } catch (e) {
+    const err = e as DriverApiError;
+    log(
+      `auto bid failed (${err?.response?.status ?? 'no response'})\nPOST ${url}\n` +
+        JSON.stringify(err?.response?.data ?? err?.message, null, 2),
+    );
+    throw err;
+  }
+
+  log(`auto bid response (${status})\nPOST ${url}\n` + JSON.stringify(body, null, 2));
+
+  return body?.data ?? body;
+};
+
+/**
+ * Searches the driver's bids — the Bidding screen's list and the counts behind
+ * its four header cards. `status` is always sent; the screen adds the search
+ * text and filter fields only once the driver has set them.
+ *
+ * @returns `{summary, content}`, whichever envelope the gateway used unwrapped.
+ *   `summary` is null when the backend sent none, and `content` is always an
+ *   array — an empty one when there are no matching auctions.
+ */
+export const searchBids = async (
+  params: BidSearchParams,
+): Promise<BidSearchResult> => {
+  const url = DRIVER_ENDPOINTS.searchBids();
+  log(`search bids request\nPOST ${url}\n` + JSON.stringify(params, null, 2));
+
+  let status;
+  let body;
+  try {
+    ({status, data: body} = await apiClient.post(url, params));
+  } catch (e) {
+    const err = e as DriverApiError;
+    log(
+      `search bids failed (${err?.response?.status ?? 'no response'})\nPOST ${url}\n` +
+        JSON.stringify(err?.response?.data ?? err?.message, null, 2),
+    );
+    throw err;
+  }
+
+  log(`search bids response (${status})\n` + JSON.stringify(body, null, 2));
+
+  // The rows may arrive bare, under `data`, or paged under `content`/`items`.
+  const payload = body?.data ?? body;
+  const content: BidSearchItem[] = Array.isArray(payload)
+    ? payload
+    : payload?.content ?? payload?.items ?? [];
+
+  return {
+    summary: payload?.summary ?? null,
+    content: Array.isArray(content) ? content : [],
+  };
+};
+
+/**
+ * Loads one auction's full detail — the ActiveBidding screen. `auctionId` is the
+ * only required field, and it is the same id the bid is placed against.
+ *
+ * @returns the detail payload (envelope unwrapped)
+ */
+export const getBidDetail = async ({
+  auctionId,
+}: BidDetailParams): Promise<BidDetail> => {
+  if (!auctionId) {
+    throw new Error('getBidDetail: auctionId is required');
+  }
+
+  const url = DRIVER_ENDPOINTS.bidDetail(auctionId);
+  log('bid detail request', {url});
+
+  let status;
+  let body;
+  try {
+    ({status, data: body} = await apiClient.get(url));
+  } catch (e) {
+    const err = e as DriverApiError;
+    log(
+      `bid detail failed (${err?.response?.status ?? 'no response'})\nGET ${url}\n` +
+        JSON.stringify(err?.response?.data ?? err?.message, null, 2),
+    );
+    throw err;
+  }
+
+  log(`bid detail response (${status})\n` + JSON.stringify(body, null, 2));
 
   return body?.data ?? body;
 };

@@ -1,6 +1,8 @@
 import {colors} from '../../../theme/colors';
 import {select} from '../../../theme/device';
 import {ms as baseMs, vs as baseVs} from '../../../theme/scale';
+import type {BidSearchStatus} from '../../../types/bidding';
+import type {AuctionDetail} from '../../../types/navigation';
 
 const PHONE_FACTOR = select({phone: 0.82, tablet: 1});
 export const ms = (n: number): number => baseMs(n) * PHONE_FACTOR;
@@ -66,7 +68,7 @@ export const COLUMNS = [
  * A `type` alias rather than an `interface` so it satisfies `LoadRouteStop`'s
  * index signature — interfaces get no implicit one.
  */
-type MockStop = {
+export type MockStop = {
   city: string;
   type: 'pickup' | 'drop';
 };
@@ -248,10 +250,48 @@ export const BIDS = [
 ];
 
 /**
- * The row and column shapes the bidding table renders, derived from the mock
- * data itself so the two can never drift apart.
+ * One row the bidding table and grid card render. The mock `BIDS` above and the
+ * live `/drivers/bids/search` rows (mapped in `useBidSearch`) both satisfy it,
+ * so the table does not care which one it is handed. Every field is the shape
+ * the cells read — strings the UI prints directly, `stops` the route draws.
  */
-export type BidRow = (typeof BIDS)[number];
+export interface BidRow {
+  id: string;
+  /** The auction the bid is placed against — ActiveBidding reads this. */
+  shipmentId: string;
+  ref: string;
+  date: string;
+  time: string;
+  pickupTime: string;
+  pickupDate: string;
+  dropTime: string;
+  dropDate: string;
+  pickupClock: string;
+  dropClock: string;
+  indicative: string;
+  amount: string;
+  lowestBid: string;
+  awardedAt: string | null;
+  auctionMode: string;
+  auctionType: string;
+  deadMile: string;
+  tripDistance: string;
+  frequency: string;
+  equipmentType: string;
+  dockPriority: string;
+  driverRequirement: string;
+  categories: string[];
+  mode: string;
+  stops: MockStop[];
+  rank: string | null;
+  status: string;
+  origin: string;
+  dest: string;
+  /** Present on live rows; the same id as `shipmentId`. */
+  auctionId?: string;
+  /** The full auction the detail screen renders — built on live rows. */
+  auction?: AuctionDetail;
+}
 export type BidColumn = (typeof COLUMNS)[number];
 
 /* ---------------------------------------------------------------------------
@@ -420,3 +460,35 @@ export const matchesFilters = (b: BidRow, filters: Filters): boolean => {
 /** How many fields are narrowing the list — drives the funnel's active tint. */
 export const activeFilterCount = (filters: Filters): number =>
   FILTER_FIELDS.filter(f => filters[f.key]).length;
+
+/**
+ * The header card the driver has selected → the `status` the search is asked
+ * for. Nothing selected (the default) is `ALL`, which shows every bucket.
+ */
+export const bucketToStatus = (bucket?: string | null): BidSearchStatus => {
+  switch (bucket) {
+    case BUCKETS.leading:
+      return 'LEADING';
+    case BUCKETS.active:
+      return 'ACTIVE';
+    case BUCKETS.awarded:
+      return 'AWARDED';
+    case BUCKETS.past:
+      return 'PAST';
+    default:
+      return 'ALL';
+  }
+};
+
+/**
+ * The min/max the selected option carries for a range field — what the search
+ * body's `bidPriceMin`/`distanceMax`/… are built from. Either end is undefined
+ * when the option is open on that side, or when nothing is picked.
+ */
+export const rangeFor = (
+  key: FilterKey,
+  filters: Filters,
+): {min?: number; max?: number} => {
+  const option = optionFor(key, filters);
+  return {min: option?.min, max: option?.max};
+};

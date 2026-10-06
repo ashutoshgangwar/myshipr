@@ -52,6 +52,12 @@ export default StyleSheet.create({
     fontWeight: '700',
     letterSpacing: 1,
   },
+  // A closed auction: red and smaller, since "Closed" is a word, not a clock.
+  timerClosed: {
+    fontSize: fontSize.title,
+    color: colors.danger,
+    letterSpacing: 0,
+  },
 
   /* TOAST */
   toast: {
