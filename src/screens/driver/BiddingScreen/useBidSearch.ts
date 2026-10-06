@@ -90,17 +90,21 @@ const driverRequirement = (raw: unknown): string =>
 /** API status → the row `status` the lowest-bid cell reads. */
 const rowStatus = (raw: unknown): string => {
   const text = String(raw ?? '').toUpperCase();
-  if (text === 'PAST') return 'Closed';
+  if (text === 'PAST' || text === 'CLOSED') return 'Closed';
   if (text === 'AWARDED') return 'Awarded';
   return 'Open';
 };
 
-/** The buckets a row belongs to, so the client can still group it if it needs. */
+/**
+ * The buckets a row belongs to, so the client can still group it if it needs.
+ * A finished auction may come back as either `PAST` or `CLOSED`; both are the
+ * past bucket, so a closed auction never leaks into Active (the "My Bids" tab).
+ */
 const categoriesOf = (item: BidSearchItem): string[] => {
   const status = String(item?.status ?? '').toUpperCase();
   const list: string[] = [];
   if (status === 'AWARDED') list.push(BUCKETS.awarded);
-  else if (status === 'PAST') list.push(BUCKETS.past);
+  else if (status === 'PAST' || status === 'CLOSED') list.push(BUCKETS.past);
   else list.push(BUCKETS.active);
   if (item?.leading) list.push(BUCKETS.leading);
   return list;
