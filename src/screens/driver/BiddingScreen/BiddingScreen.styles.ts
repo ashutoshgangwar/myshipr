@@ -55,30 +55,25 @@ const STAT_LABEL_SIZE = Math.min(
   (STAT_LABEL_W / LONGEST_LABEL_EM) * 0.97,
 );
 
-const BLUE_HEADER_H = IS_TABLET
-  ? vs(160) : Platform.OS === 'ios' ? vs(140) : vs(160);
+// The stat cards are gone; instead the filter row rides up into the header's
+// bottom. The header reserves a blue band below the title for the row to
+// overlap onto, and the filter row pulls up by the same amount.
+const BLUE_HEADER_H = IS_TABLET ? vs(115) : vs(140);
 
-const BLUE_HEADER_PAD_TOP =  vs(15);
+const BLUE_HEADER_PAD_TOP =IS_TABLET ? vs(15) : vs(10);
 
-export const BIDDING_STATS_OVERLAP = IS_TABLET ? baseMs(70) : Platform.OS === 'ios' ? baseMs(45) : baseMs(40);
+export const BIDDING_FILTER_OVERLAP =IS_TABLET ? vs(45) : vs(55);
 
-// Breathing room left below the cards once they have ridden up.
-const BIDDING_STATS_CLEARANCE = IS_TABLET
-  ? vs(5)
-  : Platform.OS === 'ios'
-  ? vs(20)
-  : vs(5);
-
-const BLUE_HEADER_PAD_BOTTOM = BIDDING_STATS_OVERLAP + BIDDING_STATS_CLEARANCE;
+const BLUE_HEADER_PAD_BOTTOM = BIDDING_FILTER_OVERLAP + vs(4);
 
 // Tablets carried a very deep curve at ms(95); flatten it here.
-const BLUE_HEADER_RADIUS = IS_TABLET ? ms(60) : ms(45);
+const BLUE_HEADER_RADIUS = IS_TABLET ? ms(50) : ms(40);
 
 /* Title type, local so Bidding's header copy can be sized on its own. */
 const BIDDING_TITLE_SIZE = fontSize.title;
 const BIDDING_TITLE_LINE_H = Math.round(BIDDING_TITLE_SIZE * 1.5);
 
-const FILTER_H = IS_TABLET ? vs(30) : vs(34);
+const FILTER_H = IS_TABLET ? vs(25) : vs(35);
 const TABLE_PADDING = ms(10);
 const ROW_MIN_H = select({phone: vs(66), tablet: vs(44)});
 
@@ -109,11 +104,9 @@ const styles = StyleSheet.create({
   },
 
   /* Bidding deliberately runs shorter and flatter than Home/Earnings, so every
-     value here comes from the local BLUE_HEADER_* knobs above. The bottom
-     padding is what reserves the band the floating stat cards ride up into, so
-     it moves with BIDDING_STATS_OVERLAP. minHeight (not height) lets the header
-     grow if the copy ever needs more room, which keeps the cards inside the
-     header's bounds and therefore tappable. */
+     value here comes from the local BLUE_HEADER_* knobs above. With the stat
+     cards removed the header just holds the title/subtitle and diesel badge;
+     minHeight (not height) lets it grow if the copy ever needs more room. */
   dashboardHeader: {
     paddingTop: BLUE_HEADER_PAD_TOP,
     paddingBottom: BLUE_HEADER_PAD_BOTTOM,
@@ -204,35 +197,41 @@ const styles = StyleSheet.create({
   },
 
   /* ---------- Filter row ---------- */
+  // Rides up into the header's reserved blue band so the controls overlap the
+  // curved bottom edge, the way the stat cards used to.
   filterRow: {
     ...centered,
+    marginTop: -BIDDING_FILTER_OVERLAP,
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: IS_TABLET ? ms(8) : ms(14),
+    paddingHorizontal: IS_TABLET ? ms(2) : ms(12),
     paddingTop: vs(16),
-    paddingBottom: vs(12),
+    paddingBottom: vs(18),
     gap: ms(8),
+
   },
 
+  // One segmented container holding All + My Bids (like the list/grid toggle),
+  // rather than two separate pills.
   modeTabs: {
     flexDirection: 'row',
-    alignItems: 'center',
-    gap: ms(6),
-  },
-
-  modeTab: {
+    alignItems: 'stretch',
     height: FILTER_H,
-    justifyContent: 'center',
     borderWidth: 1,
     borderColor: colors.border_Color,
     borderRadius: ms(8),
-    paddingHorizontal: ms(12),
+    overflow: 'hidden',
     backgroundColor: colors.white,
   },
 
+  modeTab: {
+    justifyContent: 'center',
+    paddingHorizontal: ms(12),
+  },
+
+  // Active segment reads green (mint fill + green text) to match the screenshot.
   modeTabActive: {
-    backgroundColor: colors.paleBlue,
-    borderColor: colors.paleBlue,
+    backgroundColor: colors.successLight,
   },
 
   modeTabText: {
@@ -242,7 +241,59 @@ const styles = StyleSheet.create({
   },
 
   modeTabTextActive: {
+    color: colors.success,
+    fontWeight: '700',
+  },
+
+  /* ---------- Mode dropdown (replaces the old FTL/LTL tabs) ---------- */
+  modeDropdown: {
+    height: FILTER_H,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: ms(6),
+    borderWidth: 1,
+    borderColor: colors.border_Color,
+    borderRadius: ms(8),
+    paddingHorizontal: ms(12),
+    backgroundColor: colors.white,
+  },
+
+  modeDropdownText: {
+    fontSize: fontSize.label,
+    fontWeight: '600',
     color: colors.textStrong,
+  },
+
+  // The menu that drops under the Mode button; positioned via its measured
+  // anchor (top/left/minWidth) at the call site.
+  modeMenu: {
+    position: 'absolute',
+    backgroundColor: colors.white,
+    borderRadius: ms(10),
+    borderWidth: 1,
+    borderColor: colors.border_Color,
+    paddingVertical: vs(4),
+    shadowColor: colors.textStrong,
+    shadowOffset: {width: 0, height: 6},
+    shadowOpacity: 0.18,
+    shadowRadius: 14,
+    elevation: 8,
+  },
+
+  modeMenuOption: {
+    paddingVertical: vs(9),
+    paddingHorizontal: ms(14),
+  },
+
+  modeMenuOptionText: {
+    fontSize: fontSize.label,
+    fontWeight: '500',
+    color: colors.textMuted,
+  },
+
+  modeMenuOptionTextActive: {
+    color: colors.success,
+    fontWeight: '700',
   },
 
   searchBox: {

@@ -1,20 +1,27 @@
 import React, {useRef, useState} from 'react';
-import {View, TouchableOpacity, TextInput, Dimensions} from 'react-native';
+import {View, TouchableOpacity, TextInput, Dimensions, Modal} from 'react-native';
 
 import styles from '../BiddingScreen.styles';
-import {MODES, activeFilterCount} from '../constants';
+import {MODES, BID_TABS, activeFilterCount} from '../constants';
 import AppText from '../../../../theme/AppText';
 import {colors} from '../../../../theme/colors';
 import SearchIcon from '../../../../assets/svg_icon/Search_Icon.svg';
+import ChevronDown from '../../../../assets/svg_icon/Chevron_Down.svg';
 import ListViewIcon from '../../../../assets/svg_icon/list_grid.svg';
 import CardViewIcon from '../../../../assets/svg_icon/card_grid.svg';
 import FilterIcon from '../../../../assets/svg_icon/filter_funnel.svg';
 import FilterDetailsPanel from './FilterDetailsPanel';
 import { IS_TABLET } from '../../../../theme/device';
-import type {Filters} from '../constants';
+import type {Filters, BidTabKey} from '../constants';
 import type {FilterAnchor} from './FilterDetailsPanel';
 
+/** Where the Mode dropdown menu hangs — left-aligned under its button. */
+type ModeAnchor = {top: number; left: number; width: number};
+
 export interface FilterRowProps {
+  /** The left tab — 'all' or 'mine'. */
+  tab?: BidTabKey;
+  onTabChange?: (tab: BidTabKey) => void;
   mode?: string;
   onModeChange?: (mode: string) => void;
   search?: string;
@@ -28,6 +35,8 @@ export interface FilterRowProps {
 }
 
 export default function FilterRow({
+  tab,
+  onTabChange,
   mode,
   onModeChange,
   search,
@@ -38,6 +47,10 @@ export default function FilterRow({
   onFiltersChange,
 }: FilterRowProps) {
   const [filterOpen, setFilterOpen] = useState(false);
+  // The Mode dropdown menu, anchored under its button.
+  const [modeOpen, setModeOpen] = useState(false);
+  const [modeAnchor, setModeAnchor] = useState<ModeAnchor | null>(null);
+  const modeRef = useRef<View | null>(null);
   // Where the popover hangs from — measured, so it stays under the funnel on
   // any width instead of being pinned to a guessed inset.
   const [anchor, setAnchor] = useState<FilterAnchor | null>(null);
@@ -56,25 +69,53 @@ export default function FilterRow({
     });
   };
 
+  const openMode = () => {
+    modeRef.current?.measureInWindow((x, y, width, height) => {
+      setModeAnchor({top: y + height + 6, left: x, width});
+      setModeOpen(true);
+    });
+  };
+
   return (
     <View style={styles.filterRow}>
       <View style={styles.modeTabs}>
-        {MODES.map(m => (
+        {BID_TABS.map(t => (
           <TouchableOpacity
-            key={m}
+            key={t.key}
             activeOpacity={0.85}
-            onPress={() => onModeChange?.(m)}
-            style={[styles.modeTab, m === mode && styles.modeTabActive]}>
+            onPress={() => onTabChange?.(t.key)}
+            style={[styles.modeTab, t.key === tab && styles.modeTabActive]}>
             <AppText
-              style={[styles.modeTabText, m === mode && styles.modeTabTextActive]}>
-              {m}
+              style={[
+                styles.modeTabText,
+                t.key === tab && styles.modeTabTextActive,
+              ]}>
+              {t.label}
             </AppText>
           </TouchableOpacity>
         ))}
       </View>
 
+      {/* Mode dropdown — replaces the old FTL/LTL tabs */}
+      <View ref={modeRef} collapsable={false}>
+        <TouchableOpacity
+          activeOpacity={0.85}
+          onPress={openMode}
+          style={styles.modeDropdown}>
+          <AppText style={styles.modeDropdownText} numberOfLines={1}>
+            {mode}
+          </AppText>
+          <ChevronDown
+            width={12}
+            height={12}
+            color={colors.textMuted}
+            style={modeOpen ? styles.filterChevronOpen : undefined}
+          />
+        </TouchableOpacity>
+      </View>
+
       <View style={styles.searchBox}>
-        <SearchIcon width={14} height={14} />
+        <SearchIcon width={ IS_TABLET ? 22 : 14} height={IS_TABLET ? 22 : 14} />
         <TextInput
           value={search}
           onChangeText={onSearchChange}
@@ -109,6 +150,49 @@ export default function FilterRow({
           <FilterIcon width={IS_TABLET ? 22 : 16} height={IS_TABLET ? 22 : 16 } />
         </TouchableOpacity>
       </View>
+
+      {/* Mode dropdown menu */}
+      <Modal
+        visible={modeOpen}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setModeOpen(false)}>
+        <TouchableOpacity
+          style={styles.filterBackdrop}
+          activeOpacity={1}
+          onPress={() => setModeOpen(false)}>
+          {modeAnchor ? (
+            <View
+              style={[
+                styles.modeMenu,
+                {
+                  top: modeAnchor.top,
+                  left: modeAnchor.left,
+                  minWidth: modeAnchor.width,
+                },
+              ]}>
+              {MODES.map(m => (
+                <TouchableOpacity
+                  key={m}
+                  activeOpacity={0.85}
+                  onPress={() => {
+                    onModeChange?.(m);
+                    setModeOpen(false);
+                  }}
+                  style={styles.modeMenuOption}>
+                  <AppText
+                    style={[
+                      styles.modeMenuOptionText,
+                      m === mode && styles.modeMenuOptionTextActive,
+                    ]}>
+                    {m}
+                  </AppText>
+                </TouchableOpacity>
+              ))}
+            </View>
+          ) : null}
+        </TouchableOpacity>
+      </Modal>
 
       <FilterDetailsPanel
         visible={filterOpen}

@@ -2,7 +2,7 @@ import React, {useEffect, useState} from 'react';
 import {FlatList} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
-import styles, {BIDDING_STATS_OVERLAP, GRID_COLS} from './BiddingScreen.styles';
+import styles, {GRID_COLS} from './BiddingScreen.styles';
 import {useBidSearch} from './useBidSearch';
 import Skeleton from '../../../component/Skeleton/Skeleton';
 import {biddingRowBones} from '../../../component/Skeleton/Skeleton.layouts';
@@ -17,7 +17,8 @@ import {colors} from '../../../theme/colors';
 
 import BiddingIcon from '../../../assets/svg_icon/Bidding_Icon.svg';
 import { IS_TABLET } from '../../../theme/device';
-import type {Filters} from './constants';
+import {BUCKETS} from './constants';
+import type {Filters, BidTabKey} from './constants';
 
 export default function BiddingScreen() {
   const [mode, setMode] = useState('All Modes');
@@ -26,18 +27,20 @@ export default function BiddingScreen() {
   // does not fire a call per character.
   const [query, setQuery] = useState('');
   const [grid, setGrid] = useState(false);
-  // Which header card is driving the list. `undefined` is the default — no card
-  // selected, status ALL, every bucket shown.
-  const [bucket, setBucket] = useState<string | undefined>(undefined);
+  // The left tab: 'all' shows every auction, 'mine' only the driver's active
+  // bids. It maps to the search `status` via the ACTIVE bucket.
+  const [tab, setTab] = useState<BidTabKey>('all');
   // Filter Details popover selections, keyed by field.
   const [filters, setFilters] = useState<Filters>({});
+
+  const bucket = tab === 'mine' ? BUCKETS.active : undefined;
 
   useEffect(() => {
     const id = setTimeout(() => setQuery(search), 300);
     return () => clearTimeout(id);
   }, [search]);
 
-  const {rows, stats, loading} = useBidSearch({bucket, mode, search: query, filters});
+  const {rows, loading} = useBidSearch({bucket, mode, search: query, filters});
   // Bones while the first search is in flight and nothing is on screen yet.
   const showSkeleton = loading && rows.length === 0;
 
@@ -56,12 +59,6 @@ export default function BiddingScreen() {
         headerStyle={styles.dashboardHeader}
         titleStyle={styles.dashboardTitle}
         subtitleStyle={styles.dashboardSubtitle}
-        statsStyle={styles.dashboardStats}
-        statLabelStyle={styles.dashboardStatLabel}
-        statCardStyle={styles.dashboardStatCard}
-        statValueStyle={styles.dashboardStatValue}
-        statNoteStyle={styles.dashboardStatNote}
-        statsOffset={-BIDDING_STATS_OVERLAP}
         width="100%"
         title="Bidding"
         subtitle="Live Auction"
@@ -70,17 +67,12 @@ export default function BiddingScreen() {
           // mounted above the navigator.
           <DieselPriceBadge onPress={openFuelPriceEntry} />
         }
-        stats={stats}
-        activeStat={bucket}
-        // Tapping a card selects its bucket; tapping the selected card again
-        // clears back to ALL.
-        onStatPress={id =>
-          setBucket(prev => (prev === id ? undefined : id))
-        }
       />
 
       {/* FILTER ROW */}
       <FilterRow
+        tab={tab}
+        onTabChange={setTab}
         mode={mode}
         onModeChange={setMode}
         search={search}

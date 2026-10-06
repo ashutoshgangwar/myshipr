@@ -11,7 +11,23 @@ export const vs = (n: number): number => baseVs(n) * PHONE_FACTOR;
 // sort caret next to sortable header labels
 export const SORT_ICON = select({phone: 9, tablet: 12});
 
-export const MODES = ['All Modes', 'FTL', 'LTL'];
+export const MODES = [
+  'All Modes',
+  'FTL',
+  'LTL',
+  'Multileg',
+  'FTL-Reefer',
+  'Hybrid',
+];
+
+/** The left tab pair in the filter row. `all` shows every auction; `mine` shows
+ *  the auctions the driver has an active bid on (status ACTIVE). */
+export const BID_TABS = [
+  {key: 'all', label: 'All'},
+  {key: 'mine', label: 'My Bids'},
+] as const;
+
+export type BidTabKey = (typeof BID_TABS)[number]['key'];
 export const BUCKETS = {
   leading: 'leading',
   active: 'active',
