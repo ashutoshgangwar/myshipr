@@ -96,11 +96,8 @@ const ROW_PAD_V = IS_TABLET ? vs(4) : vs(8);
 
 /* Card grid is two-up everywhere; phones get tighter chip padding and type so
    the mode/date/type/distance strip still fits on one line. */
-export const GRID_COLS = 2;
-
-const CHIP_PAD = select({phone: ms(5), tablet: ms(4)});
-const CHIP_PAD_V = select({phone: vs(3), tablet: vs(2)});
-const CHIP_FONT = fontSize.micro;
+// One full-width card per row on phones; two-up on tablets.
+export const GRID_COLS = IS_TABLET ? 2 : 1;
 
 export const rowHeight = (stopCount: number): number =>
   Math.max(ROW_MIN_H, ROW_PAD_V * 2 + stopCount * STOP_LINE_H + STOP_SUMMARY_H);
@@ -733,110 +730,203 @@ const styles = StyleSheet.create({
     paddingBottom: vs(16),
   },
 
+  // Only used when two-up (tablet): the horizontal gap between the pair. The
+  // row-to-row spacing lives on the card so it also applies to the phone's
+  // single-column list.
   gridColumn: {
     gap: ms(10),
-    marginBottom: vs(10),
   },
 
   card: {
     flex: 1,
-    maxWidth: '50%',
+    maxWidth: IS_TABLET ? '50%' : '100%',
+    marginBottom: vs(10),
     backgroundColor: colors.white,
-    borderRadius: ms(12),
+    borderRadius: ms(7),
     borderWidth: 1,
     borderColor: colors.border_Color,
-    padding: select({phone: ms(10), tablet: ms(10)}),
+    padding: select({phone: ms(9), tablet: ms(9)}),
   },
 
-  cardTopRow: {
+  /* ----- Header: truck badge + ref/mode + BID NOW ----- */
+  cardHead: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'flex-start',
+    alignItems: 'center',
+    gap: ms(8),
   },
 
-  // Reserve a 3-stop block so a 1- or 2-drop card pushes its divider to the
-  // same baseline as its taller neighbour and the two line up across the row.
-  cardRouteWrap: {
+  cardTruckBadge: {
+    width:IS_TABLET ? ms(22) : ms(34),
+    height: IS_TABLET ? ms(22) : ms(34),
+    borderRadius:IS_TABLET ? ms(6) : ms(9),
+    backgroundColor: colors.paleBlue,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  cardHeadText: {
     flex: 1,
-    paddingRight: ms(6),
-    minHeight: 3 * STOP_LINE_H + STOP_SUMMARY_H,
+    minWidth: 0,
   },
 
-  cardStopCity: {
-    fontSize: fontSize.label,
-  },
-
-  cardAmount: {
-    fontSize: fontSize.body,
-    fontWeight: '800',
+  cardRef: {
+    fontSize:IS_TABLET ? fontSize.micro : fontSize.subBody,
+    fontWeight: '700',
     color: colors.textStrong,
   },
 
-  // mode / date / auction type / distance — always one row, never wraps.
-  // Fonts (CHIP_FONT) and gaps are sized so all four fit the card width.
-  cardChipsRow: {
+  // The shipment type reads as a rounded pale-blue chip under the ref. It hugs
+  // its text (alignSelf) rather than spanning the header column.
+  cardModePill: {
+    alignSelf: 'flex-start',
+    backgroundColor: colors.paleBlue,
+    borderRadius: IS_TABLET ? ms(4) : ms(6),
+    paddingHorizontal: ms(8),
+    paddingVertical: vs(2),
+    marginTop: vs(3),
+  },
+
+  cardMode: {
+    fontSize:IS_TABLET ? fontSize.nano : fontSize.small,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    color: colors.accentBlue,
+    textTransform: 'uppercase',
+  },
+
+  cardBidBtn: {
+    backgroundColor: colors.accentBlue,
+    borderRadius: ms(8),
+    paddingHorizontal:IS_TABLET ? ms(5) : ms(8),
+    paddingVertical:IS_TABLET ? vs(2) : vs(7),
+  },
+
+  cardBidBtnText: {
+    fontSize: fontSize.tiny,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+    color: colors.white,
+  },
+
+  /* ----- Commodity ----- */
+  cardCommodityRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    flexWrap: 'nowrap',
-    gap: select({phone: ms(3), tablet: ms(6)}),
-    marginTop: vs(10),
+    gap: ms(6),
+    marginTop: select({phone: vs(8), tablet: vs(12)}),
   },
 
-  // one shared padding for every chip (mode / date / type / distance) so the
-  // strip reads on a single, even rhythm on both phone and tablet.
-  cardChip: {
-    paddingHorizontal: CHIP_PAD,
-    paddingVertical: CHIP_PAD_V,
+  cardCommodityText: {
+    flexShrink: 1,
+    fontSize: fontSize.caption,
+    fontWeight: '700',
+    letterSpacing: 0.3,
+    color: colors.textStrong,
+    textTransform: 'uppercase',
   },
 
-  cardChipText: {
-    fontSize: CHIP_FONT,
+  /* ----- Pickup → Drop ----- */
+  cardRouteRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: select({phone: vs(15), tablet: vs(8)}),
   },
 
-  cardChipMuted: {
-    fontSize: CHIP_FONT,
-    fontWeight: '500',
+  cardRoutePoint: {
+    flexShrink: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: ms(5),
+  },
+
+  cardRoutePointEnd: {
+    justifyContent: 'flex-end',
+  },
+
+  cardRoutePointText: {
+    flexShrink: 1,
+  },
+
+  cardRoutePointTextEnd: {
+    alignItems: 'flex-end',
+  },
+
+  cardRouteLabel: {
+    fontSize: IS_TABLET ? fontSize.pico : fontSize.small,
+    fontWeight: '600',
+    letterSpacing: 0.4,
     color: colors.textMuted,
   },
 
-  cardChipSoft: {
-    fontSize: CHIP_FONT,
+  cardRouteCity: {
+    fontSize:IS_TABLET ? fontSize.micro : fontSize.subBody,
+    fontWeight: '700',
+    color: colors.textStrong,
+    marginTop: vs(1),
+  },
+
+  cardRouteLine: {
+    flex: 1,
+    justifyContent: 'center',
+    marginHorizontal: ms(10),
+  },
+
+  /* ----- Footer stats: pickup time / auction type / equipment type ----- */
+  cardStatsRow: {
+    flexDirection: 'row',
+    marginTop: select({phone: vs(10), tablet: vs(9)}),
+    paddingVertical: select({phone: vs(7), tablet: vs(4)}),
+    paddingHorizontal: ms(4),
+    backgroundColor: colors.paleBlue,
+    borderRadius: ms(10),
+  },
+
+  cardStat: {
+    flex: 1,
+    alignItems: 'center',
+    paddingHorizontal: ms(2),
+  },
+
+  cardStatIcon: {
+    width: select({phone: ms(26), tablet: ms(22)}),
+    height: select({phone: ms(26), tablet: ms(22)}),
+    borderRadius: ms(8),
+    backgroundColor: colors.paleBlue,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: select({phone: vs(4), tablet: vs(3)}),
+  },
+
+  cardStatValue: {
+    // Tablet: nano reads one step above its pico caption so the value leads.
+    fontSize: IS_TABLET ? fontSize.nano : fontSize.small,
+    fontWeight: '700',
+    color: colors.textStrong,
+    textAlign: 'center',
+  },
+
+  cardStatLabel: {
+    fontSize: IS_TABLET ? fontSize.pico : fontSize.small,
     fontWeight: '600',
-    color: colors.button_color,
+    letterSpacing: 0.3,
+    color: colors.textMuted,
+    textAlign: 'center',
+    marginTop: vs(2),
   },
 
-  cardDistance: {
-    fontSize: CHIP_FONT,
-    fontWeight: '600',
-    color: colors.card_drive_load,
+  // Thin vertical rule between the three footer stats; stretches to the row
+  // height (default align) minus a small top/bottom inset.
+  cardStatSep: {
+    width: StyleSheet.hairlineWidth,
+    backgroundColor: colors.border_Color,
+    marginVertical: vs(4),
   },
 
-  // Cards in a row stretch to equal height, so pinning the chips/divider/times
-  // block to the bottom keeps the divider on one line however many stops each
-  // card has.
-  cardFooter: {
-    marginTop: 'auto',
-  },
-
+  // Full-width rule separating the header from the route row.
   cardDivider: {
     height: StyleSheet.hairlineWidth,
     backgroundColor: colors.border_Color,
-    marginTop: vs(10),
-  },
-
-  cardBottomRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    gap: ms(6),
-    marginTop: vs(8),
-  },
-
-  cardTimeLabel: {
-    flexShrink: 1,
-    fontSize: fontSize.micro,
-    fontWeight: '600',
-    color: colors.textMuted,
+    marginTop: select({phone: vs(12), tablet: vs(8)}),
   },
 
 });

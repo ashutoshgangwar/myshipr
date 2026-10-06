@@ -274,6 +274,10 @@ export interface BidRow {
   awardedAt: string | null;
   auctionMode: string;
   auctionType: string;
+  /** Full shipment type for the card's mode line, e.g. "FTL · STANDARD". */
+  shipmentType: string;
+  /** What is being hauled. Not in the bids-search payload yet, so "—". */
+  commodity: string;
   deadMile: string;
   tripDistance: string;
   frequency: string;

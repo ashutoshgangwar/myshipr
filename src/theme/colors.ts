@@ -18,7 +18,7 @@ export const colors = {
 
   // Blue
   accentBlue: '#2563EB',
-  paleBlue: '#DDE8F8',
+  paleBlue: '#CEE3FE4D',
 
   // Red
   danger: '#DC2626',

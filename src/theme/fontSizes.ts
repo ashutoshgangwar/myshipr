@@ -22,6 +22,10 @@ export const fontSize = {
   small: size(10),
   tiny: size(9),
   micro: size(8),
+  // Sub-micro steps for dense, multi-column UI (e.g. the tablet bidding card's
+  // route labels and footer stats) where micro is still too large to fit.
+  nano: size(7),
+  pico: size(5),
 } as const;
 
 export type FontSizeToken = keyof typeof fontSize;

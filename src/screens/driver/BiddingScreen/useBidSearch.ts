@@ -71,6 +71,14 @@ const humanize = (raw: unknown): string => {
     .join(' ');
 };
 
+/** "FTL_STANDARD" → "FTL · STANDARD" — the full shipment type for the card. */
+const shipmentTypeLabel = (raw: unknown): string =>
+  String(raw ?? '')
+    .trim()
+    .split(/[\s_-]+/)
+    .filter(Boolean)
+    .join(' · ');
+
 /** "NORMAL" → "Normal", "INSTANT" → "Instant" — the two tones the pill knows. */
 const auctionType = (raw: unknown): string =>
   /instant/i.test(String(raw ?? '')) ? 'Instant' : 'Normal';
@@ -240,6 +248,10 @@ export const toBidRow = (item: BidSearchItem): BidRow => {
     awardedAt: status === 'Awarded' ? money : null,
     auctionMode: humanize(item?.auctionMode),
     auctionType: auctionType(item?.auctionMode),
+    // The full shipment type, e.g. "FTL · STANDARD" — the card's mode line.
+    shipmentType: shipmentTypeLabel(item?.shipmentType),
+    // No commodity in the search payload yet — stays "—" rather than invented.
+    commodity: '—',
     deadMile: item?.deadMiles != null ? String(item.deadMiles) : '—',
     tripDistance:
       item?.distanceMiles != null
