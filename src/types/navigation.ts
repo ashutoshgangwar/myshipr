@@ -127,6 +127,8 @@ export interface AuctionDetail {
   endsAt?: string;
   yourBid: number;
   currentLowest: number;
+  /** The auction's ceiling in dollars (`max_bid_cap_cents` / 100). */
+  maxBidCap?: number;
   outbid: boolean;
   vehicles: {id: string; model: string; assetId?: number}[];
   stops: {

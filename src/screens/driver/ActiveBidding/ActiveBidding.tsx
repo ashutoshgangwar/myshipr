@@ -46,7 +46,6 @@ import type {RootStackScreenProps} from '../../../types/navigation';
 import {playAppSound} from '../../../services/notificationSound';
 import {placeBid, setAutoBid} from '../../../config/driverApi';
 import type {AutoBidMode} from '../../../types/bidding';
-import {CURRENT_TRIP_ID} from '../HomeScreen/currentTrip';
 import type {ApiErrorBody} from '../../../types/api';
 import type {ErrorLike} from '../../../types/common';
 import { IS_TABLET } from '../../../theme/device';
@@ -73,10 +72,7 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
     route?.params?.auctionId ||
     row?.auctionId ||
     row?.shipmentId ||
-    passed?.auctionId ||
-    // Static until the bidding list comes from the API — the same shipment the
-    // Home card shows.
-    CURRENT_TRIP_ID;
+    passed?.auctionId;
 
   // The real auction detail — `GET /drivers/bids/{auctionId}/detail`, mapped
   // onto the shape the screen renders. Falls back to the tapped row until it
@@ -404,6 +400,11 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
             </AppText>
           </View>
         )}
+
+        {/* MAX BID CAP — the auction's ceiling, always shown. */}
+        <AppText style={styles.maxBidCapText}>
+          Max Bid Cap: ${data.maxBidCap?.toLocaleString() ?? NOT_IN_API}
+        </AppText>
 
         {/* VEHICLE + BID CARD */}
         <View style={styles.bidCard}>

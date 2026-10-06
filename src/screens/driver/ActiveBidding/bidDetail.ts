@@ -261,6 +261,10 @@ export const toActiveBidding = (
     endsAt: auction?.auctionEndsAt ?? base.endsAt,
     yourBid: lowest,
     currentLowest: lowest,
+    // The auction's ceiling, `max_bid_cap_cents` (e.g. 1500000 → $15,000).
+    maxBidCap: isNumber(auction?.max_bid_cap_cents)
+      ? Number(auction?.max_bid_cap_cents) / 100
+      : base.maxBidCap,
     // Whether this driver is being outbid is not in the detail payload — carry
     // the leading state the row already resolved.
     outbid: base.outbid,

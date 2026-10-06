@@ -216,6 +216,13 @@ export default StyleSheet.create({
   },
   statusTextOutbid: {color: colors.button_color},
   statusTextPlaced: {color: colors.success},
+  maxBidCapText: {
+    marginTop: vs(6),
+    fontSize: fontSize.subBody,
+    fontWeight: '500',
+    color: colors.success,
+    textAlign:'center'
+  },
 
   /* VEHICLE + BID CARD */
   bidCard: {
