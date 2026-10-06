@@ -2,13 +2,12 @@ import React, {useState} from 'react';
 import {Modal, Pressable, ScrollView, TouchableOpacity, View} from 'react-native';
 
 import styles from '../BiddingScreen.styles';
-import {FILTER_FIELDS} from '../constants';
 import AppText from '../../../../theme/AppText';
 import {colors} from '../../../../theme/colors';
 import ChevronDown from '../../../../assets/svg_icon/Chevron_Down.svg';
 import FilterIcon from '../../../../assets/svg_icon/filter_funnel.svg';
 import {IS_TABLET} from '../../../../theme/device';
-import type {FilterKey, Filters} from '../constants';
+import type {FilterField, FilterKey, Filters} from '../constants';
 
 /** Window coordinates of the funnel button the popover hangs from. */
 export interface FilterAnchor {
@@ -21,6 +20,8 @@ export interface FilterAnchor {
 export interface FilterDetailsPanelProps {
   visible?: boolean;
   anchor?: FilterAnchor | null;
+  /** The fields and their options, loaded from `/bids/filter-options`. */
+  fields: FilterField[];
   filters: Filters;
   onChange?: (filters: Filters) => void;
   onClose?: () => void;
@@ -31,6 +32,7 @@ const CHEVRON = IS_TABLET ? 16 : 13;
 export default function FilterDetailsPanel({
   visible,
   anchor,
+  fields,
   filters,
   onChange,
   onClose,
@@ -38,13 +40,13 @@ export default function FilterDetailsPanel({
   // Only one field's options are unfolded at a time — the popover is narrow.
   const [openKey, setOpenKey] = useState<FilterKey | null>(null);
 
-  const pick = (key: FilterKey, label: string) => {
+  const pick = (key: FilterKey, value: string) => {
     // tapping the picked option again clears that field
     const next: Filters = {...filters};
-    if (next[key] === label) {
+    if (next[key] === value) {
       delete next[key];
     } else {
-      next[key] = label;
+      next[key] = value;
     }
     setOpenKey(null);
     onChange?.(next);
@@ -55,7 +57,7 @@ export default function FilterDetailsPanel({
     onClose?.();
   };
 
-  const anyPicked = FILTER_FIELDS.some(f => filters[f.key]);
+  const anyPicked = fields.some(f => filters[f.key]);
 
   return (
     <Modal
@@ -80,9 +82,12 @@ export default function FilterDetailsPanel({
           <ScrollView
             showsVerticalScrollIndicator={false}
             keyboardShouldPersistTaps="handled">
-            {FILTER_FIELDS.map(field => {
+            {fields.map(field => {
               const picked = filters[field.key];
               const open = openKey === field.key;
+              // `picked` is the raw enum; show its option's humanized label.
+              const pickedLabel =
+                field.options.find(o => o.value === picked)?.label ?? picked;
 
               return (
                 <View key={field.key}>
@@ -100,7 +105,7 @@ export default function FilterDetailsPanel({
                           styles.filterFieldValue,
                           picked && styles.filterFieldValueSet,
                         ]}>
-                        {picked ?? field.placeholder}
+                        {pickedLabel ?? field.placeholder}
                       </AppText>
                       <ChevronDown
                         width={CHEVRON}
@@ -113,27 +118,35 @@ export default function FilterDetailsPanel({
 
                   {open ? (
                     <View style={styles.filterOptions}>
-                      {field.options.map(option => (
-                        <TouchableOpacity
-                          key={option.label}
-                          activeOpacity={0.85}
-                          onPress={() => pick(field.key, option.label)}
-                          style={styles.filterOption}>
-                          <AppText
-                            style={[
-                              styles.filterOptionText,
-                              option.label === picked &&
-                                styles.filterOptionTextActive,
-                            ]}>
-                            {option.label}
+                      {field.options.length === 0 ? (
+                        <View style={styles.filterOption}>
+                          <AppText style={styles.filterOptionText}>
+                            Loading…
                           </AppText>
-                          {option.label === picked ? (
-                            <AppText style={styles.filterOptionTextActive}>
-                              ✓
+                        </View>
+                      ) : (
+                        field.options.map(option => (
+                          <TouchableOpacity
+                            key={option.value}
+                            activeOpacity={0.85}
+                            onPress={() => pick(field.key, option.value)}
+                            style={styles.filterOption}>
+                            <AppText
+                              style={[
+                                styles.filterOptionText,
+                                option.value === picked &&
+                                  styles.filterOptionTextActive,
+                              ]}>
+                              {option.label}
                             </AppText>
-                          ) : null}
-                        </TouchableOpacity>
-                      ))}
+                            {option.value === picked ? (
+                              <AppText style={styles.filterOptionTextActive}>
+                                ✓
+                              </AppText>
+                            ) : null}
+                          </TouchableOpacity>
+                        ))
+                      )}
                     </View>
                   ) : null}
                 </View>

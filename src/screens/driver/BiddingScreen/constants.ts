@@ -1,7 +1,7 @@
 import {colors} from '../../../theme/colors';
 import {select} from '../../../theme/device';
 import {ms as baseMs, vs as baseVs} from '../../../theme/scale';
-import type {BidSearchStatus} from '../../../types/bidding';
+import type {BidFilterType, BidSearchStatus} from '../../../types/bidding';
 import type {AuctionDetail} from '../../../types/navigation';
 
 const PHONE_FACTOR = select({phone: 0.82, tablet: 1});
@@ -318,164 +318,59 @@ export type BidColumn = (typeof COLUMNS)[number];
  * Filter Details — the popover behind the funnel button in the filter row.
  * ------------------------------------------------------------------------- */
 
-/** A choice in one filter field. Ranges carry `min`/`max`; plain values neither. */
+/**
+ * A choice in one filter field. `value` is the raw enum the backend expects in
+ * the search body (e.g. "FTL_STANDARD"); `label` is the humanized text shown.
+ */
 export type FilterOption = {
   label: string;
-  /** Inclusive lower bound. */
-  min?: number;
-  /** Exclusive upper bound. */
-  max?: number;
+  value: string;
 };
 
-export type FilterKey =
-  | 'auctionMode'
-  | 'pickupTime'
-  | 'bidPrice'
-  | 'tripDistance'
-  | 'shipmentType'
-  | 'equipmentType'
-  | 'deadMile';
+export type FilterKey = 'shipmentType' | 'auctionMode' | 'equipmentType';
 
 export type FilterField = {
   key: FilterKey;
+  /** The `GET /drivers/bids/filter-options` query this field's options load from. */
+  type: BidFilterType;
   label: string;
   /** Shown muted until a value is picked. */
   placeholder: string;
   options: FilterOption[];
 };
 
-/** The selected option label per field; a missing key means "not filtered". */
+/** The selected option `value` per field; a missing key means "not filtered". */
 export type Filters = Partial<Record<FilterKey, string>>;
 
+/**
+ * The three fields the Filter Details popover shows. Their `options` arrive at
+ * runtime from `GET /drivers/bids/filter-options` (see `useBidFilterOptions`),
+ * so they start empty here — this is only each field's key, label and the enum
+ * its choices are loaded under.
+ */
 export const FILTER_FIELDS: FilterField[] = [
   {
-    key: 'auctionMode',
-    label: 'Auction Mode',
-    placeholder: 'Instant',
-    options: [{label: 'Instant'}, {label: 'Normal'}],
-  },
-  {
-    key: 'pickupTime',
-    label: 'Pickup Time',
-    placeholder: 'Morning',
-    options: [
-      {label: 'Morning'},
-      {label: 'Afternoon'},
-      {label: 'Evening'},
-      {label: 'Night'},
-    ],
-  },
-  {
-    key: 'bidPrice',
-    label: 'Bid Price',
-    placeholder: 'Amount Range',
-    options: [
-      {label: 'Under $1,000', max: 1000},
-      {label: '$1,000 – $2,500', min: 1000, max: 2500},
-      {label: '$2,500 – $5,000', min: 2500, max: 5000},
-      {label: 'Over $5,000', min: 5000},
-    ],
-  },
-  {
-    key: 'tripDistance',
-    label: 'Trip Distance',
-    placeholder: 'Miles Range',
-    options: [
-      {label: 'Under 100 mi', max: 100},
-      {label: '100 – 250 mi', min: 100, max: 250},
-      {label: '250 – 500 mi', min: 250, max: 500},
-      {label: 'Over 500 mi', min: 500},
-    ],
-  },
-  {
     key: 'shipmentType',
+    type: 'SHIPMENT_TYPE',
     label: 'Shipment Type',
-    placeholder: 'LTL',
-    options: [{label: 'FTL'}, {label: 'LTL'}, {label: 'Multileg'}],
+    placeholder: 'All Types',
+    options: [],
+  },
+  {
+    key: 'auctionMode',
+    type: 'AUCTION_MODE',
+    label: 'Auction Mode',
+    placeholder: 'All Modes',
+    options: [],
   },
   {
     key: 'equipmentType',
+    type: 'EQUIPMENT_TYPE',
     label: 'Equipment Type',
-    placeholder: '53’ Dry Van',
-    options: [
-      {label: '53’ Dry Van'},
-      {label: '43’ Dry Van'},
-      {label: 'Reefer'},
-      {label: 'Flatbed'},
-    ],
-  },
-  {
-    key: 'deadMile',
-    label: 'Dead Mile',
-    placeholder: 'Dead Mile range',
-    options: [
-      {label: 'Under 5 mi', max: 5},
-      {label: '5 – 15 mi', min: 5, max: 15},
-      {label: '15 – 30 mi', min: 15, max: 30},
-      {label: 'Over 30 mi', min: 30},
-    ],
+    placeholder: 'All Equipment',
+    options: [],
   },
 ];
-
-/** "$4567", "184miles" and "8" all reduce to the number they carry. */
-const amount = (value: string | number): number =>
-  Number(String(value).replace(/[^0-9.]/g, '')) || 0;
-
-/** "6.00Pm" -> "Evening". Empty when the clock string is not recognised. */
-const pickupBand = (pickup: string): string => {
-  const parts = /^(\d{1,2})[.:](\d{2})\s*([ap])m$/i.exec(pickup.trim());
-  if (!parts) {
-    return '';
-  }
-  const hour = (Number(parts[1]) % 12) + (parts[3].toLowerCase() === 'p' ? 12 : 0);
-  if (hour >= 5 && hour < 12) {
-    return 'Morning';
-  }
-  if (hour < 17) {
-    return 'Afternoon';
-  }
-  if (hour < 21) {
-    return 'Evening';
-  }
-  return 'Night';
-};
-
-const optionFor = (key: FilterKey, filters: Filters): FilterOption | undefined => {
-  const picked = filters[key];
-  if (!picked) {
-    return undefined;
-  }
-  return FILTER_FIELDS.find(f => f.key === key)?.options.find(
-    o => o.label === picked,
-  );
-};
-
-/** No option picked passes everything; otherwise min is inclusive, max exclusive. */
-const inRange = (value: number, option?: FilterOption): boolean =>
-  !option ||
-  ((option.min === undefined || value >= option.min) &&
-    (option.max === undefined || value < option.max));
-
-/** True when the row survives every field the driver has set. */
-export const matchesFilters = (b: BidRow, filters: Filters): boolean => {
-  if (filters.auctionMode && b.auctionType !== filters.auctionMode) {
-    return false;
-  }
-  if (filters.pickupTime && pickupBand(b.pickupTime) !== filters.pickupTime) {
-    return false;
-  }
-  if (filters.shipmentType && b.mode !== filters.shipmentType) {
-    return false;
-  }
-  if (filters.equipmentType && b.equipmentType !== filters.equipmentType) {
-    return false;
-  }
-  return (
-    inRange(amount(b.lowestBid), optionFor('bidPrice', filters)) &&
-    inRange(amount(b.tripDistance), optionFor('tripDistance', filters)) &&
-    inRange(amount(b.deadMile), optionFor('deadMile', filters))
-  );
-};
 
 /** How many fields are narrowing the list — drives the funnel's active tint. */
 export const activeFilterCount = (filters: Filters): number =>
@@ -498,17 +393,4 @@ export const bucketToStatus = (bucket?: string | null): BidSearchStatus => {
     default:
       return 'ALL';
   }
-};
-
-/**
- * The min/max the selected option carries for a range field — what the search
- * body's `bidPriceMin`/`distanceMax`/… are built from. Either end is undefined
- * when the option is open on that side, or when nothing is picked.
- */
-export const rangeFor = (
-  key: FilterKey,
-  filters: Filters,
-): {min?: number; max?: number} => {
-  const option = optionFor(key, filters);
-  return {min: option?.min, max: option?.max};
 };

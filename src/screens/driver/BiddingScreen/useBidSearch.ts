@@ -24,7 +24,7 @@ import {
   MONTHS_SHORT,
   stopTime,
 } from '../../../utils/format';
-import {BUCKETS, STATS, bucketToStatus, rangeFor} from './constants';
+import {BUCKETS, STATS, bucketToStatus} from './constants';
 import type {BidRow, Filters, MockStop} from './constants';
 import type {
   BidSearchItem,
@@ -342,26 +342,15 @@ export const buildBidSearchParams = ({
   const text = (search ?? '').trim();
   if (text) params.search = text;
 
-  // The Filter Details "Shipment Type" wins; otherwise the mode chip narrows it.
+  // The Filter Details popover now sends the backend's own enums (e.g.
+  // "FTL_STANDARD", "INSTANT", "DRY_VAN"), loaded from `/bids/filter-options`.
+  // The "Shipment Type" field wins; otherwise the mode chip narrows it.
   const shipmentType =
     picked.shipmentType ?? (mode && mode !== 'All Modes' ? mode : undefined);
   if (shipmentType) params.shipmentType = shipmentType;
 
   if (picked.auctionMode) params.auctionMode = picked.auctionMode;
-  if (picked.pickupTime) params.pickupTime = picked.pickupTime;
   if (picked.equipmentType) params.equipmentType = picked.equipmentType;
-
-  const bid = rangeFor('bidPrice', picked);
-  if (bid.min != null) params.bidPriceMin = bid.min;
-  if (bid.max != null) params.bidPriceMax = bid.max;
-
-  const distance = rangeFor('tripDistance', picked);
-  if (distance.min != null) params.distanceMin = distance.min;
-  if (distance.max != null) params.distanceMax = distance.max;
-
-  const dead = rangeFor('deadMile', picked);
-  if (dead.min != null) params.deadMileMin = dead.min;
-  if (dead.max != null) params.deadMileMax = dead.max;
 
   return params;
 };

@@ -11,6 +11,7 @@ import ListViewIcon from '../../../../assets/svg_icon/list_grid.svg';
 import CardViewIcon from '../../../../assets/svg_icon/card_grid.svg';
 import FilterIcon from '../../../../assets/svg_icon/filter_funnel.svg';
 import FilterDetailsPanel from './FilterDetailsPanel';
+import {useBidFilterOptions} from '../useBidFilterOptions';
 import { IS_TABLET } from '../../../../theme/device';
 import type {Filters, BidTabKey} from '../constants';
 import type {FilterAnchor} from './FilterDetailsPanel';
@@ -58,6 +59,8 @@ export default function FilterRow({
 
   const picked = filters ?? {};
   const filterCount = activeFilterCount(picked);
+  // The three fields and their options, loaded from `/bids/filter-options`.
+  const {fields} = useBidFilterOptions();
 
   const openFilters = () => {
     funnelRef.current?.measureInWindow((x, y, width, height) => {
@@ -197,6 +200,7 @@ export default function FilterRow({
       <FilterDetailsPanel
         visible={filterOpen}
         anchor={anchor}
+        fields={fields}
         filters={picked}
         onChange={onFiltersChange}
         onClose={() => setFilterOpen(false)}

@@ -105,6 +105,22 @@ export interface BidSearchResult {
 }
 
 /* ---------------------------------------------------------------------------
+ * Filter options — `GET /drivers/bids/filter-options?type=…`, the choices the
+ * Bidding screen's Filter Details popover offers. `type` is mandatory and is
+ * one of the three enums below; the answer is a flat list of that type's values.
+ * ------------------------------------------------------------------------- */
+
+/** Which set of filter choices to load. */
+export type BidFilterType = 'SHIPMENT_TYPE' | 'AUCTION_MODE' | 'EQUIPMENT_TYPE';
+
+/** One choice the endpoint returns — `value` is the raw enum the search sends. */
+export interface BidFilterOptionItem {
+  id: string;
+  type: BidFilterType | string;
+  value: string;
+}
+
+/* ---------------------------------------------------------------------------
  * Bid detail — `GET /drivers/bids/{auctionId}/detail`, the ActiveBidding screen.
  * ------------------------------------------------------------------------- */
 

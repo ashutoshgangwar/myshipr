@@ -41,6 +41,8 @@ import type {
   AutoBidResult,
   BidDetail,
   BidDetailParams,
+  BidFilterOptionItem,
+  BidFilterType,
   BidSearchItem,
   BidSearchParams,
   BidSearchResult,
@@ -163,6 +165,8 @@ export const DRIVER_ENDPOINTS = {
     ),
   /** The Bidding screen's list + header — see `searchBids`. */
   searchBids: () => serviceUrl('drivers', '/drivers/bids/search'),
+  /** The Filter Details popover's choices — see `getBidFilterOptions`. */
+  bidFilterOptions: () => serviceUrl('drivers', '/drivers/bids/filter-options'),
   /** One auction's full detail — see `getBidDetail`. */
   bidDetail: (auctionId: string) =>
     serviceUrl(
@@ -1391,6 +1395,53 @@ export const searchBids = async (
     summary: payload?.summary ?? null,
     content: Array.isArray(content) ? content : [],
   };
+};
+
+/**
+ * The choices one field of the Bidding screen's Filter Details popover offers —
+ * the shipment types, auction modes or equipment types the backend knows. The
+ * `type` query param is mandatory; the answer is a flat list of `{id, type,
+ * value}`, where `value` is the raw enum the search body sends back.
+ *
+ * `GET /drivers/bids/filter-options?type=SHIPMENT_TYPE`
+ *
+ * @param params the `type` to load — one of the three filter enums
+ * @returns the list of choices (envelope unwrapped), always an array
+ */
+export const getBidFilterOptions = async ({
+  type,
+}: {type: BidFilterType}): Promise<BidFilterOptionItem[]> => {
+  if (!type) {
+    throw new Error('getBidFilterOptions: type is required');
+  }
+
+  const url = DRIVER_ENDPOINTS.bidFilterOptions();
+  const params = {type};
+
+  log('bid filter options request', {url, ...params});
+
+  let status;
+  let body;
+  try {
+    ({status, data: body} = await apiClient.get(url, {params}));
+  } catch (e) {
+    const err = e as DriverApiError;
+    log('bid filter options failed', {
+      url,
+      status: err?.response?.status ?? null,
+      body: err?.response?.data ?? err?.message,
+    });
+    throw err;
+  }
+
+  log(
+    `bid filter options response (${status})\n` + JSON.stringify(body, null, 2),
+  );
+
+  // Bare array on this endpoint, but the gateway wraps some services in `data`.
+  const payload = body?.data ?? body;
+  const list = Array.isArray(payload) ? payload : payload?.content ?? [];
+  return Array.isArray(list) ? list : [];
 };
 
 /**
