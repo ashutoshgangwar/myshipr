@@ -109,7 +109,7 @@ export type FavoriteDestinationHandoff =
 /**
  * One auction as the ActiveBidding screen renders it. Built from the tapped
  * bidding row (`toAuction`) and from `GET /drivers/bids/{auctionId}/detail`
- * (`toActiveBidding`); fields neither source carries read "Not in API".
+ * (`toActiveBidding`); fields neither source carries read "----".
  */
 export interface AuctionDetail {
   auctionId: string;

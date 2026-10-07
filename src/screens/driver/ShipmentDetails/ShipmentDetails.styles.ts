@@ -180,7 +180,7 @@ export default StyleSheet.create({
     textAlign: 'center',
   },
 
-  // Every "Not in API" on the page is greyed and un-bolded, so a slot the
+  // Every "----" on the page is greyed and un-bolded, so a slot the
   // backend has not filled never reads as a real value.
   textMissing: {
     color: colors.textMuted,

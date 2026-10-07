@@ -80,7 +80,7 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
 
   // The real auction detail — `GET /drivers/bids/{auctionId}/detail`, mapped
   // onto the shape the screen renders. Falls back to the tapped row until it
-  // lands; fields the payload has no answer for read "Not in API".
+  // lands; fields the payload has no answer for read "----".
   // Poll every 5s so the current lowest bid and the rest of the auction stay
   // live while the driver is on the screen.
   const {detail, loading: detailLoading} = useBidDetail(auctionId, 5000);

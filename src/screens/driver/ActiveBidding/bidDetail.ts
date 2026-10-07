@@ -25,12 +25,12 @@ import type {AuctionDetail} from '../../../types/navigation';
 import type {AsyncResource, Nullable} from '../../../types/common';
 
 /** What a field reads when the detail payload does not carry it. */
-export const NOT_IN_API = 'Not in API';
+export const NOT_IN_API = '----';
 
 const ERROR = 'Could not load this auction.';
 
 /**
- * The auction with nothing in it — every field reads "Not in API" and the lists
+ * The auction with nothing in it — every field reads "----" and the lists
  * are empty. Used before the detail call lands when the screen was opened with
  * no row (e.g. a deep link), so nothing on it is ever mock data.
  */
@@ -58,7 +58,7 @@ const isDrop = (type: string | null | undefined): boolean =>
 const bySequence = (a: BidDetailRouteStop, b: BidDetailRouteStop): number =>
   (a?.sequence ?? 0) - (b?.sequence ?? 0);
 
-/** A value the payload carried, or the "Not in API" placeholder. */
+/** A value the payload carried, or the "----" placeholder. */
 const orNA = (value: string): string => value || NOT_IN_API;
 
 /**
@@ -139,13 +139,13 @@ const dockLabel = (raw: unknown): string => {
   return /dock/i.test(text) ? text : `Dock ${text}`;
 };
 
-/** 35000 → "35,000 lbs", missing → "Not in API". */
+/** 35000 → "35,000 lbs", missing → "----". */
 const weightLabel = (raw: number | null | undefined): string =>
   isNumber(raw) ? `${group(Math.round(Number(raw)))} lbs` : NOT_IN_API;
 
 /**
  * The route reduced to "Single Stop" (1 pickup + 1 drop) or "Multi Stop" (more
- * of either). "Not in API" when the payload carried no route.
+ * of either). "----" when the payload carried no route.
  */
 const stopKind = (route: BidDetailRouteStop[] | null | undefined): string => {
   const stops = Array.isArray(route) ? route : [];
@@ -280,7 +280,7 @@ export const toActiveBidding = (
     // the leading state the row already resolved.
     outbid: base.outbid,
     // No vehicle API yet, and no sample to stand in — the picker is empty until
-    // one exists, and the screen shows "Not in API" in its place.
+    // one exists, and the screen shows "----" in its place.
     vehicles: base.vehicles,
     stops,
     details: toDetails(detail, base),
@@ -337,7 +337,7 @@ export function useBidDetail(
 /**
  * The live "HH:MM:SS left" for an auction, recomputed every second so the timer
  * runs down on screen. Returns "Closed" once the end has passed (and stops the
- * ticking), and the "Not in API" placeholder when there is no end timestamp.
+ * ticking), and the "----" placeholder when there is no end timestamp.
  *
  * @param endsAt the auction's end, ISO (`auctionEndsAt` / `biddingClosesAt`)
  */
