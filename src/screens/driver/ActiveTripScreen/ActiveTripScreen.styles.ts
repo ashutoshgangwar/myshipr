@@ -749,6 +749,11 @@ export default StyleSheet.create({
     alignItems: 'flex-start',
     justifyContent: 'space-between',
   },
+  stepHeaderIcons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: s(8),
+  },
   stepLabel: {color: colors.textMuted, fontSize: fontSize.small},
   stepTitle: {
     color: colors.textStrong,

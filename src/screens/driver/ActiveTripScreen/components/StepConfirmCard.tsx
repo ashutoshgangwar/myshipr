@@ -13,9 +13,11 @@ import styles from '../ActiveTripScreen.styles';
 import {colors} from '../../../../theme/colors';
 import {ms} from '../../../../theme/scale';
 import ChevronDown from '../../../../assets/svg_icon/Chevron_Down.svg';
+import CrossIcon from '../../../../assets/svg_icon/Cross_Icon.svg';
 import type {LayoutChangeEvent} from 'react-native';
 
 const CHEVRON_SIZE = ms(18);
+const CLOSE_SIZE = ms(18);
 const CHEVRON_HIT_SLOP = {top: 10, bottom: 10, left: 10, right: 10};
 // Finger travel before we take over the touch, so taps on the buttons still work.
 const DRAG_SLOP = 6;
@@ -35,6 +37,8 @@ export interface StepConfirmCardProps {
   confirming?: boolean;
   /** Why the last confirm was turned down, shown under the button. */
   error?: string | null;
+  /** Omit to hide the close (×) button — the card then only collapses. */
+  onClose?: () => void;
 }
 
 export default function StepConfirmCard({
@@ -45,6 +49,7 @@ export default function StepConfirmCard({
   onConfirm,
   confirming = false,
   error = null,
+  onClose,
 }: StepConfirmCardProps) {
   const [collapsed, setCollapsed] = useState(false);
   const insets = useSafeAreaInsets();
@@ -195,12 +200,22 @@ export default function StepConfirmCard({
               {title}
             </AppText>
           )}
-          <TouchableOpacity
-            onPress={toggle}
-            hitSlop={CHEVRON_HIT_SLOP}
-            activeOpacity={0.7}>
-            {chevron}
-          </TouchableOpacity>
+          <View style={styles.stepHeaderIcons}>
+            <TouchableOpacity
+              onPress={toggle}
+              hitSlop={CHEVRON_HIT_SLOP}
+              activeOpacity={0.7}>
+              {chevron}
+            </TouchableOpacity>
+            {!!onClose && (
+              <TouchableOpacity
+                onPress={onClose}
+                hitSlop={CHEVRON_HIT_SLOP}
+                activeOpacity={0.7}>
+                <CrossIcon width={CLOSE_SIZE} height={CLOSE_SIZE} />
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
 
         {stepLabel ? <AppText style={styles.stepTitle}>{title}</AppText> : null}

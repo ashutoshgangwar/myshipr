@@ -303,6 +303,9 @@ export default function ActiveTripScreen({navigation, route}: RootStackScreenPro
   const [resendFailed, setResendFailed] = useState(false);
   const [confirmingPreTrip, setConfirmingPreTrip] = useState(false);
   const [preTripError, setPreTripError] = useState<string | null>(null);
+  // Dismissed via the card's close (×) — the driver can still confirm it
+  // later from wherever pre-trip status is tracked elsewhere on the screen.
+  const [preTripDismissed, setPreTripDismissed] = useState(false);
   const verify = useMemo(() => verifyCopy(activeStep), [activeStep]);
 
 
@@ -971,6 +974,11 @@ export default function ActiveTripScreen({navigation, route}: RootStackScreenPro
       return;
     }
 
+    if (!preTrip.done) {
+      showWarning('Navigation', 'Pre Trip Inspection is pending.');
+      return;
+    }
+
     const destination = trip.destination;
     if (!destination) {
       showWarning('Navigation', 'This trip has no destination yet.');
@@ -1079,6 +1087,7 @@ export default function ActiveTripScreen({navigation, route}: RootStackScreenPro
   }, [
     handleStopNavigation,
     isNavigating,
+    preTrip.done,
     resolvePickup,
     showError,
     showWarning,
@@ -1461,7 +1470,7 @@ export default function ActiveTripScreen({navigation, route}: RootStackScreenPro
       <StepConfirmCard
         visible={
           !preTrip.done &&
-          Boolean(tripProgressPayload) &&
+          !preTripDismissed &&
           milestoneStage === 'idle' &&
           !panelFullscreen
         }
@@ -1469,6 +1478,7 @@ export default function ActiveTripScreen({navigation, route}: RootStackScreenPro
         confirming={confirmingPreTrip}
         error={preTripError}
         onConfirm={handleConfirmPreTrip}
+        onClose={() => setPreTripDismissed(true)}
       />
 
       {/* ── Verify this stop: Reached, or the stop's own chip, opens this ── */}
