@@ -412,6 +412,37 @@ export interface DeliveryProofStatus {
   readyForOtp?: boolean;
 }
 
+/**
+ * Params for `getDeliveryConfirmation()`.
+ *
+ * `GET /drivers/shipments/{shipmentId}/delivery/stops/{sequence}/delivery-confirmation`
+ *
+ * Same two path parts as the OTP and proofs calls — `sequence` is the stop's
+ * place within its own shipment.
+ */
+export interface DeliveryConfirmationParams {
+  shipmentId: string;
+  sequence: number;
+}
+
+/**
+ * The drop's confirmed-delivery summary, read once `verify-otp` has cleared
+ * it — what the POD sheet's step 4 shows in place of a placeholder recap.
+ */
+export interface DeliveryConfirmation {
+  shipmentId?: string;
+  sequence?: number;
+  awb?: string;
+  deliveredTo?: Nullable<string>;
+  completed?: boolean;
+  completedAt?: Nullable<string>;
+  verifiedBy?: Nullable<string>;
+  deliveredAt?: Nullable<string>;
+  distanceMiles?: number;
+  payout?: Nullable<number>;
+  proofs?: DeliveryProofResult[];
+}
+
 /** Params for the two list endpoints — `date` optional, as `YYYY-MM-DD`. */
 export interface ShipmentListParams {
   date?: DateString;

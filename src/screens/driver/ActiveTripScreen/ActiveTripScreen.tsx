@@ -75,6 +75,8 @@ import TripProgressBar from './components/TripProgressBar';
 import StopVerifyModal from './components/StopVerifyModal';
 import StepConfirmCard from './components/StepConfirmCard';
 import PodModal from './components/PodModal';
+import type {PodCompletionSummary} from './components/PodModal';
+import SimTripButton from './components/SimTripButton'; // TEMP DEV: sim — remove with feature
 import type {AxiosError} from 'axios';
 import type {ApiErrorBody} from '../../../types/api';
 import type {RootStackScreenProps} from '../../../types/navigation';
@@ -357,6 +359,7 @@ export default function ActiveTripScreen({navigation, route}: RootStackScreenPro
     // The code that was on screen is the one being replaced, so the reason the
     // last one was turned down no longer describes anything.
     setVerifyError(null);
+    console.log('[ActiveTripScreen] resend otp request', otpTarget);
     try {
       const result = await sendDeliveryStopOtp(otpTarget);
       setResendFailed(false);
@@ -365,6 +368,7 @@ export default function ActiveTripScreen({navigation, route}: RootStackScreenPro
           (result?.sentTo ? `A new code was sent to ${result.sentTo}.` : null) ||
           'A new code has been sent.',
       );
+      console.log('[ActiveTripScreen] resend otp success', result);
     } catch (e) {
       const err = e as AxiosError<ApiErrorBody> & ErrorLike;
       setResendFailed(true);
@@ -372,6 +376,10 @@ export default function ActiveTripScreen({navigation, route}: RootStackScreenPro
         err?.response?.data?.message ||
           err?.message ||
           'Could not send a new code. Please try again.',
+      );
+      console.warn(
+        '[ActiveTripScreen] resend otp failed',
+        err?.response?.data ?? err?.message,
       );
     } finally {
       setResending(false);
@@ -642,7 +650,7 @@ export default function ActiveTripScreen({navigation, route}: RootStackScreenPro
   const [revealing, setRevealing] = useState(false);
   const revealScale = useRef(new Animated.Value(0)).current;
 
-  const runReveal = useCallback(() => {
+  const runReveal = useCallback((tripCompletedParams?: PodCompletionSummary) => {
     HereNavigation.stopNavigation().catch(() => {});
     stopNavigationLocationFeed();
     endTripSession();
@@ -660,6 +668,7 @@ export default function ActiveTripScreen({navigation, route}: RootStackScreenPro
         title: 'Completing your trip…',
         subtitle: 'Finalising delivery and queuing your payout.',
         next: 'TripCompletedScreen',
+        nextParams: tripCompletedParams,
       });
 
       setTimeout(() => {
@@ -930,21 +939,8 @@ export default function ActiveTripScreen({navigation, route}: RootStackScreenPro
     refreshProgress();
   }, [activeStep, handleStopNavigation, markStopVerified, refreshProgress]);
 
-  /**
-   * The proof-of-delivery flow finished on its summary step.
-   *
-   * The drop it was run for is banked as delivered here and nothing is sent:
-   * no endpoint is called anywhere in this flow yet, so the delivery lives on
-   * the device — the same local banking a verified stop gets, minus the
-   * refetch, which would only re-read a backend that has not been told.
-   *
-   * What happens next is whether that was the last of the run: with stops
-   * still to work the sheet simply closes and the map previews the next leg,
-   * and with none left the trip is over and the reveal takes the driver to the
-   * completed screen. Opened with no stop at all — "End Trip", every stop
-   * already cleared — it is always the latter.
-   */
-  const handlePodComplete = useCallback(() => {
+
+  const handlePodComplete = useCallback((summary?: PodCompletionSummary) => {
     const cleared = podStep;
     setPodStep(null);
 
@@ -960,11 +956,17 @@ export default function ActiveTripScreen({navigation, route}: RootStackScreenPro
     ).length;
     // The sheet is still animating itself away; let it leave before the
     // reveal wipes the screen.
-    if (!remaining) setTimeout(runReveal, 320);
+    if (!remaining) setTimeout(() => runReveal(summary), 320);
   }, [handleStopNavigation, markStopVerified, podStep, runReveal, steps]);
 
-  const handleStartNavigation = useCallback(async () => {
-    if (isNavigating) {
+  const handleStartNavigation = useCallback(async (
+    // TEMP DEV: sim — when a speed multiplier is passed, the route is driven by
+    // HERE's LocationSimulator instead of real GPS. Drop this param to remove.
+    simOptions?: {speedFactor: number},
+  ) => {
+    // TEMP DEV: sim — the simulate path always (re)starts; only the real
+    // toggle stops an in-progress drive here.
+    if (isNavigating && !simOptions) {
       handleStopNavigation();
       return;
     }
@@ -1030,9 +1032,13 @@ export default function ActiveTripScreen({navigation, route}: RootStackScreenPro
 
       await cleared;
 
+      // TEMP DEV: sim — with simOptions, let HERE drive the route itself at
+      // the chosen speed; otherwise guidance follows the real app GPS feed.
       await HereNavigation.startNavigation(navRoute.routeId, {
-        simulate: false,
-        locationSource: 'app',
+        simulate: Boolean(simOptions),
+        ...(simOptions
+          ? {speedFactor: simOptions.speedFactor}
+          : {locationSource: 'app'}),
         voiceGuidance: true,
         speak: true,
         mapViewTag: mapRef.current?.getTag() ?? undefined,
@@ -1049,7 +1055,9 @@ export default function ActiveTripScreen({navigation, route}: RootStackScreenPro
           }),
         )
         ?.catch(() => {});
-      startNavigationLocationFeed();
+      // TEMP DEV: sim — a simulated drive supplies its own fixes, so the real
+      // GPS feed must stay off (it would fight the simulator for the marker).
+      if (!simOptions) startNavigationLocationFeed();
 
       lastRerouteAtRef.current = Date.now();
       setIsNavigating(true);
@@ -1205,12 +1213,19 @@ export default function ActiveTripScreen({navigation, route}: RootStackScreenPro
 
       // The destination guidance was following is one stop, not the whole
       // trip. Arriving at it is exactly when that stop has to be verified, so
-      // the OTP sheet opens on its own rather than making the driver find the
-      // Reached button. With every stop already cleared there is nothing to
-      // verify, and the plain arrival notice stands.
+      // the verify sheet opens on its own rather than making the driver find
+      // the Reached button — the POD sheet (receipt + goods photos) for a
+      // drop, the OTP sheet directly for a pickup, same as the Reached
+      // button's own branching. With every stop already cleared there is
+      // nothing to verify, and the plain arrival notice stands.
       [NavigationEvents.DESTINATION_REACHED]: () => {
         handleStopNavigation();
-        if (activeStepRef.current) {
+        const step = activeStepRef.current;
+        if (step) {
+          if (step.kind === 'drop') {
+            openPod(step);
+            return;
+          }
           setVerifyError(null);
           setMilestoneStage('otp');
           return;
@@ -1220,7 +1235,7 @@ export default function ActiveTripScreen({navigation, route}: RootStackScreenPro
     });
 
     return unsubscribe;
-  }, [handleRouteDeviation, handleStopNavigation, showSuccess]);
+  }, [handleRouteDeviation, handleStopNavigation, openPod, showSuccess]);
 
   const handleToolSelect = useCallback((id: string) => {
     if (id === 'collapse') {
@@ -1242,6 +1257,16 @@ export default function ActiveTripScreen({navigation, route}: RootStackScreenPro
     }
     handleStartNavigation();
   }, [handleStartNavigation, isNavigating]);
+
+  // TEMP DEV: sim — kick off (or stop) a simulated drive along the route at the
+  // speed picked in the dialog. Remove this handler with the feature.
+  const handleSimulate = useCallback(
+    (speedFactor: number) => {
+      if (isNavigatingRef.current) handleStopNavigation();
+      handleStartNavigation({speedFactor});
+    },
+    [handleStartNavigation, handleStopNavigation],
+  );
 
   const closePanel = useCallback(() => setActivePanel(null), []);
 
@@ -1423,6 +1448,14 @@ export default function ActiveTripScreen({navigation, route}: RootStackScreenPro
           styles.mapStyleButton,
           {bottom: styles.mapStyleButton.bottom + insets.bottom},
         ]}
+      />
+
+      {/* TEMP DEV: sim — drive the route without real GPS. Remove with feature. */}
+      <SimTripButton
+        running={isNavigating}
+        disabled={routeLoading}
+        onStart={handleSimulate}
+        onStop={handleStopNavigation}
       />
 
       <StepConfirmCard

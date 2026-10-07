@@ -687,7 +687,7 @@ class HereNavigationModule(
         progress: com.here.sdk.navigation.RouteProgress
     ) {
         val sections = navigator.route?.sections ?: return
-        val remaining = progress.sectionProgress ?: return
+        val remaining = progress.sectionProgress
         if (sections.isEmpty() || remaining.isEmpty()) return
 
         val index = (sections.size - remaining.size).coerceIn(0, sections.size - 1)
@@ -818,7 +818,7 @@ class HereNavigationModule(
      * a turn, so JS gets one event per turn rather than one per tick.
      */
     private fun emitManeuverIfChanged(navigator: VisualNavigator, progress: com.here.sdk.navigation.RouteProgress) {
-        val next = progress.maneuverProgress?.firstOrNull() ?: return
+        val next = progress.maneuverProgress.firstOrNull() ?: return
         if (next.maneuverIndex == lastManeuverIndex) return
 
         val maneuver = navigator.getManeuver(next.maneuverIndex) ?: return
@@ -938,14 +938,14 @@ class HereNavigationModule(
                 // HERE Positioning refuses to start until the app declares that
                 // HERE's privacy notice is covered by its own — see
                 // confirmPrivacyNotice(). Declare it before the first start.
-                var confirmation = confirmPrivacyNotice(engine)
+                confirmPrivacyNotice(engine)
                 var status = engine.start(LocationAccuracy.NAVIGATION)
 
                 // The declaration is forwarded to the SDK's positioning client,
                 // which does not exist until a start has built it — so the first
                 // one can be dropped on a cold engine. Declare again and retry.
                 if (status == LocationEngineStatus.PRIVACY_NOTICE_UNCONFIRMED) {
-                    confirmation = confirmPrivacyNotice(engine)
+                    val confirmation = confirmPrivacyNotice(engine)
                     status = engine.start(LocationAccuracy.NAVIGATION)
                     if (status == LocationEngineStatus.PRIVACY_NOTICE_UNCONFIRMED) {
                         engine.removeLocationListener(navigator)
@@ -1108,9 +1108,11 @@ class HereNavigationModule(
     }
 
     // Required by NativeEventEmitter on the JS side.
+    @Suppress("UNUSED_PARAMETER")
     @ReactMethod
     fun addListener(eventName: String) = Unit
 
+    @Suppress("UNUSED_PARAMETER")
     @ReactMethod
     fun removeListeners(count: Int) = Unit
 }

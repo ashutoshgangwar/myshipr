@@ -23,6 +23,8 @@ import type {
   DeliveryProofResult,
   DeliveryProofStatus,
   DeliveryProofStatusParams,
+  DeliveryConfirmation,
+  DeliveryConfirmationParams,
 } from '../types/shipment';
 import type {
   CallContactsPayload,
@@ -101,6 +103,12 @@ export const DRIVER_ENDPOINTS = {
     serviceUrl(
       'drivers',
       `/drivers/shipments/${encodeURIComponent(shipmentId)}/delivery/stops/${encodeURIComponent(String(sequence))}/proofs`,
+    ),
+  /** The drop's confirmed-delivery summary — see `getDeliveryConfirmation`. */
+  deliveryStopConfirmation: (shipmentId: string, sequence: number) =>
+    serviceUrl(
+      'drivers',
+      `/drivers/shipments/${encodeURIComponent(shipmentId)}/delivery/stops/${encodeURIComponent(String(sequence))}/delivery-confirmation`,
     ),
   /** Who the driver may ring on a load — see `getShipmentCallContacts`. */
   shipmentCallContacts: (shipmentId: string) =>
@@ -504,6 +512,52 @@ export const getDeliveryStopProofStatus = async ({
 
   log(
     `delivery proof status response (${status})\n` +
+      JSON.stringify(body, null, 2),
+  );
+
+  return body?.data ?? body ?? {};
+};
+
+/**
+ * The drop's confirmed-delivery summary, once `verify-otp` has cleared it —
+ * what the POD sheet's step 4 shows.
+ *
+ * `GET /drivers/shipments/{shipmentId}/delivery/stops/{sequence}/delivery-confirmation`
+ *
+ * @param params `shipmentId` and the stop's `sequence`, both required
+ * @returns the confirmation payload (envelope unwrapped)
+ */
+export const getDeliveryConfirmation = async ({
+  shipmentId,
+  sequence,
+}: Partial<DeliveryConfirmationParams> = {}): Promise<DeliveryConfirmation> => {
+  if (!shipmentId) {
+    throw new Error('getDeliveryConfirmation: shipmentId is required');
+  }
+  if (!Number.isFinite(Number(sequence))) {
+    throw new Error('getDeliveryConfirmation: sequence is required');
+  }
+
+  const url = DRIVER_ENDPOINTS.deliveryStopConfirmation(shipmentId, Number(sequence));
+
+  log('delivery confirmation request', {url, shipmentId, sequence});
+
+  let status;
+  let body;
+  try {
+    ({status, data: body} = await apiClient.get(url));
+  } catch (e) {
+    const err = e as DriverApiError;
+    log('delivery confirmation failed', {
+      url,
+      status: err?.response?.status ?? null,
+      body: err?.response?.data ?? err?.message,
+    });
+    throw err;
+  }
+
+  log(
+    `delivery confirmation response (${status})\n` +
       JSON.stringify(body, null, 2),
   );
 

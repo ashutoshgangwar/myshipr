@@ -24,7 +24,9 @@ import type {DeliveryStopTarget} from '../../../../services/podDocuments';
 import {
   sendDeliveryStopOtp,
   verifyDeliveryStopOtp,
+  getDeliveryConfirmation,
 } from '../../../../config/driverApi';
+import type {DeliveryConfirmation} from '../../../../types/shipment';
 import Uplode_Frame from '../../../../assets/svg_icon/Uplode_Frame.svg';
 import Zoom_in_Icon from '../../../../assets/svg_icon/zoom_in_Icon.svg';
 import Zoom_in_White from '../../../../assets/svg_icon/zoom-in.svg';
@@ -56,10 +58,22 @@ const OTP_LENGTH = 6;
  *   3. Enter the receiver's one-time code
  *   4. Delivery confirmed summary
  */
+/**
+ * What the sheet hands back on "Ride Completed!" — the pickup/drop and load
+ * it was just run for, straight off the same confirmation step shows, so
+ * whatever comes next (the completed-trip screen) can name the same load
+ * and locations without re-deriving them.
+ */
+export interface PodCompletionSummary {
+  pickup?: string;
+  drop?: string;
+  loadId?: string;
+}
+
 export interface PodModalProps {
   visible?: boolean;
   onClose?: () => void;
-  onComplete?: () => void;
+  onComplete?: (summary?: PodCompletionSummary) => void;
   loadId?: string;
   /** Where the load was collected — the start of the leg being closed out. */
   fromLocation?: string;
@@ -119,6 +133,13 @@ export default function PodModal({
   const [resendNotice, setResendNotice] = useState<Nullable<string>>(null);
   const [resendFailed, setResendFailed] = useState(false);
 
+  // ── Step 4's confirmed-delivery summary ─────────────────────────────
+  // Read once the code has cleared the stop — there is nothing to show
+  // before that, since the backend only has a confirmed summary for a
+  // delivered stop.
+  const [confirmation, setConfirmation] = useState<DeliveryConfirmation | null>(null);
+  const [confirmationLoading, setConfirmationLoading] = useState(false);
+
   // Keep the sheet pinned to the bottom and grow its bottom padding to lift
   // the content above the keyboard on iOS, in sync with the system keyboard's
   // own show/hide animation. Padding (not translate) means the sheet always
@@ -158,6 +179,8 @@ export default function PodModal({
     setResending(false);
     setResendNotice(null);
     setResendFailed(false);
+    setConfirmation(null);
+    setConfirmationLoading(false);
     receiptUpload.reset();
     goodsUpload.reset();
   }, [goodsUpload, receiptUpload, startStep]);
@@ -188,6 +211,35 @@ export default function PodModal({
 
   /** True while the sheet is on the first step it was allowed to open at. */
   const atStart = step <= startStep;
+
+  /**
+   * Step 4's recap is read off the backend rather than assumed from what the
+   * driver just did — `GET .../delivery-confirmation` — so the confirmed
+   * step shows the same delivered-at, verifier and payout the backend
+   * actually recorded. Nothing to read when the sheet opened from "End Trip"
+   * with every stop already cleared, since there is no stop to ask about.
+   */
+  useEffect(() => {
+    if (step !== TOTAL_STEPS || !stopTarget) return;
+    let cancelled = false;
+    setConfirmationLoading(true);
+    getDeliveryConfirmation(stopTarget)
+      .then(result => {
+        if (!cancelled) setConfirmation(result);
+      })
+      .catch(e => {
+        console.warn(
+          '[PodModal] delivery confirmation failed',
+          (e as ErrorLike)?.message,
+        );
+      })
+      .finally(() => {
+        if (!cancelled) setConfirmationLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [step, stopTarget]);
 
   /**
    * Step 1's primary action: store the receipt with the document service, file
@@ -296,6 +348,7 @@ export default function PodModal({
     // was turned down no longer describes anything.
     setVerifyError(null);
     setOtp(Array(OTP_LENGTH).fill(''));
+    console.log('[PodModal] resend otp request', stopTarget);
     try {
       const result = await sendDeliveryStopOtp(stopTarget);
       setResendFailed(false);
@@ -304,6 +357,7 @@ export default function PodModal({
           (result?.sentTo ? `A new code was sent to ${result.sentTo}.` : null) ||
           'A new code has been sent.',
       );
+      console.log('[PodModal] resend otp success', result);
     } catch (e) {
       const err = e as AxiosError<ApiErrorBody> & ErrorLike;
       setResendFailed(true);
@@ -311,6 +365,10 @@ export default function PodModal({
         err?.response?.data?.message ||
           err?.message ||
           'Could not send a new code. Please try again.',
+      );
+      console.warn(
+        '[PodModal] resend otp failed',
+        err?.response?.data ?? err?.message,
       );
     } finally {
       setResending(false);
@@ -413,8 +471,15 @@ export default function PodModal({
               {step === 4 && (
                 <ConfirmStep
                   loadId={loadId}
+                  toLocation={toLocation}
+                  confirmation={confirmation}
+                  loading={confirmationLoading}
                   onDone={() => {
-                    onComplete?.();
+                    onComplete?.({
+                      pickup: fromLocation,
+                      drop: confirmation?.deliveredTo || toLocation,
+                      loadId: confirmation?.awb || loadId,
+                    });
                     close();
                   }}
                 />
@@ -1138,22 +1203,52 @@ function OtpStep({
   );
 }
 
+/** "3:38 PM · Jun 10, 2026", or null for anything unparseable. */
+const formatDeliveredAt = (iso?: Nullable<string>) => {
+  if (!iso) return null;
+  const at = new Date(iso);
+  if (Number.isNaN(at.getTime())) return null;
+  const time = at.toLocaleTimeString([], {hour: 'numeric', minute: '2-digit'});
+  const date = at.toLocaleDateString([], {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+  return `${time} · ${date}`;
+};
+
 /* ── Confirmation step (4) ───────────────────────────────────────────── */
 function ConfirmStep({
   loadId,
+  toLocation,
+  confirmation,
+  loading,
   onDone,
 }: {
   loadId?: string;
+  toLocation?: string;
+  confirmation?: DeliveryConfirmation | null;
+  loading?: boolean;
   onDone?: () => void;
 }) {
+  const deliveredTo = confirmation?.deliveredTo || toLocation || '—';
+
   const rows = [
-    ['Load', loadId],
-    ['Delivered to', 'Destination , Dock 4b'],
-    ['Delivered at', '3:38 PM · Jun 10, 2026'],
-    ['Verified by', 'James M'],
+    ['Load', confirmation?.awb || loadId || '—'],
+    ['Delivered to', deliveredTo],
+    ['Delivered at', formatDeliveredAt(confirmation?.deliveredAt) || '—'],
+    ['Verified by', confirmation?.verifiedBy || '—'],
     ['Proof of photos', 'Receipt, Delivered goods photo'],
-    ['Distance', '234 miles'],
-    ['Trip Payout', '$567'],
+    [
+      'Distance',
+      Number.isFinite(confirmation?.distanceMiles)
+        ? `${confirmation?.distanceMiles} miles`
+        : '—',
+    ],
+    [
+      'Trip Payout',
+      confirmation?.payout != null ? `$${confirmation.payout}` : '—',
+    ],
   ];
 
   return (
@@ -1161,22 +1256,26 @@ function ConfirmStep({
       <AppText style={styles.podStepLabel}>Step 4 of 4 • Confirmed</AppText>
       <AppText style={styles.podTitle}>Delivery Confirmed</AppText>
       <AppText style={styles.podDesc}>
-        Load {loadId} has been fully verified and delivered to Metro
-        Distribution. Your payout has been queued.
+        Load {confirmation?.awb || loadId} has been fully verified and
+        delivered to {deliveredTo}. Your payout has been queued.
       </AppText>
 
       <View style={styles.podSummary}>
-        {rows.map(([k, v], i) => (
-          <View
-            key={k}
-            style={[
-              styles.podSummaryRow,
-              i % 2 === 1 && styles.podSummaryRowAlt,
-            ]}>
-            <AppText style={styles.podSummaryKey}>{k}</AppText>
-            <AppText style={styles.podSummaryVal}>{v}</AppText>
-          </View>
-        ))}
+        {loading && !confirmation ? (
+          <ActivityIndicator />
+        ) : (
+          rows.map(([k, v], i) => (
+            <View
+              key={k}
+              style={[
+                styles.podSummaryRow,
+                i % 2 === 1 && styles.podSummaryRowAlt,
+              ]}>
+              <AppText style={styles.podSummaryKey}>{k}</AppText>
+              <AppText style={styles.podSummaryVal}>{v}</AppText>
+            </View>
+          ))
+        )}
       </View>
 
       <TouchableOpacity

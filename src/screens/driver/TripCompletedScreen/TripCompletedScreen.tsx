@@ -18,6 +18,7 @@ import Info_Icon from '../../../assets/svg_icon/Info_Icon.svg';
 import Cross_Icon from '../../../assets/svg_icon/Cross_Icon.svg';
 import StatusBar from '../../../component/StatusBar/StatusBar';
 import {IS_TABLET} from '../../../theme/device';
+import {fontSize} from '../../../theme/fontSizes';
 import type {RootStackScreenProps} from '../../../types/navigation';
 
 export default function TripCompletedScreen({navigation, route}: RootStackScreenProps<'TripCompletedScreen'>) {
@@ -30,6 +31,26 @@ export default function TripCompletedScreen({navigation, route}: RootStackScreen
   const handleClose = React.useCallback(() => {
     navigation?.reset?.({index: 0, routes: [{name: 'MainApp'}]});
   }, [navigation]);
+
+  // Leaves on its own after a few seconds — the close button is only for a
+  // driver who doesn't want to wait that long. Counted down rather than a
+  // bare timeout so the screen can show how long is left.
+  const AUTO_CLOSE_SECONDS = 5;
+  const [secondsLeft, setSecondsLeft] = React.useState(AUTO_CLOSE_SECONDS);
+  React.useEffect(() => {
+    const interval = setInterval(() => {
+      setSecondsLeft(prev => Math.max(0, prev - 1));
+    }, 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  // Navigating from inside the interval's own setState updater above would
+  // mean one component (the nav container) updating while this one is still
+  // rendering its state change — React rejects that. Run it from its own
+  // effect instead, once the countdown's render has actually committed.
+  React.useEffect(() => {
+    if (secondsLeft === 0) handleClose();
+  }, [secondsLeft, handleClose]);
 
   return (
 
@@ -63,6 +84,9 @@ export default function TripCompletedScreen({navigation, route}: RootStackScreen
           <AppText style={styles.title}>You have completed your trip</AppText>
           <AppText style={styles.subtitle}>
             Your payout for this trip will be visible in your earnings tab
+          </AppText>
+          <AppText style={styles.redirectText}>
+            Returning to Home in {secondsLeft}s
           </AppText>
 
           {/* Pickup / Drop card */}
@@ -172,6 +196,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: vs(8),
     paddingHorizontal: ms(24),
+  },
+  redirectText: {
+    color: colors.textMuted,
+    fontSize: fontSize.caption,
+    textAlign: 'center',
+    marginTop: vs(6),
   },
   card: {
     backgroundColor: colors.white,
