@@ -78,7 +78,7 @@ const TABLE_PADDING = ms(10);
 const ROW_MIN_H = select({phone: vs(66), tablet: vs(44)});
 
 /* Frozen first column ("Load"). Everything else scrolls horizontally beside it. */
-export const LOAD_COL_W = ms(112);
+export const LOAD_COL_W = ms(140);
 export const HEADER_H = IS_TABLET ? vs(26) : vs(30);
 
 /* Rows are explicitly sized so the frozen column and the scrolling column —
@@ -914,6 +914,12 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: colors.textStrong,
     marginTop: vs(1),
+  },
+
+  // A city/state too long for the card scrolls horizontally instead of
+  // wrapping or being cut off.
+  cardRouteCityScroll: {
+    flexGrow: 0,
   },
 
   cardRouteLine: {

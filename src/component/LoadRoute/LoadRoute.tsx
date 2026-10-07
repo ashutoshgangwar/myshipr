@@ -1,5 +1,5 @@
 import React from 'react';
-import {TouchableOpacity, View} from 'react-native';
+import {ScrollView, TouchableOpacity, View} from 'react-native';
 import Svg, {Line} from 'react-native-svg';
 
 import styles, {
@@ -144,6 +144,9 @@ export interface LoadRouteProps {
   textStyle?: StyleProp<TextStyle>;
   summaryStyle?: StyleProp<TextStyle>;
   style?: StyleProp<ViewStyle>;
+  /** Let a city label too long for its column scroll horizontally instead of
+   * being cut off with an ellipsis. */
+  cityScrollable?: boolean;
 }
 
 export default function LoadRoute({
@@ -156,6 +159,7 @@ export default function LoadRoute({
   textStyle,
   summaryStyle,
   style,
+  cityScrollable = false,
 }: LoadRouteProps) {
   if (!stops.length) return null;
 
@@ -291,9 +295,20 @@ export default function LoadRoute({
                   <CityRing width={CITY_RING} height={CITY_RING} />
                 )}
               </View>
-              <AppText style={[styles.city, textStyle]} numberOfLines={1}>
-                {cities[row.index]}
-              </AppText>
+              {cityScrollable ? (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator
+                  style={styles.cityScroll}>
+                  <AppText style={[styles.city, styles.cityNoShrink, textStyle]}>
+                    {cities[row.index]}
+                  </AppText>
+                </ScrollView>
+              ) : (
+                <AppText style={[styles.city, textStyle]} numberOfLines={1}>
+                  {cities[row.index]}
+                </AppText>
+              )}
             </TouchableOpacity>
           ),
         )}

@@ -69,7 +69,7 @@ export default function BidTable({data}: {data: BidRow[]}) {
                     auction: item.auction,
                   })
                 }>
-                <StopList stops={item.stops} />
+                <StopList stops={item.stops} cityScrollable />
               </TouchableOpacity>
             ))}
           </View>

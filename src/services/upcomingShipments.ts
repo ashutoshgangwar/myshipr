@@ -189,9 +189,15 @@ export const formatLoadDate = (value: unknown): string => {
 const padHour = (text: string): string => (/^\d:/.test(text) ? `0${text}` : text);
 
 const COUNTRY = /^(usa?|u\.s\.a\.?|united states( of america)?|canada|mexico|india)$/i;
-// "NJ 07302" — the tail of a US address line, state code plus postcode.
-const STATE_ZIP = /^([A-Za-z]{2})\.?[\s,]*\d{3,6}(-\d{4})?$/;
+// "NJ 07302" (US zip), "QC G4R 1A1" / "QC G4R" (Canadian postal, full or the
+// FSA half a geocoder often truncates to), or "CDMX 04800" (a longer
+// state/region code, e.g. Mexico City) — the tail of an address line, state
+// or province code plus postcode.
+const STATE_ZIP =
+  /^([A-Za-z]{2,5})\.?[\s,]*(\d{3,6}(-\d{4})?|[A-Za-z]\d[A-Za-z](\s?\d[A-Za-z]\d)?)$/;
 const ZIP = /^\d{3,6}(-\d{4})?$/;
+// A bare state code — "San Jose, CA" with no zip at all.
+const STATE_ONLY = /^[A-Za-z]{2,5}$/;
 
 /**
  * "Jersey City, NJ" out of whatever the stop carries. The route column is a
@@ -218,10 +224,16 @@ export const cityLabel = (stop: ShipmentStop | null | undefined): string => {
   if (stateZip && previous) return `${previous}, ${stateZip[1].toUpperCase()}`;
 
   // "Jersey City NJ 07302" arriving as a single unpunctuated token.
-  const inline = /^(.+?)[\s,]+([A-Za-z]{2})[\s,]+\d{3,6}(-\d{4})?$/.exec(last);
+  const inline =
+    /^(.+?)[\s,]+([A-Za-z]{2,5})[\s,]+(\d{3,6}(-\d{4})?|[A-Za-z]\d[A-Za-z](\s?\d[A-Za-z]\d)?)$/.exec(
+      last,
+    );
   if (inline) return `${inline[1]}, ${inline[2].toUpperCase()}`;
 
   if (ZIP.test(last) && previous) return previous;
+
+  if (STATE_ONLY.test(last) && previous) return `${previous}, ${last.toUpperCase()}`;
+
   return last;
 };
 

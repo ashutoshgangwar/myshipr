@@ -16,7 +16,8 @@ import {useEffect, useMemo} from 'react';
 
 import {searchBids} from '../../../config/driverApi';
 import {TTL, useCachedResource} from '../../../services/resourceCache';
-import {cityLabel, loadType} from '../../../services/upcomingShipments';
+import {loadType} from '../../../services/upcomingShipments';
+import {cityState} from '../ActiveBidding/bidDetail';
 import {colors} from '../../../theme/colors';
 import {
   formatMiles,
@@ -110,21 +111,24 @@ const categoriesOf = (item: BidSearchItem): string[] => {
   return list;
 };
 
-/** The route the Load column draws, in the order the driver runs it. */
+/** The route the Load column draws, in the order the driver runs it. Every
+ * pickup reads the row's own origin and every drop its destination — the
+ * same city/state ActiveBidding's route title shows — rather than each leg's
+ * own address. */
 const toStops = (item: BidSearchItem): MockStop[] => {
+  const origin = cityState(item?.originCity);
+  const dest = cityState(item?.destinationCity);
   const stops = Array.isArray(item?.stops) ? [...item.stops] : [];
   const ordered = stops
     .sort(bySequence)
-    .map((stop): MockStop => ({
-      city: cityLabel({address: stop?.address}),
-      type: isDrop(stop?.type) ? 'drop' : 'pickup',
-    }))
+    .map((stop): MockStop => {
+      const type = isDrop(stop?.type) ? 'drop' : 'pickup';
+      return {city: type === 'drop' ? dest : origin, type};
+    })
     .filter(stop => stop.city);
   if (ordered.length) return ordered;
 
   // No stop list: fall back to the origin/destination summary the row carries.
-  const origin = cityLabel({address: item?.originCity});
-  const dest = cityLabel({address: item?.destinationCity});
   return [
     ...(origin ? [{city: origin, type: 'pickup' as const}] : []),
     ...(dest ? [{city: dest, type: 'drop' as const}] : []),
@@ -152,8 +156,8 @@ const toAuctionStops = (item: BidSearchItem): AuctionDetail['stops'] => {
   const stops = Array.isArray(item?.stops) ? [...item.stops].sort(bySequence) : [];
   return stops.map(stop => ({
     type: isDrop(stop?.type) ? 'D' : 'P',
-    city: cityLabel({address: stop?.address}) || String(stop?.address ?? ''),
-    detail: String(stop?.address ?? ''),
+    city: cityState(stop?.address) || String(stop?.address ?? ''),
+    detail: cityState(stop?.address),
     date: chipDate(stop?.date),
     window: [stopTime(stop?.from), stopTime(stop?.to)].filter(Boolean).join(' - '),
   }));
@@ -202,8 +206,8 @@ export const toAuction = (item: BidSearchItem): AuctionDetail => {
     mode: loadType(item?.shipmentType) || '—',
     date: chipDate(item?.date),
     time: stopTime(item?.pickupTime) || '—',
-    origin: cityLabel({address: item?.originCity}),
-    dest: cityLabel({address: item?.destinationCity}),
+    origin: cityState(item?.originCity),
+    dest: cityState(item?.destinationCity),
     auctionRef: dash(String(item?.shipmentRef ?? '')),
     // Carried so the detail screen can show them even though its own payload
     // has no human ref and no auction mode.
@@ -271,8 +275,8 @@ export const toBidRow = (item: BidSearchItem): BidRow => {
     // No per-driver rank in the payload; the leading flag is what we have.
     rank: item?.leading ? '#1 you' : null,
     status,
-    origin: cityLabel({address: item?.originCity}),
-    dest: cityLabel({address: item?.destinationCity}),
+    origin: cityState(item?.originCity),
+    dest: cityState(item?.destinationCity),
     // Carried so the tapped row opens the detail screen with its own real data.
     auction: toAuction(item),
   };

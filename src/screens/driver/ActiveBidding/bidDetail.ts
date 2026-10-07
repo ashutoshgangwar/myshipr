@@ -65,9 +65,10 @@ const orNA = (value: string): string => value || NOT_IN_API;
  * "City, ST" out of whatever the payload sent, keeping BOTH the city and the
  * state. `cityLabel` drops the city when the value is already "Dallas, TX" (no
  * zip to anchor on) and returns just "TX", so this handles that shape directly
- * and falls back to `cityLabel` for full street addresses.
+ * and falls back to `cityLabel` for full street addresses. Exported so the
+ * Bidding screen's list (`useBidSearch`) formats pickup/drop the same way.
  */
-const cityState = (raw: string | null | undefined): string => {
+export const cityState = (raw: string | null | undefined): string => {
   const text = String(raw ?? '').trim();
   if (!text) return '';
   const parts = text
@@ -79,8 +80,14 @@ const cityState = (raw: string | null | undefined): string => {
   const last = parts[parts.length - 1];
   const prev = parts[parts.length - 2];
 
-  // "TX" or "TX 75201" — a 2-letter state, optionally with its zip.
-  const state = /^([A-Za-z]{2})(\s+\d{3,6}(-\d{4})?)?$/.exec(last);
+  // "TX", "TX 75201" (US zip), "QC G4R" / "QC G4R 1A1" (Canadian postal, full
+  // or the FSA half a geocoder often truncates to), or "CDMX 04800" (a longer
+  // state/region code, e.g. Mexico City) — a state/province code, optionally
+  // with its postal code, which this always drops.
+  const state =
+    /^([A-Za-z]{2,5})(\s+(\d{3,6}(-\d{4})?|[A-Za-z]\d[A-Za-z](\s?\d[A-Za-z]\d)?))?$/.exec(
+      last,
+    );
   if (state && !/\d/.test(prev)) return `${prev}, ${state[1].toUpperCase()}`;
 
   // A bare zip tail — the city is the part before it.
@@ -167,10 +174,11 @@ const toStops = (detail: BidDetail | null): AuctionDetail['stops'] => {
       type: isDrop(stop?.type) ? 'D' : 'P',
       city: cityState(stop?.address) || String(stop?.address ?? ''),
       // The dock and the time window on one line under the city — the cargo
-      // line the sample showed is not in this payload.
+      // line the sample showed is not in this payload. Falls back to the
+      // city/state, never the raw street address.
       detail:
         [dockLabel(stop?.dock), window].filter(Boolean).join(' • ') ||
-        String(stop?.address ?? ''),
+        cityState(stop?.address),
       date: '',
       window: '',
     };
@@ -221,10 +229,9 @@ export const toActiveBidding = (
 
   const auction = detail.auction;
   // Whether the auction reports a `current_lowest_bid_cents` figure at all —
-  // drives the "Max Bid Cap" line, which only shows while no lowest bid exists.
-  const hasLowestBid =
-    isNumber(auction?.current_lowest_bid_cents) &&
-    Number(auction?.current_lowest_bid_cents) > 0;
+  // true even at $0, since that's still a real bid; only null/missing counts
+  // as no lowest bid. Drives the "Max Bid Cap" line, which only shows then.
+  const hasLowestBid = isNumber(auction?.current_lowest_bid_cents);
   // Prefer `current_lowest_bid_cents` (e.g. 500000 → $5,000); fall back to the
   // dollar field, then to whatever the tapped row carried.
   const lowest = hasLowestBid

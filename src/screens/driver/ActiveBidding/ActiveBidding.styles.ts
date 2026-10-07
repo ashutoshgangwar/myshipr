@@ -216,6 +216,26 @@ export default StyleSheet.create({
   },
   statusTextOutbid: {color: colors.button_color},
   statusTextPlaced: {color: colors.success},
+  currentBidRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: vs(10),
+    borderRadius: ms(8),
+    paddingHorizontal: ms(14),
+    paddingVertical: IS_TABLET ? vs(6) : vs(10),
+    backgroundColor: colors.border_Color,
+  },
+  currentBidLabel: {
+    fontSize: fontSize.subBody,
+    fontWeight: 'bold',
+    color: colors.textStrong,
+  },
+  currentBidValue: {
+    fontSize: fontSize.subBody,
+    fontWeight: 'bold',
+    color: colors.textStrong,
+  },
   maxBidCapText: {
     marginTop: vs(6),
     fontSize: fontSize.subBody,

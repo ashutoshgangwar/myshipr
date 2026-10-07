@@ -1359,8 +1359,8 @@ export const placeBid = async ({
     throw err;
   }
 
-  log(
-    `place bid response (${status})\nPOST ${url}\n` +
+  console.log(
+    `[PlaceBid] response (${status})\nPOST ${url}\n` +
       JSON.stringify(body, null, 2),
   );
 

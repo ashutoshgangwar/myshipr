@@ -85,6 +85,16 @@ export default StyleSheet.create({
     fontWeight: '600',
   },
 
+  // `cityScrollable` swaps the ellipsized Text for this: the ScrollView takes
+  // the row's remaining width and the label inside it is never shrunk or
+  // wrapped, so a city too long for the column scrolls instead of cutting off.
+  cityScroll: {
+    flex: 1,
+  },
+  cityNoShrink: {
+    flexShrink: 0,
+  },
+
   // Indented to line up with the city labels so the dashed line runs past the
   // chip the same way it runs past a marker.
   moreRow: {

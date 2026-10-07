@@ -58,6 +58,10 @@ const CHIP_ICON = ms(15);
 const TOAST_MS = 3000;
 const TOAST_ERROR_MS = 4500;
 
+// How long the "Your Bid has been placed" banner shows before falling back
+// to the ongoing current-lowest banner.
+const PLACED_BANNER_MS = 5000;
+
 export default function ActiveBidding({navigation, route}: RootStackScreenProps<'ActiveBidding'>) {
   // The auction built from the tapped row — paints the screen instantly and
   // answers the fields the detail endpoint does not carry.
@@ -88,7 +92,7 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
   // of its data is on screen yet.
   const loadingDetail = detailLoading && !detail;
 
-  const [yourBid, setYourBid] = useState(0);
+  const [yourBid, setYourBid] = useState<number | null>(null);
   // Lets a tap anywhere in the bordered box focus the field, not just the
   // narrow TextInput itself.
   const bidInputRef = useRef<TextInput>(null);
@@ -122,9 +126,7 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
   }, [toast]);
   // Status banner under the route header: beaten by another bid, or your bid
   // went through.
-  const [status, setStatus] = useState<'outbid' | 'placed' | null>(
-    data.outbid ? 'outbid' : null,
-  );
+  const [status, setStatus] = useState<'placed' | null>(null);
   const [placedBid, setPlacedBid] = useState(0);
   // Starts at the auction's figure, then follows what each bid reports back.
   const [currentLowest, setCurrentLowest] = useState(data.currentLowest);
@@ -162,7 +164,7 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
   // exists that list is empty, so fall back to the static eligible list.
   const vehicles = data.vehicles.length ? data.vehicles : ELIGIBLE_VEHICLES;
   const vehicle = vehicles[vehicleIdx];
-  const belowLowest = yourBid < currentLowest;
+  const belowLowest = yourBid != null && yourBid < currentLowest;
   // The live, ticking time left. Falls back to the snapshot string when the
   // auction carries no end timestamp.
   const liveRemaining = useCountdown(data.endsAt);
@@ -172,7 +174,7 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
     // Same flourish as the falcon it launches: the tap sounds as well as
     // flies. Never throws and never blocks, so a silent build still bids.
     playAppSound('celebration');
-    setYourBid(prev => Math.max(0, prev - value));
+    setYourBid(prev => Math.max(0, (prev ?? 0) - value));
     setFlightFrom(origin);
     // Reads the same as the coin face, so the number that flies off is
     // recognisably the one the user hit.
@@ -182,14 +184,14 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
 
   const handleBidChange = (text: string) => {
     const digits = text.replace(/[^0-9]/g, '');
-    setYourBid(digits ? Number(digits) : 0);
+    setYourBid(digits ? Number(digits) : null);
   };
 
   const handlePlaceBid = async () => {
     if (placing) return;
-    // Any amount goes — the server decides whether it leads. Only an empty
-    // field is stopped, since there is nothing to send.
-    if (!yourBid) {
+    // Any amount goes, including $0 — the server decides whether it leads.
+    // Only an empty field is stopped, since there is nothing to send.
+    if (yourBid == null) {
       showBidWarning('Enter your bid', 'Enter your bid amount.');
       return;
     }
@@ -219,7 +221,10 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
       if (Number.isFinite(result?.currentLowestBid)) {
         setCurrentLowest(result.currentLowestBid);
       }
-      setStatus(result?.leading === false ? 'outbid' : 'placed');
+      // Flash the "placed" confirmation, then fall back to the ongoing
+      // current-lowest banner — whether or not this bid actually leads.
+      setStatus('placed');
+      setTimeout(() => setStatus(null), PLACED_BANNER_MS);
       // The server tells us whether this bid now leads: a win is good news, a
       // bid that is already undercut is a heads-up rather than a success.
       if (result?.leading === false) {
@@ -379,8 +384,9 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
           </View>
         </View>
 
-        {/* STATUS BANNER — the current lowest is always shown; it flips to the
-            "placed" confirmation right after a successful bid. */}
+        {/* STATUS BANNER — green flash right after you place a bid, then back
+            to: the max bid cap while the auction has no lowest bid yet, or
+            the orange current-lowest banner once it does. */}
         {status === 'placed' ? (
           <View style={[styles.statusBanner, styles.statusPlaced]}>
             <View style={styles.placedIcon}>
@@ -388,6 +394,13 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
             </View>
             <AppText style={[styles.statusText, styles.statusTextPlaced]}>
               Your Bid has been placed at ${placedBid}
+            </AppText>
+          </View>
+        ) : !data.hasLowestBid ? (
+          <View style={styles.currentBidRow}>
+            <AppText style={styles.currentBidLabel}>Current highest Bid Price</AppText>
+            <AppText style={styles.currentBidValue}>
+              ${data.maxBidCap?.toLocaleString() ?? NOT_IN_API}
             </AppText>
           </View>
         ) : (
@@ -399,14 +412,6 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
               You have been OUTBID. The lowest bid now is ${currentLowest}
             </AppText>
           </View>
-        )}
-
-        {/* MAX BID CAP — the auction's ceiling, shown only while the auction has
-            no current lowest bid; once one exists the banner above carries it. */}
-        {!data.hasLowestBid && (
-          <AppText style={styles.maxBidCapText}>
-            Max Bid Cap: ${data.maxBidCap?.toLocaleString() ?? NOT_IN_API}
-          </AppText>
         )}
 
         {/* VEHICLE + BID CARD */}
@@ -486,14 +491,14 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
               <TextInput
                 ref={bidInputRef}
                 style={styles.bidInput}
-                value={yourBid ? String(yourBid) : ''}
+                value={yourBid != null ? String(yourBid) : ''}
                 onChangeText={handleBidChange}
                 keyboardType="number-pad"
                 placeholder="0"
                 placeholderTextColor={colors.textMuted}
               />
               <AppText style={styles.bidHint} numberOfLines={1}>
-                {yourBid && belowLowest ? 'Lower than the current bid' : ''}
+                {belowLowest ? 'Lower than the current bid' : ''}
               </AppText>
             </Pressable>
 
@@ -507,10 +512,10 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
               <TouchableOpacity
                 style={[
                   styles.placeBidBtn,
-                  !yourBid && styles.placeBidBtnDisabled,
+                  yourBid == null && styles.placeBidBtnDisabled,
                 ]}
                 activeOpacity={0.85}
-                disabled={placing || !yourBid}
+                disabled={placing || yourBid == null}
                 onPress={handlePlaceBid}>
                 {placing ? (
                   <ActivityIndicator size="small" color={colors.white} />
@@ -551,7 +556,9 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
                   </AppText>
                 </View>
                 <View style={styles.stopTextWrap}>
-                  <AppText style={styles.stopCity}>{stop.city}</AppText>
+                  <AppText style={styles.stopCity}>
+                    {stop.type === 'D' ? data.dest : data.origin}
+                  </AppText>
                   <AppText style={styles.stopDetail}>{stop.detail}</AppText>
                 </View>
                 {stop.date ? (

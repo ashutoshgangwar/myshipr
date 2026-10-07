@@ -1,5 +1,5 @@
 import React from 'react';
-import {View, TouchableOpacity} from 'react-native';
+import {ScrollView, View, TouchableOpacity} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 
 import styles from '../BiddingScreen.styles';
@@ -77,7 +77,14 @@ export default function GridCard({item}: {item: BidRow}) {
           />
           <View style={styles.cardRoutePointText}>
             <AppText style={styles.cardRouteLabel}>PICKUP LOCATION</AppText>
-            <AppText style={styles.cardRouteCity}>{dash(item.origin)}</AppText>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator
+              style={styles.cardRouteCityScroll}>
+              <AppText style={styles.cardRouteCity} numberOfLines={1}>
+                {dash(item.origin)}
+              </AppText>
+            </ScrollView>
           </View>
         </View>
 
@@ -93,7 +100,14 @@ export default function GridCard({item}: {item: BidRow}) {
           <DropPin width={PIN_ICON} height={PIN_ICON} />
           <View style={styles.cardRoutePointText}>
             <AppText style={styles.cardRouteLabel}>DROP LOCATION</AppText>
-            <AppText style={styles.cardRouteCity}>{dash(item.dest)}</AppText>
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator
+              style={styles.cardRouteCityScroll}>
+              <AppText style={styles.cardRouteCity} numberOfLines={1}>
+                {dash(item.dest)}
+              </AppText>
+            </ScrollView>
           </View>
         </View>
       </View>

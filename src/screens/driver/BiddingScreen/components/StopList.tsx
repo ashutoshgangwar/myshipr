@@ -10,10 +10,13 @@ export default function StopList({
   stops,
   textStyle,
   summaryStyle,
+  cityScrollable,
 }: {
   stops?: LoadRouteStop[];
   textStyle?: StyleProp<TextStyle>;
   summaryStyle?: StyleProp<TextStyle>;
+  /** Let a long city/state scroll horizontally instead of being cut off. */
+  cityScrollable?: boolean;
 }) {
   return (
     <LoadRoute
@@ -21,6 +24,7 @@ export default function StopList({
       showSummary
       textStyle={textStyle}
       summaryStyle={summaryStyle}
+      cityScrollable={cityScrollable}
     />
   );
 }
