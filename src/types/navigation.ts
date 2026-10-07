@@ -127,6 +127,8 @@ export interface AuctionDetail {
   endsAt?: string;
   yourBid: number;
   currentLowest: number;
+  /** True when the auction carries a `current_lowest_bid_cents` value. */
+  hasLowestBid?: boolean;
   /** The auction's ceiling in dollars (`max_bid_cap_cents` / 100). */
   maxBidCap?: number;
   outbid: boolean;

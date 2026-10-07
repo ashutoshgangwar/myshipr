@@ -401,10 +401,13 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
           </View>
         )}
 
-        {/* MAX BID CAP — the auction's ceiling, always shown. */}
-        <AppText style={styles.maxBidCapText}>
-          Max Bid Cap: ${data.maxBidCap?.toLocaleString() ?? NOT_IN_API}
-        </AppText>
+        {/* MAX BID CAP — the auction's ceiling, shown only while the auction has
+            no current lowest bid; once one exists the banner above carries it. */}
+        {!data.hasLowestBid && (
+          <AppText style={styles.maxBidCapText}>
+            Max Bid Cap: ${data.maxBidCap?.toLocaleString() ?? NOT_IN_API}
+          </AppText>
+        )}
 
         {/* VEHICLE + BID CARD */}
         <View style={styles.bidCard}>

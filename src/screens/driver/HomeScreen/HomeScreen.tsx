@@ -463,6 +463,7 @@ const HomeScreen = () => {
                         stops={routeStops || []}
                         showSummary
                         liveCurrentLocation
+                        nameLines={2}
                       />
                     </View>
                   </>

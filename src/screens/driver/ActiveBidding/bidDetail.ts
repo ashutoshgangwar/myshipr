@@ -220,15 +220,18 @@ export const toActiveBidding = (
   if (!detail) return base;
 
   const auction = detail.auction;
+  // Whether the auction reports a `current_lowest_bid_cents` figure at all —
+  // drives the "Max Bid Cap" line, which only shows while no lowest bid exists.
+  const hasLowestBid =
+    isNumber(auction?.current_lowest_bid_cents) &&
+    Number(auction?.current_lowest_bid_cents) > 0;
   // Prefer `current_lowest_bid_cents` (e.g. 500000 → $5,000); fall back to the
   // dollar field, then to whatever the tapped row carried.
-  const lowest =
-    isNumber(auction?.current_lowest_bid_cents) &&
-    Number(auction?.current_lowest_bid_cents) > 0
-      ? Number(auction?.current_lowest_bid_cents) / 100
-      : isNumber(auction?.currentLowestBid)
-      ? Number(auction?.currentLowestBid)
-      : base.currentLowest;
+  const lowest = hasLowestBid
+    ? Number(auction?.current_lowest_bid_cents) / 100
+    : isNumber(auction?.currentLowestBid)
+    ? Number(auction?.currentLowestBid)
+    : base.currentLowest;
 
   // The route title shows the city name. Take it from `originCity`/
   // `destinationCity`, and fall back to the first and last stop's city so the
@@ -261,6 +264,7 @@ export const toActiveBidding = (
     endsAt: auction?.auctionEndsAt ?? base.endsAt,
     yourBid: lowest,
     currentLowest: lowest,
+    hasLowestBid,
     // The auction's ceiling, `max_bid_cap_cents` (e.g. 1500000 → $15,000).
     maxBidCap: isNumber(auction?.max_bid_cap_cents)
       ? Number(auction?.max_bid_cap_cents) / 100
