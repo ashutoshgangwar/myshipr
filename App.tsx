@@ -65,9 +65,15 @@ export default function App() {
   }, []);
 
   useEffect(() => {
-    DeviceInfo.getUniqueId()
-      .then(deviceId => console.log('[App] Unique Device ID:', deviceId))
-      .catch(err => console.log('[App] Unique Device ID failed:', err?.message));
+    (async () => {
+      try {
+        const tabletId = await DeviceInfo.getUniqueId();
+        console.log('[Tablet ID]', tabletId);
+      } catch (err) {
+        const {message} = err as ErrorLike;
+        console.log('[Tablet ID] failed:', message);
+      }
+    })();
   }, []);
 
   useEffect(() => {
