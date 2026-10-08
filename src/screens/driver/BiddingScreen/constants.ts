@@ -71,7 +71,7 @@ export const STATS = [
 ];
 
 export const COLUMNS = [
-  {key: 'mode', label: 'Mode', width: ms(72), kind: 'mode', shaded: true, sortable: true},
+  {key: 'mode', label: 'Mode', width: ms(96), kind: 'mode', shaded: true, sortable: true},
   {key: 'pickup', label: 'Pickup Time', width: ms(76), kind: 'pickup', sortable: true},
   {key: 'auctionType', label: 'Auction Type', width: ms(82), kind: 'auctionType', sortable: true},
   {key: 'distance', label: 'Trip Distance / Dead Mile', width: ms(142), kind: 'distance', sortable: true},

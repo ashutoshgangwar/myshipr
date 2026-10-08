@@ -180,22 +180,22 @@ export default StyleSheet.create({
   },
 
   pickupEmpty: {
-    marginTop: vs(14),
-    alignItems: 'center',
-    paddingVertical: vs(10),
+    marginTop: vs(8),
+    alignItems: 'stretch',
   },
 
   pickupEmptyTitle: {
     color: colors.textStrong,
-    fontSize: fontSize.subHeading,
+    fontSize: fontSize.subBody,
     fontWeight: '700',
+    textAlign: 'left',
   },
 
   pickupEmptySub: {
     color: colors.textMuted,
     fontSize: fontSize.small,
     fontWeight: '400',
-    marginTop: vs(6),
+    marginTop: vs(14),
     textAlign: 'center',
   },
 

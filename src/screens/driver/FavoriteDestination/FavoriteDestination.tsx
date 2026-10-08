@@ -101,6 +101,11 @@ const FavoriteDestination = () => {
     });
   };
 
+  // No destination chosen — straight to the tabs, nothing saved.
+  const handleSkip = () => {
+    navigation.reset({index: 0, routes: [{name: 'MainApp'}]});
+  };
+
   // Saved first, moved on second: the destination is the only reason this
   // screen exists, so a failed save keeps the driver here with their input
   // intact rather than dropping them on Home having silently lost it.
@@ -197,6 +202,13 @@ const FavoriteDestination = () => {
           style={styles.hero}
           imageStyle={styles.heroImage}>
           <View style={styles.heroOverlay} />
+          <TouchableOpacity
+            style={styles.skipBtn}
+            onPress={handleSkip}
+            disabled={saving}
+            activeOpacity={0.8}>
+            <AppText style={styles.skipBtnText}>Skip</AppText>
+          </TouchableOpacity>
           <View style={styles.heroContent}>
             <AppText
               style={styles.heroTitle}

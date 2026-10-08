@@ -33,7 +33,14 @@ const Pill = ({
 function Cell({col, item}: {col: BidColumn; item: BidRow}) {
   switch (col.kind) {
     case 'mode':
-      return <ModeChip mode={item.mode} iconSize={MODE_ICON} />;
+      return (
+        <>
+          <AppText style={styles.cellMuted} numberOfLines={1}>
+            {item.ref || '—'}
+          </AppText>
+          <ModeChip mode={item.mode} iconSize={MODE_ICON} />
+        </>
+      );
 
     case 'pickup':
       return (
@@ -100,7 +107,7 @@ function Cell({col, item}: {col: BidColumn; item: BidRow}) {
       return (
         <AppText style={styles.cellText} numberOfLines={1}>
           {
-            (item as Record<string, unknown>)[
+            (item as unknown as Record<string, unknown>)[
               (col as {field?: string}).field ?? ''
             ] as React.ReactNode
           }

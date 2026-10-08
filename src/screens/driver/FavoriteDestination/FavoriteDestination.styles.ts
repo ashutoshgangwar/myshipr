@@ -45,6 +45,23 @@ const styles = StyleSheet.create({
     backgroundColor: colors.blackAlpha45,
   },
 
+  // Top-right of the hero, clear of the translucent status bar.
+  skipBtn: {
+    position: 'absolute',
+    top: verticalScale(44),
+    right: scale(20),
+    backgroundColor: colors.whiteAlpha20,
+    borderRadius: moderateScale(8),
+    paddingHorizontal: scale(14),
+    paddingVertical: verticalScale(6),
+  },
+
+  skipBtnText: {
+    color: colors.white,
+    fontSize: fontSize.body,
+    fontWeight: '700',
+  },
+
   heroContent: {
     paddingHorizontal: scale(20),
     paddingBottom: verticalScale(30),
