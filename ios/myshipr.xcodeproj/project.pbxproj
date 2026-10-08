@@ -15,8 +15,6 @@
 		3C7186A9108B5C0885A0C165 /* HereRoutingModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = C27E731FBE035BBAA3230C32 /* HereRoutingModule.swift */; };
 		4A3C528A2FD51804E73C7A0D /* HERECredentials.swift in Sources */ = {isa = PBXBuildFile; fileRef = 75D9B8683DD5E5D5C7E4FB2C /* HERECredentials.swift */; };
 		586498FF5A1B90955AAD7F52 /* GoogleService-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 789281E03AC22ECB8F57C521 /* GoogleService-Info.plist */; };
-		BE5A11C1FEED4A0100000010 /* celebration.wav in Resources */ = {isa = PBXBuildFile; fileRef = BE5A11C1FEED4A0100000011 /* celebration.wav */; };
-		BE5A11C1FEED4A0100000012 /* fuel_alert.wav in Resources */ = {isa = PBXBuildFile; fileRef = BE5A11C1FEED4A0100000013 /* fuel_alert.wav */; };
 		619ACA571CF05BE2B4D4AE41 /* HereNavigationModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = 495410959A76587189CC0F24 /* HereNavigationModule.swift */; };
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
 		7668EB5D0638349BD3DD1D56 /* HEREGeocodingService.swift in Sources */ = {isa = PBXBuildFile; fileRef = C4B0B38154B1F8E7065C3236 /* HEREGeocodingService.swift */; };
@@ -33,6 +31,8 @@
 		BE5A11C0FEED4A0100000001 /* HereSpeaker.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE5A11C0FEED4A0100000002 /* HereSpeaker.swift */; };
 		BE5A11C1FEED4A0100000001 /* NotificationSoundModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE5A11C1FEED4A0100000002 /* NotificationSoundModule.swift */; };
 		BE5A11C1FEED4A0100000003 /* NotificationSoundModule.m in Sources */ = {isa = PBXBuildFile; fileRef = BE5A11C1FEED4A0100000004 /* NotificationSoundModule.m */; };
+		BE5A11C1FEED4A0100000010 /* celebration.wav in Resources */ = {isa = PBXBuildFile; fileRef = BE5A11C1FEED4A0100000011 /* celebration.wav */; };
+		BE5A11C1FEED4A0100000012 /* fuel_alert.wav in Resources */ = {isa = PBXBuildFile; fileRef = BE5A11C1FEED4A0100000013 /* fuel_alert.wav */; };
 		CC2B0524116D53668429E389 /* HereSdkModule.swift in Sources */ = {isa = PBXBuildFile; fileRef = D3AB68A8F1CE5F8993226CAD /* HereSdkModule.swift */; };
 		D1AD27672FD7F0BB008806BD /* heresdk.xcframework in Embed Here SDK */ = {isa = PBXBuildFile; fileRef = E3B7A1C2D4E5F67890123456 /* heresdk.xcframework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		EEBC38502153550CF55B9CE9 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB81A68108700A75B9A /* PrivacyInfo.xcprivacy */; };
@@ -73,8 +73,6 @@
 		75D9B8683DD5E5D5C7E4FB2C /* HERECredentials.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HERECredentials.swift; path = myshipr/HERECredentials.swift; sourceTree = "<group>"; };
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = myshipr/AppDelegate.swift; sourceTree = "<group>"; };
 		789281E03AC22ECB8F57C521 /* GoogleService-Info.plist */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.plist.xml; path = "myshipr/GoogleService-Info.plist"; sourceTree = "<group>"; };
-		BE5A11C1FEED4A0100000011 /* celebration.wav */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = audio.wav; path = "myshipr/celebration.wav"; sourceTree = "<group>"; };
-		BE5A11C1FEED4A0100000013 /* fuel_alert.wav */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = audio.wav; path = "myshipr/fuel_alert.wav"; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = myshipr/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		8B1C2D3E4F5A6B7098CDEFAB /* HereMapViewManager.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = HereMapViewManager.m; path = myshipr/HereMapViewManager.m; sourceTree = "<group>"; };
 		9A1B2C3D4E5F6A7089ABCDEF /* HereMapModule.m */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.c.objc; name = HereMapModule.m; path = myshipr/HereMapModule.m; sourceTree = "<group>"; };
@@ -85,6 +83,8 @@
 		BE5A11C0FEED4A0100000002 /* HereSpeaker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = HereSpeaker.swift; path = myshipr/HereSpeaker.swift; sourceTree = "<group>"; };
 		BE5A11C1FEED4A0100000002 /* NotificationSoundModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = NotificationSoundModule.swift; path = myshipr/NotificationSoundModule.swift; sourceTree = "<group>"; };
 		BE5A11C1FEED4A0100000004 /* NotificationSoundModule.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; name = NotificationSoundModule.m; path = myshipr/NotificationSoundModule.m; sourceTree = "<group>"; };
+		BE5A11C1FEED4A0100000011 /* celebration.wav */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = audio.wav; path = myshipr/celebration.wav; sourceTree = "<group>"; };
+		BE5A11C1FEED4A0100000013 /* fuel_alert.wav */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = audio.wav; path = myshipr/fuel_alert.wav; sourceTree = "<group>"; };
 		BFB9EEFFC6FBE1710AA55A18 /* HEREAutosuggestService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HEREAutosuggestService.swift; path = myshipr/HEREAutosuggestService.swift; sourceTree = "<group>"; };
 		C27E731FBE035BBAA3230C32 /* HereRoutingModule.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = HereRoutingModule.swift; path = myshipr/HereRoutingModule.swift; sourceTree = "<group>"; };
 		C4B0B38154B1F8E7065C3236 /* HEREGeocodingService.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; name = HEREGeocodingService.swift; path = myshipr/HEREGeocodingService.swift; sourceTree = "<group>"; };

@@ -131,6 +131,9 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
   // Starts at the auction's figure, then follows what each bid reports back.
   const [currentLowest, setCurrentLowest] = useState(data.currentLowest);
   const [placing, setPlacing] = useState(false);
+  // Which control started the in-flight bid — the "Place Bid" button only
+  // shows its own spinner for its own tap, not for a coin confirmed elsewhere.
+  const [placingVia, setPlacingVia] = useState<'coin' | 'button' | null>(null);
 
   // Keep the lowest in step with the detail payload — it carries the real
   // `current_lowest_bid_cents`, which lands after the first render.
@@ -177,7 +180,12 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
 
   // The one call to `POST /drivers/bids/{auctionId}/bid`, shared by the typed
   // "Place Bid" button and a confirmed coin tap. `amount` is dollars.
-  const submitBid = async (amount: number) => {
+  // `flight`, when given, is only launched once the bid actually succeeds —
+  // a coin tap that fails must never show the falcon celebrating.
+  const submitBid = async (
+    amount: number,
+    flightInfo?: {origin: FlightOrigin; label: string},
+  ) => {
     if (placing) return;
     if (!auctionId) {
       console.log('PlaceBid not sent- send complete details', {
@@ -187,6 +195,7 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
     }
 
     setPlacing(true);
+    setPlacingVia(flightInfo ? 'coin' : 'button');
     const request = {
       auctionId,
       amountCents: Math.round(amount * 100),
@@ -210,6 +219,14 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
       // for it — only a real backend error message ever is.
       setStatus('placed');
       setTimeout(() => setStatus(null), PLACED_BANNER_MS);
+      if (flightInfo) {
+        // Same flourish as the falcon it launches: the tap sounds as well as
+        // flies, and only now that the bid actually landed.
+        playAppSound('celebration');
+        setFlightFrom(flightInfo.origin);
+        setFlightLabel(flightInfo.label);
+        setFlight(n => n + 1);
+      }
     } catch (e) {
       const err = e as AxiosError<ApiErrorBody> & ErrorLike;
       console.log(
@@ -225,6 +242,7 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
       }
     } finally {
       setPlacing(false);
+      setPlacingVia(null);
     }
   };
 
@@ -238,15 +256,11 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
       message: `Are you sure your bid price is $${proposedBid}?`,
       confirmText: 'Submit',
       onConfirm: () => {
-        // Same flourish as the falcon it launches: the tap sounds as well as
-        // flies. Never throws and never blocks, so a silent build still bids.
-        playAppSound('celebration');
-        setFlightFrom(origin);
+        // The falcon only launches once `submitBid` confirms the bid actually
+        // landed — a failed coin bid must not play the success flourish.
         // Reads the same as the coin face, so the number that flies off is
         // recognisably the one the user hit.
-        setFlightLabel(`-${value}`);
-        setFlight(n => n + 1);
-        submitBid(proposedBid);
+        submitBid(proposedBid, {origin, label: `-${value}`});
       },
     });
   };
@@ -522,7 +536,7 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
                 activeOpacity={0.85}
                 disabled={placing || yourBid == null}
                 onPress={handlePlaceBid}>
-                {placing ? (
+                {placingVia === 'button' ? (
                   <ActivityIndicator size="small" color={colors.white} />
                 ) : (
                   <AppText style={styles.placeBidText}>Place Bid</AppText>
