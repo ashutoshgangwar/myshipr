@@ -624,3 +624,73 @@ export const activeBidStopBones = (count = 2) =>
 
 /** The Shipment Details grid — four rows of two cells, matching the real one. */
 export const activeBidDetailBones = [detailGridBones(4)];
+
+/**
+ * BiddingScreen — the grid cards, for when the driver has switched the list to
+ * the grid view. Each card is outlined like GridCard: a badge and ref/mode
+ * chip across the top, the pickup→drop route, then a footer line.
+ *
+ * @param count cards to draw — four fills a phone, two rows on a tablet.
+ * @param columns grid columns, so a card takes its share of the row.
+ */
+export const biddingCardBones = (count = 4, columns = 1) =>
+  Array.from({length: count}, (_, index) =>
+    group(
+      {
+        width: columns > 1 ? '49%' : '100%',
+        backgroundColor: colors.white,
+        borderWidth: 1,
+        borderColor: BORDER,
+        borderRadius: ms(7),
+        padding: ms(9),
+        marginBottom: vs(10),
+      },
+      [
+        group({flexDirection: 'row', alignItems: 'center'}, [
+          bone(ms(34), ms(34), {borderRadius: ms(9)}),
+          group({flex: 1, marginLeft: ms(8)}, [
+            bone(BID_ROUTE_WIDTHS[index % BID_ROUTE_WIDTHS.length], vs(10)),
+            bone(ms(56), vs(12), {marginTop: vs(5), borderRadius: ms(8)}),
+          ]),
+          bone(ms(62), vs(26), {borderRadius: ms(8)}),
+        ]),
+        bone('70%', vs(10), {marginTop: vs(14)}),
+        bone('55%', vs(10), {marginTop: vs(8)}),
+        bone('100%', 1, {marginTop: vs(12), borderRadius: 0}),
+        group(
+          {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            marginTop: vs(10),
+          },
+          [bone(ms(70), vs(9)), bone(ms(54), vs(9))],
+        ),
+      ],
+    ),
+  );
+
+/* ------------------------------------------------------------------ *
+ * ActiveBidding — the rest of the detail-driven screen
+ * The timer, the status banner and the vehicle picker all wait on the same
+ * detail call as the stops, and the bid buttons wait on the auto-bid state
+ * (they swap for Turn Off / Edit Stop Loss once it says auto bid is on).
+ * ------------------------------------------------------------------ */
+
+/** The clock inside the Time Remaining box. */
+export const activeBidTimerBones = [bone(ms(86), vs(16), {marginTop: vs(2)})];
+
+/** The status banner under the route header, as one full-width bar. */
+export const activeBidBannerBones = [bone('100%', vs(34), {borderRadius: ms(8)})];
+
+/** The Eligible Vehicle select, inside its card. */
+export const activeBidVehicleBones = [
+  bone('100%', ms(44), {borderRadius: ms(6), marginTop: vs(8)}),
+];
+
+/** The Auto Bid / Place Bid button pair. */
+export const activeBidActionBones = [
+  group({flexDirection: 'row', marginTop: vs(12)}, [
+    bone('38%', vs(40), {borderRadius: ms(8)}),
+    bone('58%', vs(40), {borderRadius: ms(8), marginLeft: '4%'}),
+  ]),
+];

@@ -26,8 +26,12 @@ import ErrorModal from '../../../component/ErrorModal/ErrorModal';
 import useErrorModal from '../../../hooks/useErrorModal';
 import Skeleton from '../../../component/Skeleton/Skeleton';
 import {
+  activeBidActionBones,
+  activeBidBannerBones,
   activeBidDetailBones,
   activeBidStopBones,
+  activeBidTimerBones,
+  activeBidVehicleBones,
 } from '../../../component/Skeleton/Skeleton.layouts';
 import FalconFlight from '../../../component/FalconFlight/FalconFlight';
 import type {FlightOrigin} from '../../../component/FalconFlight/FalconFlight';
@@ -102,8 +106,14 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
   // The auto bid set on this auction (`GET .../auto-bid`); null until loaded.
   const [autoBid, setAutoBidState] = useState<AutoBidState | null>(null);
   const autoBidOn = autoBid?.enabled === true;
+  // True until the first auto-bid call answers (success or failure), so the
+  // buttons do not flash the manual pair before swapping to the auto-bid ones.
+  const [autoBidLoading, setAutoBidLoading] = useState(!!auctionId);
   const loadAutoBid = useCallback(async () => {
-    if (!auctionId) return;
+    if (!auctionId) {
+      setAutoBidLoading(false);
+      return;
+    }
     try {
       const state = await getAutoBid(auctionId);
       console.log('[AutoBid] state', JSON.stringify(state, null, 2));
@@ -115,6 +125,8 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
         JSON.stringify(err?.response?.data ?? err?.message, null, 2),
       );
       // Without the state the screen simply shows the manual-bid buttons.
+    } finally {
+      setAutoBidLoading(false);
     }
   }, [auctionId]);
   useEffect(() => {
@@ -413,20 +425,28 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
           </View>
           <View style={styles.timerBox}>
             <AppText style={styles.timerLabel}>Time Remaining</AppText>
-            <AppText
-              style={[
-                styles.timerValue,
-                timeRemaining === 'Closed' && styles.timerClosed,
-              ]}>
-              {timeRemaining}
-            </AppText>
+            <Skeleton isLoading={loadingDetail} layout={activeBidTimerBones}>
+              <AppText
+                style={[
+                  styles.timerValue,
+                  timeRemaining === 'Closed' && styles.timerClosed,
+                ]}>
+                {timeRemaining}
+              </AppText>
+            </Skeleton>
           </View>
         </View>
 
         {/* STATUS BANNER — green flash right after you place a bid, then back
             to: the max bid cap while the auction has no lowest bid yet, or
             the orange current-lowest banner once it does. */}
-        {status === 'placed' ? (
+        {loadingDetail ? (
+          <Skeleton
+            isLoading
+            layout={activeBidBannerBones}
+            containerStyle={styles.bannerSkeleton}
+          />
+        ) : status === 'placed' ? (
           <View style={[styles.statusBanner, styles.statusPlaced]}>
             <View style={styles.placedIcon}>
               <CheckIcon width={ms(12)} height={ms(12)} />
@@ -485,6 +505,9 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
               </AppText>
             </View>
 
+            {loadingDetail ? (
+              <Skeleton isLoading layout={activeBidVehicleBones} />
+            ) : (
             <TouchableOpacity
               style={styles.vehicleSelect}
               activeOpacity={0.85}
@@ -502,6 +525,7 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
                 style={vehicleOpen ? styles.chevronUp : undefined}
               />
             </TouchableOpacity>
+            )}
 
             {vehicleOpen ? (
               <View style={styles.vehicleList}>
@@ -542,7 +566,11 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
           </View>
 
           <View style={styles.bidCardBottom}>
-            {autoBidOn ? (
+            {autoBidLoading ? (
+              <Skeleton isLoading layout={activeBidActionBones} />
+            ) : null}
+
+            {!autoBidLoading && autoBidOn ? (
               <View style={styles.autoBidActionRow}>
                 <TouchableOpacity
                   style={styles.turnOffBtn}
@@ -580,7 +608,7 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
               </AppText>
             </Pressable>
 
-            {!autoBidOn ? (
+            {!autoBidLoading && !autoBidOn ? (
               <View style={styles.bidBtnRow}>
               <TouchableOpacity
                 style={styles.autoBidBtn}

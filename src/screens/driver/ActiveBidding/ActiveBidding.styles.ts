@@ -172,6 +172,10 @@ export default StyleSheet.create({
   },
 
   /* STATUS BANNER */
+  // Loading bar standing in for the status banner.
+  bannerSkeleton: {
+    marginTop: vs(10),
+  },
   statusBanner: {
     flexDirection: 'row',
     alignItems: 'center',

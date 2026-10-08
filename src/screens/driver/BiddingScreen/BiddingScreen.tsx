@@ -5,7 +5,10 @@ import {SafeAreaView} from 'react-native-safe-area-context';
 import styles, {GRID_COLS} from './BiddingScreen.styles';
 import {useBidSearch} from './useBidSearch';
 import Skeleton from '../../../component/Skeleton/Skeleton';
-import {biddingRowBones} from '../../../component/Skeleton/Skeleton.layouts';
+import {
+  biddingCardBones,
+  biddingRowBones,
+} from '../../../component/Skeleton/Skeleton.layouts';
 import FilterRow from './components/FilterRow';
 import BidTable from './components/BidTable';
 import GridCard from './components/GridCard';
@@ -87,8 +90,8 @@ export default function BiddingScreen() {
       {showSkeleton ? (
         <Skeleton
           isLoading
-          layout={biddingRowBones(8)}
-          containerStyle={styles.skeletonWrap}
+          layout={grid ? biddingCardBones(4, GRID_COLS) : biddingRowBones(8)}
+          containerStyle={grid ? styles.skeletonGrid : styles.skeletonWrap}
         />
       ) : grid ? (
         <FlatList

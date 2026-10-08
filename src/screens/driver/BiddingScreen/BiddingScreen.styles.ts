@@ -410,6 +410,14 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
   },
 
+  // Grid-view loading skeleton: no outer frame, the cards carry their own.
+  skeletonGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    paddingHorizontal: select({phone: ms(12), tablet: ms(6)}),
+  },
+
   // header band: frozen "Load" head + the scrolling heads, kept in lockstep
   tableHeaderRow: {
     flexDirection: 'row',
