@@ -93,6 +93,7 @@ export default function GridCard({item}: {item: BidRow}) {
             width="100%"
             height={ROUTE_LINE_H}
             preserveAspectRatio="none"
+            color={colors.accentBlue}
           />
         </View>
 

@@ -777,7 +777,8 @@ const styles = StyleSheet.create({
   /* ---------- Grid / card view ---------- */
   gridContent: {
     ...centered,
-    paddingHorizontal: ms(12),
+    width: '100%',
+    paddingHorizontal: select({phone: ms(12), tablet: ms(6)}),
     paddingBottom: vs(16),
   },
 
@@ -785,7 +786,7 @@ const styles = StyleSheet.create({
   // row-to-row spacing lives on the card so it also applies to the phone's
   // single-column list.
   gridColumn: {
-    gap: ms(10),
+    gap: select({phone: ms(10), tablet: ms(6)}),
   },
 
   card: {
@@ -885,6 +886,7 @@ const styles = StyleSheet.create({
 
   cardRoutePoint: {
     flexShrink: 1,
+    minWidth: 0,
     flexDirection: 'row',
     alignItems: 'center',
     gap: ms(5),
@@ -896,6 +898,7 @@ const styles = StyleSheet.create({
 
   cardRoutePointText: {
     flexShrink: 1,
+    minWidth: 0,
   },
 
   cardRoutePointTextEnd: {
@@ -920,10 +923,13 @@ const styles = StyleSheet.create({
   // wrapping or being cut off.
   cardRouteCityScroll: {
     flexGrow: 0,
+    flexShrink: 1,
+    minWidth: 0,
   },
 
   cardRouteLine: {
     flex: 1,
+    minWidth: ms(16),
     justifyContent: 'center',
     marginHorizontal: ms(10),
   },

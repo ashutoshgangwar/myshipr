@@ -25,7 +25,7 @@ import {TTL, useCachedResource} from './resourceCache';
 import type {DriverBank, DriverProfile} from '../types/driver';
 
 /** What a cell shows in place of a value the response did not carry. */
-export const NOT_AVAILABLE = 'No API data';
+export const NOT_AVAILABLE = '----';
 
 /**
  * The same thing where a cell has no room for a sentence — the insurance

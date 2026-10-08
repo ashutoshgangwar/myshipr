@@ -136,7 +136,7 @@ interface FetchOptions {
 export function fetchResource<T>(
   key: string,
   fetcher: () => Promise<T>,
-  {ttl = 0, force = false, message = 'Something went wrong.'}: FetchOptions = {},
+  {ttl = 0, force = false, message = 'Oops.'}: FetchOptions = {},
 ): Promise<T | null> {
   const entry = entryOf(key);
 

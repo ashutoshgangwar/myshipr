@@ -76,7 +76,7 @@ const useErrorModal = () => {
     (error: ShowableError, overrides: ErrorModalConfig = {}) => {
       setState({
         variant: 'error',
-        title: 'Something went wrong',
+        title: 'Oops',
         message: extractMessage(error),
         ...overrides,
       });

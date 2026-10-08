@@ -841,7 +841,7 @@ const messageForLinkStatus = (
         'Too many attempts. Please wait a few minutes before trying again.'
       );
     default:
-      return serverMessage || 'Something went wrong. Please try again.';
+      return serverMessage || 'Oops. Please try again.';
   }
 };
 

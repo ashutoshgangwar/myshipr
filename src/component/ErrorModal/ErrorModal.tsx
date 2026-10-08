@@ -24,7 +24,7 @@ const ErrorModal = ({
   onClose,
   onConfirm,
   onRetry,
-  title = 'Something went wrong',
+  title = 'Oops',
   message = 'Unable to complete your request. Please try again.',
   variant = 'error',
   confirmText,
