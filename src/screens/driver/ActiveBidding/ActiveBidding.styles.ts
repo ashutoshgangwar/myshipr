@@ -47,7 +47,7 @@ export default StyleSheet.create({
     fontWeight: '500',
   },
   timerValue: {
-    fontSize: fontSize.display,
+    fontSize: fontSize.heading,
     color: colors.textStrong,
     fontWeight: '700',
     letterSpacing: 1,
@@ -348,6 +348,11 @@ export default StyleSheet.create({
     paddingVertical: IS_TABLET ? vs(6) : vs(10),
     marginTop: vs(8),
   },
+  // Auto bid is on — the manual field is greyed out and not editable.
+  bidInputBoxDisabled: {
+    opacity: 0.5,
+    backgroundColor: colors.border_Color,
+  },
   bidCurrency: {
     fontSize: fontSize.mainHeading,
     color: colors.textMuted,
@@ -612,6 +617,80 @@ export default StyleSheet.create({
   },
   placeBidBtn: {
     flex: 2,
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: colors.accentBlue,
+    borderRadius: ms(6),
+    paddingVertical: IS_TABLET ? vs(5) : vs(15),
+  },
+  /* AUTO BID ON — banner + the two buttons that replace Auto Bid / Place Bid */
+  autoBidBanner: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: vs(10),
+    borderRadius: ms(8),
+    paddingHorizontal: ms(14),
+    paddingVertical: IS_TABLET ? vs(6) : vs(10),
+    backgroundColor: colors.paleBlue,
+  },
+  autoBidBannerLeft: {flex: 1, paddingRight: ms(10)},
+  autoBidBannerRight: {alignItems: 'flex-end'},
+  autoBidBannerTitle: {
+    fontSize: fontSize.subBody,
+    fontWeight: '700',
+    color: colors.accentBlue,
+  },
+  autoBidBannerLabel: {
+    marginTop: vs(4),
+    fontSize: fontSize.subBody,
+    fontWeight: '500',
+    color: colors.textStrong,
+  },
+  autoBidBannerHint: {
+    fontSize: fontSize.small,
+    color: colors.textMuted,
+  },
+  autoBidActivePill: {
+    backgroundColor: colors.accentBlue,
+    borderRadius: ms(4),
+    paddingHorizontal: ms(8),
+    paddingVertical: vs(2),
+  },
+  autoBidActiveText: {
+    fontSize: fontSize.small,
+    fontWeight: '600',
+    color: colors.white,
+  },
+  autoBidStopLoss: {
+    marginTop: vs(6),
+    fontSize: fontSize.subHeading,
+    fontWeight: '700',
+    color: colors.textStrong,
+  },
+  // Turn Off / Edit Stop Loss sit above the (disabled) bid field.
+  autoBidActionRow: {
+    flexDirection: 'row',
+    marginBottom: vs(14),
+  },
+  turnOffBtn: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: colors.accentBlue,
+    backgroundColor: colors.white,
+    borderRadius: ms(6),
+    paddingVertical: IS_TABLET ? vs(5) : vs(15),
+    marginRight: ms(10),
+  },
+  turnOffText: {
+    fontSize: fontSize.body,
+    color: colors.accentBlue,
+    fontWeight: '500',
+  },
+  editStopLossBtn: {
+    flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
     backgroundColor: colors.accentBlue,

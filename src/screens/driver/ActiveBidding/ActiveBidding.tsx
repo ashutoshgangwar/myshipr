@@ -1,4 +1,4 @@
-import React, {useEffect, useMemo, useRef, useState} from 'react';
+import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
   View,
   ScrollView,
@@ -44,8 +44,8 @@ import ChevronDown from '../../../assets/svg_icon/Chevron_Down.svg';
 import CheckIcon from '../../../assets/svg_icon/check.svg';
 import type {RootStackScreenProps} from '../../../types/navigation';
 import {playAppSound} from '../../../services/notificationSound';
-import {placeBid, setAutoBid} from '../../../config/driverApi';
-import type {AutoBidMode} from '../../../types/bidding';
+import {getAutoBid, placeBid, setAutoBid} from '../../../config/driverApi';
+import type {AutoBidMode, AutoBidState} from '../../../types/bidding';
 import type {ApiErrorBody} from '../../../types/api';
 import type {ErrorLike} from '../../../types/common';
 import { IS_TABLET } from '../../../theme/device';
@@ -99,6 +99,27 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
   const [vehicleIdx, setVehicleIdx] = useState(0);
   const [vehicleOpen, setVehicleOpen] = useState(false);
   const [autoBidVisible, setAutoBidVisible] = useState(false);
+  // The auto bid set on this auction (`GET .../auto-bid`); null until loaded.
+  const [autoBid, setAutoBidState] = useState<AutoBidState | null>(null);
+  const autoBidOn = autoBid?.enabled === true;
+  const loadAutoBid = useCallback(async () => {
+    if (!auctionId) return;
+    try {
+      const state = await getAutoBid(auctionId);
+      console.log('[AutoBid] state', JSON.stringify(state, null, 2));
+      setAutoBidState(state);
+    } catch (e) {
+      const err = e as AxiosError<ApiErrorBody> & ErrorLike;
+      console.log(
+        `[AutoBid] get error (${err?.response?.status ?? 'no response'})`,
+        JSON.stringify(err?.response?.data ?? err?.message, null, 2),
+      );
+      // Without the state the screen simply shows the manual-bid buttons.
+    }
+  }, [auctionId]);
+  useEffect(() => {
+    loadAutoBid();
+  }, [loadAutoBid]);
   const [passVisible, setPassVisible] = useState(false);
   // `error` paints it red with a "!" instead of the green tick.
   const [toast, setToast] = useState<{text: string; error?: boolean} | null>(
@@ -265,12 +286,14 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
       mode,
       stopLossCents: Math.round(stopLoss * 100),
       // The truck comes from the selected eligible vehicle.
+      isActive: true,
       ...(vehicle?.assetId != null ? {assetId: vehicle.assetId} : {}),
     };
     console.log('[AutoBid] request', JSON.stringify(request, null, 2));
     try {
       const result = await setAutoBid(request);
       console.log('[AutoBid] response', JSON.stringify(result, null, 2));
+      await loadAutoBid();
     } catch (e) {
       const err = e as AxiosError<ApiErrorBody> & ErrorLike;
       console.log(
@@ -279,6 +302,36 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
       );
       // Only ever shows the backend's own error text — never a
       // frontend-composed fallback.
+      const backendMessage =
+        err?.response?.data?.message || err?.response?.data?.error;
+      if (backendMessage) {
+        showBidError(backendMessage);
+      }
+    }
+  };
+
+  // Turn Off Auto-Bid — the same POST with `isActive: false`, keeping the mode
+  // and stop loss the auto bid already has.
+  const handleTurnOffAutoBid = async () => {
+    if (!auctionId || !autoBid) return;
+    const request = {
+      auctionId,
+      mode: autoBid.mode ?? 'GRADIENT',
+      stopLossCents: autoBid.stopLossCents ?? autoBid.floorCents ?? 0,
+      isActive: false,
+      ...(autoBid.assetId != null ? {assetId: autoBid.assetId} : {}),
+    };
+    console.log('[AutoBid] turn off request', JSON.stringify(request, null, 2));
+    try {
+      const result = await setAutoBid(request);
+      console.log('[AutoBid] turn off response', JSON.stringify(result, null, 2));
+      await loadAutoBid();
+    } catch (e) {
+      const err = e as AxiosError<ApiErrorBody> & ErrorLike;
+      console.log(
+        `[AutoBid] turn off error (${err?.response?.status ?? 'no response'})`,
+        JSON.stringify(err?.response?.data ?? err?.message, null, 2),
+      );
       const backendMessage =
         err?.response?.data?.message || err?.response?.data?.error;
       if (backendMessage) {
@@ -400,6 +453,26 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
           </View>
         )}
 
+        {autoBidOn ? (
+          <View style={styles.autoBidBanner}>
+            <View style={styles.autoBidBannerLeft}>
+              <AppText style={styles.autoBidBannerTitle}>Auto bid is on</AppText>
+              <AppText style={styles.autoBidBannerLabel}>Stop loss</AppText>
+              <AppText style={styles.autoBidBannerHint}>
+                Your Auto-bid will stop when it reaches your stop loss.
+              </AppText>
+            </View>
+            <View style={styles.autoBidBannerRight}>
+              <View style={styles.autoBidActivePill}>
+                <AppText style={styles.autoBidActiveText}>● Active</AppText>
+              </View>
+              <AppText style={styles.autoBidStopLoss}>
+                ${((autoBid?.stopLossCents ?? autoBid?.floorCents ?? 0) / 100).toLocaleString()}
+              </AppText>
+            </View>
+          </View>
+        ) : null}
+
         {/* VEHICLE + BID CARD */}
         <View style={styles.bidCard}>
           <View style={styles.bidCardTop}>
@@ -469,14 +542,33 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
           </View>
 
           <View style={styles.bidCardBottom}>
+            {autoBidOn ? (
+              <View style={styles.autoBidActionRow}>
+                <TouchableOpacity
+                  style={styles.turnOffBtn}
+                  activeOpacity={0.85}
+                  onPress={handleTurnOffAutoBid}>
+                  <AppText style={styles.turnOffText}>Turn Off Auto-Bid</AppText>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.editStopLossBtn}
+                  activeOpacity={0.85}
+                  onPress={() => setAutoBidVisible(true)}>
+                  <AppText style={styles.placeBidText}>Edit Stop Loss</AppText>
+                </TouchableOpacity>
+              </View>
+            ) : null}
+
             <AppText style={styles.kicker}>PLACE YOUR BID</AppText>
             <Pressable
-              style={styles.bidInputBox}
+              style={[styles.bidInputBox, autoBidOn && styles.bidInputBoxDisabled]}
+              disabled={autoBidOn}
               onPress={() => bidInputRef.current?.focus()}>
               <AppText style={styles.bidCurrency}>$</AppText>
               <TextInput
                 ref={bidInputRef}
                 style={styles.bidInput}
+                editable={!autoBidOn}
                 value={yourBid != null ? String(yourBid) : ''}
                 onChangeText={handleBidChange}
                 keyboardType="number-pad"
@@ -488,7 +580,8 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
               </AppText>
             </Pressable>
 
-            <View style={styles.bidBtnRow}>
+            {!autoBidOn ? (
+              <View style={styles.bidBtnRow}>
               <TouchableOpacity
                 style={styles.autoBidBtn}
                 activeOpacity={0.85}
@@ -509,7 +602,8 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
                   <AppText style={styles.placeBidText}>Place Bid</AppText>
                 )}
               </TouchableOpacity>
-            </View>
+              </View>
+            ) : null}
           </View>
         </View>
 
@@ -626,6 +720,13 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
         visible={autoBidVisible}
         onClose={() => setAutoBidVisible(false)}
         onSave={handleSaveAutoBid}
+        title={autoBidOn ? 'Edit Stop Loss' : 'Set Up Auto Bid'}
+        initialMode={autoBidOn ? autoBid?.mode : undefined}
+        initialStopLoss={
+          autoBidOn
+            ? (autoBid?.stopLossCents ?? autoBid?.floorCents ?? 0) / 100
+            : null
+        }
       />
 
       <PassLoadModal

@@ -1,4 +1,4 @@
-import React, {useState} from 'react';
+import React, {useEffect, useState} from 'react';
 import {
   View,
   Modal,
@@ -35,15 +35,29 @@ export interface AutoBidModalProps {
   onClose?: () => void;
   /** Receives the chosen mode and the parsed stop-loss (null when unusable). */
   onSave?: (payload: {mode: AutoBidMode; stopLoss: number | null}) => void;
+  /** Pre-fills the sheet when editing an auto bid that is already on. */
+  initialMode?: AutoBidMode;
+  initialStopLoss?: number | null;
+  title?: string;
 }
 
 export default function AutoBidModal({
   visible,
   onClose,
   onSave,
+  initialMode = 'GRADIENT',
+  initialStopLoss = null,
+  title = 'Set Up Auto Bid',
 }: AutoBidModalProps) {
   const [stopLoss, setStopLoss] = useState('');
-  const [mode, setMode] = useState<AutoBidMode>('GRADIENT');
+  const [mode, setMode] = useState<AutoBidMode>(initialMode);
+
+  // Each time the sheet opens it starts from the auto bid's current values.
+  useEffect(() => {
+    if (!visible) return;
+    setMode(initialMode);
+    setStopLoss(initialStopLoss != null ? String(initialStopLoss) : '');
+  }, [visible, initialMode, initialStopLoss]);
 
   const handleSave = () => {
     const parsed = parseFloat(stopLoss.replace(/[^0-9.]/g, ''));
@@ -65,7 +79,7 @@ export default function AutoBidModal({
               behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
               <View style={styles.modalCard}>
                 <View style={styles.modalHeader}>
-                  <AppText style={styles.modalTitle}>Set Up Auto Bid</AppText>
+                  <AppText style={styles.modalTitle}>{title}</AppText>
                   <TouchableOpacity
                     onPress={onClose}
                     hitSlop={{top: 10, bottom: 10, left: 10, right: 10}}>

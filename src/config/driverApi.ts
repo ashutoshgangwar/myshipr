@@ -41,6 +41,7 @@ import type {DriverBank, DriverProfile} from '../types/driver';
 import type {
   AutoBidParams,
   AutoBidResult,
+  AutoBidState,
   BidDetail,
   BidDetailParams,
   BidFilterOptionItem,
@@ -1378,6 +1379,7 @@ export const setAutoBid = async ({
   assetId,
   mode,
   stopLossCents,
+  isActive = true,
 }: AutoBidParams): Promise<AutoBidResult> => {
   if (!auctionId) {
     throw new Error('setAutoBid: auctionId is required');
@@ -1388,6 +1390,7 @@ export const setAutoBid = async ({
     ...(Number.isFinite(assetId) ? {assetId} : {}),
     mode,
     stopLossCents,
+    isActive,
   };
   log(`auto bid request\nPOST ${url}\n` + JSON.stringify(payload, null, 2));
 
@@ -1407,6 +1410,41 @@ export const setAutoBid = async ({
   log(`auto bid response (${status})\nPOST ${url}\n` + JSON.stringify(body, null, 2));
 
   return body?.data ?? body;
+};
+
+/**
+ * Reads the auto-bid set on an auction. `auctionId` (path) is required. The
+ * endpoint answers with a list; the first entry is this auction's auto-bid.
+ *
+ * @returns the auto-bid, or null when none has been set up
+ */
+export const getAutoBid = async (
+  auctionId: string,
+): Promise<AutoBidState | null> => {
+  if (!auctionId) {
+    throw new Error('getAutoBid: auctionId is required');
+  }
+
+  const url = DRIVER_ENDPOINTS.autoBid(auctionId);
+  log(`get auto bid request\nGET ${url}`);
+  let status;
+  let body;
+  try {
+    ({status, data: body} = await apiClient.get(url));
+  } catch (e) {
+    const err = e as DriverApiError;
+    log(
+      `get auto bid failed (${err?.response?.status ?? 'no response'})\nGET ${url}\n` +
+        JSON.stringify(err?.response?.data ?? err?.message, null, 2),
+    );
+    throw err;
+  }
+
+  log(`get auto bid response (${status})\nGET ${url}\n` + JSON.stringify(body, null, 2));
+
+  const payload = body?.data ?? body;
+  const list = Array.isArray(payload) ? payload : payload ? [payload] : [];
+  return (list[0] as AutoBidState | undefined) ?? null;
 };
 
 /**

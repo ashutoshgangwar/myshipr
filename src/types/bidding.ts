@@ -201,6 +201,25 @@ export interface AutoBidParams {
   mode: AutoBidMode;
   /** The floor the auto-bidder never bids below, in cents. */
   stopLossCents: number;
+  /** true turns auto bid on (or re-saves it); false turns it off. */
+  isActive?: boolean;
+}
+
+/** One auto-bid as `GET /drivers/bids/{auctionId}/auto-bid` reports it. */
+export interface AutoBidState {
+  auctionId?: string;
+  /** Whether auto bid is currently on for this auction. */
+  enabled?: boolean;
+  mode?: AutoBidMode;
+  stopLossCents?: number;
+  status?: string;
+  terminationReason?: string | null;
+  autobid_id?: number;
+  assetId?: number;
+  floorCents?: number;
+  stepsUsed?: number;
+  isExhausted?: boolean;
+  terminatedAt?: string | null;
 }
 
 /** What the auto-bid call answers with — shape kept loose until pinned down. */
