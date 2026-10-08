@@ -122,6 +122,32 @@ export default StyleSheet.create({
     fontStyle: 'italic',
   },
 
+  /* ---------- Winning bid ---------- */
+  winningBidBox: {
+    alignItems: 'flex-end',
+  },
+
+  winningBidValue: {
+    fontSize: fontSize.heading,
+    color: colors.textStrong,
+    fontWeight: '700',
+  },
+
+  // The amount itself has no API field yet, so it renders as the same muted
+  // placeholder every other missing cell on this screen uses.
+  winningBidValueMissing: {
+    color: colors.textMuted,
+    fontWeight: '400',
+    fontStyle: 'italic',
+  },
+
+  winningBidLabel: {
+    fontSize: fontSize.small,
+    color: colors.textMuted,
+    fontWeight: '500',
+    marginTop: vs(2),
+  },
+
   /* ---------- Route title ---------- */
   routeTitle: {
     fontSize: fontSize.body,
@@ -194,19 +220,43 @@ export default StyleSheet.create({
     marginTop: vs(16),
   },
 
+  // Row layout — text on the left, the call button pinned to the right and
+  // centred against the two text lines, as the design shows it.
   contactCard: {
     flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
     borderWidth: 1,
     borderColor: CONTACT_BORDER,
     borderRadius: ms(8),
-    padding: IS_TABLET ? ms(8) : ms(10),
+    paddingHorizontal: IS_TABLET ? ms(10) : ms(12),
+    paddingVertical: IS_TABLET ? ms(10) : vs(12),
     backgroundColor: colors.white,
   },
 
+  // The drop card swaps to green — same pickup/drop colour pairing as the
+  // CityRing/DropPin markers in RouteStops, so a contact reads as the stop
+  // it belongs to without re-reading its label.
+  contactCardDrop: {
+    borderColor: colors.success,
+  },
+
+  contactTextCol: {
+    flex: 1,
+    minWidth: 0,
+  },
+
+  // Doubles as the card's headline in this layout — no separate contact-name
+  // line is shown, so the kicker carries the weight a title normally would.
   contactKicker: {
-    fontSize: fontSize.tiny,
+    fontSize: fontSize.label,
     color: colors.accentBlue,
-    fontWeight: '600',
+    fontWeight: '700',
+  },
+
+  contactKickerDrop: {
+    color: colors.success,
   },
 
   contactName: {
@@ -223,25 +273,21 @@ export default StyleSheet.create({
     marginTop: vs(1),
   },
 
-  phoneRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginTop: vs(8),
+  phoneBtn: {
+    marginLeft: ms(8),
   },
 
-  phoneText: {
-    marginLeft: ms(6),
-    fontSize: fontSize.label,
-    color: colors.accentBlue,
-    fontWeight: '700',
-    textDecorationLine: 'underline',
-  },
-
+  // The dock line — tinted the same colour as the kicker instead of neutral
+  // text, so the whole card reads as one coloured unit.
   contactAccess: {
     fontSize: fontSize.small,
-    color: colors.textStrong,
-    fontWeight: '400',
-    marginTop: vs(4),
+    color: colors.accentBlue,
+    fontWeight: '500',
+    marginTop: vs(2),
+  },
+
+  contactAccessDrop: {
+    color: colors.success,
   },
 
   remarksLabel: {
@@ -266,8 +312,9 @@ export default StyleSheet.create({
     marginTop: vs(20),
   },
 
-  // Two cells per row; the hairline grid comes from per-cell borders so the
-  // outer frame stays a single rounded rectangle.
+  // The hairline grid comes from per-cell borders so the outer frame stays a
+  // single rounded rectangle. Cell width is set per grid by `DetailGrid`'s
+  // `columns` prop — 2 for Trailer Terms, 3 for Shipment/Reefer Details.
   grid: {
     flexDirection: 'row',
     flexWrap: 'wrap',
@@ -279,7 +326,6 @@ export default StyleSheet.create({
   },
 
   gridCell: {
-    width: '50%',
     paddingHorizontal: IS_TABLET ? ms(8) : ms(10),
     paddingVertical: IS_TABLET ? vs(6) : vs(8),
   },

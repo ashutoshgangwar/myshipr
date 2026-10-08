@@ -41,8 +41,18 @@ const stopPoint = (stop: DetailStop | undefined): Nullable<LatLng> =>
     ? {lat: stop.lat, lng: stop.lng}
     : null;
 
-const DetailGrid = ({cells}: {cells: DetailRow[]}) => {
-  const lastRow = Math.floor((cells.length - 1) / 2);
+/**
+ * A label/value grid, `columns` wide. Trailer Terms wants 2 (the default);
+ * Shipment Details and Reefer Details want 3, as the design draws them.
+ */
+const DetailGrid = ({
+  cells,
+  columns = 2,
+}: {
+  cells: DetailRow[];
+  columns?: number;
+}) => {
+  const lastRow = Math.floor((cells.length - 1) / columns);
 
   return (
     <View style={styles.grid}>
@@ -51,8 +61,9 @@ const DetailGrid = ({cells}: {cells: DetailRow[]}) => {
           key={cell.label}
           style={[
             styles.gridCell,
-            i % 2 === 0 && styles.gridCellRightBorder,
-            Math.floor(i / 2) !== lastRow && styles.gridCellBottomBorder,
+            {width: `${100 / columns}%`},
+            (i + 1) % columns !== 0 && styles.gridCellRightBorder,
+            Math.floor(i / columns) !== lastRow && styles.gridCellBottomBorder,
           ]}>
           <AppText style={styles.gridLabel}>{cell.label}</AppText>
           <AppText
@@ -85,6 +96,10 @@ export default function ShipmentDetails({navigation, route}: RootStackScreenProp
 
   // Dragging the route map must pan the map, not scroll the page.
   const [scrollEnabled, setScrollEnabled] = useState(true);
+
+  // A section of nothing but placeholders tells the driver less than no
+  // section at all — hidden until the payload actually carries one of these.
+  const hasReefer = data.reefer.some(cell => cell.value !== NOT_IN_API);
 
   const goBack = () => (navigation ? navigation.goBack() : null);
 
@@ -189,6 +204,18 @@ export default function ShipmentDetails({navigation, route}: RootStackScreenProp
                 {data.status}
               </AppText>
             </View> */}
+
+            <View style={styles.winningBidBox}>
+              <AppText
+                style={[
+                  styles.winningBidValue,
+                  data.winningBid === NOT_IN_API &&
+                    styles.winningBidValueMissing,
+                ]}>
+                {data.winningBid}
+              </AppText>
+              <AppText style={styles.winningBidLabel}>Your winning bid</AppText>
+            </View>
           </View>
 
           <AppText style={styles.routeTitle}>
@@ -220,56 +247,83 @@ export default function ShipmentDetails({navigation, route}: RootStackScreenProp
 
           {/* PICKUP / DROP CONTACTS */}
           <View style={styles.contactsRow}>
-            {data.contacts.map(contact => (
-              <View key={contact.id} style={styles.contactCard}>
-                <AppText style={styles.contactKicker}>{contact.kicker}</AppText>
-                <AppText style={styles.contactName}>{contact.name}</AppText>
-                {/* <AppText
+            {data.contacts.map(contact => {
+              const isDrop = contact.id === 'drop';
+              return (
+                <View
+                  key={contact.id}
                   style={[
-                    styles.contactRole,
-                    contact.role === NOT_IN_API && styles.textMissing,
+                    styles.contactCard,
+                    isDrop && styles.contactCardDrop,
                   ]}>
-                  {contact.role}
-                </AppText> */}
-
-                <TouchableOpacity
-                  style={styles.phoneRow}
-                  activeOpacity={0.7}
-                  disabled={contact.phone === NOT_IN_API}
-                  onPress={() => callContact(contact.phone)}>
-                  <CallIcon width={PHONE_ICON} height={PHONE_ICON} />
-                  <AppText style={styles.phoneText}>{contact.phone}</AppText>
-                </TouchableOpacity>
-
-                <AppText
-                  style={[
-                    styles.contactAccess,
-                    contact.access === NOT_IN_API && styles.textMissing,
-                  ]}>
-                  {contact.access}
-                </AppText>
-
-                {contact.remarks ? (
-                  <>
-                    <AppText style={styles.remarksLabel}>Remarks:</AppText>
-                    <AppText style={styles.remarksText}>
-                      {contact.remarks}
+                  <View style={styles.contactTextCol}>
+                    {/* The kicker is the card's only headline in this layout
+                        — the design shows no separate contact-name line. */}
+                    <AppText
+                      style={[
+                        styles.contactKicker,
+                        isDrop && styles.contactKickerDrop,
+                      ]}
+                      numberOfLines={1}>
+                      {contact.kicker}
                     </AppText>
-                  </>
-                ) : null}
-              </View>
-            ))}
+                    {/* <AppText style={styles.contactName}>{contact.name}</AppText> */}
+                    {/* <AppText
+                      style={[
+                        styles.contactRole,
+                        contact.role === NOT_IN_API && styles.textMissing,
+                      ]}>
+                      {contact.role}
+                    </AppText> */}
+
+                    <AppText
+                      style={[
+                        styles.contactAccess,
+                        isDrop && styles.contactAccessDrop,
+                        contact.access === NOT_IN_API && styles.textMissing,
+                      ]}>
+                      {contact.access}
+                    </AppText>
+
+                    {contact.remarks ? (
+                      <>
+                        <AppText style={styles.remarksLabel}>Remarks:</AppText>
+                        <AppText style={styles.remarksText}>
+                          {contact.remarks}
+                        </AppText>
+                      </>
+                    ) : null}
+                  </View>
+
+                  <TouchableOpacity
+                    style={styles.phoneBtn}
+                    activeOpacity={0.7}
+                    disabled={contact.phone === NOT_IN_API}
+                    onPress={() => callContact(contact.phone)}>
+                    <CallIcon width={PHONE_ICON} height={PHONE_ICON} />
+                  </TouchableOpacity>
+                </View>
+              );
+            })}
           </View>
 
-          {/* TRAILER AND LOADING TERMS */}
-          <AppText style={styles.sectionLabel}>
-            Trailer and Loading Terms
-          </AppText>
+          {/* TRAILER TERMS — neither cell exists on the payload yet, so both
+              read NOT_IN_API until the backend adds them. */}
+          <AppText style={styles.sectionLabel}>Trailer Terms</AppText>
           <DetailGrid cells={data.terms} />
 
           {/* THE LOAD ITSELF */}
           <AppText style={styles.sectionLabel}>Shipment Details</AppText>
-          <DetailGrid cells={data.load} />
+          <DetailGrid cells={data.load} columns={3} />
+
+          {/* REEFER DETAILS — hidden rather than shown as three placeholders
+              when the payload carries none of them. */}
+          {hasReefer ? (
+            <>
+              <AppText style={styles.sectionLabel}>Reefer Details</AppText>
+              <DetailGrid cells={data.reefer} columns={3} />
+            </>
+          ) : null}
         </ScrollView>
       )}
     </SafeAreaView>

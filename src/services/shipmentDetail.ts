@@ -127,19 +127,30 @@ export const toDetailContacts = (detail: Detail): DetailContact[] => {
   ];
 };
 
-export const toTerms = (detail: Detail): DetailRow[] => {
-  const terms = detail?.trailerTerms;
-  return [
-    {label: 'TRAILER', value: value(terms?.trailer)},
-    {label: 'DIMENSIONS', value: value(terms?.dimensions)},
-    {label: 'TRAILER NUMBER', value: value(terms?.trailerNumber)},
-    
-    // {label: 'HAND-OFF TYPE', value: NOT_IN_API},
-    // {label: 'LOADING RESPONSIBILITY', value: NOT_IN_API},
-    // {label: 'DRIVER TOUCH FREIGHT', value: NOT_IN_API},
-  ];
-};
+// `TrailerTerms` carries `trailer`/`dimensions`/`trailerNumber`, but the
+// design's two cells — hook & drop, trailer count — aren't on the payload at
+// all, so both read NOT_IN_API until the backend adds them.
+export const toTerms = (_detail: Detail): DetailRow[] => [
+  {label: 'HOOK & DROP OF TRAILER', value: NOT_IN_API},
+  {label: 'TRAILER COUNT', value: NOT_IN_API},
 
+  // {label: 'TRAILER', value: NOT_IN_API},
+  // {label: 'DIMENSIONS', value: NOT_IN_API},
+  // {label: 'TRAILER NUMBER', value: NOT_IN_API},
+  // {label: 'HAND-OFF TYPE', value: NOT_IN_API},
+  // {label: 'LOADING RESPONSIBILITY', value: NOT_IN_API},
+  // {label: 'DRIVER TOUCH FREIGHT', value: NOT_IN_API},
+];
+
+
+// `ShipmentDetailPayload` carries no reefer block at all — every cell here
+// reads NOT_IN_API until the backend adds one, rather than guessing at a
+// shape that doesn't exist yet.
+export const toReeferDetails = (_detail: Detail): DetailRow[] => [
+  {label: 'TEMPERATURE REQUIREMENT', value: NOT_IN_API},
+  {label: 'TARGET TEMPERATURE', value: NOT_IN_API},
+  {label: 'PRE-COOLING REQUIRED', value: NOT_IN_API},
+];
 
 export const toLoadDetails = (detail: Detail): DetailRow[] => {
   const load = detail?.shipmentDetails;
@@ -176,12 +187,16 @@ export const toShipmentDetail = (detail: Detail) => ({
   date: chipDate(detail?.pickupDate),
   time: detail?.pickupTime ? stopTime(detail.pickupTime) : NOT_IN_API,
   status: NOT_IN_API,
+  // No award/bid amount on this payload — the detail endpoint describes the
+  // shipment, not how it was won.
+  winningBid: NOT_IN_API,
   origin: value(detail?.routeFrom),
   dest: value(detail?.routeTo),
   stops: toDetailStops(detail),
   contacts: toDetailContacts(detail),
   terms: toTerms(detail),
   load: toLoadDetails(detail),
+  reefer: toReeferDetails(detail),
 });
 
 /**

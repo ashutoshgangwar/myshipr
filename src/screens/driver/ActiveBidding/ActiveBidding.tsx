@@ -131,24 +131,15 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
   // Starts at the auction's figure, then follows what each bid reports back.
   const [currentLowest, setCurrentLowest] = useState(data.currentLowest);
   const [placing, setPlacing] = useState(false);
-  // Which control started the in-flight bid — the "Place Bid" button only
-  // shows its own spinner for its own tap, not for a coin confirmed elsewhere.
   const [placingVia, setPlacingVia] = useState<'coin' | 'button' | null>(null);
 
-  // Keep the lowest in step with the detail payload — it carries the real
-  // `current_lowest_bid_cents`, which lands after the first render.
   useEffect(() => {
     setCurrentLowest(data.currentLowest);
   }, [data.currentLowest]);
-  // Bumped on every coin tap so the falcon replays even on back-to-back taps,
-  // alongside the centre of the coin it flies out of and the amount it carries.
   const [flight, setFlight] = useState(0);
   const [flightFrom, setFlightFrom] = useState<FlightOrigin | null>(null);
   const [flightLabel, setFlightLabel] = useState<string | null>(null);
 
-  // The "Bid NOW" coin dock slides off to the right edge and back. `dockAnim`
-  // drives the slide (0 = open, panelWidth = tucked away), and `panelWidth` is
-  // measured once the panel lays out so we know how far to push it.
   const [dockOpen, setDockOpen] = useState(true);
   const [panelWidth, setPanelWidth] = useState(0);
   const dockAnim = useRef(new Animated.Value(0)).current;
@@ -163,25 +154,15 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
     }).start();
   };
 
-  // Prefer the auction's own trucks when it carries any; until a vehicle API
-  // exists that list is empty, so fall back to the static eligible list.
   const vehicles = data.vehicles.length ? data.vehicles : ELIGIBLE_VEHICLES;
-  // Prefer the auction's own coin steps (`allowedGradients`) when it carries
-  // any; fall back to the static list otherwise.
   const bidSteps = data.bidSteps?.length
     ? data.bidSteps
     : BID_STEPS.map(step => step.value);
   const vehicle = vehicles[vehicleIdx];
   const belowLowest = yourBid != null && yourBid < currentLowest;
-  // The live, ticking time left. Falls back to the snapshot string when the
-  // auction carries no end timestamp.
   const liveRemaining = useCountdown(data.endsAt);
   const timeRemaining = data.endsAt ? liveRemaining : data.timeRemaining;
 
-  // The one call to `POST /drivers/bids/{auctionId}/bid`, shared by the typed
-  // "Place Bid" button and a confirmed coin tap. `amount` is dollars.
-  // `flight`, when given, is only launched once the bid actually succeeds —
-  // a coin tap that fails must never show the falcon celebrating.
   const submitBid = async (
     amount: number,
     flightInfo?: {origin: FlightOrigin; label: string},
@@ -213,15 +194,9 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
       if (Number.isFinite(result?.currentLowestBid)) {
         setCurrentLowest(result.currentLowestBid);
       }
-      // Flash the "placed" confirmation, then fall back to the ongoing
-      // current-lowest banner — whether or not this bid actually leads. The
-      // on-screen banners already carry this outcome, so no popup is shown
-      // for it — only a real backend error message ever is.
       setStatus('placed');
       setTimeout(() => setStatus(null), PLACED_BANNER_MS);
       if (flightInfo) {
-        // Same flourish as the falcon it launches: the tap sounds as well as
-        // flies, and only now that the bid actually landed.
         playAppSound('celebration');
         setFlightFrom(flightInfo.origin);
         setFlightLabel(flightInfo.label);
@@ -233,8 +208,7 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
         `[PlaceBid] error (${err?.response?.status ?? 'no response'})`,
         JSON.stringify(err?.response?.data ?? err?.message, null, 2),
       );
-      // Only ever shows the backend's own error text — never a
-      // frontend-composed fallback.
+
       const backendMessage =
         err?.response?.data?.message || err?.response?.data?.error;
       if (backendMessage) {
@@ -246,9 +220,6 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
     }
   };
 
-  // A coin tap never touches the input or calls the API on its own — it
-  // asks "are you sure your bid price is $X?" first, and only submits once
-  // the driver confirms.
   const handleStep = (value: number, origin: FlightOrigin) => {
     const proposedBid = Math.max(0, currentLowest - value);
     confirmBid({
@@ -256,10 +227,6 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
       message: `Are you sure your bid price is $${proposedBid}?`,
       confirmText: 'Submit',
       onConfirm: () => {
-        // The falcon only launches once `submitBid` confirms the bid actually
-        // landed — a failed coin bid must not play the success flourish.
-        // Reads the same as the coin face, so the number that flies off is
-        // recognisably the one the user hit.
         submitBid(proposedBid, {origin, label: `-${value}`});
       },
     });
