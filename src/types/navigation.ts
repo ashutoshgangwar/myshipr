@@ -131,6 +131,8 @@ export interface AuctionDetail {
   hasLowestBid?: boolean;
   /** The auction's ceiling in dollars (`max_bid_cap_cents` / 100). */
   maxBidCap?: number;
+  /** Dollars (`auction.allowedGradients` / 100) — the "Bid NOW" coin steps. */
+  bidSteps?: number[];
   outbid: boolean;
   vehicles: {id: string; model: string; assetId?: number}[];
   stops: {

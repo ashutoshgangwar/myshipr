@@ -80,7 +80,7 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
 
   // The real auction detail — `GET /drivers/bids/{auctionId}/detail`, mapped
   // onto the shape the screen renders. Falls back to the tapped row until it
-  // lands; fields the payload has no answer for read "----".
+  // lands; fields the payload has no answer for read "
   // Poll every 5s so the current lowest bid and the rest of the auction stay
   // live while the driver is on the screen.
   const {detail, loading: detailLoading} = useBidDetail(auctionId, 5000);
@@ -106,12 +106,12 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
   );
   const showToast = (text: string) => setToast({text});
 
-  // The app's one dialog — the Place Bid result (success or failure) shows here.
+  // The app's one dialog — a real backend error message, or the "are you
+  // sure" a coin tap asks before it bids.
   const {
     modalProps: bidModalProps,
-    showSuccess: showBidSuccess,
     showError: showBidError,
-    showWarning: showBidWarning,
+    confirm: confirmBid,
   } = useErrorModal();
 
   // Each toast clears itself; a new one restarts the clock, and errors stay a
@@ -163,6 +163,11 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
   // Prefer the auction's own trucks when it carries any; until a vehicle API
   // exists that list is empty, so fall back to the static eligible list.
   const vehicles = data.vehicles.length ? data.vehicles : ELIGIBLE_VEHICLES;
+  // Prefer the auction's own coin steps (`allowedGradients`) when it carries
+  // any; fall back to the static list otherwise.
+  const bidSteps = data.bidSteps?.length
+    ? data.bidSteps
+    : BID_STEPS.map(step => step.value);
   const vehicle = vehicles[vehicleIdx];
   const belowLowest = yourBid != null && yourBid < currentLowest;
   // The live, ticking time left. Falls back to the snapshot string when the
@@ -170,43 +175,21 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
   const liveRemaining = useCountdown(data.endsAt);
   const timeRemaining = data.endsAt ? liveRemaining : data.timeRemaining;
 
-  const handleStep = (value: number, origin: FlightOrigin) => {
-    // Same flourish as the falcon it launches: the tap sounds as well as
-    // flies. Never throws and never blocks, so a silent build still bids.
-    playAppSound('celebration');
-    setYourBid(prev => Math.max(0, (prev ?? 0) - value));
-    setFlightFrom(origin);
-    // Reads the same as the coin face, so the number that flies off is
-    // recognisably the one the user hit.
-    setFlightLabel(`-${value}`);
-    setFlight(n => n + 1);
-  };
-
-  const handleBidChange = (text: string) => {
-    const digits = text.replace(/[^0-9]/g, '');
-    setYourBid(digits ? Number(digits) : null);
-  };
-
-  const handlePlaceBid = async () => {
+  // The one call to `POST /drivers/bids/{auctionId}/bid`, shared by the typed
+  // "Place Bid" button and a confirmed coin tap. `amount` is dollars.
+  const submitBid = async (amount: number) => {
     if (placing) return;
-    // Any amount goes, including $0 — the server decides whether it leads.
-    // Only an empty field is stopped, since there is nothing to send.
-    if (yourBid == null) {
-      showBidWarning('Enter your bid', 'Enter your bid amount.');
-      return;
-    }
     if (!auctionId) {
-      console.log('[PlaceBid] not sent — no shipmentId (auctionId)', {
+      console.log('PlaceBid not sent- send complete details', {
         params: route?.params,
       });
-      showBidError('This auction has no shipment ID, so the bid cannot be placed.');
       return;
     }
 
     setPlacing(true);
     const request = {
       auctionId,
-      amountCents: Math.round(yourBid * 100),
+      amountCents: Math.round(amount * 100),
       // The truck comes from the selected vehicle once the vehicle API exists;
       // until then no asset id is sent rather than a made-up one.
       ...(vehicle?.assetId != null ? {assetId: vehicle.assetId} : {}),
@@ -215,43 +198,69 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
     try {
       const result = await placeBid(request);
       console.log('[PlaceBid] response', JSON.stringify(result, null, 2));
-      const placed = result?.yourBid ?? yourBid;
+      const placed = result?.yourBid ?? amount;
       setPlacedBid(placed);
       setYourBid(placed);
       if (Number.isFinite(result?.currentLowestBid)) {
         setCurrentLowest(result.currentLowestBid);
       }
       // Flash the "placed" confirmation, then fall back to the ongoing
-      // current-lowest banner — whether or not this bid actually leads.
+      // current-lowest banner — whether or not this bid actually leads. The
+      // on-screen banners already carry this outcome, so no popup is shown
+      // for it — only a real backend error message ever is.
       setStatus('placed');
       setTimeout(() => setStatus(null), PLACED_BANNER_MS);
-      // The server tells us whether this bid now leads: a win is good news, a
-      // bid that is already undercut is a heads-up rather than a success.
-      if (result?.leading === false) {
-        showBidWarning(
-          'You have been outbid',
-          `Your bid of $${placed} was placed, but it is not the lowest. The current lowest bid is $${
-            result?.currentLowestBid ?? currentLowest
-          }.`,
-        );
-      } else {
-        showBidSuccess(`Your bid of $${placed} has been placed successfully!`);
-      }
     } catch (e) {
       const err = e as AxiosError<ApiErrorBody> & ErrorLike;
       console.log(
         `[PlaceBid] error (${err?.response?.status ?? 'no response'})`,
         JSON.stringify(err?.response?.data ?? err?.message, null, 2),
       );
-      showBidError(err, {
-        message:
-          err?.response?.data?.message ||
-          err?.message ||
-          'Could not place your bid. Please try again.',
-      });
+      // Only ever shows the backend's own error text — never a
+      // frontend-composed fallback.
+      const backendMessage =
+        err?.response?.data?.message || err?.response?.data?.error;
+      if (backendMessage) {
+        showBidError(backendMessage);
+      }
     } finally {
       setPlacing(false);
     }
+  };
+
+  // A coin tap never touches the input or calls the API on its own — it
+  // asks "are you sure your bid price is $X?" first, and only submits once
+  // the driver confirms.
+  const handleStep = (value: number, origin: FlightOrigin) => {
+    const proposedBid = Math.max(0, currentLowest - value);
+    confirmBid({
+      title: 'Confirm your bid',
+      message: `Are you sure your bid price is $${proposedBid}?`,
+      confirmText: 'Submit',
+      onConfirm: () => {
+        // Same flourish as the falcon it launches: the tap sounds as well as
+        // flies. Never throws and never blocks, so a silent build still bids.
+        playAppSound('celebration');
+        setFlightFrom(origin);
+        // Reads the same as the coin face, so the number that flies off is
+        // recognisably the one the user hit.
+        setFlightLabel(`-${value}`);
+        setFlight(n => n + 1);
+        submitBid(proposedBid);
+      },
+    });
+  };
+
+  const handleBidChange = (text: string) => {
+    const digits = text.replace(/[^0-9]/g, '');
+    setYourBid(digits ? Number(digits) : null);
+  };
+
+  const handlePlaceBid = () => {
+    // Any amount goes, including $0 — the server decides whether it leads.
+    // Only an empty field is stopped, since there is nothing to send.
+    if (yourBid == null) return;
+    submitBid(yourBid);
   };
 
   const handleSaveAutoBid = async ({
@@ -261,12 +270,12 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
     mode: AutoBidMode;
     stopLoss: number | null;
   }) => {
+    // Neither guard below ever reaches the backend, so neither shows a
+    // message — only a real backend error message is ever surfaced.
     if (!auctionId) {
-      showBidError('This auction has no shipment ID, so auto bid cannot be set.');
       return;
     }
     if (!stopLoss) {
-      showBidWarning('Enter a stop loss', 'Enter the stop loss for your auto bid.');
       return;
     }
 
@@ -281,23 +290,19 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
     try {
       const result = await setAutoBid(request);
       console.log('[AutoBid] response', JSON.stringify(result, null, 2));
-      showBidSuccess(
-        `Auto bid set — ${
-          mode === 'GRADIENT' ? 'Gradient' : 'No Gradient'
-        }, stop loss $${stopLoss.toLocaleString()}.`,
-      );
     } catch (e) {
       const err = e as AxiosError<ApiErrorBody> & ErrorLike;
       console.log(
         `[AutoBid] error (${err?.response?.status ?? 'no response'})`,
         JSON.stringify(err?.response?.data ?? err?.message, null, 2),
       );
-      showBidError(err, {
-        message:
-          err?.response?.data?.message ||
-          err?.message ||
-          'Could not set auto bid. Please try again.',
-      });
+      // Only ever shows the backend's own error text — never a
+      // frontend-composed fallback.
+      const backendMessage =
+        err?.response?.data?.message || err?.response?.data?.error;
+      if (backendMessage) {
+        showBidError(backendMessage);
+      }
     }
   };
 
@@ -620,9 +625,9 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
           <AppText style={styles.bidPanelTitle}>
             Bid <AppText style={styles.bidPanelTitleStrong}>NOW</AppText>
           </AppText>
-          {BID_STEPS.map(step => (
-            <View key={step.id} style={styles.coinSlot}>
-              <BidCoin value={step.value} onPress={handleStep} />
+          {bidSteps.map(value => (
+            <View key={value} style={styles.coinSlot}>
+              <BidCoin value={value} onPress={handleStep} />
             </View>
           ))}
         </View>

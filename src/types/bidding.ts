@@ -145,6 +145,8 @@ export interface BidDetailAuction {
   current_lowest_bid_cents?: number;
   max_bid_cap_cents?: number;
   winner_amount_cents?: number;
+  /** Cents — the "Bid NOW" coin step amounts allowed for this auction. */
+  allowedGradients?: number[];
 }
 
 /** One stop of the auction's route. */
