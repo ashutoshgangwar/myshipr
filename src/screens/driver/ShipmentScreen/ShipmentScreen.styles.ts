@@ -16,6 +16,11 @@ const PILL_GREEN_BG = colors.successLight;
 // Share of the screen the UPCOMING / PAST pair spans — they split it evenly.
 const TAB_ROW_WIDTH = select({phone: '90%', tablet: '90%'} as const);
 
+// How far the pickup card rides up into the header's dark, rounded-bottom
+// background — the same "card floats over the curve" look Home's stat row
+// uses, scaled down for a single card rather than a row of them.
+const PICKUP_CARD_OVERLAP = vs(28);
+
 export default StyleSheet.create({
   safe: {
     flex: 1,
@@ -27,10 +32,10 @@ export default StyleSheet.create({
   },
 
   /* ---------- Header ---------- */
-  // The week strip is the last thing in the blue, so the header only needs
-  // enough bottom room to clear it — nothing floats over this header.
+  // Extra room below the week strip so the header's own rounded-bottom curve
+  // has somewhere to show once the pickup card overlaps up into it.
   headerPad: {
-    paddingBottom: vs(16),
+    paddingBottom: vs(16) + PICKUP_CARD_OVERLAP,
   },
 
   // The title/subtitle/badge come from the shared DashboardHeader — this screen
@@ -98,6 +103,102 @@ export default StyleSheet.create({
     marginTop: IS_TABLET ? vs(3) : vs(4),
   },
 
+  /* ---------- Today's pickup card ---------- */
+  // Negative margin pulls it up into the header's own bottom padding, so the
+  // header's rounded corners read as a dark hump behind the card's top edge.
+  pickupCard: {
+    backgroundColor: colors.white,
+    borderRadius: ms(12),
+    marginHorizontal: ms(12),
+    marginTop: -PICKUP_CARD_OVERLAP,
+    padding: ms(14),
+    shadowColor: colors.textStrong,
+    shadowOpacity: 0.05,
+    shadowRadius: 6,
+    shadowOffset: {width: 0, height: 2},
+    elevation: 2,
+  },
+
+  pickupBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+  },
+
+  pickupBadgeDot: {
+    width: ms(6),
+    height: ms(6),
+    borderRadius: ms(3),
+    backgroundColor: colors.success,
+    marginRight: ms(6),
+  },
+
+  pickupBadgeText: {
+    color: colors.success,
+    fontSize: fontSize.small,
+    fontWeight: '700',
+    letterSpacing: 0.5,
+  },
+
+  // Badge on the left, AWB No. pinned to the card's top-right corner — both
+  // on the same line.
+  pickupHeadRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    justifyContent: 'space-between',
+  },
+
+  pickupRoute: {
+    color: colors.textStrong,
+    fontSize: fontSize.subHeading,
+    fontWeight: '700',
+    marginTop: vs(1),
+  },
+
+  pickupTimeText: {
+    color: colors.textMuted,
+    fontSize: fontSize.small,
+    fontWeight: '500',
+    marginTop: vs(4),
+  },
+
+  pickupStatCol: {
+    alignItems: 'flex-end',
+  },
+
+  pickupStatLabel: {
+    color: colors.textMuted,
+    fontSize: fontSize.small,
+    fontWeight: '500',
+  },
+
+  pickupStatValue: {
+    color: colors.textStrong,
+    fontSize: fontSize.label,
+    fontWeight: '700',
+    marginTop: vs(2),
+  },
+
+  pickupEmpty: {
+    marginTop: vs(14),
+    alignItems: 'center',
+    paddingVertical: vs(10),
+  },
+
+  pickupEmptyTitle: {
+    color: colors.textStrong,
+    fontSize: fontSize.subHeading,
+    fontWeight: '700',
+  },
+
+  pickupEmptySub: {
+    color: colors.textMuted,
+    fontSize: fontSize.small,
+    fontWeight: '400',
+    marginTop: vs(6),
+    textAlign: 'center',
+  },
+
   /* ---------- Upcoming / Past ---------- */
   // The pair is centred and narrower than the table below it — TAB_ROW_WIDTH is
   // the single knob for how wide the two buttons get.
@@ -147,6 +248,15 @@ export default StyleSheet.create({
     shadowRadius: 6,
     shadowOffset: {width: 0, height: 2},
     elevation: 2,
+  },
+
+  // Without an explicit flex, a FlatList sizes to its *content* height rather
+  // than the space `listCard` actually has — it then either overflows past
+  // the card (clipped by its `overflow: 'hidden'`) or, with few rows, never
+  // gets tall enough to need scrolling at all. `flex: 1` bounds it to the
+  // card's remaining height so the row list scrolls inside it instead.
+  list: {
+    flex: 1,
   },
 
   listContent: {

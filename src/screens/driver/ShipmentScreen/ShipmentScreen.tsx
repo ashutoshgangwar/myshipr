@@ -18,6 +18,7 @@ import GrayTruck from '../../../assets/svg_icon/gray_truck.svg';
 import {IS_TABLET} from '../../../theme/device';
 import {
   formatLoadDate,
+  MISSING,
   shipmentDate,
   toShipmentRows,
   usePastShipments,
@@ -195,6 +196,25 @@ export default function ShipmentScreen({navigation}: MainTabScreenProps<'Shipmen
     ? `No shipments on ${formatLoadDate(upcomingDate)}`
     : 'No past shipments to show';
 
+  // The highlight card above the table — always the selected date's upcoming
+  // list, regardless of which tab (UPCOMING/PAST) the table itself is on.
+  const pickupStale =
+    upcomingLoadedDate !== undefined && upcomingLoadedDate !== upcomingDate;
+  const pickupPending = upcomingLoading && (!upcomingRows.length || pickupStale);
+  const pickupShipment = upcomingRows[0] ?? null;
+  const pickupBadgeLabel =
+    upcomingDate === today
+      ? 'TODAY'
+      : `${MONTHS_SHORT[Number(upcomingDate.slice(5, 7)) - 1]} ${upcomingDate.slice(8)}`.toUpperCase();
+  const pickupRouteLabel = pickupShipment
+    ? [
+        pickupShipment.stops[0]?.city,
+        pickupShipment.stops[pickupShipment.stops.length - 1]?.city,
+      ]
+        .filter(Boolean)
+        .join(' → ') || MISSING
+    : MISSING;
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <StatusBar
@@ -267,6 +287,49 @@ export default function ShipmentScreen({navigation}: MainTabScreenProps<'Shipmen
           </View>
         </DashboardHeader>
 
+        {/* TODAY'S / SELECTED DATE'S PICKUP */}
+        {pickupPending ? null : (
+          <View style={styles.pickupCard}>
+            <View style={styles.pickupHeadRow}>
+              <View style={styles.pickupBadge}>
+                <View style={styles.pickupBadgeDot} />
+                <AppText style={styles.pickupBadgeText}>
+                  {pickupBadgeLabel}
+                </AppText>
+              </View>
+
+              {pickupShipment ? (
+                <View style={styles.pickupStatCol}>
+                  <AppText style={styles.pickupStatLabel}>AWB No.</AppText>
+                  <AppText style={styles.pickupStatValue}>
+                    {pickupShipment.awb}
+                  </AppText>
+                </View>
+              ) : null}
+            </View>
+
+            {pickupShipment ? (
+              <>
+                <AppText style={styles.pickupRoute} numberOfLines={1}>
+                  {pickupRouteLabel}
+                </AppText>
+                <AppText style={styles.pickupTimeText}>
+                 Time: {pickupShipment.pickupClock} 
+                </AppText>
+              </>
+            ) : (
+              <View style={styles.pickupEmpty}>
+                <AppText style={styles.pickupEmptyTitle}>
+                  No Schedule Pickup
+                </AppText>
+                <AppText style={styles.pickupEmptySub}>
+                  Trips that are scheduled for the day are shown here
+                </AppText>
+              </View>
+            )}
+          </View>
+        )}
+
         {/* UPCOMING / PAST */}
         <View style={styles.tabRow}>
           {TABS.map(t => {
@@ -303,6 +366,7 @@ export default function ShipmentScreen({navigation}: MainTabScreenProps<'Shipmen
           </View>
 
           <FlatList
+            style={styles.list}
             data={shipments}
             keyExtractor={item => item.id}
             contentContainerStyle={styles.listContent}

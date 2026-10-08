@@ -374,6 +374,15 @@ export const toShipmentRows = (
         date,
         today,
       ),
+      // The clock half of `pickupAt` on its own — "08:30 AM" with no TODAY/
+      // date suffix — for a reader that already states the day some other
+      // way, such as the Shipment screen's "{time} pickup" card line.
+      pickupClock:
+        padHour(
+          stopTime(
+            first?.from ?? shipment?.pickupTime ?? shipment?.startTime ?? '',
+          ),
+        ) || MISSING,
       // A load leaving today gets the green pill.
       today: Boolean(date) && date === today,
       // The leg's two ends, for the details screen's map. Kept on the row so
