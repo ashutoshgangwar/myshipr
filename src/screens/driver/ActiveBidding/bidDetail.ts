@@ -272,9 +272,10 @@ export const toActiveBidding = (
     yourBid: lowest,
     currentLowest: lowest,
     hasLowestBid,
-    // The auction's ceiling, `max_bid_cap_cents` (e.g. 1500000 → $15,000).
-    maxBidCap: isNumber(auction?.max_bid_cap_cents)
-      ? Number(auction?.max_bid_cap_cents) / 100
+    // The auction's price shown in place of the cap, `indicative_price_cents`
+    // (e.g. 1000000 → $10,000).
+    maxBidCap: isNumber(auction?.indicative_price_cents)
+      ? Number(auction?.indicative_price_cents) / 100
       : base.maxBidCap,
     // The "Bid NOW" coin steps, `auction.allowedGradients` (cents → dollars,
     // e.g. 1000 → $10). Falls back to the static list when the auction

@@ -144,6 +144,7 @@ export interface BidDetailAuction {
   nextBids?: BidDetailNextBid[];
   current_lowest_bid_cents?: number;
   max_bid_cap_cents?: number;
+  indicative_price_cents?: number;
   winner_amount_cents?: number;
   /** Cents — the "Bid NOW" coin step amounts allowed for this auction. */
   allowedGradients?: number[];
