@@ -272,6 +272,10 @@ export const toActiveBidding = (
     yourBid: lowest,
     currentLowest: lowest,
     hasLowestBid,
+    awarded: String(auction?.status ?? '').toUpperCase() === 'AWARDED',
+    winnerAmount: isNumber(auction?.winner_amount_cents)
+      ? Number(auction?.winner_amount_cents) / 100
+      : undefined,
     // The auction's price shown in place of the cap, `indicative_price_cents`
     // (e.g. 1000000 → $10,000).
     maxBidCap: isNumber(auction?.indicative_price_cents)

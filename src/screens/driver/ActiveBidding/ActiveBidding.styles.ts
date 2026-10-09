@@ -257,6 +257,33 @@ export default StyleSheet.create({
     borderColor: colors.border_Color,
     overflow: 'hidden',
   },
+  awardedCard: {
+    marginTop: vs(5),
+    alignItems: 'center',
+    backgroundColor: colors.successLight,
+    borderRadius: ms(10),
+    borderWidth: 1,
+    borderColor: colors.success,
+    paddingVertical: vs(20),
+    paddingHorizontal: ms(14),
+  },
+  awardedTitle: {
+    marginTop: vs(10),
+    fontSize: fontSize.subHeading,
+    fontWeight: 'bold',
+    color: colors.success,
+  },
+  awardedLabel: {
+    marginTop: vs(6),
+    fontSize: fontSize.subBody,
+    color: colors.textMuted,
+  },
+  awardedAmount: {
+    marginTop: vs(2),
+    fontSize: fontSize.heading,
+    fontWeight: 'bold',
+    color: colors.textStrong,
+  },
   bidCardTop: {
     padding: ms(14),
     borderBottomWidth: 1,

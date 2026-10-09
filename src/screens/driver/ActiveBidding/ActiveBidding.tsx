@@ -33,6 +33,7 @@ import {
   activeBidTimerBones,
   activeBidVehicleBones,
 } from '../../../component/Skeleton/Skeleton.layouts';
+import ConfettiPoppers from '../../../component/ConfettiPoppers/ConfettiPoppers';
 import FalconFlight from '../../../component/FalconFlight/FalconFlight';
 import type {FlightOrigin} from '../../../component/FalconFlight/FalconFlight';
 import StatusBar from '../../../component/StatusBar/StatusBar';
@@ -45,6 +46,7 @@ import CalendarIcon from '../../../assets/svg_icon/Schedule.svg';
 import Time_Icon from '../../../assets/svg_icon/Time_Icon.svg';
 import LockIcon from '../../../assets/svg_icon/lock.svg';
 import ChevronDown from '../../../assets/svg_icon/Chevron_Down.svg';
+import AwardIcon from '../../../assets/svg_icon/Award_icon.svg';
 import CheckIcon from '../../../assets/svg_icon/check.svg';
 import type {RootStackScreenProps} from '../../../types/navigation';
 import {playAppSound} from '../../../services/notificationSound';
@@ -223,7 +225,9 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
       console.log('[PlaceBid] response', JSON.stringify(result, null, 2));
       const placed = result?.yourBid ?? amount;
       setPlacedBid(placed);
-      setYourBid(placed);
+      // Clear the input once the bid is accepted; the banner shows the amount.
+      setYourBid(null);
+      bidInputRef.current?.blur();
       if (Number.isFinite(result?.currentLowestBid)) {
         setCurrentLowest(result.currentLowestBid);
       }
@@ -446,7 +450,7 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
             layout={activeBidBannerBones}
             containerStyle={styles.bannerSkeleton}
           />
-        ) : status === 'placed' ? (
+        ) : data.awarded ? null : status === 'placed' ? (
           <View style={[styles.statusBanner, styles.statusPlaced]}>
             <View style={styles.placedIcon}>
               <CheckIcon width={ms(12)} height={ms(12)} />
@@ -473,7 +477,7 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
           </View>
         )}
 
-        {autoBidOn ? (
+        {autoBidOn && !data.awarded ? (
           <View style={styles.autoBidBanner}>
             <View style={styles.autoBidBannerLeft}>
               <AppText style={styles.autoBidBannerTitle}>Auto bid is on</AppText>
@@ -493,7 +497,19 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
           </View>
         ) : null}
 
-        {/* VEHICLE + BID CARD */}
+        {/* VEHICLE + BID CARD — replaced by the award once the auction is AWARDED */}
+        {data.awarded ? (
+          <View style={styles.awardedCard}>
+            <AwardIcon width={ms(64)} height={ms(64)} />
+            <AppText style={styles.awardedTitle}>Bid Awarded</AppText>
+            <AppText style={styles.awardedLabel}>Winning amount</AppText>
+            <AppText style={styles.awardedAmount}>
+              {data.winnerAmount != null
+                ? `$${data.winnerAmount.toLocaleString()}`
+                : NOT_IN_API}
+            </AppText>
+          </View>
+        ) : (
         <View style={styles.bidCard}>
           <View style={styles.bidCardTop}>
             <View style={styles.sectionHeadRow}>
@@ -634,6 +650,7 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
             ) : null}
           </View>
         </View>
+        )}
 
         {/* STOPS & TIMINGS */}
         <View style={styles.sectionCard}>
@@ -709,32 +726,34 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
       {/* FLOATING BID NOW PANEL — slides off to the right edge and back */}
 
       
-      <Animated.View
-        style={[styles.bidDock, {transform: [{translateX: dockAnim}]}]}>
-        <TouchableOpacity
-          style={styles.bidDockHandle}
-          activeOpacity={0.85}
-          onPress={toggleDock}>
-          <ChevronDown
-            width={ms(16)}
-            height={ms(16)}
-            color={colors.white}
-            style={dockOpen ? styles.dockHandleIconOpen : styles.dockHandleIconClosed}
-          />
-        </TouchableOpacity>
-        <View
-          style={styles.bidPanel}
-          onLayout={e => setPanelWidth(e.nativeEvent.layout.width)}>
-          <AppText style={styles.bidPanelTitle}>
-            Bid <AppText style={styles.bidPanelTitleStrong}>NOW</AppText>
-          </AppText>
-          {bidSteps.map(value => (
-            <View key={value} style={styles.coinSlot}>
-              <BidCoin value={value} onPress={handleStep} />
-            </View>
-          ))}
-        </View>
-      </Animated.View>
+      {!data.awarded ? (
+        <Animated.View
+          style={[styles.bidDock, {transform: [{translateX: dockAnim}]}]}>
+          <TouchableOpacity
+            style={styles.bidDockHandle}
+            activeOpacity={0.85}
+            onPress={toggleDock}>
+            <ChevronDown
+              width={ms(16)}
+              height={ms(16)}
+              color={colors.white}
+              style={dockOpen ? styles.dockHandleIconOpen : styles.dockHandleIconClosed}
+            />
+          </TouchableOpacity>
+          <View
+            style={styles.bidPanel}
+            onLayout={e => setPanelWidth(e.nativeEvent.layout.width)}>
+            <AppText style={styles.bidPanelTitle}>
+              Bid <AppText style={styles.bidPanelTitleStrong}>NOW</AppText>
+            </AppText>
+            {bidSteps.map(value => (
+              <View key={value} style={styles.coinSlot}>
+                <BidCoin value={value} onPress={handleStep} />
+              </View>
+            ))}
+          </View>
+        </Animated.View>
+      ) : null}
 
       {/* Reward flourish — bursts out of the tapped coin, swoops across and
           lands at the top of the screen. */}
@@ -766,6 +785,8 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
 
       {/* The Place Bid result — success or failure — in the app's shared dialog. */}
       <ErrorModal {...bidModalProps} />
+      {/* Party poppers fire once when the auction is awarded */}
+      <ConfettiPoppers active={Boolean(data.awarded)} />
     </SafeAreaView>
   );
 }

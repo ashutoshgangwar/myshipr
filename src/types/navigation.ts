@@ -131,6 +131,10 @@ export interface AuctionDetail {
   hasLowestBid?: boolean;
   /** The auction's ceiling in dollars (`max_bid_cap_cents` / 100). */
   maxBidCap?: number;
+  /** True when the auction's status is AWARDED. */
+  awarded?: boolean;
+  /** Dollars (`winner_amount_cents` / 100) — the awarded bid. */
+  winnerAmount?: number;
   /** Dollars (`auction.allowedGradients` / 100) — the "Bid NOW" coin steps. */
   bidSteps?: number[];
   outbid: boolean;
