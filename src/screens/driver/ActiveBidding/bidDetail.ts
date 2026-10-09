@@ -14,6 +14,7 @@ import {useEffect, useMemo, useState} from 'react';
 
 import {getBidDetail} from '../../../config/driverApi';
 import {TTL, useCachedResource} from '../../../services/resourceCache';
+import type {CachedResource} from '../../../services/resourceCache';
 import {cityLabel, loadType} from '../../../services/upcomingShipments';
 import {group, isNumber, MONTHS_SHORT, stopTime} from '../../../utils/format';
 import type {
@@ -309,7 +310,10 @@ export const toActiveBidding = (
 export function useBidDetail(
   auctionId: string | null | undefined,
   pollMs = 0,
-): {detail: Nullable<BidDetail>} & Omit<AsyncResource<BidDetail>, 'data'> {
+): {detail: Nullable<BidDetail>} & Omit<
+  AsyncResource<BidDetail>,
+  'data' | 'refresh'
+> & {refresh: CachedResource<BidDetail>['refresh']} {
   const fetcher = useMemo(
     () => () =>
       auctionId

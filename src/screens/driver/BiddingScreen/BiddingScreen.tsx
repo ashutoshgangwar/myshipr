@@ -1,5 +1,5 @@
-import React, {useEffect, useState} from 'react';
-import {FlatList} from 'react-native';
+import React, {useCallback, useEffect, useState} from 'react';
+import {FlatList, RefreshControl} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
 import styles, {GRID_COLS} from './BiddingScreen.styles';
@@ -43,9 +43,27 @@ export default function BiddingScreen() {
     return () => clearTimeout(id);
   }, [search]);
 
-  const {rows, loading} = useBidSearch({bucket, mode, search: query, filters});
-  // Bones while the first search is in flight and nothing is on screen yet.
-  const showSkeleton = loading && rows.length === 0;
+  const {rows, loading, refresh} = useBidSearch({
+    bucket,
+    mode,
+    search: query,
+    filters,
+  });
+  // Pull-to-refresh: a forced re-fetch; the spinner is the pull's own.
+  const [refreshing, setRefreshing] = useState(false);
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await refresh();
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refresh]);
+  
+
+  // Bones while the first search is in flight and nothing is on screen yet,
+  // and for the whole of a pull-to-refresh.
+  const showSkeleton = refreshing || (loading && rows.length === 0);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
@@ -103,9 +121,16 @@ export default function BiddingScreen() {
           contentContainerStyle={styles.gridContent}
           showsVerticalScrollIndicator={false}
           renderItem={({item}) => <GridCard item={item} />}
+          refreshControl={
+            <RefreshControl refreshing={false} onRefresh={handleRefresh} />
+          }
         />
       ) : (
-        <BidTable data={rows} />
+        <BidTable
+          data={rows}
+          refreshing={refreshing}
+          onRefresh={handleRefresh}
+        />
       )}
     </SafeAreaView>
   );

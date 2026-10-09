@@ -1,5 +1,12 @@
 import React, {useCallback, useMemo, useState} from 'react';
-import {View, FlatList, TouchableOpacity, Modal, Pressable} from 'react-native';
+import {
+  View,
+  FlatList,
+  TouchableOpacity,
+  Modal,
+  Pressable,
+  RefreshControl,
+} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
 import styles from './EarningsScreen.styles';
@@ -122,6 +129,22 @@ export default function EarningsScreen({navigation}: MainTabScreenProps<'Earning
   } = useMonthlyEarnings();
 
   const retryMiles = useCallback(() => refreshMiles({force: true}), [refreshMiles]);
+  // Pull-to-refresh: forced re-fetch of the table and both cards, bones in
+  // place of all three until the answers land.
+  const [refreshing, setRefreshing] = useState(false);
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        refresh({force: true, silent: true}),
+        refreshMiles({force: true, silent: true}),
+        refreshMonthly({force: true, silent: true}),
+      ]);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refresh, refreshMiles, refreshMonthly]);
+
   const retryMonthly = useCallback(
     () => refreshMonthly({force: true}),
     [refreshMonthly],
@@ -132,17 +155,18 @@ export default function EarningsScreen({navigation}: MainTabScreenProps<'Earning
       {
         ...MILES_STAT,
         ...toMilesCard(monthlyMiles),
-        loading: milesLoading,
+        loading: milesLoading || refreshing,
         onRetry: milesError ? retryMiles : undefined,
       },
       {
         ...EARNINGS_STAT,
         ...toEarningsCard(monthlyEarnings),
-        loading: monthlyLoading,
+        loading: monthlyLoading || refreshing,
         onRetry: monthlyError ? retryMonthly : undefined,
       },
     ],
     [
+      refreshing,
       milesError,
       milesLoading,
       monthlyEarnings,
@@ -197,7 +221,7 @@ export default function EarningsScreen({navigation}: MainTabScreenProps<'Earning
           {/* The gross figure waits behind its own bone and, if the call
               failed, becomes a retry that re-asks `/drivers/earnings` for the
               period on screen — the two cards above keep whatever they got. */}
-          {loading ? (
+          {loading || refreshing ? (
             <Skeleton
               isLoading
               onDark
@@ -237,13 +261,16 @@ export default function EarningsScreen({navigation}: MainTabScreenProps<'Earning
             // Emptied while a period is in flight so the table draws bones
             // rather than leaving the period before it on screen under a
             // header that has already moved on.
-            data={loading ? [] : transactions}
+            data={loading || refreshing ? [] : transactions}
+            refreshControl={
+              <RefreshControl refreshing={false} onRefresh={handleRefresh} />
+            }
             keyExtractor={tx => tx.id}
             contentContainerStyle={styles.scrollContent}
             nestedScrollEnabled
             showsVerticalScrollIndicator={false}
             ListEmptyComponent={
-              loading ? (
+              loading || refreshing ? (
                 <Skeleton isLoading layout={ROW_BONES} />
               ) : (
                 <View style={styles.listEmpty}>

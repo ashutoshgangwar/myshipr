@@ -235,6 +235,14 @@ export default StyleSheet.create({
     marginBottom:IS_TABLET ? vs(6) : Platform.OS === 'ios' ? vs(1) : vs(8),
   },
 
+  headerPhone: {
+    color: colors.white,
+    fontSize: fontSize.mainHeading,
+    fontWeight: '500',
+    opacity: 0.85,
+    marginBottom: vs(4),
+  },
+
   /* ---------- Stats ---------- */
   statsRow: {
     flexDirection: 'row',

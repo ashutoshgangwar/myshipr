@@ -29,12 +29,15 @@ export interface BidCoinProps {
    * launch an effect from the coin the user actually hit.
    */
   onPress?: (value: number, origin: {x: number; y: number}) => void;
+  /** Greys the coin out and ignores taps. */
+  disabled?: boolean;
 }
 
 export default function BidCoin({
   value,
   size = ms(46),
   onPress,
+  disabled = false,
 }: BidCoinProps) {
   const coin = useRef<React.ComponentRef<typeof TouchableOpacity>>(null);
 
@@ -61,8 +64,13 @@ export default function BidCoin({
     <TouchableOpacity
       ref={coin}
       activeOpacity={0.8}
+      disabled={disabled}
       onPress={handlePress}
-      style={[styles.wrap, {width: size, height: size, borderRadius: size / 2}]}>
+      style={[
+        styles.wrap,
+        disabled && styles.disabled,
+        {width: size, height: size, borderRadius: size / 2},
+      ]}>
       <CoinIcon width={size} height={size} />
       <View style={styles.label} pointerEvents="none">
         <AppText style={[styles.value, {fontSize: size * 0.28}]} numberOfLines={1}>
@@ -75,6 +83,7 @@ export default function BidCoin({
 
 const styles = StyleSheet.create({
   wrap: {alignItems: 'center', justifyContent: 'center'},
+  disabled: {opacity: 0.4},
   label: {
     ...StyleSheet.absoluteFillObject,
     alignItems: 'center',

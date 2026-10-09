@@ -1,5 +1,11 @@
 import React, {useMemo, useState} from 'react';
-import {View, ScrollView, TouchableOpacity, Linking} from 'react-native';
+import {
+  View,
+  ScrollView,
+  TouchableOpacity,
+  Linking,
+  RefreshControl,
+} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
 import styles from './ShipmentDetails.styles';
@@ -87,7 +93,17 @@ export default function ShipmentDetails({navigation, route}: RootStackScreenProp
   // The row the driver tapped carries only the id; the page is the response to
   // `GET /drivers/shipments/{shipmentId}/detail`.
   const shipmentId = route?.params?.shipmentId;
-  const {detail, loading, error} = useShipmentDetail(shipmentId);
+  const {detail, loading, error, refresh} = useShipmentDetail(shipmentId);
+  // Pull-to-refresh: forced re-fetch with the bones standing in for the sheet.
+  const [refreshing, setRefreshing] = useState(false);
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await refresh({force: true, silent: true});
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   // Mapped even while the call is out: `toShipmentDetail(null)` hands back the
   // same shape filled with placeholders, so the sheet keeps its layout instead
@@ -156,7 +172,7 @@ export default function ShipmentDetails({navigation, route}: RootStackScreenProp
         </TouchableOpacity>
       </View>
 
-      {loading ? (
+      {loading || refreshing ? (
         // The sheet is one call's answer, so it waits as one. A spinner in
         // the middle of an empty white page said only that something was
         // happening; bones say what is coming and where — the chips, the
@@ -174,6 +190,9 @@ export default function ShipmentDetails({navigation, route}: RootStackScreenProp
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
           scrollEnabled={scrollEnabled}
+          refreshControl={
+            <RefreshControl refreshing={false} onRefresh={handleRefresh} />
+          }
           showsVerticalScrollIndicator={false}>
           {/* MODE / SCHEDULE CHIPS + LIVE STATUS */}
           <View style={styles.topRow}>

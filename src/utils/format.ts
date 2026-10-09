@@ -23,6 +23,16 @@ export const isNumber = (value: Numeric): value is number | string =>
   Number.isFinite(Number(value)) && value !== null && value !== '';
 
 /** "1,250" — grouped without Intl, which Hermes does not always carry. */
+/**
+ * "8287143438" → "82******38": the first two and last two digits stay, the rest
+ * are masked. Returns '' when there are too few digits to mask meaningfully.
+ */
+export const maskPhone = (value: unknown): string => {
+  const digits = String(value ?? '').replace(/\D/g, '');
+  if (digits.length < 5) return '';
+  return `${digits.slice(0, 2)}${'*'.repeat(digits.length - 4)}${digits.slice(-2)}`;
+};
+
 export const group = (value: number | string): string =>
   String(value).replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 

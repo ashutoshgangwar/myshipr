@@ -1,5 +1,5 @@
 import React, {useRef} from 'react';
-import {View, ScrollView, TouchableOpacity} from 'react-native';
+import {View, ScrollView, TouchableOpacity, RefreshControl} from 'react-native';
 import {useNavigation} from '@react-navigation/native';
 
 import styles, {rowHeight} from '../BiddingScreen.styles';
@@ -10,7 +10,13 @@ import StopList from './StopList';
 import type {NativeScrollEvent, NativeSyntheticEvent} from 'react-native';
 import type {BidRow} from '../constants';
 
-export default function BidTable({data}: {data: BidRow[]}) {
+interface BidTableProps {
+  data: BidRow[];
+  refreshing?: boolean;
+  onRefresh?: () => void;
+}
+
+export default function BidTable({data, refreshing = false, onRefresh}: BidTableProps) {
   const navigation = useNavigation();
   const headRef = useRef<ScrollView | null>(null);
 
@@ -54,7 +60,14 @@ export default function BidTable({data}: {data: BidRow[]}) {
       </View>
 
       {/* ---------- Body ---------- */}
-      <ScrollView style={styles.tableBody} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.tableBody}
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          onRefresh ? (
+            <RefreshControl refreshing={false} onRefresh={onRefresh} />
+          ) : undefined
+        }>
         <View style={styles.tableBodyRow}>
           {/* frozen Load column */}
           <View style={styles.frozenCol}>

@@ -364,7 +364,8 @@ export interface UseBidSearch {
   stats: DashboardStat[];
   loading: boolean;
   error: string | null;
-  refresh: () => void;
+  /** Forced re-fetch of the list and the cards; resolves when both land. */
+  refresh: () => Promise<void>;
 }
 
 /**
@@ -443,9 +444,11 @@ export function useBidSearch(input: BidSearchInput): UseBidSearch {
     stats,
     loading: list.loading || summary.loading,
     error: list.error ?? summary.error,
-    refresh: () => {
-      void list.refresh();
-      void summary.refresh();
+    refresh: async () => {
+      await Promise.all([
+        list.refresh({force: true, silent: true}),
+        summary.refresh({force: true, silent: true}),
+      ]);
     },
   };
 }

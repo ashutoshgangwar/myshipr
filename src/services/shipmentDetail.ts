@@ -9,6 +9,7 @@ import {
   stopTime,
 } from '../utils/format';
 import {TTL, useCachedResource} from './resourceCache';
+import type {CachedResource} from './resourceCache';
 import {loadType} from './upcomingShipments';
 import type {
   DetailContact,
@@ -208,8 +209,8 @@ export function useShipmentDetail(
   shipmentId: string | null | undefined,
 ): {detail: Nullable<ShipmentDetailPayload>} & Omit<
   AsyncResource<ShipmentDetailPayload>,
-  'data'
-> {
+  'data' | 'refresh'
+> & {refresh: CachedResource<ShipmentDetailPayload>['refresh']} {
   const fetcher = useMemo(
     () => () =>
       shipmentId

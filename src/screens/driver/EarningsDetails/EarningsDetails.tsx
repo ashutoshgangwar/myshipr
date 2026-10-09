@@ -1,5 +1,5 @@
-import React, {useMemo} from 'react';
-import {View, ScrollView, TouchableOpacity} from 'react-native';
+import React, {useMemo, useState} from 'react';
+import {View, ScrollView, TouchableOpacity, RefreshControl} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 
 import styles from './EarningsDetails.styles';
@@ -63,7 +63,17 @@ const DetailGrid = ({cells}: {cells: DetailRow[]}) => {
 export default function EarningsDetails({navigation, route}: RootStackScreenProps<'Earningsdetails'>) {
 
   const shipmentId = (route?.params as any)?.shipmentId;
-  const {payment, loading} = usePaymentDetails(shipmentId);
+  const {payment, loading, refresh} = usePaymentDetails(shipmentId);
+  // Pull-to-refresh: forced re-fetch with the bones standing in for the sheet.
+  const [refreshing, setRefreshing] = useState(false);
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await refresh({force: true, silent: true});
+    } finally {
+      setRefreshing(false);
+    }
+  };
 
   const handedOver = route?.params?.payment;
 
@@ -75,7 +85,7 @@ export default function EarningsDetails({navigation, route}: RootStackScreenProp
   // Bones only while there is genuinely nothing to draw. A row that handed its
   // payout over already filled the sheet, so it stays readable and the call
   // refines it in place rather than blanking it to shimmer.
-  const pending = loading && !payment && !handedOver;
+  const pending = (loading && !payment && !handedOver) || refreshing;
 
   const goBack = () => (navigation ? navigation.goBack() : null);
 
@@ -91,6 +101,9 @@ export default function EarningsDetails({navigation, route}: RootStackScreenProp
         <ScrollView
           style={styles.scroll}
           contentContainerStyle={styles.scrollContent}
+          refreshControl={
+            <RefreshControl refreshing={false} onRefresh={handleRefresh} />
+          }
           showsVerticalScrollIndicator={false}>
           {/* HEADER — the payout card rides up over its bottom edge, so the
               header scrolls with the content instead of sitting above it. */}

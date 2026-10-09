@@ -125,6 +125,9 @@ export const AUTH_STORAGE_KEYS = {
   userId: 'auth_user_id',
   organizationId: 'auth_organization_id',
   organizationType: 'auth_organization_type',
+  // The phone number the driver signed in with — only set by a successful
+  // phone login, and wiped with the rest by `clearSession()`.
+  phoneNumber: 'auth_phone_number',
   expiresAt: 'auth_expires_at',
 };
 
@@ -299,6 +302,9 @@ export const getOrganizationType = async (): Promise<string | null> =>
  * Stored by `saveSession()`; `null` until a login has landed, and again after
  * `clearSession()` wipes the metadata.
  */
+export const getPhoneNumber = async (): Promise<string | null> =>
+  AsyncStorage.getItem(AUTH_STORAGE_KEYS.phoneNumber);
+
 export const getOrganizationId = async (): Promise<string | null> =>
   AsyncStorage.getItem(AUTH_STORAGE_KEYS.organizationId);
 
@@ -719,6 +725,14 @@ export const login = async ({
       throw new Error(body?.message || 'Login failed. Please try again.');
     }
     await clearSession();
+    // The number posted to /auth/login, kept only now that the login has
+    // succeeded (and before `saveSession()` emits, so listeners read it).
+    if (payload.phoneNumber) {
+      await AsyncStorage.setItem(
+        AUTH_STORAGE_KEYS.phoneNumber,
+        payload.phoneNumber,
+      ).catch(() => undefined);
+    }
     await saveSession(data);
     log('session stored', {
       hasRefreshToken: Boolean(data.refreshToken),

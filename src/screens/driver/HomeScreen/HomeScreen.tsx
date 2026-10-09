@@ -7,6 +7,7 @@ import {
   Image,
   Modal,
   Dimensions,
+  RefreshControl,
 } from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useNavigation, useFocusEffect} from '@react-navigation/native';
@@ -67,6 +68,8 @@ import {
 import {useCurrentLocationLabel} from '../../../services/currentLocation';
 import {useFuelReward} from '../../../services/fuelReward';
 import {refreshFuelPrice} from '../../../services/fuelPrice';
+import usePhoneNumber from '../../../hooks/usePhoneNumber';
+import {maskPhone} from '../../../utils/format';
 import {openFuelPriceEntry} from '../../../services/fuelPricePrompt';
 import {toDutyPill, toHosBar, toHosDetails, useHosCard} from './hosCard';
 import {
@@ -136,6 +139,9 @@ const HomeScreen = () => {
   const organizationType = useOrganizationType();
   const [mapVisible, setMapVisible] = useState(false);
   const trip = useTripSession();
+  // The number the driver logged in with (null after logout, or on an email
+  // login), shown masked under the welcome line.
+  const maskedPhone = maskPhone(usePhoneNumber());
   const tripStarted = Boolean(trip);
   const {
     trip: currentTrip,
@@ -183,11 +189,32 @@ const HomeScreen = () => {
     loading: monthlyTripsLoading,
     refresh: refreshMonthlyTrips,
   } = useMonthlyTrips();
+  // Pull-to-refresh: forced re-fetch of every card, bones in place of each
+  // until its answer lands.
+  const [refreshing, setRefreshing] = useState(false);
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        refreshCurrentTrip({force: true, silent: true}),
+        refreshFuelReward({force: true, silent: true}),
+        refreshUpcoming({force: true, silent: true}),
+        refreshHos({force: true, silent: true}),
+        refreshMonthlyMiles({force: true, silent: true}),
+        refreshMonthlyEarnings({force: true, silent: true}),
+        refreshMonthlyTrips({force: true, silent: true}),
+        refreshFuelPrice({force: true}),
+      ]);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   const stats = useMemo(() => {
     const milesStat = {
       ...MILES_STAT,
       ...toMilesCard(monthlyMiles),
-      loading: milesLoading && !monthlyMiles,
+      loading: (milesLoading && !monthlyMiles) || refreshing,
     };
     if (isFleet)
       return [
@@ -195,7 +222,7 @@ const HomeScreen = () => {
         {
           ...TRIPS_STAT,
           ...toTripsCard(monthlyTrips),
-          loading: monthlyTripsLoading && !monthlyTrips,
+          loading: (monthlyTripsLoading && !monthlyTrips) || refreshing,
         },
       ];
     return [
@@ -203,10 +230,11 @@ const HomeScreen = () => {
       {
         ...EARNINGS_STAT,
         ...toEarningsCard(monthlyEarnings),
-        loading: monthlyEarningsLoading && !monthlyEarnings,
+        loading: (monthlyEarningsLoading && !monthlyEarnings) || refreshing,
       },
     ];
   }, [
+    refreshing,
     isFleet,
     milesLoading,
     monthlyEarnings,
@@ -216,13 +244,14 @@ const HomeScreen = () => {
     monthlyTripsLoading,
   ]);
 
-  const tripPending = tripLoading && !currentTrip;
+  const tripPending = (tripLoading && !currentTrip) || refreshing;
 
   const canStartTrip = Boolean(currentTrip) || tripStarted;
   const hasCurrentTrip = Boolean(currentTrip);
-  const rewardPending = rewardLoading && rewardPoints === null;
-  const hosPending = hosLoading && !hosCard;
-  const upcomingPending = upcomingLoading && !upcomingLoads.length;
+  const rewardPending = (rewardLoading && rewardPoints === null) || refreshing;
+  const hosPending = (hosLoading && !hosCard) || refreshing;
+  const upcomingPending =
+    (upcomingLoading && !upcomingLoads.length) || refreshing;
 
   const statusPill = tripStatusPill(currentTrip);
   const startsIn = startsInLabel(currentTrip);
@@ -359,9 +388,9 @@ const HomeScreen = () => {
           tripStarted && !mapVisible && styles.scrollContentWithBanner,
         ]}
         showsVerticalScrollIndicator={false}
-        bounces={false}
-        alwaysBounceVertical={false}
-        overScrollMode="never">
+        refreshControl={
+          <RefreshControl refreshing={false} onRefresh={handleRefresh} />
+        }>
         {/* HEADER */}
         <DashboardHeader
           icon={
@@ -409,6 +438,9 @@ const HomeScreen = () => {
             {locationLabel}
           </AppText>
           <AppText style={styles.headerWelcome}>Welcome Back, Ashutosh Gangwar</AppText>
+          {maskedPhone ? (
+            <AppText style={styles.headerPhone}>{maskedPhone}</AppText>
+          ) : null}
         </DashboardHeader>
 
         {/* MAIN GRID */}

@@ -2,6 +2,7 @@ import React, {useCallback, useEffect, useMemo, useRef, useState} from 'react';
 import {
   View,
   ScrollView,
+  RefreshControl,
   TouchableOpacity,
   TextInput,
   Pressable,
@@ -89,14 +90,20 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
   // lands; fields the payload has no answer for read "
   // Poll every 5s so the current lowest bid and the rest of the auction stay
   // live while the driver is on the screen.
-  const {detail, loading: detailLoading} = useBidDetail(auctionId, 5000);
+  const {
+    detail,
+    loading: detailLoading,
+    refresh: refreshDetail,
+  } = useBidDetail(auctionId, 5000);
   const data = useMemo(
     () => toActiveBidding(detail, passed),
     [detail, passed],
   );
   // Bones for the detail-driven sections while the call is in flight and none
   // of its data is on screen yet.
-  const loadingDetail = detailLoading && !detail;
+  const [refreshing, setRefreshing] = useState(false);
+  // Also bones for the whole of a pull-to-refresh.
+  const loadingDetail = (detailLoading && !detail) || refreshing;
 
   const [yourBid, setYourBid] = useState<number | null>(null);
   // Lets a tap anywhere in the bordered box focus the field, not just the
@@ -257,6 +264,19 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
     }
   };
 
+  // Pull-to-refresh: re-reads the auction detail and the auto-bid state.
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        refreshDetail({force: true, silent: true}),
+        loadAutoBid(),
+      ]);
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   const handleStep = (value: number, origin: FlightOrigin) => {
     const proposedBid = Math.max(0, currentLowest - value);
     confirmBid({
@@ -396,7 +416,10 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
         style={styles.scroll}
         contentContainerStyle={styles.scrollContent}
         keyboardShouldPersistTaps="handled"
-        showsVerticalScrollIndicator={false}>
+        showsVerticalScrollIndicator={false}
+        refreshControl={
+          <RefreshControl refreshing={false} onRefresh={handleRefresh} />
+        }>
         {/* ROUTE HEADER */}
         <View style={styles.routeHeader}>
           <View style={styles.routeLeft}>
@@ -748,7 +771,11 @@ export default function ActiveBidding({navigation, route}: RootStackScreenProps<
             </AppText>
             {bidSteps.map(value => (
               <View key={value} style={styles.coinSlot}>
-                <BidCoin value={value} onPress={handleStep} />
+                <BidCoin
+                  value={value}
+                  onPress={handleStep}
+                  disabled={!data.hasLowestBid}
+                />
               </View>
             ))}
           </View>

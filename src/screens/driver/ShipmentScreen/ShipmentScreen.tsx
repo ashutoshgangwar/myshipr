@@ -1,5 +1,5 @@
 import React, {useCallback, useEffect, useMemo, useState} from 'react';
-import {View, FlatList, TouchableOpacity} from 'react-native';
+import {View, FlatList, TouchableOpacity, RefreshControl} from 'react-native';
 import {SafeAreaView} from 'react-native-safe-area-context';
 import {useFocusEffect} from '@react-navigation/native';
 
@@ -109,6 +109,7 @@ export default function ShipmentScreen({navigation}: MainTabScreenProps<'Shipmen
     loadedDate: upcomingLoadedDate,
     loading: upcomingLoading,
     error: upcomingError,
+    refresh: refreshUpcoming,
   } = useUpcomingShipments(upcomingDate);
   const upcomingRows = useMemo(() => toShipmentRows(upcoming), [upcoming]);
 
@@ -135,6 +136,7 @@ export default function ShipmentScreen({navigation}: MainTabScreenProps<'Shipmen
     loadedDate: pastLoadedDate,
     loading: pastLoading,
     error: pastError,
+    refresh: refreshPast,
   } = usePastShipments();
   const pastRows = useMemo(() => toShipmentRows(past), [past]);
 
@@ -191,7 +193,21 @@ export default function ShipmentScreen({navigation}: MainTabScreenProps<'Shipmen
   const staleFilter =
     loadedDate !== undefined &&
     loadedDate !== (isUpcoming ? upcomingDate : null);
-  const pending = loading && (!shipments.length || staleFilter);
+  // Pull-to-refresh: forced re-fetch of both lists; the bones stand in for the
+  // rows (and the highlight card) until the answers land.
+  const [refreshing, setRefreshing] = useState(false);
+  const handleRefresh = useCallback(async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([
+        refreshUpcoming({force: true, silent: true}),
+        refreshPast({force: true, silent: true}),
+      ]);
+    } finally {
+      setRefreshing(false);
+    }
+  }, [refreshUpcoming, refreshPast]);
+  const pending = refreshing || (loading && (!shipments.length || staleFilter));
   const emptyText = isUpcoming
     ? `No shipments on ${formatLoadDate(upcomingDate)}`
     : 'No past shipments to show';
@@ -200,7 +216,8 @@ export default function ShipmentScreen({navigation}: MainTabScreenProps<'Shipmen
   // list, regardless of which tab (UPCOMING/PAST) the table itself is on.
   const pickupStale =
     upcomingLoadedDate !== undefined && upcomingLoadedDate !== upcomingDate;
-  const pickupPending = upcomingLoading && (!upcomingRows.length || pickupStale);
+  const pickupPending =
+    refreshing || (upcomingLoading && (!upcomingRows.length || pickupStale));
   const pickupShipment = upcomingRows[0] ?? null;
   const pickupBadgeLabel =
     upcomingDate === today
@@ -367,8 +384,11 @@ export default function ShipmentScreen({navigation}: MainTabScreenProps<'Shipmen
 
           <FlatList
             style={styles.list}
-            data={shipments}
+            data={refreshing ? [] : shipments}
             keyExtractor={item => item.id}
+            refreshControl={
+              <RefreshControl refreshing={false} onRefresh={handleRefresh} />
+            }
             contentContainerStyle={styles.listContent}
             nestedScrollEnabled
             showsVerticalScrollIndicator={false}

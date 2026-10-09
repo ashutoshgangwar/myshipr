@@ -30,6 +30,7 @@ import {
   MONTHS_SHORT,
 } from '../utils/format';
 import {TTL, useCachedResource} from './resourceCache';
+import type {CachedResource} from './resourceCache';
 import {statusLabel} from './driverEarnings';
 import {loadType} from './upcomingShipments';
 import type {AsyncResource, DetailRow, Nullable} from '../types/common';
@@ -304,8 +305,8 @@ export function usePaymentDetails(
   shipmentId: string | null | undefined,
 ): {payment: Nullable<PaymentDetails>} & Omit<
   AsyncResource<PaymentDetails>,
-  'data'
-> {
+  'data' | 'refresh'
+> & {refresh: CachedResource<PaymentDetails>['refresh']} {
   const fetcher = useMemo(
     () => () =>
       shipmentId
